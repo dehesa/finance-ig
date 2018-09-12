@@ -11,6 +11,54 @@
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC012149AC9D00344CBF /* Result.framework */; };
 		8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
+		8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */; };
+		8DC4CC082149B10300344CBF /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
+		8DC4CC092149B10C00344CBF /* GCD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4A2149A6CE00344CBF /* GCD.swift */; };
+		8DC4CC0A2149B11100344CBF /* Framework.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Framework.swift */; };
+		8DC4CC0C2149B24400344CBF /* Utils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC0B2149B24400344CBF /* Utils.framework */; };
+		8DC4CC0D2149B2C300344CBF /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
+		8DC4CC0E2149B2DF00344CBF /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA632149A6CE00344CBF /* APIError.swift */; };
+		8DC4CC0F2149B2E300344CBF /* APIConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6A2149A6CE00344CBF /* APIConstants.swift */; };
+		8DC4CC102149B2FC00344CBF /* APISession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7F2149A6CE00344CBF /* APISession.swift */; };
+		8DC4CC112149B2FC00344CBF /* APICredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA812149A6CE00344CBF /* APICredentials.swift */; };
+		8DC4CC122149B2FC00344CBF /* APIOAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA802149A6CE00344CBF /* APIOAuth.swift */; };
+		8DC4CC132149B2FC00344CBF /* APICertificate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */; };
+		8DC4CC142149B30600344CBF /* APIApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7A2149A6CE00344CBF /* APIApplication.swift */; };
+		8DC4CC152149B30600344CBF /* APIAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7B2149A6CE00344CBF /* APIAccount.swift */; };
+		8DC4CC162149B31800344CBF /* APIPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA762149A6CE00344CBF /* APIPrice.swift */; };
+		8DC4CC172149B31800344CBF /* APITransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA772149A6CE00344CBF /* APITransaction.swift */; };
+		8DC4CC182149B31800344CBF /* APIActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA782149A6CE00344CBF /* APIActivity.swift */; };
+		8DC4CC192149B33900344CBF /* Epic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA462149A6CE00344CBF /* Epic.swift */; };
+		8DC4CC1B2149B38900344CBF /* APINavigationNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA732149A6CE00344CBF /* APINavigationNode.swift */; };
+		8DC4CC1C2149B38900344CBF /* APIMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA722149A6CE00344CBF /* APIMarket.swift */; };
+		8DC4CC1D2149B38900344CBF /* APIWatchlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA742149A6CE00344CBF /* APIWatchlist.swift */; };
+		8DC4CC1E2149B3A600344CBF /* APIConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */; };
+		8DC4CC1F2149B3A600344CBF /* APIPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA692149A6CE00344CBF /* APIPosition.swift */; };
+		8DC4CC202149B3A600344CBF /* APIPositionOTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA672149A6CE00344CBF /* APIPositionOTC.swift */; };
+		8DC4CC212149B3A600344CBF /* APIWorkingOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA682149A6CE00344CBF /* APIWorkingOrder.swift */; };
+		8DC4CC222149B3A600344CBF /* APIWorkingOrderOTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */; };
+		8DC4CC232149B3C500344CBF /* URLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6E2149A6CE00344CBF /* URLSession.swift */; };
+		8DC4CC242149B3C500344CBF /* APIDateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6D2149A6CE00344CBF /* APIDateFormatters.swift */; };
+		8DC4CC252149B3C500344CBF /* DateDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA702149A6CE00344CBF /* DateDecoder.swift */; };
+		8DC4CC262149B3C500344CBF /* DateEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6F2149A6CE00344CBF /* DateEncoder.swift */; };
+		8DC4CC272149B3C500344CBF /* URLRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */; };
+		8DC4CC292149B48700344CBF /* Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5C2149A6CE00344CBF /* Streamer.swift */; };
+		8DC4CC2A2149B48700344CBF /* StreamerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */; };
+		8DC4CC2B2149B48700344CBF /* StreamerCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */; };
+		8DC4CC2C2149B48700344CBF /* StreamerConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5D2149A6CE00344CBF /* StreamerConstants.swift */; };
+		8DC4CC2D2149B49D00344CBF /* StreamerSubscriptionProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA562149A6CE00344CBF /* StreamerSubscriptionProtocols.swift */; };
+		8DC4CC2E2149B49D00344CBF /* StreamerSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA532149A6CE00344CBF /* StreamerSubscription.swift */; };
+		8DC4CC2F2149B49D00344CBF /* StreamerRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA552149A6CE00344CBF /* StreamerRequest.swift */; };
+		8DC4CC302149B49D00344CBF /* StreamerResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA542149A6CE00344CBF /* StreamerResponse.swift */; };
+		8DC4CC312149B4B300344CBF /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
+		8DC4CC322149B4B300344CBF /* StreamerChartTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA582149A6CE00344CBF /* StreamerChartTick.swift */; };
+		8DC4CC332149B4B300344CBF /* StreamerChartScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5A2149A6CE00344CBF /* StreamerChartScale.swift */; };
+		8DC4CC342149B4C000344CBF /* StreamerAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA602149A6CE00344CBF /* StreamerAccount.swift */; };
+		8DC4CC352149B4C000344CBF /* StreamerTrade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA612149A6CE00344CBF /* StreamerTrade.swift */; };
+		8DC4CC362149B4D700344CBF /* StreamerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4F2149A6CE00344CBF /* StreamerSession.swift */; };
+		8DC4CC372149B4D700344CBF /* LightstreamerSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */; };
+		8DC4CC382149B4D700344CBF /* LightstreamerExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */; };
+		8DC4CC392149B4D700344CBF /* StreamerDateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA502149A6CE00344CBF /* StreamerDateFormatter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -113,6 +161,9 @@
 		8DC4CBFF2149AB1200344CBF /* Streamer */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Streamer; sourceTree = "<group>"; };
 		8DC4CC012149AC9D00344CBF /* Result.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Result.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
+		8DC4CC052149AF2500344CBF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ReactiveSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DC4CC0B2149B24400344CBF /* Utils.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Utils.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,8 +171,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */,
 				8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */,
+				8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */,
+				8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */,
+				8DC4CC0C2149B24400344CBF /* Utils.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +192,7 @@
 		8DC4CA332149A60900344CBF = {
 			isa = PBXGroup;
 			children = (
+				8DC4CC052149AF2500344CBF /* README.md */,
 				8DC4CA3A2149A68200344CBF /* Configuration */,
 				8DC4CA422149A6CE00344CBF /* Sources */,
 				8DC4CA822149A6CE00344CBF /* Tests */,
@@ -210,10 +264,10 @@
 		8DC4CA4C2149A6CE00344CBF /* Streamer */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */,
 				8DC4CA5C2149A6CE00344CBF /* Streamer.swift */,
-				8DC4CA5D2149A6CE00344CBF /* StreamerConstants.swift */,
 				8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */,
+				8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */,
+				8DC4CA5D2149A6CE00344CBF /* StreamerConstants.swift */,
 				8DC4CA522149A6CE00344CBF /* Subscription */,
 				8DC4CA572149A6CE00344CBF /* Markets */,
 				8DC4CA5F2149A6CE00344CBF /* Account */,
@@ -225,10 +279,10 @@
 		8DC4CA4D2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */,
 				8DC4CA4F2149A6CE00344CBF /* StreamerSession.swift */,
-				8DC4CA502149A6CE00344CBF /* StreamerDateFormatter.swift */,
 				8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */,
+				8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */,
+				8DC4CA502149A6CE00344CBF /* StreamerDateFormatter.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -236,10 +290,10 @@
 		8DC4CA522149A6CE00344CBF /* Subscription */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA532149A6CE00344CBF /* StreamerSubscription.swift */,
-				8DC4CA542149A6CE00344CBF /* StreamerResponse.swift */,
-				8DC4CA552149A6CE00344CBF /* StreamerRequest.swift */,
 				8DC4CA562149A6CE00344CBF /* StreamerSubscriptionProtocols.swift */,
+				8DC4CA532149A6CE00344CBF /* StreamerSubscription.swift */,
+				8DC4CA552149A6CE00344CBF /* StreamerRequest.swift */,
+				8DC4CA542149A6CE00344CBF /* StreamerResponse.swift */,
 			);
 			path = Subscription;
 			sourceTree = "<group>";
@@ -247,8 +301,8 @@
 		8DC4CA572149A6CE00344CBF /* Markets */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA582149A6CE00344CBF /* StreamerChartTick.swift */,
 				8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */,
+				8DC4CA582149A6CE00344CBF /* StreamerChartTick.swift */,
 				8DC4CA5A2149A6CE00344CBF /* StreamerChartScale.swift */,
 			);
 			path = Markets;
@@ -267,8 +321,8 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA7C2149A6CE00344CBF /* API.swift */,
-				8DC4CA632149A6CE00344CBF /* APIError.swift */,
 				8DC4CA6A2149A6CE00344CBF /* APIConstants.swift */,
+				8DC4CA632149A6CE00344CBF /* APIError.swift */,
 				8DC4CA7D2149A6CE00344CBF /* Session */,
 				8DC4CA792149A6CE00344CBF /* Applications */,
 				8DC4CA752149A6CE00344CBF /* History */,
@@ -282,11 +336,11 @@
 		8DC4CA642149A6CE00344CBF /* Dealings */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */,
 				8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */,
+				8DC4CA692149A6CE00344CBF /* APIPosition.swift */,
 				8DC4CA672149A6CE00344CBF /* APIPositionOTC.swift */,
 				8DC4CA682149A6CE00344CBF /* APIWorkingOrder.swift */,
-				8DC4CA692149A6CE00344CBF /* APIPosition.swift */,
+				8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */,
 			);
 			path = Dealings;
 			sourceTree = "<group>";
@@ -294,11 +348,11 @@
 		8DC4CA6B2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
-				8DC4CA6D2149A6CE00344CBF /* APIDateFormatters.swift */,
 				8DC4CA6E2149A6CE00344CBF /* URLSession.swift */,
-				8DC4CA6F2149A6CE00344CBF /* DateEncoder.swift */,
+				8DC4CA6D2149A6CE00344CBF /* APIDateFormatters.swift */,
 				8DC4CA702149A6CE00344CBF /* DateDecoder.swift */,
+				8DC4CA6F2149A6CE00344CBF /* DateEncoder.swift */,
+				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -306,8 +360,8 @@
 		8DC4CA712149A6CE00344CBF /* Markets */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA722149A6CE00344CBF /* APIMarket.swift */,
 				8DC4CA732149A6CE00344CBF /* APINavigationNode.swift */,
+				8DC4CA722149A6CE00344CBF /* APIMarket.swift */,
 				8DC4CA742149A6CE00344CBF /* APIWatchlist.swift */,
 			);
 			path = Markets;
@@ -316,9 +370,9 @@
 		8DC4CA752149A6CE00344CBF /* History */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA762149A6CE00344CBF /* APIPrice.swift */,
-				8DC4CA772149A6CE00344CBF /* APITransaction.swift */,
 				8DC4CA782149A6CE00344CBF /* APIActivity.swift */,
+				8DC4CA772149A6CE00344CBF /* APITransaction.swift */,
+				8DC4CA762149A6CE00344CBF /* APIPrice.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -335,9 +389,9 @@
 		8DC4CA7D2149A6CE00344CBF /* Session */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */,
 				8DC4CA7F2149A6CE00344CBF /* APISession.swift */,
 				8DC4CA802149A6CE00344CBF /* APIOAuth.swift */,
+				8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */,
 				8DC4CA812149A6CE00344CBF /* APICredentials.swift */,
 			);
 			path = Session;
@@ -483,6 +537,8 @@
 			children = (
 				8DC4CC012149AC9D00344CBF /* Result.framework */,
 				8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */,
+				8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */,
+				8DC4CC0B2149B24400344CBF /* Utils.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -594,6 +650,52 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DC4CC092149B10C00344CBF /* GCD.swift in Sources */,
+				8DC4CC0A2149B11100344CBF /* Framework.swift in Sources */,
+				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
+				8DC4CC192149B33900344CBF /* Epic.swift in Sources */,
+				8DC4CC0D2149B2C300344CBF /* API.swift in Sources */,
+				8DC4CC0F2149B2E300344CBF /* APIConstants.swift in Sources */,
+				8DC4CC0E2149B2DF00344CBF /* APIError.swift in Sources */,
+				8DC4CC102149B2FC00344CBF /* APISession.swift in Sources */,
+				8DC4CC112149B2FC00344CBF /* APICredentials.swift in Sources */,
+				8DC4CC122149B2FC00344CBF /* APIOAuth.swift in Sources */,
+				8DC4CC132149B2FC00344CBF /* APICertificate.swift in Sources */,
+				8DC4CC142149B30600344CBF /* APIApplication.swift in Sources */,
+				8DC4CC152149B30600344CBF /* APIAccount.swift in Sources */,
+				8DC4CC182149B31800344CBF /* APIActivity.swift in Sources */,
+				8DC4CC162149B31800344CBF /* APIPrice.swift in Sources */,
+				8DC4CC172149B31800344CBF /* APITransaction.swift in Sources */,
+				8DC4CC1B2149B38900344CBF /* APINavigationNode.swift in Sources */,
+				8DC4CC1C2149B38900344CBF /* APIMarket.swift in Sources */,
+				8DC4CC1D2149B38900344CBF /* APIWatchlist.swift in Sources */,
+				8DC4CC1E2149B3A600344CBF /* APIConfirmation.swift in Sources */,
+				8DC4CC1F2149B3A600344CBF /* APIPosition.swift in Sources */,
+				8DC4CC202149B3A600344CBF /* APIPositionOTC.swift in Sources */,
+				8DC4CC212149B3A600344CBF /* APIWorkingOrder.swift in Sources */,
+				8DC4CC222149B3A600344CBF /* APIWorkingOrderOTC.swift in Sources */,
+				8DC4CC232149B3C500344CBF /* URLSession.swift in Sources */,
+				8DC4CC242149B3C500344CBF /* APIDateFormatters.swift in Sources */,
+				8DC4CC252149B3C500344CBF /* DateDecoder.swift in Sources */,
+				8DC4CC262149B3C500344CBF /* DateEncoder.swift in Sources */,
+				8DC4CC272149B3C500344CBF /* URLRequest.swift in Sources */,
+				8DC4CC292149B48700344CBF /* Streamer.swift in Sources */,
+				8DC4CC2A2149B48700344CBF /* StreamerError.swift in Sources */,
+				8DC4CC2B2149B48700344CBF /* StreamerCredentials.swift in Sources */,
+				8DC4CC2C2149B48700344CBF /* StreamerConstants.swift in Sources */,
+				8DC4CC2D2149B49D00344CBF /* StreamerSubscriptionProtocols.swift in Sources */,
+				8DC4CC2E2149B49D00344CBF /* StreamerSubscription.swift in Sources */,
+				8DC4CC2F2149B49D00344CBF /* StreamerRequest.swift in Sources */,
+				8DC4CC302149B49D00344CBF /* StreamerResponse.swift in Sources */,
+				8DC4CC312149B4B300344CBF /* StreamerMarket.swift in Sources */,
+				8DC4CC322149B4B300344CBF /* StreamerChartTick.swift in Sources */,
+				8DC4CC332149B4B300344CBF /* StreamerChartScale.swift in Sources */,
+				8DC4CC342149B4C000344CBF /* StreamerAccount.swift in Sources */,
+				8DC4CC352149B4C000344CBF /* StreamerTrade.swift in Sources */,
+				8DC4CC362149B4D700344CBF /* StreamerSession.swift in Sources */,
+				8DC4CC372149B4D700344CBF /* LightstreamerSupport.swift in Sources */,
+				8DC4CC382149B4D700344CBF /* LightstreamerExtension.swift in Sources */,
+				8DC4CC392149B4D700344CBF /* StreamerDateFormatter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -784,6 +886,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -852,6 +955,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;

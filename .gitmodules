@@ -4,3 +4,6 @@
 [submodule "Dependencies/ReactiveSwift"]
 	path = Dependencies/ReactiveSwift
 	url = git@github.com:ReactiveCocoa/ReactiveSwift.git
+[submodule "Dependencies/Utils"]
+	path = Dependencies/Utils
+	url = git@github.com:dehesa/Utils.git
