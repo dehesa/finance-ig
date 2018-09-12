@@ -1,0 +1,10 @@
+{
+    "statusCode": 200,
+    "body": {
+        "access_token": "a1b234c5-d678-901e-f234-gh5i6j789k0l",
+        "refresh_token": "12ab3456-7cd8-9012-e3f4-56g7h89i01j2",
+        "scope": "profile",
+        "token_type": "Bearer",
+        "expires_in": "60"
+    }
+}

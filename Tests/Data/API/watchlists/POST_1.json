@@ -1,0 +1,7 @@
+{
+    "statusCode": 200,
+    "body": {
+        "watchlistId": "12345678",
+        "status": "SUCCESS"
+    }
+}
