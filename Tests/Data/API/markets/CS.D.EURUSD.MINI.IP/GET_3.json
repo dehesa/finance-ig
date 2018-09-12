@@ -1,0 +1,107 @@
+{
+    "statusCode": 200,
+    "body": {
+        "instrument": {
+            "epic": "CS.D.EURUSD.MINI.IP",
+            "expiry": "-",
+            "name": "EUR/USD Mini",
+            "forceOpenAllowed": true,
+            "stopsLimitsAllowed": true,
+            "lotSize": 1.0,
+            "unit": "CONTRACTS",
+            "type": "CURRENCIES",
+            "controlledRiskAllowed": true,
+            "streamingPricesAvailable": true,
+            "marketId": "EURUSD",
+            "currencies":[{
+                "code": "USD",
+                "symbol": "$",
+                "baseExchangeRate": 1.17713,
+                "exchangeRate": 0.66,
+                "isDefault": true
+            }],
+            "sprintMarketsMinimumExpiryTime": null,
+            "sprintMarketsMaximumExpiryTime": null,
+            "marginDepositBands": [{
+                "min": 0,
+                "max": 120,
+                "margin": 0.5,
+                "currency": "USD"
+            },{
+                "min": 120,
+                "max": 1200,
+                "margin": 1,
+                "currency": "USD"
+            },{
+                "min": 1200,
+                "max": 1800,
+                "margin": 3,
+                "currency": "USD"
+            },{
+                "min": 1800,
+                "max": null,
+                "margin": 15,
+                "currency": "USD"
+            }],
+            "marginFactor": 0.5,
+            "marginFactorUnit": "PERCENTAGE",
+            "slippageFactor": {
+                "unit": "pct",
+                "value": 50.0
+            },
+            "limitedRiskPremium": {
+                "value": 1.2,
+                "unit": "POINTS"
+            },
+            "openingHours": null,
+            "expiryDetails": null,
+            "rolloverDetails": null,
+            "newsCode": "EUR=",
+            "chartCode": "EURUSD",
+            "country": null,
+            "valueOfOnePip": "1.00",
+            "onePipMeans": "0.0001 USD/EUR",
+            "contractSize": "10000",
+            "specialInfo": null
+        },
+        "dealingRules": {
+            "minStepDistance": {
+                "unit": "POINTS",
+                "value": 5.0
+            },
+            "minDealSize": {
+                "unit": "POINTS",
+                "value": 1.0
+            },
+            "minControlledRiskStopDistance": {
+                "unit": "POINTS",
+                "value": 5.0
+            },
+            "minNormalStopOrLimitDistance": {
+                "unit": "POINTS",
+                "value": 2.0
+            },
+            "maxStopOrLimitDistance": {
+                "unit": "PERCENTAGE",
+                "value": 75.0
+            },
+            "marketOrderPreference": "AVAILABLE_DEFAULT_OFF",
+            "trailingStopsPreference": "AVAILABLE"
+        },
+        "snapshot": {
+            "marketStatus": "TRADEABLE",
+            "netChange": -0.00236,
+            "percentageChange": -0.2,
+            "updateTime": "19:36:08",
+            "delayTime": 0,
+            "bid": 1.17709,
+            "offer": 1.17715,
+            "high": 1.18231,
+            "low": 1.17490,
+            "binaryOdds": null,
+            "decimalPlacesFactor": 5,
+            "scalingFactor": 10000,
+            "controlledRiskExtraSpread": 2
+        }
+    }
+}

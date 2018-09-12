@@ -1,0 +1,11 @@
+{
+    "statusCode": 200,
+    "body": {
+        "clientId": "123456789",
+        "accountId": "ABC12",
+        "timezoneOffset": 2,
+        "locale": "en_GB",
+        "currency": "EUR",
+        "lightstreamerEndpoint": "https://demo-apd.marketdatasystems.com"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "statusCode": 200,
+    "body": {
+        "nodes": null,
+        "markets": [{
+            "epic": "CO.D.DX.FCS2.IP",
+            "instrumentName": "US Dollar Basket ($10)",
+            "instrumentType": "COMMODITIES",
+            "expiry": "JUN-18",
+            "high": 9367.4,
+            "low": 9315.0,
+            "percentageChange": -0.22,
+            "netChange": -20.9,
+            "updateTime": "75600000",
+            "updateTimeUTC": "21:00:00",
+            "bid": 9338.5,
+            "offer": 9346.5,
+            "delayTime": 0,
+            "streamingPricesAvailable": true,
+            "marketStatus": "EDITS_ONLY",
+            "scalingFactor": 1,
+                    
+            "lotSize": 10,
+            "otcTradeable": true
+        }]
+    }
+}

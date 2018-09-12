@@ -1,0 +1,41 @@
+{
+    "statusCode": 200,
+    "body": {
+        "position": {
+            "contractSize": 100000.0,
+            "controlledRisk": false,
+            "createdDate": "2018/06/27 11:00:00:000",
+            "createdDateUTC": "2018-06-27T10:00:00",
+            "currency": "USD",
+            "dealId": "DIAAAAB35X4T4A4",
+            "dealReference": "ZJDFPKN0JTLMGLC",
+            "direction": "SELL",
+            "level": 1.16088,
+            "limitLevel": 1.16068,
+            "size": 2.0,
+            "stopLevel": 1.16108,
+            "trailingStep": null,
+            "trailingStopDistance": null,
+            "limitedRiskPremium": null
+        },
+        "market": {
+            "epic": "CS.D.EURUSD.CFD.IP",
+            "instrumentName": "EUR/USD",
+            "instrumentType": "CURRENCIES",
+            "expiry": "-",
+            "lotSize": 10.0,
+            "streamingPricesAvailable": true,
+            "updateTime": "13:35:26",
+            "updateTimeUTC": "12:35:26",
+            "bid": 1.16069,
+            "delayTime": 0,
+            "high": 1.16729,
+            "low": 1.1606,
+            "netChange": -0.00405,
+            "offer": 1.16075,
+            "percentageChange": -0.35,
+            "scalingFactor": 10000,
+            "marketStatus": "TRADEABLE"
+        }
+    }
+}

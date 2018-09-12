@@ -1,0 +1,42 @@
+{
+    "statusCode": 200,
+    "body": {
+        "markets": [{
+            "instrumentName": "EUR/USD Mini",
+            "expiry": "-",
+            "epic": "CS.D.EURUSD.MINI.IP",
+            "instrumentType": "CURRENCIES",
+            "marketStatus": "TRADEABLE",
+            "lotSize": 1.0,
+            "high": 1.17215,
+            "low": 1.16624,
+            "percentageChange": -0.32,
+            "netChange": -0.00378,
+            "bid": 1.1666,
+            "offer": 1.16666,
+            "updateTime": "10:21:12",
+            "updateTimeUTC": "09:21:12",
+            "delayTime": 0,
+            "streamingPricesAvailable": true,
+            "scalingFactor": 10000
+        },{
+            "instrumentName": "EUR/CHF",
+            "expiry": "-",
+            "epic": "CS.D.EURCHF.CFD.IP",
+            "instrumentType": "CURRENCIES",
+            "marketStatus": "TRADEABLE",
+            "lotSize": 10.0,
+            "high": 1.15653,
+            "low": 1.1531,
+            "percentageChange": -0.14,
+            "netChange": -0.00157,
+            "bid": 1.15355,
+            "offer": 1.15375,
+            "updateTime": "10:21:13",
+            "updateTimeUTC": "09:21:13",
+            "delayTime": 0,
+            "streamingPricesAvailable": true,
+            "scalingFactor": 10000
+        }]
+    }
+}

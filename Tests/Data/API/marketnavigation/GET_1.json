@@ -1,0 +1,106 @@
+{
+    "statusCode": 200,
+    "body": {
+        "nodes": [{
+            "id": "668394",
+            "name": "Cryptocurrency"
+        },{
+            "id": "319963",
+            "name": "Options (Sweden 30)"
+        },{
+            "id": "5371876",
+            "name": "Weekend Indices"
+        },{
+            "id": "97601",
+            "name": "Indices"
+        },{
+            "id": "264176",
+            "name": "Indices (mini)"
+        },{
+            "id": "195235",
+            "name": "Forex"
+        },{
+            "id": "264139",
+            "name": "Forex (mini)"
+        },{
+            "id": "101515",
+            "name": "Commodities Metals Energies"
+        },{
+            "id": "264151",
+            "name": "Commodities Metals Energies (mini)"
+        },{
+            "id": "108092",
+            "name": "Bonds and Moneymarket"
+        },{
+            "id": "264251",
+            "name": "Bonds and Moneymarket (mini)"
+        },{
+            "id": "184730",
+            "name": "ETFs, ETCs & Trackers"
+        },{
+            "id": "172904",
+            "name": "Shares - LSE (UK)"
+        },{
+            "id": "177223",
+            "name": "Shares - NYSE (US)"
+        },{
+            "id": "171438",
+            "name": "Shares - XETRA (Germany)"
+        },{
+            "id": "169656",
+            "name": "Shares - Euronext (France)"
+        },{
+            "id": "170471",
+            "name": "Shares - JSE (South Africa)"
+        },{
+            "id": "170023",
+            "name": "Shares - Euronext (Netherlands)"
+        },{
+            "id": "169329",
+            "name": "Shares - Euronext (Belgium)"
+        },{
+            "id": "169591",
+            "name": "Shares - Euronext (Portugal)"
+        },{
+            "id": "170387",
+            "name": "Shares - ISEQ (Ireland)"
+        },{
+            "id": "170630",
+            "name": "Shares - MIB (Italy)"
+        },{
+            "id": "255072",
+            "name": "Options on FX Majors"
+        },{
+            "id": "122250",
+            "name": "Options (FTSE)"
+        },{
+            "id": "97612",
+            "name": "Options (Germany)"
+        },{
+            "id": "122505",
+            "name": "Options (Wall St)"
+        },{
+            "id": "267039",
+            "name": "Options (US 500)"
+        },{
+            "id": "112619",
+            "name": "Options (Australian, Cash)"
+        },{
+            "id": "245938",
+            "name": "Options (Eu Stocks 50)"
+        },{
+            "id": "188760",
+            "name": "Options (France 40)"
+        },{
+            "id": "236490",
+            "name": "Options (Netherlands 25)"
+        },{
+            "id": "188763",
+            "name": "Options (Spain 35)"
+        },{
+            "id": "195913",
+            "name": "Options on Metals, Energies"
+        }],
+        "markets": null
+    }
+}

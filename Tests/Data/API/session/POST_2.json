@@ -1,0 +1,34 @@
+{
+    "statusCode": 200,
+    "header": {
+        "X-STATE": "live",
+        "X-SECURITY-TOKEN": "1234567890ab1c23d9d9b9441e73225873e810da54ee5deb08b683f93bdd1dad01112",
+        "CST": "234567a89bc01d95c9258e8f2980260b44f201cb5926c22f55298f899cda757801112"
+    },
+    "body": {
+        "accountType": "CFD",
+        "accountInfo": {
+            "balance": 20000.0,
+            "deposit": 0.0,
+            "profitLoss": 0.0,
+            "available": 20000.0
+        },
+        "currencyIsoCode": "EUR",
+        "currencySymbol": "E",
+        "currentAccountId": "ABC12",
+        "lightstreamerEndpoint": "https://demo-apd.marketdatasystems.com",
+        "accounts": [{
+            "accountId": "ABC12",
+            "accountName": "Mocked-Account",
+            "preferred": true,
+            "accountType": "CFD"
+        }],
+        "clientId": "123456789",
+        "timezoneOffset": 2,
+        "hasActiveDemoAccounts": true,
+        "hasActiveLiveAccounts": true,
+        "trailingStopsEnabled": false,
+        "reroutingEnvironment": null,
+        "dealingEnabled": true
+    }
+}

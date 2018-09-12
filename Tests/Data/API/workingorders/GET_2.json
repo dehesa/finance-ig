@@ -1,0 +1,47 @@
+{
+    "statusCode": 200,
+    "body": {
+        "workingOrders": [{
+            "workingOrderData": {
+                "dealId": "DIAAAAB3GWV9SAW",
+                "epic": "CS.D.EURUSD.CFD.IP",
+                "createdDate": "2018/06/27 14:30:59:000",
+                "createdDateUTC": "2018-06-27T12:30:59",
+                "currencyCode": "USD",
+                "timeInForce": "GOOD_TILL_CANCELLED",
+                "goodTillDate": null,
+                "goodTillDateISO": null,
+                "orderType": "LIMIT",
+                "orderSize": 2,
+                "direction": "SELL",
+                "orderLevel": 1.16160,
+                "guaranteedStop": false,
+                "stopDistance": 2.0,
+                "limitDistance": 2.0,
+                "dma": false,
+                "limitedRiskPremium": null
+            },
+            "marketData": {
+                "epic": "CS.D.EURUSD.CFD.IP",
+                "instrumentName": "EUR/USD",
+                "instrumentType": "CURRENCIES",
+                "expiry": "-",
+                "lotSize": 10.0,
+                "streamingPricesAvailable": true,
+                "exchangeId": "FX_C_MAIN_ST",
+
+                "updateTime": "13:31:48",
+                "updateTimeUTC": "12:31:48",
+                "delayTime": 0,
+                "offer": 1.16118,
+                "bid": 1.16112,
+                "high": 1.16729,
+                "low": 1.16071,
+                "netChange": -0.00362,
+                "percentageChange": -0.31,
+                "marketStatus": "TRADEABLE",
+                "scalingFactor": 10000
+            }
+        }]
+    }
+}

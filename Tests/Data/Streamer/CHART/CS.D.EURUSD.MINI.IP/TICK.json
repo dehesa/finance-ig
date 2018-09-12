@@ -1,0 +1,183 @@
+[{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15769",
+        "DAY_NET_CHG_MID": "-0.00076",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290281271",
+        "BID": "1.15763"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15768",
+        "DAY_NET_CHG_MID": "-0.00077",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290282114",
+        "BID": "1.15762"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15769",
+        "DAY_NET_CHG_MID": "-0.00076",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290282121",
+        "BID": "1.15763"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15768",
+        "DAY_NET_CHG_MID": "-0.00077",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290283732",
+        "BID": "1.15762"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15769",
+        "DAY_NET_CHG_MID": "-0.00076",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290284416",
+        "BID": "1.15763"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15768",
+        "DAY_NET_CHG_MID": "-0.00077",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290284785",
+        "BID": "1.15762"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15769",
+        "DAY_NET_CHG_MID": "-0.00076",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290284824",
+        "BID": "1.15763"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15768",
+        "DAY_NET_CHG_MID": "-0.00077",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290285224",
+        "BID": "1.15762"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15767",
+        "DAY_NET_CHG_MID": "-0.00078",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290285434",
+        "BID": "1.15761"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15768",
+        "DAY_NET_CHG_MID": "-0.00077",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290285700",
+        "BID": "1.15762"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15767",
+        "DAY_NET_CHG_MID": "-0.00078",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290286635",
+        "BID": "1.15761"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15767",
+        "DAY_NET_CHG_MID": "-0.00078",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290286666",
+        "BID": "1.15761"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15766",
+        "DAY_NET_CHG_MID": "-0.00079",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290286701",
+        "BID": "1.1576"
+    }
+},{
+    "type": "update",
+    "fields": {
+        "OFR": "1.15767",
+        "DAY_NET_CHG_MID": "-0.00078",
+        "DAY_PERC_CHG_MID": "-0.07",
+        "DAY_HIGH": "1.15957",
+        "DAY_OPEN_MID": "1.15842",
+        "LTV": "1.0",
+        "DAY_LOW": "1.15608",
+        "UTM": "1533290286823",
+        "BID": "1.15761"
+    }
+}]

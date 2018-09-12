@@ -1,0 +1,28 @@
+{
+    "statusCode": 200,
+    "body": {
+        "date": "2018-07-07T05:48:48.791",
+        "status": "OPEN",
+        "reason": "SUCCESS",
+        "dealStatus": "ACCEPTED",
+        "epic": "CS.D.EURUSD.CFD.IP",
+        "expiry": "-",
+        "dealReference": "YQQGPTM9WJSHYTL",
+        "dealId": "DIAAAAN35X5B5A4",
+        "affectedDeals": [{
+            "dealId": "DIAAAAN35X5B5A4",
+            "status": "OPENED"
+        }],
+        "level": 1.16088,
+        "size": 1.0,
+        "direction": "SELL",
+        "stopLevel": null,
+        "limitLevel": null,
+        "stopDistance": null,
+        "limitDistance": null,
+        "guaranteedStop": false,
+        "trailingStop": false,
+        "profit": null,
+        "profitCurrency": null
+    }
+}
