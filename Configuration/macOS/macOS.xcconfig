@@ -5,4 +5,4 @@ SDKROOT = macosx
 INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS.plist
 
 // Search Paths
-FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)/../Dependencies/Lightstreamer"
+FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)/Dependencies/Lightstreamer"
