@@ -14,8 +14,36 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D45480561A9572F5009D7229"
+               BuildableName = "Result.framework"
+               BlueprintName = "Result-Mac"
+               ReferencedContainer = "container:Dependencies/Result/Result.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D04725E919E49ED7006002AA"
+               BuildableName = "ReactiveSwift.framework"
+               BlueprintName = "ReactiveSwift-macOS"
+               ReferencedContainer = "container:Dependencies/ReactiveSwift/ReactiveSwift.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-               BuildableName = "IG__macOS_.framework"
+               BuildableName = "IG.framework"
                BlueprintName = "IG [macOS]"
                ReferencedContainer = "container:IG.xcodeproj">
             </BuildableReference>
@@ -26,14 +54,27 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES">
+      codeCoverageEnabled = "YES"
+      onlyGenerateCoverageForSpecifiedTargets = "YES"
+      shouldUseLaunchSchemeArgsEnv = "NO">
+      <CodeCoverageTargets>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
+            BuildableName = "IG.framework"
+            BlueprintName = "IG [macOS]"
+            ReferencedContainer = "container:IG.xcodeproj">
+         </BuildableReference>
+      </CodeCoverageTargets>
       <Testables>
          <TestableReference
-            skipped = "NO">
+            skipped = "NO"
+            parallelizable = "YES"
+            testExecutionOrdering = "random">
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8DC4CBE92149A78700344CBF"
-               BuildableName = "IG Tests [macOS].xctest"
+               BuildableName = "IGTests.xctest"
                BlueprintName = "IG Tests [macOS]"
                ReferencedContainer = "container:IG.xcodeproj">
             </BuildableReference>
@@ -43,11 +84,23 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG__macOS_.framework"
+            BuildableName = "IG.framework"
             BlueprintName = "IG [macOS]"
             ReferencedContainer = "container:IG.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "io.dehesa.money.ig.tests.account"
+            value = "file://Environment/mocked.json"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "io.dehesa.money.ig.tests.account"
+            value = "file://Environment/staging.json"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -65,7 +118,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG__macOS_.framework"
+            BuildableName = "IG.framework"
             BlueprintName = "IG [macOS]"
             ReferencedContainer = "container:IG.xcodeproj">
          </BuildableReference>
@@ -83,7 +136,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG__macOS_.framework"
+            BuildableName = "IG.framework"
             BlueprintName = "IG [macOS]"
             ReferencedContainer = "container:IG.xcodeproj">
          </BuildableReference>

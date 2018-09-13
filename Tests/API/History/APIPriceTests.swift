@@ -1,5 +1,4 @@
 import XCTest
-import Utils
 import ReactiveSwift
 @testable import IG
 
@@ -10,10 +9,9 @@ final class APIPriceTests: APITestCase {
         let dates: (from: Date, to: Date) = {
             let calendar = Calendar(identifier: .gregorian)
             
-            var components = DateComponents().set { (c) in
-                c.timeZone = TimeZone(abbreviation: "CET")
-                (c.year, c.month, c.day, c.hour) = (2018, 5, 18, 21)
-            }
+            var components = DateComponents()
+            components.timeZone = TimeZone(abbreviation: "CET")
+            (components.year, components.month, components.day, components.hour) = (2018, 5, 18, 21)
             
             components.minute = 44
             let fromDate = calendar.date(from: components)!

@@ -1,4 +1,3 @@
-import Utils
 import Foundation
 
 extension API {
@@ -278,6 +277,8 @@ extension API {
             case tillCancelled
             case tillDate(Date)
             
+            /// Designated initializer to create an expiration for working orders.
+            /// - throws `Expiration.Error` if the raw value is invalid.
             internal init(_ rawValue: String, date: Date?) throws {
                 switch rawValue {
                 case CodingKeys.tillCancelled.rawValue:

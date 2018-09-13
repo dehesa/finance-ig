@@ -149,7 +149,7 @@ extension Streamer.Request.Chart {
             let postfix = ":" + interval.rawValue
             guard itemName.hasPrefix(self.prefix), itemName.hasSuffix(postfix) else { return nil }
             let identifier = String(itemName.dropLast(postfix.count).dropFirst(self.prefix.count))
-            return epics.find { $0.identifier == identifier }
+            return epics.first { $0.identifier == identifier }
         }
         
         public var keyPath: PartialKeyPath<Streamer.Response.Chart.Candle> {

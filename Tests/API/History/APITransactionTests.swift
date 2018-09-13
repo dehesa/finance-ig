@@ -1,5 +1,4 @@
 import XCTest
-import Utils
 import ReactiveSwift
 @testable import IG
 
@@ -7,11 +6,12 @@ import ReactiveSwift
 final class APITransactionTests: APITestCase {
     /// Tests paginated transaction retrieval.
     func testTransactions() {
-        let date = Calendar(identifier: .gregorian).date(from: DateComponents().set { (d) in
-            d.timeZone = TimeZone(abbreviation: "CET")
-            (d.year, d.month, d.day) = (2018, 6, 5)
-            (d.hour, d.minute) = (11, 15)
-        })!
+        var components = DateComponents()
+        components.timeZone = TimeZone(abbreviation: "CET")
+        (components.year, components.month, components.day) = (2018, 6, 5)
+        (components.hour, components.minute) = (11, 15)
+        
+        let date = Calendar(identifier: .gregorian).date(from: components)!
         
         let endpoint = self.api.transactions(from: date).on(value: {
             XCTAssertFalse($0.isEmpty)

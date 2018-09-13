@@ -1,6 +1,6 @@
-import Utils
 import Foundation
 
+/// Values always found in an API session.
 public protocol APISession {
     /// Client identifier.
     var clientId: Int { get }
@@ -155,17 +155,21 @@ extension API.Request {
         public let password: String
         
         /// Designated initializer for the Login Request.
+        /// - parameter apiKey: The API key provided by your application developer.
+        /// - parameter accountId: The targeted user's account identifier.
+        /// - parameter username: The targeted user's name/identifier.
+        /// - parameter password: The targeted user's password.
+        /// - throws: `API.Error` if any of the passed argument is invalid.
         public init(apiKey: String, accountId: String, username: String, password: String) throws {
-            let apiKeyLenght = 40
+            let length: (apiKey: Int, accountId: Int) = (40, 5)
             let errorBlurb = "Login request failed!"
             
-            guard apiKey.utf8.count == apiKeyLenght else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The API key provided must be exactly \(apiKeyLenght) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
+            guard apiKey.utf8.count == length.apiKey else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The API key provided must be exactly \(length.apiKey) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
             }
             
-            let accountIdLength = 5
-            guard accountId.utf8.count == accountIdLength else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The accountId provided must be exactly \(accountIdLength) UTF8 characteres. The one provided (\"\(accountId)\") has \(accountId.utf8.count) characters.")
+            guard accountId.utf8.count == length.accountId else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The accountId provided must be exactly \(length.accountId) UTF8 characteres. The one provided (\"\(accountId)\") has \(accountId.utf8.count) characters.")
             }
             
             guard !username.isEmpty else {

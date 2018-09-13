@@ -9,8 +9,9 @@ final class APISessionTests: APITestCase {
         let info = APITestCase.loginData(account: self.account)
         
         let endpoints = self.api.sessionLogin(info, type: .oauth)
-            .call(on: self.api) { (api, _) in
-                api.session()
+            .call(on: self.api) { (api, credentials) -> SignalProducer<API.Response.Session,API.Error> in
+                api.updateCredentials(credentials)
+                return api.session()
             }.on(value: { (response) in
                 XCTAssertGreaterThan(response.clientId, 0)
                 XCTAssertEqual(response.accountId, info.accountId)

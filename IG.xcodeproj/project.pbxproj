@@ -7,15 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC012149AC9D00344CBF /* Result.framework */; };
 		8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
 		8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */; };
 		8DC4CC082149B10300344CBF /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
-		8DC4CC092149B10C00344CBF /* GCD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4A2149A6CE00344CBF /* GCD.swift */; };
-		8DC4CC0A2149B11100344CBF /* Framework.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Framework.swift */; };
-		8DC4CC0C2149B24400344CBF /* Utils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC0B2149B24400344CBF /* Utils.framework */; };
+		8DC4CC0A2149B11100344CBF /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Helpers.swift */; };
 		8DC4CC0D2149B2C300344CBF /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
 		8DC4CC0E2149B2DF00344CBF /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA632149A6CE00344CBF /* APIError.swift */; };
 		8DC4CC0F2149B2E300344CBF /* APIConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA6A2149A6CE00344CBF /* APIConstants.swift */; };
@@ -59,6 +58,34 @@
 		8DC4CC372149B4D700344CBF /* LightstreamerSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */; };
 		8DC4CC382149B4D700344CBF /* LightstreamerExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */; };
 		8DC4CC392149B4D700344CBF /* StreamerDateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA502149A6CE00344CBF /* StreamerDateFormatter.swift */; };
+		8DE1B2B5214A560000C1FF13 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
+		8DE1B2B9214A639E00C1FF13 /* API in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFD2149AB1200344CBF /* API */; };
+		8DE1B2BA214A639F00C1FF13 /* Environment in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFE2149AB1200344CBF /* Environment */; };
+		8DE1B2BB214A639F00C1FF13 /* Streamer in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFF2149AB1200344CBF /* Streamer */; };
+		8DE1B2BC214A63DD00C1FF13 /* Lightstreamer_macOS_Client.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
+		8DE1B2BD214A63DF00C1FF13 /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
+		8DE1B2BF214A641D00C1FF13 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAF32149A6CE00344CBF /* Account.swift */; };
+		8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAAD2149A6CE00344CBF /* APIMockedJSON.swift */; };
+		8DE1B2C1214A642000C1FF13 /* StreamerMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAF42149A6CE00344CBF /* StreamerMockedJSON.swift */; };
+		8DE1B2C2214A647F00C1FF13 /* APIFileSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA842149A6CE00344CBF /* APIFileSession.swift */; };
+		8DE1B2C3214A647F00C1FF13 /* StreamerFileSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA852149A6CE00344CBF /* StreamerFileSession.swift */; };
+		8DE1B2C4214A647F00C1FF13 /* StreamerFileSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */; };
+		8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
+		8DE1B2C6214A647F00C1FF13 /* StreamerFileUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */; };
+		8DE1B2C7214A64C700C1FF13 /* APITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA12149A6CE00344CBF /* APITestCase.swift */; };
+		8DE1B2C8214A651300C1FF13 /* APICertificateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */; };
+		8DE1B2C9214A651300C1FF13 /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
+		8DE1B2CA214A651300C1FF13 /* APIOAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */; };
+		8DE1B2CC214A6CC800C1FF13 /* APIApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */; };
+		8DE1B2CD214A6CC800C1FF13 /* APIAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9F2149A6CE00344CBF /* APIAccountTests.swift */; };
+		8DE1B2CE214A6CC800C1FF13 /* APIActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */; };
+		8DE1B2CF214A6CC800C1FF13 /* APITransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9B2149A6CE00344CBF /* APITransactionTests.swift */; };
+		8DE1B2D0214A6CC800C1FF13 /* APIPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9C2149A6CE00344CBF /* APIPriceTests.swift */; };
+		8DE1B2D1214A6CC800C1FF13 /* APINavigationNodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA992149A6CE00344CBF /* APINavigationNodeTests.swift */; };
+		8DE1B2D2214A6CC800C1FF13 /* APIMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA972149A6CE00344CBF /* APIMarketTests.swift */; };
+		8DE1B2D3214A6CC800C1FF13 /* APIWatchlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA982149A6CE00344CBF /* APIWatchlistTests.swift */; };
+		8DE1B2D4214A6CC800C1FF13 /* APIPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */; };
+		8DE1B2D5214A6CC800C1FF13 /* APIWorkingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +98,21 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		8DE1B2B6214A633F00C1FF13 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				8DE1B2BC214A63DD00C1FF13 /* Lightstreamer_macOS_Client.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		8DB560F7214A6F6200DA980E /* SetUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetUp.swift; sourceTree = "<group>"; };
 		8DC4CA3C2149A68200344CBF /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS_tests.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3E2149A68200344CBF /* macOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = macOS_tests.plist; sourceTree = "<group>"; };
@@ -82,8 +123,7 @@
 		8DC4CA462149A6CE00344CBF /* Epic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Epic.swift; sourceTree = "<group>"; };
 		8DC4CA472149A6CE00344CBF /* MarketForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketForex.swift; sourceTree = "<group>"; };
 		8DC4CA492149A6CE00344CBF /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
-		8DC4CA4A2149A6CE00344CBF /* GCD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GCD.swift; sourceTree = "<group>"; };
-		8DC4CA4B2149A6CE00344CBF /* Framework.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Framework.swift; sourceTree = "<group>"; };
+		8DC4CA4B2149A6CE00344CBF /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightstreamerExtension.swift; sourceTree = "<group>"; };
 		8DC4CA4F2149A6CE00344CBF /* StreamerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSession.swift; sourceTree = "<group>"; };
 		8DC4CA502149A6CE00344CBF /* StreamerDateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerDateFormatter.swift; sourceTree = "<group>"; };
@@ -174,7 +214,6 @@
 				8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */,
 				8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */,
 				8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */,
-				8DC4CC0C2149B24400344CBF /* Utils.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,6 +222,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */,
+				8DE1B2BD214A63DF00C1FF13 /* Lightstreamer_macOS_Client.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,9 +274,9 @@
 			children = (
 				8DC4CA442149A6CE00344CBF /* IG.h */,
 				8DC4CA432149A6CE00344CBF /* Services.swift */,
-				8DC4CA452149A6CE00344CBF /* Platform */,
 				8DC4CA622149A6CE00344CBF /* API */,
 				8DC4CA4C2149A6CE00344CBF /* Streamer */,
+				8DC4CA452149A6CE00344CBF /* Platform */,
 				8DC4CA482149A6CE00344CBF /* Utils */,
 			);
 			path = Sources;
@@ -255,8 +295,8 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA492149A6CE00344CBF /* Date.swift */,
-				8DC4CA4A2149A6CE00344CBF /* GCD.swift */,
-				8DC4CA4B2149A6CE00344CBF /* Framework.swift */,
+				8DC4CA4B2149A6CE00344CBF /* Helpers.swift */,
+				8DB560F7214A6F6200DA980E /* SetUp.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -400,10 +440,10 @@
 		8DC4CA822149A6CE00344CBF /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				8DC4CAA62149A6CE00344CBF /* Data */,
 				8DC4CA912149A6CE00344CBF /* API */,
 				8DC4CA892149A6CE00344CBF /* Streamer */,
 				8DC4CA832149A6CE00344CBF /* Utils */,
-				8DC4CAA62149A6CE00344CBF /* Data */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -411,10 +451,10 @@
 		8DC4CA832149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8DC4CA842149A6CE00344CBF /* APIFileSession.swift */,
 				8DC4CA852149A6CE00344CBF /* StreamerFileSession.swift */,
 				8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */,
-				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */,
 			);
 			path = Utils;
@@ -451,13 +491,13 @@
 		8DC4CA912149A6CE00344CBF /* API */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA922149A6CE00344CBF /* Dealings */,
 				8DC4CA952149A6CE00344CBF /* APIPlaygroundTests.swift */,
-				8DC4CA962149A6CE00344CBF /* Markets */,
-				8DC4CA9A2149A6CE00344CBF /* History */,
-				8DC4CA9E2149A6CE00344CBF /* Applications */,
 				8DC4CAA12149A6CE00344CBF /* APITestCase.swift */,
 				8DC4CAA22149A6CE00344CBF /* Session */,
+				8DC4CA9E2149A6CE00344CBF /* Applications */,
+				8DC4CA9A2149A6CE00344CBF /* History */,
+				8DC4CA962149A6CE00344CBF /* Markets */,
+				8DC4CA922149A6CE00344CBF /* Dealings */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -474,9 +514,9 @@
 		8DC4CA962149A6CE00344CBF /* Markets */ = {
 			isa = PBXGroup;
 			children = (
+				8DC4CA992149A6CE00344CBF /* APINavigationNodeTests.swift */,
 				8DC4CA972149A6CE00344CBF /* APIMarketTests.swift */,
 				8DC4CA982149A6CE00344CBF /* APIWatchlistTests.swift */,
-				8DC4CA992149A6CE00344CBF /* APINavigationNodeTests.swift */,
 			);
 			path = Markets;
 			sourceTree = "<group>";
@@ -484,9 +524,9 @@
 		8DC4CA9A2149A6CE00344CBF /* History */ = {
 			isa = PBXGroup;
 			children = (
+				8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */,
 				8DC4CA9B2149A6CE00344CBF /* APITransactionTests.swift */,
 				8DC4CA9C2149A6CE00344CBF /* APIPriceTests.swift */,
-				8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -494,8 +534,8 @@
 		8DC4CA9E2149A6CE00344CBF /* Applications */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA9F2149A6CE00344CBF /* APIAccountTests.swift */,
 				8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */,
+				8DC4CA9F2149A6CE00344CBF /* APIAccountTests.swift */,
 			);
 			path = Applications;
 			sourceTree = "<group>";
@@ -503,9 +543,9 @@
 		8DC4CAA22149A6CE00344CBF /* Session */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */,
 				8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */,
 				8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */,
+				8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
@@ -579,6 +619,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8DC4CBF62149A78700344CBF /* Build configuration list for PBXNativeTarget "IG Tests [macOS]" */;
 			buildPhases = (
+				8DE1B2B6214A633F00C1FF13 /* CopyFiles */,
 				8DC4CBE62149A78700344CBF /* Sources */,
 				8DC4CBE72149A78700344CBF /* Frameworks */,
 				8DC4CBE82149A78700344CBF /* Resources */,
@@ -640,6 +681,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DE1B2BA214A639F00C1FF13 /* Environment in Resources */,
+				8DE1B2B9214A639E00C1FF13 /* API in Resources */,
+				8DE1B2BB214A639F00C1FF13 /* Streamer in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -650,9 +694,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC4CC092149B10C00344CBF /* GCD.swift in Sources */,
-				8DC4CC0A2149B11100344CBF /* Framework.swift in Sources */,
 				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
+				8DC4CC0A2149B11100344CBF /* Helpers.swift in Sources */,
+				8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */,
 				8DC4CC192149B33900344CBF /* Epic.swift in Sources */,
 				8DC4CC0D2149B2C300344CBF /* API.swift in Sources */,
 				8DC4CC0F2149B2E300344CBF /* APIConstants.swift in Sources */,
@@ -696,6 +740,7 @@
 				8DC4CC372149B4D700344CBF /* LightstreamerSupport.swift in Sources */,
 				8DC4CC382149B4D700344CBF /* LightstreamerExtension.swift in Sources */,
 				8DC4CC392149B4D700344CBF /* StreamerDateFormatter.swift in Sources */,
+				8DE1B2B5214A560000C1FF13 /* Services.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -703,6 +748,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DE1B2BF214A641D00C1FF13 /* Account.swift in Sources */,
+				8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */,
+				8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */,
+				8DE1B2C2214A647F00C1FF13 /* APIFileSession.swift in Sources */,
+				8DE1B2C7214A64C700C1FF13 /* APITestCase.swift in Sources */,
+				8DE1B2C9214A651300C1FF13 /* APISessionTests.swift in Sources */,
+				8DE1B2CA214A651300C1FF13 /* APIOAuthTests.swift in Sources */,
+				8DE1B2C8214A651300C1FF13 /* APICertificateTests.swift in Sources */,
+				8DE1B2CC214A6CC800C1FF13 /* APIApplicationTests.swift in Sources */,
+				8DE1B2CD214A6CC800C1FF13 /* APIAccountTests.swift in Sources */,
+				8DE1B2CE214A6CC800C1FF13 /* APIActivityTests.swift in Sources */,
+				8DE1B2CF214A6CC800C1FF13 /* APITransactionTests.swift in Sources */,
+				8DE1B2D0214A6CC800C1FF13 /* APIPriceTests.swift in Sources */,
+				8DE1B2D1214A6CC800C1FF13 /* APINavigationNodeTests.swift in Sources */,
+				8DE1B2D2214A6CC800C1FF13 /* APIMarketTests.swift in Sources */,
+				8DE1B2D3214A6CC800C1FF13 /* APIWatchlistTests.swift in Sources */,
+				8DE1B2D4214A6CC800C1FF13 /* APIPositionTests.swift in Sources */,
+				8DE1B2D5214A6CC800C1FF13 /* APIWorkingOrderTests.swift in Sources */,
+				8DE1B2C1214A642000C1FF13 /* StreamerMockedJSON.swift in Sources */,
+				8DE1B2C3214A647F00C1FF13 /* StreamerFileSession.swift in Sources */,
+				8DE1B2C4214A647F00C1FF13 /* StreamerFileSubscription.swift in Sources */,
+				8DE1B2C6214A647F00C1FF13 /* StreamerFileUpdate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -923,6 +990,10 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -992,6 +1063,10 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
