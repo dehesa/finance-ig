@@ -1,5 +1,4 @@
 import XCTest
-import Utils
 import ReactiveSwift
 import Result
 @testable import IG
@@ -84,13 +83,13 @@ fileprivate struct Navigator {
     
     var location: Node {
         guard let identifier = self.path.last,
-              let result = file.nodes.find({ $0.identifier == identifier }) else { fatalError() }
+              let result = file.nodes.first(where: { $0.identifier == identifier }) else { fatalError() }
         return result
     }
     
     mutating func toChild(with childId: String, print: Bool = false) -> Node? {
-        guard let _ = self.location.children?.find({ $0 == childId }),
-              let node = file.nodes.find({ $0.identifier == childId }) else { return nil }
+        guard let _ = self.location.children?.first(where: { $0 == childId }),
+              let node = file.nodes.first(where: { $0.identifier == childId }) else { return nil }
         self.path.append(childId)
         return node
     }
@@ -103,7 +102,7 @@ fileprivate struct Navigator {
         }
         
         let parentId = self.path[index]
-        guard let result = file.nodes.find({ $0.identifier == parentId }) else { fatalError() }
+        guard let result = file.nodes.first(where: { $0.identifier == parentId }) else { fatalError() }
         
         let _ = self.path.removeLast()
         return result

@@ -57,7 +57,7 @@ extension StreamerRequestItemNameEpicable where Self: StreamerRequestItemNamePre
     internal static func epic(itemName: String, requestedEpics epics: [Epic]) -> Epic? {
         guard itemName.hasPrefix(self.prefix) else { return nil }
         let identifier = String(itemName.dropFirst(self.prefix.count))
-        return epics.find { $0.identifier == identifier }
+        return epics.first { $0.identifier == identifier }
     }
 }
 
@@ -65,6 +65,6 @@ extension StreamerRequestItemNameEpicable where Self: StreamerRequestItemNamePre
     internal static func epic(itemName: String, requestedEpics epics: [Epic]) -> Epic? {
         guard itemName.hasPrefix(self.prefix), itemName.hasSuffix(self.postfix) else { return nil }
         let identifier = String(itemName.dropLast(self.postfix.count).dropFirst(self.prefix.count))
-        return epics.find { $0.identifier == identifier }
+        return epics.first { $0.identifier == identifier }
     }
 }

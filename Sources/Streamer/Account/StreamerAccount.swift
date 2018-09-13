@@ -119,7 +119,7 @@ extension Streamer.Request {
         fileprivate static func accountId(itemName: String, requestedAccounts accountIds: [String]) -> String? {
             guard itemName.hasPrefix(self.prefix) else { return nil }
             let identifier = String(itemName.dropFirst(self.prefix.count))
-            return accountIds.find { $0 == identifier }
+            return accountIds.first { $0 == identifier }
         }
         
         public var keyPath: PartialKeyPath<Streamer.Response.Account> {

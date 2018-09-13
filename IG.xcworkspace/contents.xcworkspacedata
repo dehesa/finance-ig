@@ -14,9 +14,6 @@
          location = "group:ReactiveSwift/ReactiveSwift.xcodeproj">
       </FileRef>
       <FileRef
-         location = "group:Utils/Utils/Utils.xcodeproj">
-      </FileRef>
-      <FileRef
          location = "group:Lightstreamer">
       </FileRef>
    </Group>

@@ -22,11 +22,10 @@ extension Array where Element == Epic {
 }
 
 extension Array where Element: Hashable {
-    /// Checks that the array of elements are unique and there is at least one epic.
+    /// Checks that the array of elements are unique and there is at least one value.
     /// - returns: Boolean indicating whether the array has at least one value and those values are unique.
     var isUniquelyLaden: Bool {
-        guard !self.isEmpty else { return false }
-        return Set(self).count == self.count
+        return !self.isEmpty && Set(self).count == self.count
     }
 }
 

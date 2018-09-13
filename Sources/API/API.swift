@@ -1,4 +1,3 @@
-import Utils
 import ReactiveSwift
 import Result
 import Foundation
@@ -17,7 +16,7 @@ public final class API {
     public let rootURL: URL
     
     /// Initializer for an API instance, giving you the default options.
-    /// - parameter rootURL: The base/root URL for all endpoint calls. The default URL hit IG's production environment.
+    /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter configurations: URL session configuration properties. By default, you get a non-cached, non-cookies, pipeline and secure URL session configuration.
     public convenience init(rootURL: URL, credentials: API.Credentials?, configurations: URLSessionConfiguration = API.defaultSessionConfigurations) {
@@ -42,20 +41,20 @@ public final class API {
     /// Returns credentials needed on most API endpoints.
     /// - returns: Session credentials (whether CST or OAuth).
     /// - throws: `API.Error.invalidCredentials` if there were no credentials stored.
-    internal func credentials() throws -> API.Credentials {
+    public func credentials() throws -> API.Credentials {
         return try self.sessionCredentials ?! API.Error.invalidCredentials(nil, message: "No credentials found.")
     }
     
     /// Updates the current credentials (if any) with a new set of credentials.
     /// - parameter credentials: The new set of credentials to be stored within this API instance.
-    internal func updateCredentials(_ credentials: API.Credentials) {
+    public func updateCredentials(_ credentials: API.Credentials) {
         self.sessionCredentials = credentials
     }
     
     /// Removes the current credentials (leaving none behind).
     ///
     /// After the call to this method, no endpoint requiring credentials can be executed.
-    internal func removeCredentials() {
+    public func removeCredentials() {
         self.sessionCredentials = nil
     }
     
@@ -92,19 +91,19 @@ extension API {
     /// Wraps the callback making the request on a SignalProducer.
     ///
     /// When the SignalProducer is started, the request will be generated (not before) and the API URLSession where the request will be executed is passed along.
-    /// - parameter urlRequestGenerator: The callback actually creating the `URLRequest`.
+    /// - parameter urlRequest: The callback actually creating the `URLRequest`.
     ///  - parameter api: The API instance where usually credentials an other temporal priviledge information is being retrieved.
     /// - returns: New `SignalProducer` returning the request and the API instance.
     /// - seealso: URLRequest
-    internal func makeRequest(_ urlRequestGenerator: @escaping (_ api: API) throws -> URLRequest) -> SignalProducer<API.InternalRequest,API.Error> {
-        return SignalProducer { [weak weakAPI = self, capturedGen = urlRequestGenerator] (input, lifetime) in
-            guard let api = weakAPI else {
+    internal func makeRequest(_ request: @escaping (_ api: API) throws -> URLRequest) -> SignalProducer<API.InternalRequest,API.Error> {
+        return SignalProducer { [weak self, requestGenerator = request] (input, lifetime) in
+            guard let self = self else {
                 return input.send(error: .sessionExpired)
             }
             
             do {
-                let request = try capturedGen(api)
-                input.send(value: (request, api))
+                let urlRequest = try requestGenerator(self)
+                input.send(value: (urlRequest, self))
             } catch let error as API.Error {
                 return input.send(error: error)
             } catch let error {
@@ -130,46 +129,48 @@ extension API {
     /// - parameter headers: Additional headers to be included in the request.
     /// - parameter body: Optional body generator to include in the request.
     internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: RequestQueryGenerator? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: RequestBodyGenerator? = nil) -> SignalProducer<API.InternalRequest,API.Error> {
-        return SignalProducer { [weak weakAPI = self] (generator, lifetime) in
-            guard let api = weakAPI else {
+        return SignalProducer { [weak self] (generator, lifetime) in
+            guard let self = self else {
                 return generator.send(error: .sessionExpired)
             }
             
-            var url: URL = api.rootURL.appendingPathComponent(relativeURL)
+            var url = self.rootURL.appendingPathComponent(relativeURL)
+            
             // If there are queries to append, enter this block; if not, ignore it.
             if let queryGenerator = queries {
-                let requestQueries: [URLQueryItem]
+                let urlQueries: [URLQueryItem]
                 do {
-                    requestQueries = try queryGenerator()
+                    urlQueries = try queryGenerator()
                 } catch let error as API.Error {
                     return generator.send(error: error)
                 } catch let error {
                     return generator.send(error: .invalidRequest(underlyingError: error, message: "The URL request queries couldn't be formed."))
                 }
 
-                if !requestQueries.isEmpty {
+                if !urlQueries.isEmpty {
                     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
                         return generator.send(error: .invalidRequest(underlyingError: nil, message: "The URL \"\(url)\" cannot be transformed into URL components."))
                     }
-                    components.queryItems = requestQueries
+                    components.queryItems = urlQueries
                     guard let requestURL = components.url else {
                         return generator.send(error: .invalidRequest(underlyingError: nil, message: "The URL couldn't be formed"))
                     }
                     url = requestURL
                 }
             }
+            
             // Generate the result URLRequest.
             var request = URLRequest(url: url)
             request.setMethod(method)
             
             do {
-                let credentials: API.Credentials? = (usingCredentials) ? try api.credentials() : nil
+                let credentials: API.Credentials? = (usingCredentials) ? try self.credentials() : nil
                 request.addHeaders(version: version, credentials: credentials, headers)
                 
                 if let bodyGenerator = body {
-                    let body = try bodyGenerator()
-                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
-                    request.httpBody = body.data
+                    let blob = try bodyGenerator()
+                    request.addValue(blob.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
+                    request.httpBody = blob.data
                 }
             } catch let error as API.Error {
                 return generator.send(error: error)
@@ -177,7 +178,7 @@ extension API {
                 return generator.send(error: .invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
             }
             
-            generator.send(value: (request, api))
+            generator.send(value: (request, self))
             return generator.sendCompleted()
         }
     }
@@ -248,10 +249,10 @@ extension SignalProducer where Value==API.InternalRequest, Error==API.Error {
     /// Executes (on a `SignalProducer`) the `API.InternalRequest` passed as value and returns the `API.InternalResponse`.
     /// - parameter type: The content type expected as a result.
     /// - returns: A new `SignalProducer` with the response of the executed enpoint.
-    internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.InternalResponse,Error> {
+    internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.InternalResponse,API.Error> {
         return self.flatMap(.latest) { (r, api) -> SignalProducer<API.InternalResponse,Error> in
             weak var weakSession = api.sessionURL
-            return SignalProducer<API.InternalResponse,Error> { (generator, lifetime) in
+            return SignalProducer<API.InternalResponse,API.Error> { (generator, lifetime) in
                 var request = r
                 if let contentType = type {
                     request.addHeaders([.responseType: contentType.rawValue])
@@ -284,8 +285,8 @@ extension SignalProducer where Value==API.InternalRequest, Error==API.Error {
 }
 
 extension SignalProducer where Value==API.InternalResponse, Error==API.Error {
-    /// Checks that the returned response status code is one of the given as parameter.
-    /// - parameter statusCodes: All *viable*/supported status codes.
+    /// Checks that the returned response is within the accepted given `statusCodes`.
+    /// - parameter statusCodes: All supported status codes.
     internal func validate(statusCodes: [Int]) -> SignalProducer<Value,Error> {
         return self.attemptMap { (request, header, data) -> Result<Value,API.Error> in
             guard statusCodes.contains(header.statusCode) else {

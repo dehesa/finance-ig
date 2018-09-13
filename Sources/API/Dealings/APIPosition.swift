@@ -1,4 +1,3 @@
-import Utils
 import ReactiveSwift
 import Result
 import Foundation

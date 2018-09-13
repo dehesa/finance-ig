@@ -25,7 +25,7 @@ public final class Streamer {
     /// - parameter session: Real or mocked session managing the streaming connections.
     /// - parameter autoconnect: Booleain indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
     internal init(rootURL: URL, session: StreamerSession, autoconnect: Bool) {
-        let label = Framework.identifier + ".streamer"
+        let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
         self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
         
         (self.lifetime, self.token) = Lifetime.make()
