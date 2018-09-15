@@ -9,7 +9,7 @@ extension Streamer {
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter autoconnect: Boolean indicating whether the streamer connects automatically or whether it should wait for the user to explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time; when which a subscription to the server will be executed.
-    public func subscribe(market epic: Epic, fields: Set<Request.Market>, autoconnect: Bool = true) -> SignalProducer<Response.Market,Streamer.Error> {
+    public func subscribe(market epic: Epic, fields: Set<Request.Market>, autoconnect: Bool = true) -> SignalProducer<Streamer.Response.Market,Streamer.Error> {
         return self.subscriptionProducer({ (streamer) -> (String, StreamerSubscriptionSession) in
             let label = streamer.queue.label + ".market." + epic.identifier
             

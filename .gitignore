@@ -50,3 +50,4 @@ Carthage
 # Project specific
 Assets/Originals
 Tests/Data/Environment/*
+!Tests/Data/Environment/mocked.json
