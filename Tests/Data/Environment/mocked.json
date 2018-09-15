@@ -1,0 +1,17 @@
+{
+    "accountId": "ABC12",
+    "api": {
+        "url": "file://API",
+        "key": "a12345bc67890d12345e6789fg0hi123j4567890",
+        "username": "mocked_mcMocked",
+        "password": "abcdefghijk"
+    },
+    "streamer": {
+        "url": "file://Streamer",
+        "username": "mocked_mcMocked",
+        "password": {
+            "cst": "6d0o209239e6db1nzdp36uqpjb367n88wxs9vs6nf19df36858ag26pxw9rzw8w930688",
+            "security": "4z1x599665o351845r433092y1g5503ue672302869o1230qh1k092649709sv6085485"
+        }
+    }
+}
