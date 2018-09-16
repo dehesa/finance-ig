@@ -56,6 +56,7 @@ extension API {
     }
 }
 
+// List of coding keys used in the Codable's `userInfo` property.
 extension CodingUserInfoKey {
     /// Key on decoders under which the URL request will be stored.
     internal static let urlRequest = CodingUserInfoKey(rawValue: "urlRequest")!

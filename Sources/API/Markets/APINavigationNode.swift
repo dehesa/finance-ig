@@ -50,7 +50,7 @@ extension API.Response {
         /// Markets data
         let markets: [Node.Market]
         
-        public init(from decoder: Decoder) throws {
+        init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.nodes = try container.decodeIfPresent([Node].self, forKey: .nodes) ?? []
             self.markets = try container.decodeIfPresent([Node.Market].self, forKey: .markets) ?? []

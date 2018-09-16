@@ -351,12 +351,6 @@ extension API.Response.Market.Instrument {
         /// What is the value of one pip.
         public let value: String
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.meaning = try container.decode(String.self, forKey: .meaning)
-            self.value = try container.decode(String.self, forKey: .value)
-        }
-        
         private enum CodingKeys: String, CodingKey {
             case meaning = "onePipMeans"
             case value = "valueOfOnePip"

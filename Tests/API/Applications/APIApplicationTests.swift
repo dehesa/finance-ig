@@ -17,7 +17,7 @@ final class APIApplicationTests: APITestCase {
             XCTAssertGreaterThan(allow.requests.account.overall, 0)
             XCTAssertGreaterThan(allow.requests.account.trading, 0)
             XCTAssertGreaterThan(allow.requests.account.historicalData, 0)
-            XCTAssertGreaterThan(allow.lightStreamer.concurrentSubscriptionLimit, 0)
+            XCTAssertGreaterThan(allow.lightStreamer.concurrentSubscriptionsLimit, 0)
             XCTAssertLessThan(app.creationDate, Date())
         })
         

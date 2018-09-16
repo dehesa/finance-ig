@@ -376,11 +376,11 @@
 		8DC4CA642149A6CE00344CBF /* Dealings */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */,
 				8DC4CA692149A6CE00344CBF /* APIPosition.swift */,
 				8DC4CA672149A6CE00344CBF /* APIPositionOTC.swift */,
 				8DC4CA682149A6CE00344CBF /* APIWorkingOrder.swift */,
 				8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */,
+				8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */,
 			);
 			path = Dealings;
 			sourceTree = "<group>";
@@ -555,8 +555,8 @@
 			children = (
 				8DC4CAF32149A6CE00344CBF /* Account.swift */,
 				8DC4CBFE2149AB1200344CBF /* Environment */,
-				8DC4CBFD2149AB1200344CBF /* API */,
 				8DC4CAAD2149A6CE00344CBF /* APIMockedJSON.swift */,
+				8DC4CBFD2149AB1200344CBF /* API */,
 				8DC4CAF42149A6CE00344CBF /* StreamerMockedJSON.swift */,
 				8DC4CBFF2149AB1200344CBF /* Streamer */,
 			);

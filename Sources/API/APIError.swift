@@ -78,20 +78,20 @@ extension DecodingError: CustomDebugStringConvertible {
     }
 }
 
-fileprivate extension URLResponse {
+private extension URLResponse {
     @objc var representation: String {
         return self.debugDescription
     }
 }
 
-fileprivate extension HTTPURLResponse {
+private extension HTTPURLResponse {
     override var representation: String {
         let keys = self.allHeaderFields.keys.map { $0 as? String ?? "\($0)" }.joined(separator: ", ")
         return "\(self.statusCode) header keys [\(keys)]"
     }
 }
 
-fileprivate extension CodingKey {
+private extension CodingKey {
     var representation: String {
         if let number = self.intValue {
             return String(number)
@@ -101,7 +101,7 @@ fileprivate extension CodingKey {
     }
 }
 
-fileprivate extension Array where Array.Element == CodingKey {
+private extension Array where Array.Element == CodingKey {
     var representation: String {
         return self.map { $0.representation }.joined(separator: "/")
     }
