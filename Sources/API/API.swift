@@ -15,6 +15,17 @@ public final class API {
     /// URL root address.
     public let rootURL: URL
     
+    /// Designated initializer allowing you to change the internal URL session.
+    ///
+    /// This initializer is used on testing purposes; that is why is marked with `internal` access.
+    /// - parameter rootURL: The base/root URL for all endpoint calls.
+    /// - parameter session: URL session used to perform all HTTP requests.
+    internal init(rootURL: URL, session: URLMockableSession, credentials: API.Credentials? = nil) {
+        self.rootURL = rootURL
+        self.sessionURL = session
+        self.sessionCredentials = credentials
+    }
+    
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
@@ -25,17 +36,6 @@ public final class API {
     
     deinit {
         self.sessionURL.invalidateAndCancel()
-    }
-    
-    /// Designated initializer allowing you to change the internal URL session.
-    ///
-    /// This initializer is used on testing purposes; that is why is marked with `internal` access.
-    /// - parameter rootURL: The base/root URL for all endpoint calls.
-    /// - parameter session: URL session used to perform all HTTP requests.
-    internal init(rootURL: URL, session: URLMockableSession, credentials: API.Credentials? = nil) {
-        self.rootURL = rootURL
-        self.sessionURL = session
-        self.sessionCredentials = credentials
     }
 
     /// Returns credentials needed on most API endpoints.
@@ -88,7 +88,7 @@ extension API {
     /// Internal typealias for request responses (with data).
     internal typealias InternalResponseData = (request: URLRequest, header: HTTPURLResponse, data: Data)
     
-    /// Wraps the callback making the request on a SignalProducer.
+    /// The callback provided in this function will generate an `URLRequest` that will be performed when the resulting `SignalProducer` is started.
     ///
     /// When the SignalProducer is started, the request will be generated (not before) and the API URLSession where the request will be executed is passed along.
     /// - parameter urlRequest: The callback actually creating the `URLRequest`.
@@ -96,20 +96,21 @@ extension API {
     /// - returns: New `SignalProducer` returning the request and the API instance.
     /// - seealso: URLRequest
     internal func makeRequest(_ request: @escaping (_ api: API) throws -> URLRequest) -> SignalProducer<API.InternalRequest,API.Error> {
-        return SignalProducer { [weak self, requestGenerator = request] (input, lifetime) in
+        return SignalProducer { [weak self, requestGenerator = request] (input, _) in
             guard let self = self else {
                 return input.send(error: .sessionExpired)
             }
             
+            let urlRequest: URLRequest
             do {
-                let urlRequest = try requestGenerator(self)
-                input.send(value: (urlRequest, self))
+                urlRequest = try requestGenerator(self)
             } catch let error as API.Error {
                 return input.send(error: error)
             } catch let error {
                 return input.send(error: .invalidRequest(underlyingError: error, message: "The URL request couldn't be formed."))
             }
             
+            input.send(value: (urlRequest, self))
             input.sendCompleted()
         }
     }
@@ -129,9 +130,9 @@ extension API {
     /// - parameter headers: Additional headers to be included in the request.
     /// - parameter body: Optional body generator to include in the request.
     internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: RequestQueryGenerator? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: RequestBodyGenerator? = nil) -> SignalProducer<API.InternalRequest,API.Error> {
-        return SignalProducer { [weak self] (generator, lifetime) in
+        return SignalProducer { [weak self] (input, _) in
             guard let self = self else {
-                return generator.send(error: .sessionExpired)
+                return input.send(error: .sessionExpired)
             }
             
             var url = self.rootURL.appendingPathComponent(relativeURL)
@@ -142,18 +143,19 @@ extension API {
                 do {
                     urlQueries = try queryGenerator()
                 } catch let error as API.Error {
-                    return generator.send(error: error)
+                    return input.send(error: error)
                 } catch let error {
-                    return generator.send(error: .invalidRequest(underlyingError: error, message: "The URL request queries couldn't be formed."))
+                    return input.send(error: .invalidRequest(underlyingError: error, message: "The URL request queries couldn't be formed."))
                 }
 
                 if !urlQueries.isEmpty {
                     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-                        return generator.send(error: .invalidRequest(underlyingError: nil, message: "The URL \"\(url)\" cannot be transformed into URL components."))
+                        return input.send(error: .invalidRequest(underlyingError: nil, message: "The URL \"\(url)\" cannot be transformed into URL components."))
                     }
+                    
                     components.queryItems = urlQueries
                     guard let requestURL = components.url else {
-                        return generator.send(error: .invalidRequest(underlyingError: nil, message: "The URL couldn't be formed"))
+                        return input.send(error: .invalidRequest(underlyingError: nil, message: "The URL couldn't be formed"))
                     }
                     url = requestURL
                 }
@@ -173,13 +175,13 @@ extension API {
                     request.httpBody = blob.data
                 }
             } catch let error as API.Error {
-                return generator.send(error: error)
+                return input.send(error: error)
             } catch let error {
-                return generator.send(error: .invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
+                return input.send(error: .invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
             }
             
-            generator.send(value: (request, self))
-            return generator.sendCompleted()
+            input.send(value: (request, self))
+            return input.sendCompleted()
         }
     }
     
@@ -189,7 +191,7 @@ extension API {
     /// - parameter decoder: Block generating the JSON Decoder for the response payload.
     /// - parameter valueHandler: When a value is returned, this handler will decide which events to forward and whether the following page should be requested. If a forwarded event is *terminating*, no further processing will be performed.
     ///  - parameter page: Page received.
-    internal func paginatedRequest<PT:Decodable,T>(request requestGenerator: @escaping (API) throws -> URLRequest, expectedStatusCodes: [Int]? = [200], decoder: @escaping API.Codecs.DecoderGenerator = API.Codecs.jsonDecoder, _ valueHandler: @escaping (_ api: API, _ page: Signal<PT,API.Error>.Value) -> ([Signal<T,API.Error>.Event],URLRequest?)) -> SignalProducer<T,API.Error> {
+    internal func paginatedRequest<PT:Decodable,T>(request requestGenerator: @escaping (_ api: API) throws -> URLRequest, expectedStatusCodes: [Int]? = [200], decoder: @escaping API.Codecs.DecoderGenerator = API.Codecs.jsonDecoder, _ valueHandler: @escaping (_ api: API, _ page: Signal<PT,API.Error>.Value) -> ([Signal<T,API.Error>.Event],URLRequest?)) -> SignalProducer<T,API.Error> {
         return SignalProducer<T,API.Error> { [weak weakAPI = self] (generator, lifetime) in
             /// First request on the paginated stream.
             let primalRequest: URLRequest

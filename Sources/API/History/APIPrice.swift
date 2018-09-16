@@ -134,6 +134,9 @@ extension API.Request {
 }
 
 extension API.Response {
+    /// Simple tuple wrapping the prices response and the HTTP query allowance that it can still be used.
+    public typealias PricesAndAllowance = (prices: [API.Response.Price], allowance: API.Response.Price.Allowance)
+    
     /// Single page of prices request.
     internal struct PagedPrices: Decodable {
         /// Instrument type.
@@ -184,9 +187,6 @@ extension API.Response {
             }
         }
     }
-    
-    /// Simple tuple wrapping the prices response and the HTTP query allowance that it can still be used.
-    public typealias PricesAndAllowance = (prices: [API.Response.Price], allowance: API.Response.Price.Allowance)
 }
 
 extension API.Response {

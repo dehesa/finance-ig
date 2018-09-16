@@ -4,16 +4,17 @@ import Foundation
 
 /// The Streamer instance is the bridge to the Streaming service provided by IG.
 public final class Streamer {
-    /// The session (whether real or mocked) managing the streaming connections.
-    internal let session: StreamerSession
     /// The session delegate delegate.
     private let delegate: StreamerSessionDelegate
+    /// The lifetime token that will dispose of all the state of the receiving `Streamer` instance.
+    private let token: Lifetime.Token
+    
+    /// The session (whether real or mocked) managing the streaming connections.
+    internal let session: StreamerSession
     /// The central queue handling all events within the Streamer flow.
     internal let queue: DispatchQueue
     /// The lifetime observer for the receiving `Streamer` instance.
     internal let lifetime: Lifetime
-    /// The lifetime token that will dispose of all the state of the receiving `Streamer` instance.
-    private let token: Lifetime.Token
     
     /// URL root address.
     public let rootURL: URL
