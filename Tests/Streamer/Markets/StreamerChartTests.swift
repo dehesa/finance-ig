@@ -1,6 +1,5 @@
 import XCTest
 import ReactiveSwift
-import Result
 @testable import IG
 
 final class StreamerChartTests: StreamerTestCase {

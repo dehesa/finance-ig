@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 /// The API instance is the bridge to the HTTP endpoints provided by the platform.
@@ -20,6 +19,7 @@ public final class API {
     /// This initializer is used on testing purposes; that is why is marked with `internal` access.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter session: URL session used to perform all HTTP requests.
+    /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time.
     internal init(rootURL: URL, session: URLMockableSession, credentials: API.Credentials? = nil) {
         self.rootURL = rootURL
         self.sessionURL = session

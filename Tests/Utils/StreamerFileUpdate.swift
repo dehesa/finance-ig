@@ -1,7 +1,6 @@
 @testable import IG
 import Utils
 import ReactiveSwift
-import Result
 import Foundation
 
 extension StreamerFileSession {

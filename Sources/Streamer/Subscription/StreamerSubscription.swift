@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 extension Streamer {
@@ -8,18 +7,18 @@ extension Streamer {
         /// The queue where the data processing will be taking place.
         @nonobjc fileprivate let queue: DispatchQueue
         /// Private observer generating the values for the `events` signal.
-        @nonobjc fileprivate let input: Signal<Event,NoError>.Observer
+        @nonobjc fileprivate let input: Signal<Event,Never>.Observer
         /// The Lightstreamer subcription instance.
         @nonobjc let session: StreamerSubscriptionSession
         /// All value frames returned by the server.
-        @nonobjc let events: Signal<Event,NoError>
+        @nonobjc let events: Signal<Event,Never>
 
         /// Designated initializer that creates the necessary overhead on top of subscription to handle the values reactively.
         /// - parameter subscription: The Lightstreamer internal subscription object.
         init(session: StreamerSubscriptionSession, queue: DispatchQueue) {
             self.queue = queue
             self.session = session
-            (self.events, self.input) = Signal<Event,NoError>.pipe()
+            (self.events, self.input) = Signal<Event,Never>.pipe()
             super.init()
             // Delegates are stored with weak references.
             self.session.add(delegate: self)

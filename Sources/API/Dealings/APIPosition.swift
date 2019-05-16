@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 extension API {

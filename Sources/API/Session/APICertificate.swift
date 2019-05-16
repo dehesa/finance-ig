@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 extension API {
@@ -15,12 +14,16 @@ extension API {
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .attemptMap { (r: API.Response.Certificate) in
-                return Result<API.Credentials,API.Error> {
-                    let clientID = try Int(r.clientId) ?! API.Error.invalidCredentials(nil, message: "The clientID \"\(r.clientId)\" couldn't be transformed into an integer.")
-                    let timezone = try TimeZone(secondsFromGMT: r.timezoneOffset * 3_600) ?! API.Error.invalidCredentials(nil, message: "The timezone offset couldn't be migrated to UTC/GMT.")
-                    let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                    return API.Credentials(clientId: clientID, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: timezone)
+                guard let clientID = Int(r.clientId) else {
+                    return .failure(.invalidCredentials(nil, message: "The clientID \"\(r.clientId)\" couldn't be transformed into an integer."))
                 }
+                
+                guard let timezone = TimeZone(secondsFromGMT: r.timezoneOffset * 3_600) else {
+                    return .failure(.invalidCredentials(nil, message: "The timezone offset couldn't be migrated to UTC/GMT."))
+                }
+                
+                let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
+                return .success(API.Credentials(clientId: clientID, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: timezone))
             }
     }
 }

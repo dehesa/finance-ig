@@ -102,7 +102,6 @@ Installation
 ============
 
 This framework has the following dependencies:
-- [Result](https://github.com/antitypical/Result).
 - [ReactiveSwift](https://github.com/ReactiveCocoa/ReactiveSwift).
 - [Lightstreamer](https://lightstreamer.com/download/).
   IG only supports an older version from the Lightstreamer framework. Check  [labs.ig.com](https://labs.ig.com/lightstreamer-downloads) for information on the latest Lightstreamer version supported.

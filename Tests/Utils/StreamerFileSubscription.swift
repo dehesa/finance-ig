@@ -1,7 +1,6 @@
 @testable import IG
 import Utils
 import ReactiveSwift
-import Result
 import Foundation
 
 extension StreamerFileSession {
@@ -15,7 +14,7 @@ extension StreamerFileSession {
         /// Subscription operation variables.
         ///
         /// This variables are only set during active subscription.
-        fileprivate var operation: (queue: DispatchQueue, signal: Signal<StreamerFileSession.SubscriptionSession.Event, NoError>, disposable: Disposable?)? = nil
+        fileprivate var operation: (queue: DispatchQueue, signal: Signal<StreamerFileSession.SubscriptionSession.Event,Never>, disposable: Disposable?)? = nil
         /// Weak storage for subscription session delegates
         ///
         /// All objects in the array comply with `StreamerSubscriptionDelegate`.
@@ -126,7 +125,7 @@ extension StreamerFileSession.SubscriptionSession {
         // Prepare all variables for subscription.
         let label = Bundle(for: StreamerFileSession.self).bundleIdentifier! + ".streamer.subscription"
         let queue = DispatchQueue(label: label, qos: .realTimeMessaging, autoreleaseFrequency: .never, target: nil)
-        let (signal, input) = Signal<Event,NoError>.pipe()
+        let (signal, input) = Signal<Event,Never>.pipe()
         let disposable = signal.observeValues { [weak session = self] (event) in
             guard let session = session else { return }
             

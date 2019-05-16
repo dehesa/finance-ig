@@ -1,6 +1,3 @@
-[submodule "Dependencies/Result"]
-	path = Dependencies/Result
-	url = git@github.com:antitypical/Result.git
 [submodule "Dependencies/ReactiveSwift"]
 	path = Dependencies/ReactiveSwift
 	url = git@github.com:ReactiveCocoa/ReactiveSwift.git

@@ -1,6 +1,5 @@
 @testable import IG
 import ReactiveSwift
-import Result
 import XCTest
 
 /// Any test focusing on Streamer events should inherit from this class.
