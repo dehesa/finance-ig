@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 /// High-level instance containing all services that can communicate with the IG platform.
@@ -29,11 +28,15 @@ public final class Services {
             .attemptMap { (credentials) -> Result<Services,Services.Error> in
                 api.updateCredentials(credentials)
                 
-                return Result<Services,Streamer.Error> {
-                    let priviledge = try credentials.streamer()
-                    let streamer = Streamer(rootURL: credentials.streamerURL, credentials: priviledge)
-                    return Services(api: api, streamer: streamer)
-                }.mapError(Services.Error.streamer)
+                let priviledge: Streamer.Credentials
+                do {
+                    priviledge = try credentials.streamer()
+                } catch let error {
+                    return .failure(.streamer(error: error as! Streamer.Error))
+                }
+                
+                let streamer = Streamer(rootURL: credentials.streamerURL, credentials: priviledge)
+                return .success(.init(api: api, streamer: streamer))
             }
     }
     

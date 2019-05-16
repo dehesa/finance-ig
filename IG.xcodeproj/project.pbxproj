@@ -10,7 +10,6 @@
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC012149AC9D00344CBF /* Result.framework */; };
 		8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
 		8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */; };
 		8DC4CC082149B10300344CBF /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
@@ -212,7 +211,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */,
-				8DC4CC022149AC9D00344CBF /* Result.framework in Frameworks */,
 				8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -657,6 +655,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 8DC4CA332149A60900344CBF;
 			productRefGroup = 8DC4CBE22149A78700344CBF /* Products */;

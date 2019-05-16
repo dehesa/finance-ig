@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Result
 import Foundation
 
 /// The Streamer instance is the bridge to the Streaming service provided by IG.
@@ -143,7 +142,7 @@ internal final class StreamerSessionObserver: NSObject, StreamerSessionDelegate 
     /// Returns the current streamer status.
     @nonobjc let status: MutableProperty<Streamer.Status>
     /// A signal generating as values all possible errors.
-    @nonobjc let errors = Signal<Streamer.Error,NoError>.pipe()
+    @nonobjc let errors = Signal<Streamer.Error,Never>.pipe()
     /// The session queue where all the events will be sent into.
     @nonobjc private unowned let queue: DispatchQueue
     

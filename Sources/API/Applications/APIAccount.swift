@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-public extension API {
+extension API {
     /// Returns a list of accounts belonging to the logged-in client.
     public func accounts() -> SignalProducer<[API.Response.Account],API.Error> {
         return self.makeRequest(.get, "accounts", version: 1, credentials: true)
