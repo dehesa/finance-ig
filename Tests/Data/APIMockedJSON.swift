@@ -1,4 +1,3 @@
-import Utils
 import Foundation
 
 /// The format of the mocked JSON files representing API responses.

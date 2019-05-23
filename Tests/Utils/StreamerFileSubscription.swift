@@ -1,5 +1,4 @@
 @testable import IG
-import Utils
 import ReactiveSwift
 import Foundation
 

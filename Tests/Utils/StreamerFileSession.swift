@@ -1,5 +1,4 @@
 @testable import IG
-import Utils
 import XCTest
 
 /// Mocked Lightstreamer session that will pick up responses from the bundle's file system.

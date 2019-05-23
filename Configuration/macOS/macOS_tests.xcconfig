@@ -1,6 +1,9 @@
 // Architecture
 SDKROOT = macosx
 
+// Deployment
+MACOSX_DEPLOYMENT_TARGET = 10.14.4
+
 // Packaging
 PRODUCT_NAME = $(PRODUCT_NAME)Tests
 PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER).tests

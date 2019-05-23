@@ -1,6 +1,9 @@
 // Architecture
 SDKROOT = macosx
 
+// Deployment
+MACOSX_DEPLOYMENT_TARGET = 10.14.4
+
 // Packaging
 INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS.plist
 

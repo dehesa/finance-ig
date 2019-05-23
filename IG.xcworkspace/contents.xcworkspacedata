@@ -8,9 +8,6 @@
       location = "group:Dependencies"
       name = "Dependencies">
       <FileRef
-         location = "group:Result/Result.xcodeproj">
-      </FileRef>
-      <FileRef
          location = "group:ReactiveSwift/ReactiveSwift.xcodeproj">
       </FileRef>
       <FileRef
