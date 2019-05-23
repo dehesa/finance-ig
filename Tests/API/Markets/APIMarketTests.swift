@@ -1,5 +1,4 @@
 import XCTest
-import Utils
 import ReactiveSwift
 @testable import IG
 

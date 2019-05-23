@@ -2,7 +2,7 @@
     <img src="Assets/IG.svg" alt="Codable CSV"/>
 </p>
 
-![Swift 4.2.x](https://img.shields.io/badge/Swift-4.2-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS-lightgrey.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
+![Swift 5](https://img.shields.io/badge/Swift-5-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS-lightgrey.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
 
 This framework provides:
 - Interface to IG's **HTTP APIs and Lightstreamer service**.
