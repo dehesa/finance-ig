@@ -79,12 +79,12 @@
          <EnvironmentVariable
             key = "io.dehesa.money.ig.tests.account"
             value = "file://Environment/mocked.json"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "io.dehesa.money.ig.tests.account"
             value = "file://Environment/staging.json"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

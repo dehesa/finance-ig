@@ -70,6 +70,9 @@ extension DecodingError: CustomDebugStringConvertible {
         case .typeMismatch(let type, let ctx):
             result.addTitle("Value found is not of type \"\(type)\" at path: \(ctx.codingPath.representation)")
             context = ctx
+        @unknown default:
+            result.addTitle("Non-identified error. " + String(describing: self))
+            return result
         }
         
         result.addDetail("message: \(context.debugDescription)")

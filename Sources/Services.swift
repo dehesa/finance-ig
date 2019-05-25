@@ -20,7 +20,7 @@ public final class Services {
     /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL hit IG's production environment.
     /// - parameter loginInfo: The login information to enable the HTTP and Lightstreamer interfaces.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(rootURL: URL = URL(string: "https://api.ig.com/gateway/deal")!, loginInfo: API.Request.Login) -> SignalProducer<Services,Services.Error> {
+    public static func make(rootURL: URL = API.rootURL, loginInfo: API.Request.Login) -> SignalProducer<Services,Services.Error> {
         let api = API(rootURL: rootURL, credentials: nil)
         
         return api.sessionLogin(loginInfo, type: .certificate)
