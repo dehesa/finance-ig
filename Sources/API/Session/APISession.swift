@@ -6,7 +6,7 @@ extension API {
     /// - parameter apiKey: The API key which the encryption key will be associated to.
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
-    public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.SessionKey,API.Error> {
+    public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncriptionKey,API.Error> {
         return self.makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: [.apiKey: apiKey])
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
@@ -52,7 +52,7 @@ extension API {
                 $0.addHeaders(version: 1, credentials: creds)
             }
             
-            let disposable = SignalProducer<API.InternalRequest,API.Error>(value: (request,api))
+            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (request,api))
                 .send()
                 .validate(statusCodes: [204])
                 .start {
@@ -137,14 +137,23 @@ extension API.Response {
     }
 }
 
-extension API.Response {
+extension API.Response.Session {
     /// Encryption key message returned from the server.
-    public struct SessionKey: Decodable {
-        /// The key to be used on encryption.
-        public let encryptionKey: String
-        /// The timestamp for the key.
-        public let timeStamp: Int
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+    public struct EncriptionKey: Decodable {
+        /// The key (in base 64) to be used on encryption.
+        public let key: String
+        /// Current timestamp in milliseconds since epoch.
+        public let timeStamp: Date
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.key = try container.decode(String.self, forKey: .encryptionKey)
+            let epoch = try container.decode(Double.self, forKey: .timeStamp)
+            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case encryptionKey, timeStamp
+        }
     }
 }

@@ -16,7 +16,7 @@ public final class API {
     
     /// Designated initializer allowing you to change the internal URL session.
     ///
-    /// This initializer is used on testing purposes; that is why is marked with `internal` access.
+    /// This initializer is used for testing purposes; that is why is marked with `internal` access.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter session: URL session used to perform all HTTP requests.
     /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time.
@@ -73,29 +73,45 @@ public final class API {
             $0.tlsMinimumSupportedProtocol = .tlsProtocol12
         }
     }
-    
-    /// List of request data needed to make endpoint calls.
-    public enum Request {}
-    /// List of responses received from endpoint calls.
-    public enum Response {}
 }
 
 extension API {
-    /// Internal typealias for API requests.
-    internal typealias InternalRequest = (request: URLRequest, api: API)
-    /// Internal typealias for request responses.
-    internal typealias InternalResponse = (request: URLRequest, header: HTTPURLResponse, data: Data?)
-    /// Internal typealias for request responses (with data).
-    internal typealias InternalResponseData = (request: URLRequest, header: HTTPURLResponse, data: Data)
-    
-    /// The callback provided in this function will generate an `URLRequest` that will be performed when the resulting `SignalProducer` is started.
-    ///
-    /// When the SignalProducer is started, the request will be generated (not before) and the API URLSession where the request will be executed is passed along.
-    /// - parameter urlRequest: The callback actually creating the `URLRequest`.
-    ///  - parameter api: The API instance where usually credentials an other temporal priviledge information is being retrieved.
+    /// List of request data needed to make endpoint calls.
+    public enum Request {
+        /// Wrapper around a `URLRequest` and the API instance that will (most probably) execute such request.
+        /// - returns: A `URLRequest` and an `API` instance.
+        internal typealias Wrapper = (request: URLRequest, api: API)
+        
+        /// List of typealias representing closures which generate a specific data type.
+        internal enum Generator {
+            /// Closure which returns a newly created `URLRequest` and provides with it an API instance.
+            /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
+            /// - returns: A newly created `URLRequest`.
+            internal typealias Solicitation = (_ api: API) throws -> URLRequest
+            /// Closure which returns a bunch of query items to be used in a `URLRequest`.
+            /// - returns: Array of `URLQueryItem`s to be added to a `URLRequest`.
+            internal typealias Query = () throws -> [URLQueryItem]
+            /// Closure which returns a body to be appended to a `URLRequest`.
+            /// - returns: Tuple containing information about what type of body has been compiled and its data.
+            internal typealias Body  = () throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
+        }
+    }
+    /// List of responses received from endpoint calls.
+    public enum Response {
+        /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
+        internal typealias Wrapper = (request: URLRequest, header: HTTPURLResponse, data: Data?)
+        /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and a data payload.
+        internal typealias DataWrapper = (request: URLRequest, header: HTTPURLResponse, data: Data)
+    }
+}
+
+extension API {
+    /// Generates a `SignalProducer` that when started, it will produce an event with the result of the closure provided in the parameter. It will then immediately complete.
+    /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
+    /// - parameter request: The callback actually creating the `URLRequest`.
     /// - returns: New `SignalProducer` returning the request and the API instance.
     /// - seealso: URLRequest
-    internal func makeRequest(_ request: @escaping (_ api: API) throws -> URLRequest) -> SignalProducer<API.InternalRequest,API.Error> {
+    internal func makeRequest(_ request: @escaping API.Request.Generator.Solicitation) -> SignalProducer<API.Request.Wrapper,API.Error> {
         return SignalProducer { [weak self, requestGenerator = request] (input, _) in
             guard let self = self else {
                 return input.send(error: .sessionExpired)
@@ -115,21 +131,19 @@ extension API {
         }
     }
     
-    /// Used when generating the queries of an URL Request.
-    internal typealias RequestQueryGenerator = () throws -> [URLQueryItem]
-    /// Used when generating the json body of an URL Request.
-    internal typealias RequestBodyGenerator  = () throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
-    
     /// Convenience function over the regular `makeRequest(_:)` placing the most common parameters.
     ///
-    /// Please note, this is purely a convenience function, for request that fall (even slightly) outside the given parameters, the other `makeRequest(_:)` function shall be used.
+    /// Please note that this is purely a convenience function, for requests that fall (even slightly) outside the given parameters, the other `makeRequest(_:)` function shall be used.
+    /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter method: The HTTP method of the endpoint.
     /// - parameter relativeURL: The relative URL to be appended to the API instance root URL.
+    /// - parameter version: The API endpoint version number (to be included in the HTTP header).
     /// - parameter usingCredentials: Whether the request shall include credential headers.
     /// - parameter queries: Optional array of queries to be attached to the request.
     /// - parameter headers: Additional headers to be included in the request.
     /// - parameter body: Optional body generator to include in the request.
-    internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: RequestQueryGenerator? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: RequestBodyGenerator? = nil) -> SignalProducer<API.InternalRequest,API.Error> {
+    /// - returns: `SignalProducer` wrapping all the data of a proper HTTP request (`URLRequest`) and a weak link to the API instance that will execute the provided request.
+    internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: API.Request.Generator.Query? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: API.Request.Generator.Body? = nil) -> SignalProducer<API.Request.Wrapper,API.Error> {
         return SignalProducer { [weak self] (input, _) in
             guard let self = self else {
                 return input.send(error: .sessionExpired)
@@ -190,8 +204,8 @@ extension API {
     /// - parameter expectedStatusCodes: Any of the status codes expected on the HTTP responses.
     /// - parameter decoder: Block generating the JSON Decoder for the response payload.
     /// - parameter valueHandler: When a value is returned, this handler will decide which events to forward and whether the following page should be requested. If a forwarded event is *terminating*, no further processing will be performed.
-    ///  - parameter page: Page received.
-    internal func paginatedRequest<PT:Decodable,T>(request requestGenerator: @escaping (_ api: API) throws -> URLRequest, expectedStatusCodes: [Int]? = [200], decoder: @escaping API.Codecs.DecoderGenerator = API.Codecs.jsonDecoder, _ valueHandler: @escaping (_ api: API, _ page: Signal<PT,API.Error>.Value) -> ([Signal<T,API.Error>.Event],URLRequest?)) -> SignalProducer<T,API.Error> {
+    /// - parameter page: Page received.
+    internal func paginatedRequest<PT:Decodable,T>(request requestGenerator: @escaping API.Request.Generator.Solicitation, expectedStatusCodes: [Int]? = [200], decoder: @escaping API.Codecs.DecoderGenerator = API.Codecs.jsonDecoder, _ valueHandler: @escaping (_ api: API, _ page: Signal<PT,API.Error>.Value) -> ([Signal<T,API.Error>.Event],URLRequest?)) -> SignalProducer<T,API.Error> {
         return SignalProducer<T,API.Error> { [weak weakAPI = self] (generator, lifetime) in
             /// First request on the paginated stream.
             let primalRequest: URLRequest
@@ -209,7 +223,7 @@ extension API {
             /// Handler for paginated responses (including the first one).
             var signalHandler: SignalPT.Observer.Action! = nil
             /// Append to the signal pipeline the send, validate, decode, and handle stages.
-            let executeRequest: (SignalProducer<API.InternalRequest,API.Error>) -> Void = { (signal) in
+            let executeRequest: (SignalProducer<API.Request.Wrapper,API.Error>) -> Void = { (signal) in
                 let disposable = signal
                     .send(expecting: .json)
                     .validateLadenData(statusCodes: expectedStatusCodes)
@@ -247,14 +261,14 @@ extension API {
     }
 }
 
-extension SignalProducer where Value==API.InternalRequest, Error==API.Error {
+extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
     /// Executes (on a `SignalProducer`) the `API.InternalRequest` passed as value and returns the `API.InternalResponse`.
     /// - parameter type: The content type expected as a result.
     /// - returns: A new `SignalProducer` with the response of the executed enpoint.
-    internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.InternalResponse,API.Error> {
-        return self.flatMap(.latest) { (r, api) -> SignalProducer<API.InternalResponse,Error> in
+    internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.Response.Wrapper,API.Error> {
+        return self.flatMap(.latest) { (r, api) -> SignalProducer<API.Response.Wrapper,Error> in
             weak var weakSession = api.sessionURL
-            return SignalProducer<API.InternalResponse,API.Error> { (generator, lifetime) in
+            return SignalProducer<API.Response.Wrapper,API.Error> { (generator, lifetime) in
                 var request = r
                 if let contentType = type {
                     request.addHeaders([.responseType: contentType.rawValue])
@@ -286,7 +300,7 @@ extension SignalProducer where Value==API.InternalRequest, Error==API.Error {
     }
 }
 
-extension SignalProducer where Value==API.InternalResponse, Error==API.Error {
+extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
     /// Checks that the returned response is within the accepted given `statusCodes`.
     /// - parameter statusCodes: All supported status codes.
     internal func validate(statusCodes: [Int]) -> SignalProducer<Value,Error> {
@@ -302,8 +316,8 @@ extension SignalProducer where Value==API.InternalResponse, Error==API.Error {
     
     /// Checks that the returned response has a non-empty data body. Optionally, it can check for status codes (similarly to `validate(statusCodes:)`.
     /// - parameter statusCode: If not `nil`, the array indicates all *viable*/supported status codes.
-    internal func validateLadenData(statusCodes: [Int]? = nil) -> SignalProducer<API.InternalResponseData,Error> {
-        return self.attemptMap { (request, header, data) -> Result<API.InternalResponseData,API.Error> in
+    internal func validateLadenData(statusCodes: [Int]? = nil) -> SignalProducer<API.Response.DataWrapper,Error> {
+        return self.attemptMap { (request, header, data) -> Result<API.Response.DataWrapper,API.Error> in
             if let codes = statusCodes, !codes.contains(header.statusCode) {
                 let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: nil, message: "Status code validation failed.\n\tExpected: \(codes).\n\tReceived: \(header.statusCode).")
                 return .failure(error)
@@ -319,7 +333,7 @@ extension SignalProducer where Value==API.InternalResponse, Error==API.Error {
     }
 }
 
-extension SignalProducer where Value==API.InternalResponseData, Error==API.Error {
+extension SignalProducer where Value==API.Response.DataWrapper, Error==API.Error {
     /// Decodes the JSON payload with a given `JSONDecoder`.
     /// - parameter generator: Callback receiving the url request and HTTP header. It must return the JSON decoder to actually decode the data.
     internal func decodeJSON<T:Decodable>(generator: @escaping API.Codecs.DecoderGenerator = API.Codecs.jsonDecoder) -> SignalProducer<T,API.Error> {

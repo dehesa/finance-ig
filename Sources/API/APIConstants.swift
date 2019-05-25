@@ -1,6 +1,9 @@
 import Foundation
 
 extension API {
+    /// The root address for the IG endpoints.
+    public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
+    
     /// HTTP related constants.
     internal enum HTTP {
         /// The HTTP method supported by this API

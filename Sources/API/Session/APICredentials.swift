@@ -188,13 +188,13 @@ extension API.Request {
         
         public var debugDescription: String {
             return """
-            API login {
+             API login {
                 Account ID: \(self.accountId)
                 API key:    \(self.apiKey)
                 Username:   \(self.username)
                 Password:   \(self.password)
-            }
-            """
+             }
+             """
         }
     }
 }

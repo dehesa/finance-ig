@@ -29,9 +29,11 @@ final class APISessionTests: APITestCase {
     func testEncryption() {
         let apiKey = APITestCase.loginData(account: self.account).apiKey
         
+        let now = Date()
+        
         let endpoint = self.api.sessionEncryptionKey(apiKey: apiKey).on(value: {
-            XCTAssertGreaterThan($0.encryptionKey.count, 0)
-            XCTAssertGreaterThan($0.timeStamp, 0)
+            XCTAssertFalse($0.key.isEmpty)
+            XCTAssertGreaterThan($0.timeStamp, now)
         })
         
         self.test("Session encryption key", endpoint, signingProcess: .oauth, timeout: 2)
