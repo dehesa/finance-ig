@@ -9,7 +9,7 @@ extension DateFormatter {
 }
 
 extension SingleValueDecodingContainer {
-    /// Decodes a single value of the given type.
+    /// Decodes a string value and tries to transform it into a date.
     ///
     /// - parameter type: The type to decode as.
     /// - parameter formatter: The date formatter to be used to parse the date.
@@ -25,7 +25,7 @@ extension SingleValueDecodingContainer {
 }
 
 extension UnkeyedDecodingContainer {
-    /// Decodes a value of the given type.
+    /// Decodes a string value and tries to transform it into a date.
     ///
     /// - parameter type: The type of value to decode.
     /// - parameter formatter: The date formatter to be used to parse the date.
@@ -40,7 +40,7 @@ extension UnkeyedDecodingContainer {
         return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
     
-    /// Decodes a value of the given type, if present.
+    /// Decodes a string value (if present) and tries to transform it into a date.
     ///
     /// This method returns `nil` if the container has no elements left to
     /// decode, or if the value is null. The difference between these states can
@@ -58,7 +58,7 @@ extension UnkeyedDecodingContainer {
 }
 
 extension KeyedDecodingContainer {
-    /// Decodes a value of the given type for the given key.
+    /// Decodes a string value for the given key and tries to transform it into a date.
     ///
     /// - parameter type: The type of value to decode.
     /// - parameter key: The key that the decoded value is associated with.
@@ -76,7 +76,7 @@ extension KeyedDecodingContainer {
         return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
     
-    /// Decodes a value of the given type for the given key, if present.
+    /// Decodes a string value for the given key (if present) and tries to transform it into a date.
     ///
     /// This method returns `nil` if the container does not have a value
     /// associated with `key`, or if the value is null. The difference between

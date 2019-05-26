@@ -6,7 +6,7 @@ extension API {
     /// - parameter apiKey: The API key which the encryption key will be associated to.
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
-    public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncriptionKey,API.Error> {
+    public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncryptionKey,API.Error> {
         return self.makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: [.apiKey: apiKey])
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
@@ -40,7 +40,9 @@ extension API {
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func sessionLogout() -> SignalProducer<Void,API.Error> {
         return SignalProducer { [weak weakAPI = self] (generator, lifetime) in
-            guard let api = weakAPI else { return generator.send(error: .sessionExpired) }
+            guard let api = weakAPI else {
+                return generator.send(error: .sessionExpired)
+            }
             guard let creds = try? api.credentials() else {
                 generator.send(value: ())
                 return generator.sendCompleted()
@@ -75,21 +77,16 @@ extension API {
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func sessionSwitch(accountId: String, makingDefault: Bool = false) -> SignalProducer<Void,API.Error> {
-        return self.makeRequest { (api) in
-            let url = api.rootURL.appendingPathComponent("session")
-            return try URLRequest(url: url).set {
-                $0.setMethod(.put)
-                let credentials = try api.credentials()
-                guard credentials.accountId != accountId else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Session switch failed! The account identifier to switch to must be different than active account.")
-                }
-                $0.addHeaders(version: 1, credentials: credentials)
-            }
-        }.send(expecting: .json)
-         .validate(statusCodes: [200])
-         .map { (_) in return }
-    }
+//    public func sessionSwitch(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Response.Session.Switch,API.Error> {
+//        let paco = self.makeRequest(.put, "session", version: 1, credentials: true, headers: <#T##[API.HTTP.Header.Key : String]?#>, body: {
+//            return (.json, )
+//        })
+//
+//        let credentials = try api.credentials()
+//        guard credentials.accountId != accountId else {
+//            throw API.Error.invalidRequest(underlyingError: nil, message: "Session switch failed! The account identifier to switch to must be different than the active account.")
+//        }
+//    }
 }
 
 extension API.Request {
@@ -104,11 +101,15 @@ extension API.Request {
 
 extension API.Response {
     /// Representation of a dealing session.
-    public struct Session: APISession, Decodable {
+    public struct Session: Decodable {
+        /// Client identifier.
         public let clientId: Int
+        /// Active account identifier.
         public let accountId: String
-        public let timezone: TimeZone
+        /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
+        /// Timezone of the active account.
+        public let timezone: TimeZone
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
@@ -139,21 +140,41 @@ extension API.Response {
 
 extension API.Response.Session {
     /// Encryption key message returned from the server.
-    public struct EncriptionKey: Decodable {
+    public struct EncryptionKey: Decodable {
         /// The key (in base 64) to be used on encryption.
-        public let key: String
+        public let encryptionKey: String
         /// Current timestamp in milliseconds since epoch.
         public let timeStamp: Date
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.key = try container.decode(String.self, forKey: .encryptionKey)
+            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
             let epoch = try container.decode(Double.self, forKey: .timeStamp)
             self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
         }
         
         private enum CodingKeys: String, CodingKey {
             case encryptionKey, timeStamp
+        }
+    }
+}
+
+extension API.Response.Session {
+    /// Payload received when accounts are switched.
+    public struct Switch: Decodable {
+        ///
+        public let isTrailingStopEnabled: Bool
+        ///
+        public let isDealingEnabled: Bool
+        ///
+        public let hasActiveDemoAccounts: Bool
+        ///
+        public let hasActiveLiveAccounts: Bool
+        
+        private enum CodingKeys: String, CodingKey {
+            case isTrailingStopEnabled = "trailingStopsEnabled"
+            case isDealingEnabled = "dealingEnabled"
+            case hasActiveDemoAccounts, hasActiveLiveAccounts
         }
     }
 }
