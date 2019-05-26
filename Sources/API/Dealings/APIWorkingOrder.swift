@@ -12,6 +12,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Response {
     /// Wrapper around a list of working orders.
     fileprivate struct WorkingOrderListWrapper: Decodable {

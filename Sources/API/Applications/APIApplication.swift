@@ -4,28 +4,30 @@ import Foundation
 extension API {
     /// Returns a list of client-owned applications.
     public func applications() -> SignalProducer<[API.Response.Application],API.Error> {
-        return self.makeRequest(.get, "operations/application", version: 1, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
     }
     
     /// Alters the details of a given user application.
-    /// - parameter status: Application status.
+    /// - parameter status: The status to apply to the receiving application.
     /// - parameter accountAllowance: `overall` Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
     public func updateApplication(status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Response.Application,API.Error> {
-        return self.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { [weak weakAPI = self] in
-                let creds = try weakAPI?.credentials()
-                guard let apiKey = creds?.apiKey else {
-                    throw API.Error.invalidCredentials(creds, message: "The API key couldn't be retrieved")
-                }
-                let body = try API.Request.Application.Update(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (api) -> API.Request.Application.Update in
+                let apiKey = (try api.credentials()).apiKey
+                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
+                let data = try API.Codecs.jsonEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
     }
 }
+
+// MARK: -
 
 extension API.Request {
     /// Client Application.
@@ -69,6 +71,8 @@ extension API.Request {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Client application.

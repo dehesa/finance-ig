@@ -51,6 +51,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// List of OTC position requests.
     public enum Position { }
@@ -424,6 +426,8 @@ extension API.Request.Position {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response.Position {
     /// Wrapper around a single deal reference.

@@ -7,16 +7,30 @@ extension API {
     /// - parameter info: OAuth credentials for the IG platform.
     /// - returns: SignalProducer with the new refreshed credentials.
     internal func oauthLogin(_ info: API.Request.Login) -> SignalProducer<API.Credentials,API.Error> {
-        return self.makeRequest(.post, "session", version: 3, credentials: false, headers: [.apiKey: info.apiKey, .account:info.accountId], body: {
-                let body = ["identifier": info.username, "password": info.password]
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-            .map { (r: API.Response.OAuth) in
-                let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+        return SignalProducer(api: self) { (_) -> API.Request.OAuth in
+            guard !info.username.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
             }
+            guard !info.password.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
+            }
+            guard !info.apiKey.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+            }
+            guard !info.accountId.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
+            }
+            return .init(identifier: info.username, password: info.password)
+        }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey, .account: info.accountId] }, body: { (_, payload) in
+            let data = try API.Codecs.jsonEncoder().encode(payload)
+            return (.json, data)
+        }).send(expecting: .json)
+        .validateLadenData(statusCodes: [200])
+        .decodeJSON()
+        .map { (r: API.Response.OAuth) in
+            let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
+            return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+        }
     }
     
     /// Refreshes a trading session token, obtaining new session for subsequent API.
@@ -39,6 +53,20 @@ extension API {
             }
     }
 }
+
+// MARK: -
+
+extension API.Request {
+    /// Log-in through OAuth required payload.
+    fileprivate struct OAuth: Encodable {
+        /// Client login identifier.
+        let identifier: String
+        /// Client login password.
+        let password: String
+    }
+}
+
+// MARK: -
 
 extension API.Response {
     /// Oauth credentials used to access the IG platform.

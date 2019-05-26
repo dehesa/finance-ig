@@ -7,20 +7,48 @@ extension API {
     /// Region-specific login restrictions may apply.
     /// - note: No credentials are needed for this endpoint.
     /// - parameter info: Certificate credentials for the IG platform.
+    /// - parameter isPasswordEncrypted: Boolean indicating whether the given password (in `info`) is encrypted.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func certificateLogin(_ info: API.Request.Login) -> SignalProducer<API.Credentials,API.Error> {
-        return self.makeRequest(.post, "session", version: 2, credentials: false, headers: [.apiKey: info.apiKey], body: {
-                let body = ["identifier": info.username, "password": info.password, "encryptedPassword": nil]
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-            .map { (r: API.Response.Certificate) in
-                let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+    internal func certificateLogin(_ info: API.Request.Login, isPasswordEncrypted: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
+        return SignalProducer(api: self) { (_) -> API.Request.Certificate in
+            guard !info.username.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
             }
+            guard !info.password.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
+            }
+            guard !info.apiKey.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+            }
+            return .init(identifier: info.username, password: info.password, encryptedPassword: isPasswordEncrypted)
+        }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey] }, body: { (_, payload) in
+            let data = try API.Codecs.jsonEncoder().encode(payload)
+            return (.json, data)
+        }).send(expecting: .json)
+        .validateLadenData(statusCodes: [200])
+        .decodeJSON()
+        .map { (r: API.Response.Certificate) in
+            let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
+            return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+        }
     }
 }
+
+// MARK: -
+
+extension API.Request {
+    /// Log-in through certificate required payload.
+    fileprivate struct Certificate: Encodable {
+        /// Client login identifier.
+        let identifier: String
+        /// Client login password.
+        let password: String
+        /// Whether the password has been sent encrypted.
+        let encryptedPassword: Bool
+    }
+}
+
+// MARK: -
 
 extension API.Response {
     /// CST credentials used to access the IG platform.
