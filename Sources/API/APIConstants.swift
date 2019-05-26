@@ -1,6 +1,13 @@
 import Foundation
 
 extension API {
+    /// Domain namespace retaining anything related to API requests.
+    public enum Request {}
+    /// Domain namespace retaining anything related to API responses.
+    public enum Response {}
+}
+
+extension API {
     /// The root address for the IG endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     

@@ -46,6 +46,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// List of OTC working order requests.
     public enum WorkingOrder { }
@@ -196,6 +198,8 @@ extension API.Request.WorkingOrder {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response.WorkingOrder {
     /// Wrapper around a single deal reference.

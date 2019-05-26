@@ -8,7 +8,8 @@ extension API {
     /// - parameter nodeId: The identifier for the targeted node under which the nodes/markets returned in the result are.
     /// - returns: Signal giving the nodes and/or markets directly under the navigation node given as the parameter.
     public func navigationNodes(underNode nodeId: String? = nil) -> SignalProducer<(nodes: [API.Response.Node], markets: [API.Response.Node.Market]),API.Error> {
-        return self.makeRequest(.get, "marketnavigation/\(nodeId ?? "")", version: 1, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "marketnavigation/\(nodeId ?? "")", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
@@ -20,18 +21,21 @@ extension API {
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
     public func markets(searchTerm: String) -> SignalProducer<[API.Response.Node.Market],API.Error> {
-        return self.makeRequest(.get, "markets", version: 1, credentials: true, queries: {
+        return SignalProducer(api: self) { (_) -> String in
                 guard !searchTerm.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Search for markets failed! The search term cannot be empty")
                 }
-            
+                return searchTerm
+            }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) -> [URLQueryItem] in
                 return [URLQueryItem(name: "searchTerm", value: searchTerm)]
-          }).send(expecting: .json)
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.MarketSearch) in w.markets }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Market Search Response.

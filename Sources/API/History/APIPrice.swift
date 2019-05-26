@@ -73,6 +73,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// Price request properties.
     public enum Price {
@@ -132,6 +134,8 @@ extension API.Request {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Simple tuple wrapping the prices response and the HTTP query allowance that it can still be used.

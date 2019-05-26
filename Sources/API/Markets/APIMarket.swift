@@ -30,6 +30,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Response {
     /// List of targeted markets.
     fileprivate struct MarketList: Decodable {

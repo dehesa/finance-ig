@@ -81,6 +81,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// Request constants when asking the platform for trading activities.
     public enum Activity {
@@ -95,6 +97,8 @@ extension API.Request {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Single page of activities request.

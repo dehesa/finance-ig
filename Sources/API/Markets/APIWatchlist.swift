@@ -84,6 +84,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// List of watchlist related requests.
     fileprivate enum Watchlist {
@@ -107,6 +109,8 @@ extension API.Request {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Wrapper around a list of watchlists.

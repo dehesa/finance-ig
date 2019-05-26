@@ -69,6 +69,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Request {
     /// Transaction request properties.
     public enum Transaction {
@@ -89,6 +91,8 @@ extension API.Request {
         }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Single Page of transactions request.

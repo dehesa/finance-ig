@@ -4,7 +4,8 @@ import Foundation
 extension API {
     /// Returns a list of accounts belonging to the logged-in client.
     public func accounts() -> SignalProducer<[API.Response.Account],API.Error> {
-        return self.makeRequest(.get, "accounts", version: 1, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
@@ -13,7 +14,8 @@ extension API {
     
     /// Returns the targeted account preferences.
     public func accountPreferences() -> SignalProducer<API.Response.Account.Preferences,API.Error> {
-        return self.makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
@@ -31,6 +33,8 @@ extension API {
             .map { (_) in return }
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Client account.

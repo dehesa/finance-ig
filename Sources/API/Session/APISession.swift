@@ -7,10 +7,15 @@ extension API {
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
     public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncryptionKey,API.Error> {
-        return self.makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: [.apiKey: apiKey])
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
+        return SignalProducer(api: self) { (_) -> String in
+            guard !apiKey.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+            }
+            return apiKey
+        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
+         .send(expecting: .json)
+         .validateLadenData(statusCodes: [200])
+         .decodeJSON()
     }
     
     /// Logs in a user/account.
@@ -28,24 +33,46 @@ extension API {
     /// Returns the user's session details.
     /// - returns: `SignalProducer` returning information about the current user's session.
     public func session() -> SignalProducer<API.Response.Session,API.Error> {
-        return self.makeRequest(.get, "session", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
+        return SignalProducer(api: self)
+         .request(.get, "session", version: 1, credentials: true)
+         .send(expecting: .json)
+         .validateLadenData(statusCodes: [200])
+         .decodeJSON()
+    }
+    
+    /// Switches active accounts, optionally setting the default account.
+    /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
+    /// - parameter accountId: The identifier for the account that the user want to switch to.
+    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
+    /// - returns: `SignalProducer` indicating the success of the operation.
+    public func sessionSwitch(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Response.Session.Switch,API.Error> {
+        return SignalProducer(api: self) { (api) -> API.Request.Session.Switch in
+            guard !accountId.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
+            }
+            return .init(accountId: accountId, defaultAccount: makingDefault)
+        }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
+            let data = try API.Codecs.jsonEncoder().encode(payload)
+            return (.json, data)
+        }).send(expecting: .json)
+         .validateLadenData(statusCodes: [200])
+         .decodeJSON()
     }
     
     /// Log out from the current session.
     ///
     /// If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
+    /// - attention: Login out is a priviledge call, that is why without credentials no actually endpoint is hit.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func sessionLogout() -> SignalProducer<Void,API.Error> {
-        return SignalProducer { [weak weakAPI = self] (generator, lifetime) in
+        return SignalProducer { [weak weakAPI = self] (input, lifetime) in
             guard let api = weakAPI else {
-                return generator.send(error: .sessionExpired)
+                return input.send(error: .sessionExpired)
             }
+            
             guard let creds = try? api.credentials() else {
-                generator.send(value: ())
-                return generator.sendCompleted()
+                input.send(value: ())
+                return input.sendCompleted()
             }
             
             let url = api.rootURL.appendingPathComponent("session")
@@ -61,33 +88,18 @@ extension API {
                     switch $0 {
                     case .value(_):
                         weakAPI?.removeCredentials()
-                        generator.send(value: ())
-                    case .completed: generator.sendCompleted()
-                    case .failed(let e): generator.send(error: e)
-                    case .interrupted: generator.sendInterrupted()
+                        input.send(value: ())
+                    case .completed: input.sendCompleted()
+                    case .failed(let e): input.send(error: e)
+                    case .interrupted: input.sendInterrupted()
                     }
                 }
             lifetime.observeEnded(disposable.dispose)
         }
     }
-    
-    /// Switches active accounts, optionally setting the default account.
-    ///
-    /// The identifier of the account to switch to must be different than the current account or the signal will fail.
-    /// - parameter accountId: The identifier for the account that the user want to switch to.
-    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-//    public func sessionSwitch(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Response.Session.Switch,API.Error> {
-//        let paco = self.makeRequest(.put, "session", version: 1, credentials: true, headers: <#T##[API.HTTP.Header.Key : String]?#>, body: {
-//            return (.json, )
-//        })
-//
-//        let credentials = try api.credentials()
-//        guard credentials.accountId != accountId else {
-//            throw API.Error.invalidRequest(underlyingError: nil, message: "Session switch failed! The account identifier to switch to must be different than the active account.")
-//        }
-//    }
 }
+
+// MARK: -
 
 extension API.Request {
     /// Type of sessions available
@@ -98,6 +110,18 @@ extension API.Request {
         case oauth
     }
 }
+
+extension API.Request.Session {
+    /// Payload for the session switch request.
+    fileprivate struct Switch: Encodable {
+        /// The account identifier to switch to.
+        let accountId: String
+        /// Whether the given account should be mark as "default".
+        let defaultAccount: Bool
+    }
+}
+
+// MARK: -
 
 extension API.Response {
     /// Representation of a dealing session.
@@ -162,13 +186,13 @@ extension API.Response.Session {
 extension API.Response.Session {
     /// Payload received when accounts are switched.
     public struct Switch: Decodable {
-        ///
+        /// Boolean indicating whether trailing stops are currently enabled for the given account.
         public let isTrailingStopEnabled: Bool
-        ///
+        /// Boolean indicating whether it is possible to make "deals" on the given account.
         public let isDealingEnabled: Bool
-        ///
+        /// Boolean indicating whther the demo account is active.
         public let hasActiveDemoAccounts: Bool
-        ///
+        /// Boolean indicating whether the live account is active.
         public let hasActiveLiveAccounts: Bool
         
         private enum CodingKeys: String, CodingKey {

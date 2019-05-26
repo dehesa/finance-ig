@@ -27,6 +27,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 extension API.Response {
     /// Wrapper around a list of positions.
     fileprivate struct PositionListWrapper: Decodable {

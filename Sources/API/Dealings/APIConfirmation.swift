@@ -31,6 +31,8 @@ extension API {
     }
 }
 
+// MARK: -
+
 /// Trade confirmation of a given deal.
 public protocol APIResponseConfirmation {
     /// Permanent deal reference for a confirmed trade.
@@ -56,6 +58,8 @@ extension APIResponseConfirmation {
         return self as? API.Response.Confirmation.Rejected
     }
 }
+
+// MARK: -
 
 extension API.Response {
     /// Confirmation related types.
