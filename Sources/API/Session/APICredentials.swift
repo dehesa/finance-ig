@@ -1,35 +1,15 @@
 import Foundation
 
-/// Values always found in an API session.
-public protocol APISession {
-    /// Client identifier.
-    var clientId: Int { get }
-    /// Active account identifier.
-    var accountId: String { get }
-    /// Lightstreamer endpoint for subscribing to account and price updates.
-    var streamerURL: URL { get }
-    /// Timezone of the active account.
-    var timezone: TimeZone { get }
-}
-
-/// Response pattern received from the server when trying to log in.
-public protocol APIResponseLogin {
-    /// Client identifier.
-    var clientId: String { get }
-    /// Active account identifier.
-    var accountId: String { get }
-    /// Lightstreamer endpoint for subscribing to account and price updates.
-    var streamerURL: URL { get }
-    /// Timezone offset of the active account relative to UTC, expressed in hours.
-    var timezoneOffset: Int { get }
-}
-
 extension API {
     /// Credentials used within the API session.
-    public struct Credentials: APISession {
+    public struct Credentials {
+        /// Client identifier.
         public let clientId: Int
+        /// Active account identifier.
         public let accountId: String
+        /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
+        /// Timezone of the active account.
         public let timezone: TimeZone
         /// API key given by the IG platform identifying the usage of the IG endpoints.
         public let apiKey: String

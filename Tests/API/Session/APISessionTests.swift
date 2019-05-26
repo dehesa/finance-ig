@@ -32,7 +32,7 @@ final class APISessionTests: APITestCase {
         let now = Date()
         
         let endpoint = self.api.sessionEncryptionKey(apiKey: apiKey).on(value: {
-            XCTAssertFalse($0.key.isEmpty)
+            XCTAssertFalse($0.encryptionKey.isEmpty)
             XCTAssertGreaterThan($0.timeStamp, now)
         })
         

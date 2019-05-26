@@ -6,6 +6,8 @@ extension API {
     ///
     /// Region-specific login restrictions may apply.
     /// - note: No credentials are needed for this endpoint.
+    /// - parameter info: Certificate credentials for the IG platform.
+    /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
     internal func certificateLogin(_ info: API.Request.Login) -> SignalProducer<API.Credentials,API.Error> {
         return self.makeRequest(.post, "session", version: 2, credentials: false, headers: [.apiKey: info.apiKey], body: {
                 let body = ["identifier": info.username, "password": info.password, "encryptedPassword": nil]
@@ -13,43 +15,44 @@ extension API {
           }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
-            .attemptMap { (r: API.Response.Certificate) in
-                guard let clientID = Int(r.clientId) else {
-                    return .failure(.invalidCredentials(nil, message: "The clientID \"\(r.clientId)\" couldn't be transformed into an integer."))
-                }
-                
-                guard let timezone = TimeZone(secondsFromGMT: r.timezoneOffset * 3_600) else {
-                    return .failure(.invalidCredentials(nil, message: "The timezone offset couldn't be migrated to UTC/GMT."))
-                }
-                
+            .map { (r: API.Response.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return .success(API.Credentials(clientId: clientID, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: timezone))
+                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
 }
 
 extension API.Response {
     /// CST credentials used to access the IG platform.
-    fileprivate struct Certificate: APIResponseLogin, Decodable {
-        let clientId: String
+    fileprivate struct Certificate: Decodable {
+        /// Client identifier.
+        let clientId: Int
+        /// Active account identifier.
         let accountId: String
+        /// Lightstreamer endpoint for subscribing to account and price updates.
         let streamerURL: URL
-        let timezoneOffset: Int
+        /// Timezone of the active account.
+        let timezone: TimeZone
         /// The certificate tokens granting access to the platform.
         let tokens: Certificate.Token
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.clientId = try container.decode(String.self, forKey: .clientId)
+            
+            let client = try container.decode(String.self, forKey: .clientId)
+            self.clientId = try Int(client) ?! DecodingError.dataCorruptedError(forKey: .clientId, in: container, debugDescription: "The clientID \"\(client)\" couldn't be transformed into an integer.")
+            
             self.accountId = try container.decode(String.self, forKey: .accountId)
-            self.timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
+            
+            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
+            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             
             guard let response = decoder.userInfo[.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let tokens = Token(headerFields: headerFields) else {
-                let context = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
-                throw DecodingError.dataCorrupted(context)
+                let errorContext = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                throw DecodingError.dataCorrupted(errorContext)
             }
             self.tokens = tokens
         }
@@ -73,7 +76,7 @@ extension API.Response.Certificate {
         /// Account session security access token.
         let securityToken: String
         
-        fileprivate init?(headerFields: [String:Any]) {
+        init?(headerFields: [String:Any]) {
             guard let access = headerFields[API.HTTP.Header.Key.clientSessionToken.rawValue] as? String,
                   let security = headerFields[API.HTTP.Header.Key.securityToken.rawValue] as? String else { return nil }
             self.accessToken = access

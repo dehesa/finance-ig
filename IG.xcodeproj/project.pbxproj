@@ -448,9 +448,9 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA7F2149A6CE00344CBF /* APISession.swift */,
-				8DC4CA802149A6CE00344CBF /* APIOAuth.swift */,
-				8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */,
 				8DC4CA812149A6CE00344CBF /* APICredentials.swift */,
+				8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */,
+				8DC4CA802149A6CE00344CBF /* APIOAuth.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
