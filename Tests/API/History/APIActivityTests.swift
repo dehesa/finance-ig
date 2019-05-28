@@ -8,8 +8,8 @@ final class APIActivityTests: APITestCase {
     func testActivities() {
         var components = DateComponents()
         components.timeZone = TimeZone(abbreviation: "CET")
-        (components.year, components.month, components.day) = (2018, 6, 5)
-        (components.hour, components.minute) = (11, 15)
+        (components.year, components.month, components.day) = (2019, 5, 27)
+        (components.hour, components.minute) = (10, 30)
         
         let date = Calendar(identifier: .gregorian).date(from: components)!
         

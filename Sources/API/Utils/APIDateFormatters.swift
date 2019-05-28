@@ -64,9 +64,6 @@ extension API {
             return JSONEncoder()
         }
         
-        /// Typealias for the json decoder generation.
-        typealias DecoderGenerator = (URLRequest,HTTPURLResponse) -> JSONDecoder
-        
         /// Default JSON decoder returning the request and response header in its user info dictionary.
         static func jsonDecoder(request: URLRequest, responseHeader: HTTPURLResponse) -> JSONDecoder {
             let result = JSONDecoder()

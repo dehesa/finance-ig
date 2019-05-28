@@ -1,6 +1,7 @@
 import XCTest
 import ReactiveSwift
 import Foundation
+@testable import IG
 
 /// Tests API Account related endpoints.
 final class APIAccountTests: APITestCase {
@@ -22,7 +23,20 @@ final class APIAccountTests: APITestCase {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let endpoint = self.api.accountPreferences()
+        var initialTrailingStop: Bool! = nil
+        
+        let endpoint = self.api.accountPreferences().on(value: {
+            XCTAssertTrue($0.trailingStops)
+            initialTrailingStop = $0.trailingStops
+        }).call(on: self.api) { (api, preferences) -> SignalProducer<Void,API.Error> in
+            api.updateAccountPreferences(trailingStops: !preferences.trailingStops)
+        }.call(on: self.api) { (api, initialTrailingStop) -> SignalProducer<API.Response.Account.Preferences,API.Error> in
+            api.accountPreferences()
+        }.on(value: {
+            XCTAssertNotEqual(initialTrailingStop, $0.trailingStops)
+        }).call(on: self.api) { (api, _) -> SignalProducer<Void,API.Error> in
+            api.updateAccountPreferences(trailingStops: initialTrailingStop)
+        }
         
         self.test("Account Preferences", endpoint, signingProcess: .oauth, timeout: 1)
     }

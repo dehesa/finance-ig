@@ -11,8 +11,8 @@ class APITestCase: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        
-        self.account = Account.make()
+        // Fetch the account JSON file location set on the environment key...
+        self.account = Account.make(from: "io.dehesa.money.ig.tests.account")
         self.api = APITestCase.makeAPI(url: self.account.api.url)
     }
     
