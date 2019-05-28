@@ -8,14 +8,14 @@ extension API {
     /// - note: No credentials are needed for this endpoint.
     public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncryptionKey,API.Error> {
         return SignalProducer(api: self) { (_) -> String in
-            guard !apiKey.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-            }
-            return apiKey
-        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
-         .send(expecting: .json)
-         .validateLadenData(statusCodes: [200])
-         .decodeJSON()
+                guard !apiKey.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+                }
+                return apiKey
+            }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
+             .send(expecting: .json)
+             .validateLadenData(statusCodes: [200])
+             .decodeJSON()
     }
     
     /// Logs in a user/account.
@@ -34,10 +34,10 @@ extension API {
     /// - returns: `SignalProducer` returning information about the current user's session.
     public func session() -> SignalProducer<API.Response.Session,API.Error> {
         return SignalProducer(api: self)
-         .request(.get, "session", version: 1, credentials: true)
-         .send(expecting: .json)
-         .validateLadenData(statusCodes: [200])
-         .decodeJSON()
+            .request(.get, "session", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
     }
     
     /// Switches active accounts, optionally setting the default account.
@@ -47,16 +47,16 @@ extension API {
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func sessionSwitch(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Response.Session.Switch,API.Error> {
         return SignalProducer(api: self) { (api) -> API.Request.Session.Switch in
-            guard !accountId.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
-            }
-            return .init(accountId: accountId, defaultAccount: makingDefault)
-        }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
-            let data = try API.Codecs.jsonEncoder().encode(payload)
-            return (.json, data)
-        }).send(expecting: .json)
-         .validateLadenData(statusCodes: [200])
-         .decodeJSON()
+                guard !accountId.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
+                }
+                return .init(accountId: accountId, defaultAccount: makingDefault)
+            }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
+                let data = try API.Codecs.jsonEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
     }
     
     /// Log out from the current session.
@@ -81,7 +81,7 @@ extension API {
                 $0.addHeaders(version: 1, credentials: creds)
             }
             
-            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (request,api))
+            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (api,request))
                 .send()
                 .validate(statusCodes: [204])
                 .start {

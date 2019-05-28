@@ -12,11 +12,12 @@ extension API {
     }
     
     /// Alters the details of a given user application.
+    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
-    /// - parameter accountAllowance: `overall` Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func updateApplication(status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Response.Application,API.Error> {
+    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
+    public func updateApplication(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Response.Application,API.Error> {
         return SignalProducer(api: self) { (api) -> API.Request.Application.Update in
-                let apiKey = (try api.credentials()).apiKey
+                let apiKey = try (apiKey ?? api.credentials().apiKey)
                 return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
                 let data = try API.Codecs.jsonEncoder().encode(payload)

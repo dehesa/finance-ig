@@ -169,9 +169,9 @@ extension Account {
 
 extension Account {
     /// Load data to use as testing account/environment.
-    /// - prameter environmentKey: Build variable key, which value gives the location of the account swift file.
+    /// - parameter environmentKey: Build variable key, which value gives the location of the account swift file.
     /// - returns: Representation of the account file.
-    static func make(from environmentKey: String = "io.dehesa.money.ig.tests.account") -> Account {
+    static func make(from environmentKey: String) -> Account {
         guard let accountPath = ProcessInfo.processInfo.environment[environmentKey] else {
             fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
         }

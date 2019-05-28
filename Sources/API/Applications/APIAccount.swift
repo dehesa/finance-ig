@@ -25,12 +25,26 @@ extension API {
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updateAccountPreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
-        return self.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: {
-                let body = ["trailingStopsEnabled": trailingStops]
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> API.Request.Account.Update in
+                return .init(trailingStopsEnabled: trailingStops)
+            }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
+                return (.json, try API.Codecs.jsonEncoder().encode(payload))
+            }).send(expecting: .json)
             .validate(statusCodes: [200])
             .map { (_) in return }
+    }
+}
+
+// MARK: -
+
+extension API.Request {
+    /// List of Account related request payloads.
+    fileprivate enum Account {
+        /// Payload required to update an account.
+        fileprivate struct Update: Encodable {
+            /// Boolean indicating whether the trailing stops shall be enabled.
+            let trailingStopsEnabled: Bool
+        }
     }
 }
 

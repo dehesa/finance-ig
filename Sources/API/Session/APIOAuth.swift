@@ -8,29 +8,29 @@ extension API {
     /// - returns: SignalProducer with the new refreshed credentials.
     internal func oauthLogin(_ info: API.Request.Login) -> SignalProducer<API.Credentials,API.Error> {
         return SignalProducer(api: self) { (_) -> API.Request.OAuth in
-            guard !info.username.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
+                guard !info.username.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
+                }
+                guard !info.password.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
+                }
+                guard !info.apiKey.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+                }
+                guard !info.accountId.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
+                }
+                return .init(identifier: info.username, password: info.password)
+            }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey, .account: info.accountId] }, body: { (_, payload) in
+                let data = try API.Codecs.jsonEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
+            .map { (r: API.Response.OAuth) in
+                let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
+                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
-            guard !info.password.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
-            }
-            guard !info.apiKey.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-            }
-            guard !info.accountId.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
-            }
-            return .init(identifier: info.username, password: info.password)
-        }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey, .account: info.accountId] }, body: { (_, payload) in
-            let data = try API.Codecs.jsonEncoder().encode(payload)
-            return (.json, data)
-        }).send(expecting: .json)
-        .validateLadenData(statusCodes: [200])
-        .decodeJSON()
-        .map { (r: API.Response.OAuth) in
-            let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-            return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
-        }
     }
     
     /// Refreshes a trading session token, obtaining new session for subsequent API.
@@ -38,13 +38,16 @@ extension API {
     /// - parameter credentials: Current platform credentials.
     /// - returns: SignalProducer with the new refreshed credentials.
     internal func oauthRefresh(current credentials: API.Credentials) -> SignalProducer<API.Credentials,API.Error> {
-        return self.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: [.apiKey: credentials.apiKey, .account: credentials.accountId], body: {
+        return SignalProducer(api: self) { [credentials] (_) -> String in
                 guard case .oauth(_, let refreshToken, _, _) = credentials.token.value else {
                     throw API.Error.invalidCredentials(credentials, message: "The credentials stored were not of OAuth type.")
                 }
-
-                return (.json, try API.Codecs.jsonEncoder().encode(["refresh_token": refreshToken]))
-          }).send(expecting: .json)
+                return refreshToken
+            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_,_) in
+                [.apiKey: credentials.apiKey, .account: credentials.accountId]
+            }, body: { (_, refreshToken) in
+                (.json, try API.Codecs.jsonEncoder().encode(["refresh_token": refreshToken]))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (r: API.Response.OAuth.Token) in

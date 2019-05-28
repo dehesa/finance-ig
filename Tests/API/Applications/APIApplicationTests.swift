@@ -19,6 +19,10 @@ final class APIApplicationTests: APITestCase {
             XCTAssertGreaterThan(allow.requests.account.historicalData, 0)
             XCTAssertGreaterThan(allow.lightStreamer.concurrentSubscriptionsLimit, 0)
             XCTAssertLessThan(app.creationDate, Date())
+            
+            for app in $0 {
+                print(app)
+            }
         })
         
         self.test("Applications", endpoint, signingProcess: .oauth, timeout: 1)
