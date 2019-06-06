@@ -44,14 +44,14 @@ extension API {
                 var nextRequest = initialRequest
                 nextRequest.url = nextURL
                 return nextRequest
-            }) { (producer) -> SignalProducer<(API.Response.PagedActivities.Metadata.Page,[API.Response.Activity]),API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedActivities.Metadata.Page,[API.Response.Activity]),API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: [200])
                     .decodeJSON()
                     .map { (response: API.Response.PagedActivities) in
                         (response.metadata.page, response.activities)
                     }
-            }
+            })
     }
 }
 
@@ -63,11 +63,11 @@ extension API.Request {
         /// Variables related to the paging responses.
         public enum PageSize {
             /// The minimum amount of pages that can be asked for.
-            public static var minimum: Int { return 10 }
+            public static var minimum: UInt { return 10 }
             /// The default amount of transactions received in a page.
-            public static var `default`: Int { return 50 }
+            public static var `default`: UInt { return 50 }
             /// The maximum amount of pages that can be asked for.
-            public static var maximum: Int { return 500 }
+            public static var maximum: UInt { return 500 }
         }
     }
 }

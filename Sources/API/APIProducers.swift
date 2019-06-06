@@ -1,7 +1,7 @@
 import Foundation
 import ReactiveSwift
 
-// MARK: -
+// MARK: - Request types
 
 extension API.Request {
     /// Request values that have been verified/validated.
@@ -12,6 +12,8 @@ extension API.Request {
         let values: T
         
         /// Designated initializer.
+        /// - parameter api: Instance in charge of performing the request.
+        /// - parameter values: The values that will "somehow" be added to the request.
         init(_ api: API, validated values: T) {
             self.api = api
             self.values = values
@@ -56,7 +58,7 @@ extension API.Request {
     internal typealias Wrapper = (api: API, request: URLRequest)
 }
 
-// MARK: -
+// MARK: - Response types
 
 extension API.Response {
     /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
@@ -65,11 +67,11 @@ extension API.Response {
     internal typealias DataWrapper = (request: URLRequest, header: HTTPURLResponse, data: Data)
 }
 
-// MARK: -
+// MARK: - SignalProducers
 
 extension SignalProducer where Value==API.Request.ValidatedValues<Void>, Error==API.Error {
     /// Initializes a `SignalProducer` that checks (when started) whether the passed API session has expired.
-    /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
+    /// - attention: This initializer creates a weak bond with the  API instance passed as argument. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
     internal init(api: API) {
         self.init { [weak api] (input, _) in
@@ -203,31 +205,26 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
     /// - parameter type: The content type expected as a result.
     /// - returns: A new `SignalProducer` with the response of the executed enpoint.
     internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.Response.Wrapper,API.Error> {
-        return self.flatMap(.latest) { (api, urlRequest) -> SignalProducer<API.Response.Wrapper,Error> in
-            let session = api.sessionURL
-            return SignalProducer<API.Response.Wrapper,API.Error> { [weak session, urlRequest] (generator, lifetime) in
-                guard let session = session else {
-                    return generator.send(error: .sessionExpired)
-                }
-                
+        return self.flatMap(.merge) { (api, urlRequest) -> SignalProducer<API.Response.Wrapper,Error> in
+            return SignalProducer<API.Response.Wrapper,API.Error> { (generator, lifetime) in
                 var request = urlRequest
                 if let contentType = type {
                     request.addHeaders([.responseType: contentType.rawValue])
                 }
-                
-                let task = session.dataTask(with: request) { [request, generator] (data, response, error) in
+
+                let task = api.sessionURL.dataTask(with: request) { [request, generator] (data, response, error) in
                     if let error = error {
                         return generator.send(error: .callFailed(request: request, response: response, underlyingError: error, message: "The HTTP request failed."))
                     }
-                    
+
                     guard let header = response as? HTTPURLResponse else {
                         return generator.send(error: .callFailed(request: request, response: response, underlyingError: nil, message: "The URL response couldn't be parsed to a HTTP URL Response."))
                     }
-                    
+
                     generator.send(value: (request,header,data))
                     generator.sendCompleted()
                 }
-                
+
                 let _ = lifetime.observeEnded { [weak task] in
                     task?.cancel()
                 }
@@ -239,13 +236,26 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
     /// Similar than `send(expecting:)`, this method executes one (or many) requests on the passed API instance.
     ///
     /// The initial request is received as a value and is evaluated on the `request` closure. If the closure returns a `URLRequest`, that endpoint will be performed. If the closure returns `nil`, the signal producer will complete.
-    ///
-    internal func paginate<S,T>(request: (_ api: API, _ initialRequest: URLRequest, _ previous: (request: URLRequest, response: HTTPURLResponse, meta: S)?) -> URLRequest?,
-                                endpoint: (SignalProducer<Value,API.Error>) -> SignalProducer<(S,T),API.Error>
-                               ) -> SignalProducer<T,API.Error> {
-        return self.flatMap(., { (api, request) -> SignalProducer<T,API.Error> in
-            <#code#>
-        })
+    /// - parameter requestGenerator: All data needed to compile a request for the following paginated request. If `nil` is returned, the request won't be performed and the signal will complete.
+    /// - parameter valueGenerator: A paginated request response. The values/errors will be forwarded to the returned producer.
+    /// - returns: A `SignalProducer` returning the values from `endpoint` as soon as they arrive. Only when `nil` is returned on the `request` closure, will the returned producer complete.
+    internal func paginate<S,T>(request requestGenerator: @escaping (_ api: API, _ initialRequest: URLRequest, _ previous: (request: URLRequest, response: HTTPURLResponse, meta: S)?) -> URLRequest?,
+                                endpoint valueGenerator: @escaping (_ requestSignal: SignalProducer<Value,Error>) -> SignalProducer<(S,T),API.Error>
+                               ) -> SignalProducer<T,Error> {
+        
+        return self.flatMap(.merge) { (api, initialRequest) -> SignalProducer<T,Error> in
+            var generator: Signal<Value,Error>.Observer! = nil
+            var lifetime: Lifetime! = nil
+            
+            return valueGenerator( SignalProducer<Value,Error>.init {
+                generator = $0
+                lifetime = $1
+            } ).map { (meta, value) in
+                return value
+            }
+            
+//            return SignalProducer<T,Error>.empty
+        }
     }
 }
 
