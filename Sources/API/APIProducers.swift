@@ -211,8 +211,16 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                 if let contentType = type {
                     request.addHeaders([.responseType: contentType.rawValue])
                 }
+                
+                /// Disposable used to detach the actual download task from the resulting signal's lifetime.
+                ///
+                /// When `dispose()` is called here the strong cycle to the download task will be removed.
+                /// - note: The task WON'T be cancelled by calling `dispose()`
+                var detacher: Disposable?
 
                 let task = api.sessionURL.dataTask(with: request) { [request, generator] (data, response, error) in
+                    detacher?.dispose()
+                    
                     if let error = error {
                         return generator.send(error: .callFailed(request: request, response: response, underlyingError: error, message: "The HTTP request failed."))
                     }
@@ -225,36 +233,64 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                     generator.sendCompleted()
                 }
 
-                let _ = lifetime.observeEnded { [weak task] in
-                    task?.cancel()
-                }
+                detacher = lifetime.observeEnded { task.cancel() }
                 task.resume()
             }
         }
     }
     
+    internal typealias PreviousEndpoint<M> = (request: URLRequest, meta: M)
+    
     /// Similar than `send(expecting:)`, this method executes one (or many) requests on the passed API instance.
     ///
-    /// The initial request is received as a value and is evaluated on the `request` closure. If the closure returns a `URLRequest`, that endpoint will be performed. If the closure returns `nil`, the signal producer will complete.
-    /// - parameter requestGenerator: All data needed to compile a request for the following paginated request. If `nil` is returned, the request won't be performed and the signal will complete.
-    /// - parameter valueGenerator: A paginated request response. The values/errors will be forwarded to the returned producer.
+    /// The initial request is received as a value and is evaluated on the `intermediateRequest` closure. If the closure returns a `URLRequest`, that endpoint will be performed. If the closure returns `nil`, the signal producer will complete.
+    /// - parameter intermediateRequest: All data needed to compile a request for the next page. If `nil` is returned, the request won't be performed and the signal will complete. On the other hand, if an error is thrown (which will be forced cast to `API.Error`), it will be forwarded as a failure event.
+    /// - parameter endpoint: A paginated request response. The values/errors will be forwarded to the returned producer.
     /// - returns: A `SignalProducer` returning the values from `endpoint` as soon as they arrive. Only when `nil` is returned on the `request` closure, will the returned producer complete.
-    internal func paginate<S,T>(request requestGenerator: @escaping (_ api: API, _ initialRequest: URLRequest, _ previous: (request: URLRequest, response: HTTPURLResponse, meta: S)?) -> URLRequest?,
-                                endpoint valueGenerator: @escaping (_ requestSignal: SignalProducer<Value,Error>) -> SignalProducer<(S,T),API.Error>
-                               ) -> SignalProducer<T,Error> {
-        
-        return self.flatMap(.merge) { (api, initialRequest) -> SignalProducer<T,Error> in
-            var generator: Signal<Value,Error>.Observer! = nil
-            var lifetime: Lifetime! = nil
-            
-            return valueGenerator( SignalProducer<Value,Error>.init {
-                generator = $0
-                lifetime = $1
-            } ).map { (meta, value) in
-                return value
+    internal func paginate<M,R>(request intermediateRequest: @escaping (_ api: API, _ initialRequest: URLRequest, _ previous: PreviousEndpoint<M>?) throws -> URLRequest?,
+                                endpoint: @escaping (_ requestSignal: SignalProducer<Value,Error>) -> SignalProducer<(M,R),API.Error>
+                               ) -> SignalProducer<R,Error> {
+        return self.flatMap(.merge) { (api, initialRequest) in
+            return SignalProducer<R,Error> { (generator, lifetime) in
+                /// Recursive closure fed with the latest endpoint call (or `nil`) at the very beginning.
+                var iterator: ( (_ previous: PreviousEndpoint<M>?) -> Void )! = nil
+                /// Disposable used to detached the current page download task from the resulting signal's lifetime.
+                var detacher: Disposable? = nil
+                
+                iterator = { (previous) in
+                    detacher?.dispose()
+                    
+                    let paginatedRequest: URLRequest?
+                    do {
+                        paginatedRequest = try intermediateRequest(api, initialRequest, previous)
+                    } catch let error as API.Error {
+                        return generator.send(error: error)
+                    } catch let error {
+                        return generator.send(error: .invalidRequest(underlyingError: error, message: "The paginated request couldn't be formed."))
+                    }
+                    
+                    guard let request = paginatedRequest else {
+                        return generator.sendCompleted()
+                    }
+                    
+                    let producer = SignalProducer<Value,Error>(value: (api, request))
+                    detacher = lifetime += endpoint(producer).start { (event) in
+                        switch event {
+                        case .value((let meta, let value)):
+                            generator.send(value: value)
+                            return iterator((request, meta))
+                        case .completed:
+                            return generator.sendCompleted()
+                        case .failed(let error):
+                            return generator.send(error: error)
+                        case .interrupted:
+                            return generator.sendInterrupted()
+                        }
+                    }
+                }
+                
+                iterator(nil)
             }
-            
-//            return SignalProducer<T,Error>.empty
         }
     }
 }
