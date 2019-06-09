@@ -77,7 +77,7 @@ extension API {
             
             let url = api.rootURL.appendingPathComponent("session")
             let request = URLRequest(url: url).set {
-                $0.setMethod(.delete)
+                $0.httpMethod = API.HTTP.Method.delete.rawValue
                 $0.addHeaders(version: 1, credentials: creds)
             }
             

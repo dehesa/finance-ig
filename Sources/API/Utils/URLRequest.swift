@@ -1,9 +1,38 @@
 import Foundation
 
 extension URLRequest {
-    /// Convenience function to set the HTTP method for the receiving URL request.
-    internal mutating func setMethod(_ method: API.HTTP.Method) {
-        self.httpMethod = method.rawValue
+    /// Convenience function to append the given queries to the receiving URL request.
+    /// - parameter queries: URL queries to be appended at the end of the given URL.
+    internal mutating func addQueries(_ newQueries: [URLQueryItem]) throws {
+        guard !newQueries.isEmpty else {
+            return
+        }
+        
+        guard let previousURL = self.url else {
+            throw API.Error.invalidRequest(underlyingError: nil, message: "Queries cannot be appended to a request without a URL.")
+        }
+        
+        guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
+            throw API.Error.invalidRequest(underlyingError: nil, message: "URL components couldn't be formed from URL: \(previousURL)")
+        }
+        
+        if let previousQueries = components.queryItems {
+            // If there are previous queries, replace previous query names by the new ones.
+            var result: [URLQueryItem] = []
+            for previousQuery in previousQueries where !newQueries.contains(where: { $0.name == previousQuery.name }) {
+                result.append(previousQuery)
+            }
+            
+            result.append(contentsOf: newQueries)
+            components.queryItems = result
+        } else {
+            components.queryItems = newQueries
+        }
+        
+        guard let url = components.url else {
+            throw API.Error.invalidRequest(underlyingError: nil, message: "A new URL couldn't be formed appending queries: \(newQueries) to url: \(previousURL)")
+        }
+        self.url = url
     }
     
     /// Convenience function to add header key/value pairs to a URL request header.

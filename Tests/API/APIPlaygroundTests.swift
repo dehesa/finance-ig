@@ -7,7 +7,7 @@ final class APIPlaygroundTests: XCTestCase {
         print("--------------------------------------------\n")
         let expectation = self.expectation(description: "Timeout occurred")
         
-        let disposable = SignalProducer<String,Never> { (generator, lifetime) in
+        SignalProducer<String,Never> { (generator, lifetime) in
             let values = ["A", "B", "C", "D", "E"]
             let times  = [  0,   1,   2,   3,   4]
 

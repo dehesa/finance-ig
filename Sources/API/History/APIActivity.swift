@@ -11,6 +11,7 @@ extension API {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     public func activity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = API.Request.Activity.PageSize.default) -> SignalProducer<[API.Response.Activity],API.Error> {
+        // TODO: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
         return SignalProducer(api: self)
             .request(.get, "history/activity", version: 3, credentials: true, queries: { (_,_) -> [URLQueryItem] in
                 var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from))]
@@ -229,8 +230,8 @@ extension API.Response.Activity {
         public let size: Double
         /// Good till date.
         public let goodTillDate: Date?
-        /// Instrument price.
-        public let level: Double
+        /// Instrument price at which the activity has been "commited"
+        public let level: Double?
         /// Limit level and distance (from deal price).
         public let limit: Limit?
         /// Stop level and distance (from deal price).
@@ -252,7 +253,7 @@ extension API.Response.Activity {
                 self.goodTillDate = nil
             }
             
-            self.level = try container.decode(Double.self, forKey: .level)
+            self.level = try container.decodeIfPresent(Double.self, forKey: .level)
             
             if let level = try container.decodeIfPresent(Double.self, forKey: .limitLevel),
                let distance = try container.decodeIfPresent(Double.self, forKey: .limitDistance) {
