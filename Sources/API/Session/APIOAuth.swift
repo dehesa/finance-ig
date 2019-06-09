@@ -94,7 +94,8 @@ extension API.Response {
             self.accountId = try container.decode(String.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             
-            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
+            /// - todo: There is a bug where in OAuth there is an hour less accounted.
+            let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             
             self.tokens = try container.decode(API.Response.OAuth.Token.self, forKey: .tokens)

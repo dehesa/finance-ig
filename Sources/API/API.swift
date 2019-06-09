@@ -57,6 +57,13 @@ public final class API {
         self.sessionCredentials = nil
     }
     
+    /// The timezone for the receiving API instance.
+    ///
+    /// Commonly used internally when translating `Date`s to `String`.
+    internal var timeZone: TimeZone {
+        return self.sessionCredentials?.timezone ?? UTC.timezone
+    }
+    
     /// Default configuration for the underlying URLSession
     public static var defaultSessionConfigurations: URLSessionConfiguration {
         return URLSessionConfiguration.ephemeral.set {
