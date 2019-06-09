@@ -55,6 +55,12 @@ extension API {
             $0.dateFormat = "E, d MMM yyyy HH:mm:ss zzz"
             $0.configureForUTC()
         }
+        
+        /// Makes a deep copy of the passed `DateFormatter`.
+        /// - todo: Check whether it works in non Darwin systems.
+        static func deepCopy(_ formatter: Foundation.DateFormatter) -> Foundation.DateFormatter {
+            return formatter.copy() as! Foundation.DateFormatter
+        }
     }
     
     /// Default codecs (encoders/decoders) for requests/responses.

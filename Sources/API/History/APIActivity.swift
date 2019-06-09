@@ -10,14 +10,21 @@ extension API {
     /// - parameter detailed: Boolean indicating whether to retrieve additional details about the activity.
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
+    /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func activity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = API.Request.Activity.PageSize.default) -> SignalProducer<[API.Response.Activity],API.Error> {
-        // TODO: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-        return SignalProducer(api: self)
-            .request(.get, "history/activity", version: 3, credentials: true, queries: { (_,_) -> [URLQueryItem] in
-                var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from))]
+        
+        var dateFormatter: Foundation.DateFormatter! = nil
+        
+        return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
+                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                formatter.timeZone = api.timeZone
+                dateFormatter = formatter
+                return formatter
+            }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) -> [URLQueryItem] in
+                var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
                 if let to = to {
-                    queries.append(URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)))
+                    queries.append(URLQueryItem(name: "to", value: formatter.string(from: to)))
                 }
                 
                 if detailed {
@@ -48,8 +55,11 @@ extension API {
             }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedActivities.Metadata.Page,[API.Response.Activity]),API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: [200])
-                    .decodeJSON()
-                    .map { (response: API.Response.PagedActivities) in
+                    .decodeJSON { (request, responseHeader) -> JSONDecoder in
+                        let result = API.Codecs.jsonDecoder(request: request, responseHeader: responseHeader)
+                        result.userInfo[.dateFormatter] = dateFormatter!
+                        return result
+                    }.map { (response: API.Response.PagedActivities) in
                         (response.metadata.page, response.activities)
                     }
             })
@@ -77,7 +87,7 @@ extension API.Request {
 
 extension API.Response {
     /// Single page of activities request.
-    internal struct PagedActivities: Decodable {
+    fileprivate struct PagedActivities: Decodable {
         /// Wrapper around the queried activities.
         let activities: [API.Response.Activity]
         /// Metadata information about current request.
@@ -158,7 +168,12 @@ extension API.Response {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.DateFormatter.iso8601NoTimezone)
+            
+            guard let formatter = decoder.userInfo[.dateFormatter] as? Foundation.DateFormatter else {
+                throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+            }
+            
+            self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.dealId = try container.decode(String.self, forKey: .dealId)
             self.type = try container.decode(Kind.self, forKey: .type)
             self.status = try container.decode(Status.self, forKey: .status)
@@ -247,7 +262,9 @@ extension API.Response.Activity {
             self.size = try container.decode(Double.self, forKey: .size)
             
             if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {
-                let formatter = API.DateFormatter.iso8601NoTimezone
+                guard let formatter = decoder.userInfo[.dateFormatter] as? Foundation.DateFormatter else {
+                    throw DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                }
                 self.goodTillDate = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
             } else {
                 self.goodTillDate = nil

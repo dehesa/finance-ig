@@ -84,7 +84,7 @@ extension API.Response {
         public let apiKey: String
         ///  Application status.
         public let status: API.Application.Status
-        /// Application creation date.
+        /// Application creation date (referencing UTC dates, although no time data is stored).
         public let creationDate: Date
         /// What the platform allows the application or account to do (e.g. requests per minute).
         public let allowance: Allowance

@@ -8,12 +8,15 @@ extension API {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received.
     public func transactions(from: Date, to: Date? = nil, type: API.Request.Transaction.Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Response.Transaction],API.Error> {
-        return SignalProducer(api: self)
-            .request(.get, "history/transactions", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
-                var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from))]
+        return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
+                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                formatter.timeZone = api.timeZone
+                return formatter
+            }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) -> [URLQueryItem] in
+                var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
                 if let to = to {
-                    queries.append(URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)))
+                    queries.append(URLQueryItem(name: "to", value: formatter.string(from: to)))
                 }
                 
                 if type != .all {
@@ -72,7 +75,7 @@ extension API.Request {
 
 extension API.Response {
     /// Single Page of transactions request.
-    internal struct PagedTransactions: Decodable {
+    fileprivate struct PagedTransactions: Decodable {
         /// Wrapper around the queried transactions.
         let transactions: [API.Response.Transaction]
         /// Metadata information about the current request.
@@ -82,7 +85,7 @@ extension API.Response {
         private init?() { fatalError("Unaccessible initializer") }
         
         /// Page's extra information.
-        internal struct Metadata: Decodable {
+        struct Metadata: Decodable {
             /// Variables related to the current page.
             let page: Page
             
@@ -101,7 +104,7 @@ extension API.Response {
             }
             
             /// Variables for the current page.
-            internal struct Page {
+            struct Page {
                 /// The page number.
                 let number: UInt
                 /// The total amount of transactions that the current page can hold.

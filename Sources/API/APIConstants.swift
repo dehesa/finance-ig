@@ -72,4 +72,8 @@ extension CodingUserInfoKey {
     internal static let urlRequest = CodingUserInfoKey(rawValue: "urlRequest")!
     /// Key on decoders under which the URL response will be stored.
     internal static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
+    /// Key on decoders under which the API instance's timezone will be stored.
+    internal static let timezone = CodingUserInfoKey(rawValue: "timezone")!
+    /// Key on decoders under which a date formatter will be stored.
+    internal static let dateFormatter = CodingUserInfoKey(rawValue: "dateFormatter")!
 }

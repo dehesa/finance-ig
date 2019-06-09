@@ -8,57 +8,49 @@ extension API {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
-    public func prices(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<API.Response.PricesAndAllowance,API.Error> {
-        // TODO: The endpoint also offers the `max` query that is not being used right now.
-        return SignalProducer(api: self, validating: { (_) -> (pageSize: UInt, pageNumber: UInt) in
+    /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
+    public func prices(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<API.Response.SnapshotPrices,API.Error> {
+        return SignalProducer(api: self, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
                 guard !epic.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
                 }
             
-                if let page = page {
-                    let pageNumber = (page.number > 0) ? page.number : 1
-                    return (page.size, pageNumber)
-                } else {
-                    return (0, 1)
+                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                formatter.timeZone = api.timeZone
+            
+                guard let page = page else {
+                    return (0, 1, formatter)
                 }
+            
+                let pageNumber = (page.number > 0) ? page.number : 1
+                return (page.size, pageNumber, formatter)
             }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) -> [URLQueryItem] in
-                return [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from)),
-                        URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)),
+                return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
+                        URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
                         URLQueryItem(name: "resolution", value: resolution.rawValue),
                         URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
                         URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
             }).paginate(request: { (api, initialRequest, previous) -> URLRequest? in
-                // TODO: Fill up
-                return nil
-            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedPrices.Metadata.Page,API.Response.PricesAndAllowance), API.Error> in
+                guard let previous = previous else {
+                    return initialRequest
+                }
+                
+                guard let pageNumber = previous.meta.next else {
+                    return nil
+                }
+                
+                var request = initialRequest
+                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
+                return request
+            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedPrices.Metadata.Page,API.Response.SnapshotPrices), API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: [200])
                     .decodeJSON()
                     .map { (response: API.Response.PagedPrices) in
-                        let result: API.Response.PricesAndAllowance = (response.prices, response.metadata.allowance)
+                        let result = API.Response.SnapshotPrices(prices: response.prices, allowance: response.metadata.allowance)
                         return (response.metadata.page, result)
                     }
             })
-        
-//        return self.paginatedRequest(request: { (api) in
-//            return try requestGenerator(api, page?.number ?? 1)
-//        }, expectedStatusCodes: request.expectedCodes) { (api: API, page: API.Response.PagedPrices) -> ([EventResult],URLRequest?) in
-//            guard !page.prices.isEmpty else {
-//                return ([.completed], nil)
-//            }
-//
-//            let value: EventResult = .value((page.prices, page.metadata.allowance))
-//            guard let nextNumber = page.metadata.page.next else {
-//                return ([value, .completed], nil)
-//            }
-//
-//            do {
-//                let request = try requestGenerator(api, nextNumber)
-//                return ([value], request)
-//            } catch let error {
-//                return ([value, .failed(error as! API.Error)], nil)
-//            }
-//        }
     }
 }
 
@@ -70,23 +62,14 @@ extension API.Request {
         /// Resolution of requested prices.
         public enum Resolution: String, CaseIterable {
             case second = "SECOND"
-            case minute = "MINUTE"
-            case minutes2 = "MINUTE_2"
-            case minutes3 = "MINUTE_3"
-            case minutes5 = "MINUTE_5"
-            case minutes10 = "MINUTE_10"
-            case minutes15 = "MINUTE_15"
-            case minutes30 = "MINUTE_30"
-            case hour = "HOUR"
-            case hours2 = "HOUR_2"
-            case hours3 = "HOUR_3"
-            case hours4 = "HOUR_4"
-            case day = "DAY"
-            case week = "WEEK"
-            case month = "MONTH"
+            case minute = "MINUTE", minutes2 = "MINUTE_2", minutes3 = "MINUTE_3", minutes5 = "MINUTE_5", minutes10 = "MINUTE_10", minutes15 = "MINUTE_15", minutes30 = "MINUTE_30"
+            case hour = "HOUR", hours2 = "HOUR_2", hours3 = "HOUR_3", hours4 = "HOUR_4"
+            case day = "DAY", week = "WEEK", month = "MONTH"
             
+            /// Creates a resolution closest to the amount of seconds passed as argument.
+            /// - parameter seconds: Amount of seconds desired for a resolution.
             public init(seconds: Int) {
-                var result: (resolution: Resolution, distance: Int) = (Resolution.second, Int.max)
+                var result: (resolution: Resolution, distance: Int) = (.second, .max)
                 
                 for resolution in Resolution.allCases {
                     let distance = abs(resolution.seconds - seconds)
@@ -127,56 +110,68 @@ extension API.Request {
 // MARK: -
 
 extension API.Response {
-    /// Simple tuple wrapping the prices response and the HTTP query allowance that it can still be used.
-    public typealias PricesAndAllowance = (prices: [API.Response.Price], allowance: API.Response.Price.Allowance)
-    
     /// Single page of prices request.
-    internal struct PagedPrices: Decodable {
+    fileprivate struct PagedPrices: Decodable {
         /// Instrument type.
-        public let instrumentType: API.Instrument.Kind
+        let instrumentType: API.Instrument.Kind
+        /// Past market prices.
+        let prices: [API.Response.Price]
+        /// Metadata information about the current request.
+        let metadata: API.Response.PagedPrices.Metadata
+        
+        /// Do not call! The only way to initialize is through `Decodable`.
+        private init?() { fatalError("Unaccessible initializer") }
+    }
+}
+
+extension API.Response {
+    /// Group of requested prices and further price request allowance.
+    public struct SnapshotPrices {
         /// Past market prices.
         public let prices: [API.Response.Price]
-        /// Metadata information about the current request.
-        public let metadata: Metadata
+        /// Historical price data allowance.
+        public let allowance: API.Response.Price.Allowance
+    }
+}
+
+extension API.Response.PagedPrices {
+    /// Page's extra information.
+    internal struct Metadata: Decodable {
+        /// Historical price data allowance.
+        let allowance: API.Response.Price.Allowance
+        /// Variables related to the current page.
+        let page: Page
+        /// The total amount of price points after all pages have been loaded.
+        let totalCount: UInt
         
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
         
-        /// Page's extra information.
-        internal struct Metadata: Decodable {
-            /// Historical price data allowance.
-            let allowance: API.Response.Price.Allowance
-            /// Variables related to the current page.
-            let page: Page
+        private enum CodingKeys: String, CodingKey {
+            case allowance
+            case page = "pageData"
+            case totalCount = "size"
+        }
+        
+        /// Variables for the current page.
+        internal struct Page: Decodable {
+            /// The total amount (maximum) of price points that the current page can hold.
+            let size: Int
+            /// The page number.
+            let number: Int
+            /// The total number of pages.
+            let count: Int
+            
+            /// Returns the next page number if there are more to go (`nil` otherwise).
+            var next: Int? { return (number < count) ? number + 1 : nil }
             
             /// Do not call! The only way to initialize is through `Decodable`.
             private init?() { fatalError("Unaccessible initializer") }
             
             private enum CodingKeys: String, CodingKey {
-                case allowance
-                case page = "pageData"
-            }
-            
-            /// Variables for the current page.
-            internal struct Page: Decodable {
-                /// The total amount (maximum) of price points that the current page can hold.
-                let size: Int
-                /// The page number.
-                let number: Int
-                /// The total number of pages.
-                let count: Int
-                
-                /// Returns the next page number if there are more to go (`nil` otherwise).
-                var next: Int? { return (number < count) ? number + 1 : nil }
-                
-                /// Do not call! The only way to initialize is through `Decodable`.
-                private init?() { fatalError("Unaccessible initializer") }
-                
-                private enum CodingKeys: String, CodingKey {
-                    case size = "pageSize"
-                    case number = "pageNumber"
-                    case count = "totalPages"
-                }
+                case size = "pageSize"
+                case number = "pageNumber"
+                case count = "totalPages"
             }
         }
     }
@@ -236,7 +231,9 @@ extension API.Response.Price {
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
     }
-    
+}
+
+extension API.Response.Price {
     /// Request allowance for prices.
     public struct Allowance: Decodable {
         /// The date in which the current allowance period will end and the remaining allowance field is reset.

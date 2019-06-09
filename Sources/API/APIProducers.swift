@@ -371,79 +371,12 @@ extension SignalProducer where Error==API.Error {
 
 extension API.Request.Generator {
     // TODO: Delete me once there is no further call to it
-    internal typealias SolicitationDeleteMe = (_ api: API) throws -> URLRequest
-    // TODO: Delete me once there is no further call to it
     internal typealias QueryDeleteMe = () throws -> [URLQueryItem]
     // TODO: Delete me once there is no further call to it
     internal typealias BodyDeleteMe  = () throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
 }
 
 extension API {
-    /// Takes a `URLRequest` and send it, expecting to receive a paginated JSON. If more pages are available, those are requested serially.
-    /// - parameter requestGenerator: Block that generates an URLRequest or fail throwing an `API.Error` error. Only those errors are expected, any other will crash the program.
-    /// - parameter expectedStatusCodes: Any of the status codes expected on the HTTP responses.
-    /// - parameter decoder: Block generating the JSON Decoder for the response payload.
-    /// - parameter valueHandler: When a value is returned, this handler will decide which events to forward and whether the following page should be requested. If a forwarded event is *terminating*, no further processing will be performed.
-    /// - parameter page: Page received.
-    internal func paginatedRequest<PT:Decodable,T>(request requestGenerator: @escaping API.Request.Generator.SolicitationDeleteMe,
-                                                   expectedStatusCodes: [Int]? = [200],
-                                                   decoder: @escaping API.Request.Generator.Decoder = API.Codecs.jsonDecoder,
-                                                   _ valueHandler: @escaping (_ api: API, _ page: Signal<PT,API.Error>.Value
-                                                  ) -> ([Signal<T,API.Error>.Event],URLRequest?)) -> SignalProducer<T,API.Error> {
-        return SignalProducer<T,API.Error> { [weak weakAPI = self] (generator, lifetime) in
-            /// First request on the paginated stream.
-            let primalRequest: URLRequest
-            guard let primalAPI = weakAPI else { return generator.send(error: .sessionExpired) }
-            
-            do {
-                primalRequest = try requestGenerator(primalAPI)
-            } catch let error {
-                return generator.send(error: error as! API.Error)
-            }
-            
-            typealias SignalPT = Signal<PT,API.Error>
-            typealias SignalT = Signal<T,API.Error>
-            
-            /// Handler for paginated responses (including the first one).
-            var signalHandler: SignalPT.Observer.Action! = nil
-            /// Append to the signal pipeline the send, validate, decode, and handle stages.
-            let executeRequest: (SignalProducer<API.Request.Wrapper,API.Error>) -> Void = { (signal) in
-                let disposable = signal
-                    .send(expecting: .json)
-                    .validateLadenData(statusCodes: expectedStatusCodes)
-                    .decodeJSON(with: decoder)
-                    .start(signalHandler)
-                lifetime.observeEnded(disposable.dispose)
-            }
-            
-            signalHandler = { (event: SignalPT.Event) in
-                let page: PT
-                switch event {
-                case .completed: return
-                case .interrupted: return generator.sendInterrupted()
-                case .failed(let e): return generator.send(error: e)
-                case .value(let p): page = p
-                }
-                
-                guard let futureAPI = weakAPI else { return generator.send(error: .sessionExpired) }
-                let next: (events: [SignalT.Event], request: URLRequest?) = valueHandler(futureAPI, page)
-                
-                for e in next.events {
-                    generator.send(e)
-                    if e.isTerminating { return }
-                }
-                
-                guard let request = next.request else {
-                    return generator.sendCompleted()
-                }
-                
-                executeRequest(SignalProducer(value: (futureAPI, request)))
-            }
-            
-            executeRequest(SignalProducer(value: (primalAPI, primalRequest)))
-        }
-    }
-    
     // TODO: Delete me once there is no further call to it
     internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: API.Request.Generator.QueryDeleteMe? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: API.Request.Generator.BodyDeleteMe? = nil) -> SignalProducer<API.Request.Wrapper,API.Error> {
         return SignalProducer { [weak self] (input, _) in
