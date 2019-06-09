@@ -178,7 +178,7 @@ extension SignalProducer where Error==API.Error {
             
             // Generate the result URLRequest.
             var request = URLRequest(url: url)
-            request.setMethod(method)
+            request.httpMethod = method.rawValue
             
             do {
                 let credentials: API.Credentials? = (usingCredentials) ? try validated.api.credentials() : nil
@@ -280,7 +280,7 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                             generator.send(value: value)
                             return iterator((request, meta))
                         case .completed:
-                            return generator.sendCompleted()
+                            return
                         case .failed(let error):
                             return generator.send(error: error)
                         case .interrupted:
@@ -479,7 +479,7 @@ extension API {
             
             // Generate the result URLRequest.
             var request = URLRequest(url: url)
-            request.setMethod(method)
+            request.httpMethod = method.rawValue
             
             do {
                 let credentials: API.Credentials? = (usingCredentials) ? try self.credentials() : nil

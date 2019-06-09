@@ -4,68 +4,44 @@ import Foundation
 extension API {
     /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
     /// - parameter from: The start date.
-    /// - parameter to: The end date (if `nil` means the end of `from` date).
+    /// - parameter to: The end date (if `nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received.
-    public func transactions(from: Date, to: Date? = nil, type: API.Request.Transaction.Kind = .all, page: (size: Int, number: Int) = (20, 1)) -> SignalProducer<[API.Response.Transaction],API.Error> {
-        /// Constant for this specific request.
-        let request: (method: API.HTTP.Method, version: Int, expectedCodes: [Int]) = (.get, 2, [200])
-        /// The type of event expected at the end of this SignalProducer pipeline.
-        typealias EventResult = Signal<[API.Response.Transaction],API.Error>.Event
-        
-        /// Generates an URLRequest from the function parameters.
-        let requestGenerator: (_ api: API, _ pageNumber: Int) throws -> URLRequest = { (api, pageNumber) in
-            /// Beginning of error message.
-            let errorBlurb = "Transaction retrieval failed!"
-            let absoluteURL = api.rootURL.appendingPathComponent("history/transactions")
-            
-            guard var components = URLComponents(url: absoluteURL, resolvingAgainstBaseURL: true) else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The URL \"\(absoluteURL)url\" cannot be transformed into URL components.")
-            }
-            
-            var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from))]
-            
-            if let to = to {
-                queries.append(URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)))
-            }
-            
-            if type != .all {
-                queries.append(URLQueryItem(name: "type", value: type.rawValue))
-            }
-            
-            queries.append(URLQueryItem(name: "pageSize", value: String(page.size)))
-            queries.append(URLQueryItem(name: "pageNumber", value: String(pageNumber)))
-            components.queryItems = queries
-
-            guard let url = components.url else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The URL couldn't be formed")
-            }
-            
-            return try URLRequest(url: url).set {
-                $0.setMethod(request.method)
-                $0.addHeaders(version: request.version, credentials: try api.credentials())
-            }
-        }
-        
-        return self.paginatedRequest(request: { (api) in
-            return try requestGenerator(api, page.number)
-        }, expectedStatusCodes: request.expectedCodes) { (api: API, page: API.Response.PagedTransactions) -> ([EventResult],URLRequest?) in
-            guard !page.transactions.isEmpty else {
-                return ([.completed], nil)
-            }
-            
-            let value: EventResult = .value(page.transactions)
-            guard let nextNumber = page.metadata.page.next else {
-                return ([value, .completed], nil)
-            }
-            
-            do {
-                let request = try requestGenerator(api, nextNumber)
-                return ([value], request)
-            } catch let error {
-                return ([value, .failed(error as! API.Error)], nil)
-            }
-        }
+    public func transactions(from: Date, to: Date? = nil, type: API.Request.Transaction.Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Response.Transaction],API.Error> {
+        return SignalProducer(api: self)
+            .request(.get, "history/transactions", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
+                var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from))]
+                
+                if let to = to {
+                    queries.append(URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)))
+                }
+                
+                if type != .all {
+                    queries.append(URLQueryItem(name: "type", value: type.rawValue))
+                }
+                
+                queries.append(URLQueryItem(name: "pageSize", value: String(page.size)))
+                return queries
+            }).paginate(request: { (_, initialRequest, previous) -> URLRequest? in
+                let nextPage: UInt
+                if let previous = previous {
+                    guard let nextIteration = previous.meta.next else { return nil }
+                    nextPage = nextIteration
+                } else {
+                    nextPage = 1
+                }
+                
+                var request = initialRequest
+                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(nextPage))] )
+                return request
+            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedTransactions.Metadata.Page,[API.Response.Transaction]), API.Error> in
+                producer.send(expecting: .json)
+                    .validateLadenData(statusCodes: [200])
+                    .decodeJSON()
+                    .map { (response: API.Response.PagedTransactions) in
+                        return (response.metadata.page, response.transactions)
+                    }
+            })
     }
 }
 
@@ -114,9 +90,9 @@ extension API.Response {
                 let container = try decoder.container(keyedBy: CodingKeys.self)
                 let subContainer = try container.nestedContainer(keyedBy: Page.CodingKeys.self, forKey: .pageData)
                 
-                let size = try container.decode(Int.self, forKey: .size)
-                let number = try subContainer.decode(Int.self, forKey: .pageNumber)
-                let count = try subContainer.decode(Int.self, forKey: .totalPages)
+                let size = try container.decode(UInt.self, forKey: .size)
+                let number = try subContainer.decode(UInt.self, forKey: .pageNumber)
+                let count = try subContainer.decode(UInt.self, forKey: .totalPages)
                 self.page = Page(number: number, size: size, count: count)
             }
             
@@ -127,15 +103,15 @@ extension API.Response {
             /// Variables for the current page.
             internal struct Page {
                 /// The page number.
-                let number: Int
+                let number: UInt
                 /// The total amount of transactions that the current page can hold.
-                let size: Int
+                let size: UInt
                 /// The total number of pages.
-                let count: Int
+                let count: UInt
                 
                 /// Returns the next page number if there are more to go (`nil` otherwise).
-                var next: Int? {
-                    return number < count ? number + 1 : nil
+                var next: UInt? {
+                    return self.number < self.count ? self.number + 1 : nil
                 }
                 
                 fileprivate enum CodingKeys: String, CodingKey {

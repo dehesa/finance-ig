@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8D0DA40222ACD69D00636806 /* APIPlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA952149A6CE00344CBF /* APIPlaygroundTests.swift */; };
 		8D1CC9792299EE80009AB4D3 /* AnyDecodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9732299EE6C009AB4D3 /* AnyDecodable.swift */; };
 		8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */; };
 		8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */; };
@@ -87,7 +88,6 @@
 		8DE1B2D3214A6CC800C1FF13 /* APIWatchlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA982149A6CE00344CBF /* APIWatchlistTests.swift */; };
 		8DE1B2D4214A6CC800C1FF13 /* APIPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */; };
 		8DE1B2D5214A6CC800C1FF13 /* APIWorkingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */; };
-		DAE0B70322AA576B00FBE343 /* APIPlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA952149A6CE00344CBF /* APIPlaygroundTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -786,7 +786,7 @@
 				8DE1B2C9214A651300C1FF13 /* APISessionTests.swift in Sources */,
 				8DE1B2CA214A651300C1FF13 /* APIOAuthTests.swift in Sources */,
 				8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */,
-				DAE0B70322AA576B00FBE343 /* APIPlaygroundTests.swift in Sources */,
+				8D0DA40222ACD69D00636806 /* APIPlaygroundTests.swift in Sources */,
 				8DE1B2C8214A651300C1FF13 /* APICertificateTests.swift in Sources */,
 				8DE1B2CC214A6CC800C1FF13 /* APIApplicationTests.swift in Sources */,
 				8DE1B2CD214A6CC800C1FF13 /* APIAccountTests.swift in Sources */,

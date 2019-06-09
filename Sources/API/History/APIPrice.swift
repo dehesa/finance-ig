@@ -7,69 +7,58 @@ extension API {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter page: Paging variables fro the transactions page received. If `nil`, paging is disabled.
-    public func prices(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: Int, number: Int)? = (20, 1)) -> SignalProducer<API.Response.PricesAndAllowance,API.Error> {
-        /// Constants reused through this request.
-        let request: (method: API.HTTP.Method, version: Int, expectedCodes: [Int]) = (.get, 3, [200])
-        /// The type of event expected at the end of this SignalProducer pipeline.
-        typealias EventResult = Signal<API.Response.PricesAndAllowance,API.Error>.Event
-        
-        /// Generates an `URLRequest` from the function parameters.
-        let requestGenerator: (_ api: API, _ pageNumber: Int) throws -> URLRequest = { (api, pageNumber) in
-            /// Beginning of error message.
-            let errorBlurb = "Prices retrieval failed!"
-            guard !epic.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The epic string identifier cannot be empty.") }
-            let absoluteURL = api.rootURL.appendingPathComponent("prices/\(epic)")
-            
-            guard var components = URLComponents(url: absoluteURL, resolvingAgainstBaseURL: true) else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The URL \"\(absoluteURL)url\" cannot be transformed into URL components.")
-            }
-            
-            let pageSize = page?.size ?? 0
-            var queries = [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from)),
-                           URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)),
-                           URLQueryItem(name: "resolution", value: resolution.rawValue),
-                           URLQueryItem(name: "pageSize", value: String(pageSize))]
-            if pageSize > 0 {
-                guard pageNumber > 0 else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The request's page number cannot be a negative number.")
+    /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
+    public func prices(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<API.Response.PricesAndAllowance,API.Error> {
+        // TODO: The endpoint also offers the `max` query that is not being used right now.
+        return SignalProducer(api: self, validating: { (_) -> (pageSize: UInt, pageNumber: UInt) in
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
                 }
-                queries.append(URLQueryItem(name: "pageNumber", value: String(pageNumber)))
-            } else if pageSize < 0 {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The request's page size cannot be a negative number.")
-            }
             
-            components.queryItems = queries
-            
-            guard let url = components.url else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The URL couldn't be formed")
-            }
-            
-            return try URLRequest(url: url).set {
-                $0.setMethod(request.method)
-                $0.addHeaders(version: request.version, credentials: try api.credentials())
-            }
-        }
+                if let page = page {
+                    let pageNumber = (page.number > 0) ? page.number : 1
+                    return (page.size, pageNumber)
+                } else {
+                    return (0, 1)
+                }
+            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) -> [URLQueryItem] in
+                return [URLQueryItem(name: "from", value: API.DateFormatter.iso8601NoTimezone.string(from: from)),
+                        URLQueryItem(name: "to", value: API.DateFormatter.iso8601NoTimezone.string(from: to)),
+                        URLQueryItem(name: "resolution", value: resolution.rawValue),
+                        URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
+                        URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
+            }).paginate(request: { (api, initialRequest, previous) -> URLRequest? in
+                // TODO: Fill up
+                return nil
+            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedPrices.Metadata.Page,API.Response.PricesAndAllowance), API.Error> in
+                producer.send(expecting: .json)
+                    .validateLadenData(statusCodes: [200])
+                    .decodeJSON()
+                    .map { (response: API.Response.PagedPrices) in
+                        let result: API.Response.PricesAndAllowance = (response.prices, response.metadata.allowance)
+                        return (response.metadata.page, result)
+                    }
+            })
         
-        return self.paginatedRequest(request: { (api) in
-            return try requestGenerator(api, page?.number ?? 1)
-        }, expectedStatusCodes: request.expectedCodes) { (api: API, page: API.Response.PagedPrices) -> ([EventResult],URLRequest?) in
-            guard !page.prices.isEmpty else {
-                return ([.completed], nil)
-            }
-            
-            let value: EventResult = .value((page.prices, page.metadata.allowance))
-            guard let nextNumber = page.metadata.page.next else {
-                return ([value, .completed], nil)
-            }
-            
-            do {
-                let request = try requestGenerator(api, nextNumber)
-                return ([value], request)
-            } catch let error {
-                return ([value, .failed(error as! API.Error)], nil)
-            }
-        }
+//        return self.paginatedRequest(request: { (api) in
+//            return try requestGenerator(api, page?.number ?? 1)
+//        }, expectedStatusCodes: request.expectedCodes) { (api: API, page: API.Response.PagedPrices) -> ([EventResult],URLRequest?) in
+//            guard !page.prices.isEmpty else {
+//                return ([.completed], nil)
+//            }
+//
+//            let value: EventResult = .value((page.prices, page.metadata.allowance))
+//            guard let nextNumber = page.metadata.page.next else {
+//                return ([value, .completed], nil)
+//            }
+//
+//            do {
+//                let request = try requestGenerator(api, nextNumber)
+//                return ([value], request)
+//            } catch let error {
+//                return ([value, .failed(error as! API.Error)], nil)
+//            }
+//        }
     }
 }
 
