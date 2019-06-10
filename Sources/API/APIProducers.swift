@@ -131,9 +131,9 @@ extension SignalProducer where Error==API.Error {
         }
     }
     
-    /// Convenience function over the regular `makeRequest(_:)` placing the most common parameters.
+    /// Convenience function over the regular `request(_:)` placing the most common parameters.
     ///
-    /// Please note that this is purely a convenience function, for requests that fall (even slightly) outside the given parameters, the other `makeRequest(_:)` function shall be used.
+    /// Please note that this is purely a convenience function, for requests that fall (even slightly) outside the given parameters, the other `request(_:)` function shall be used.
     /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter method: The HTTP method of the endpoint.
     /// - parameter relativeURL: The relative URL to be appended to the API instance root URL.
@@ -354,83 +354,6 @@ extension SignalProducer where Error==API.Error {
         return self.flatMap(strategy) { [weak api] (receivedValue) -> SignalProducer<V,API.Error> in
             guard let api = api else { return SignalProducer<V,API.Error>(error: .sessionExpired) }
             return next(api, receivedValue)
-        }
-    }
-}
-
-// MARK: -
-
-
-
-
-
-
-
-
-
-
-extension API.Request.Generator {
-    // TODO: Delete me once there is no further call to it
-    internal typealias QueryDeleteMe = () throws -> [URLQueryItem]
-    // TODO: Delete me once there is no further call to it
-    internal typealias BodyDeleteMe  = () throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
-}
-
-extension API {
-    // TODO: Delete me once there is no further call to it
-    internal func makeRequest(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool, queries: API.Request.Generator.QueryDeleteMe? = nil, headers: [API.HTTP.Header.Key:String]? = nil, body: API.Request.Generator.BodyDeleteMe? = nil) -> SignalProducer<API.Request.Wrapper,API.Error> {
-        return SignalProducer { [weak self] (input, _) in
-            guard let self = self else {
-                return input.send(error: .sessionExpired)
-            }
-            
-            var url = self.rootURL.appendingPathComponent(relativeURL)
-            
-            // If there are queries to append, enter this block; if not, ignore it.
-            if let queryGenerator = queries {
-                let urlQueries: [URLQueryItem]
-                do {
-                    urlQueries = try queryGenerator()
-                } catch let error as API.Error {
-                    return input.send(error: error)
-                } catch let error {
-                    return input.send(error: .invalidRequest(underlyingError: error, message: "The URL request queries couldn't be formed."))
-                }
-                
-                if !urlQueries.isEmpty {
-                    guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-                        return input.send(error: .invalidRequest(underlyingError: nil, message: "The URL \"\(url)\" cannot be transformed into URL components."))
-                    }
-                    
-                    components.queryItems = urlQueries
-                    guard let requestURL = components.url else {
-                        return input.send(error: .invalidRequest(underlyingError: nil, message: "The URL couldn't be formed"))
-                    }
-                    url = requestURL
-                }
-            }
-            
-            // Generate the result URLRequest.
-            var request = URLRequest(url: url)
-            request.httpMethod = method.rawValue
-            
-            do {
-                let credentials: API.Credentials? = (usingCredentials) ? try self.credentials() : nil
-                request.addHeaders(version: version, credentials: credentials, headers)
-                
-                if let bodyGenerator = body {
-                    let blob = try bodyGenerator()
-                    request.addValue(blob.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
-                    request.httpBody = blob.data
-                }
-            } catch let error as API.Error {
-                return input.send(error: error)
-            } catch let error {
-                return input.send(error: .invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
-            }
-            
-            input.send(value: (self, request))
-            return input.sendCompleted()
         }
     }
 }

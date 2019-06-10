@@ -5,15 +5,22 @@ extension API {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     public func markets(epics: [String]) -> SignalProducer<[API.Response.Market],API.Error> {
-        return self.makeRequest(.get, "markets", version: 2, credentials: true, queries: {
-                let filteredEpics = epics.filter { !$0.isEmpty }
-                let errorBlurb = "Search for market epics failed!"
-                guard !filteredEpics.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) There needs to be at least one epic defined.") }
-                guard filteredEpics.count <= 50 else { throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.") }
+        return SignalProducer(api: self) { (_) -> [String] in
+                let validatedEpics = epics.filter { !$0.isEmpty }
             
-                return [URLQueryItem(name: "filter", value: "ALL"),
-                        URLQueryItem(name: "epics", value: filteredEpics.joined(separator: ",")) ]
-          }).send(expecting: .json)
+                let errorBlurb = "Search for market epics failed!"
+                guard !validatedEpics.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) There needs to be at least one epic defined.")
+                }
+                guard validatedEpics.count <= 50 else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.")
+                }
+            
+                return validatedEpics
+            }.request(.get, "markets", version: 2, credentials: true, queries: { (_, epics) -> [URLQueryItem] in
+                [URLQueryItem(name: "filter", value: "ALL"),
+                 URLQueryItem(name: "epics", value: epics.joined(separator: ",")) ]
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (list: API.Response.MarketList) in list.marketDetails }
@@ -21,10 +28,12 @@ extension API {
     
     /// Returns the details of a given market.
     public func market(epic: String) -> SignalProducer<API.Response.Market,API.Error> {
-        return self.makeRequest(.get, "markets/\(epic)", version: 3, credentials: true, queries: { () -> [URLQueryItem] in
-                guard !epic.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Market retrieval failed! The epic cannot be empty.") }
-                return []
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Market retrieval failed! The epic cannot be empty.")
+                }
+            }.request(.get, "markets/\(epic)", version: 3, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
     }

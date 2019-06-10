@@ -8,9 +8,10 @@ extension API {
     /// - parameter request: Data for the new position, with some in-client data validation.
     /// - returns: The transient deal reference (for an unconfirmed trade).
     public func createPosition(_ request: API.Request.Position.Creation) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.post, "positions/otc", version: 2, credentials: true, body: {
+        return SignalProducer(api: self)
+            .request(.post, "positions/otc", version: 2, credentials: true, body: { (_,_) in
                 return (.json, try API.Codecs.jsonEncoder().encode(request))
-          }).send(expecting: .json)
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.Position.ReferenceWrapper) in w.dealReference }
@@ -24,15 +25,18 @@ extension API {
     /// - parameter stop: Optional new price stop level at which the user won't take more losses.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func updatePosition(identifier dealId: String, limit: Double? = nil, stop: API.Request.Position.Update.Stop? = nil) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.put, "positions/otc/\(dealId)", version: 2, credentials: true, queries: {
-                guard !dealId.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! The deal identifier cannot be empty.") }
-                return []
-            }, body: {
-                guard let body = API.Request.Position.Update(limit: limit, stop: stop) else {
+        return SignalProducer(api: self) { (_) -> API.Request.Position.Update in
+                guard !dealId.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! The deal identifier cannot be empty.")
+                }
+            
+                guard let payload = API.Request.Position.Update(limit: limit, stop: stop) else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! No parameters were provided.")
                 }
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+                return payload
+            }.request(.put, "positions/otc/\(dealId)", version: 2, credentials: true, body: { (_, payload) in
+                (.json, try API.Codecs.jsonEncoder().encode(payload))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.Position.ReferenceWrapper) in w.dealReference }
@@ -42,9 +46,12 @@ extension API {
     /// - parameter request: A filter to match the positions to be deleted.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func deletePositions(_ request: API.Request.Position.Deletion) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: [._method: API.HTTP.Method.delete.rawValue], body: {
-                return (.json, try API.Codecs.jsonEncoder().encode(request))
-          }).send(expecting: .json)
+        return SignalProducer(api: self)
+            .request(.post, "positions/otc", version: 1, credentials: true, headers: { (_,_) in
+                [._method: API.HTTP.Method.delete.rawValue]
+            }, body: { (_,_) in
+                (.json, try API.Codecs.jsonEncoder().encode(request))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.Position.ReferenceWrapper) in w.dealReference }
