@@ -4,7 +4,8 @@ import Foundation
 extension API {
     /// Returns all watchlists belonging to the active account.
     public func watchlists() -> SignalProducer<[API.Response.Watchlist],API.Error> {
-        return self.makeRequest(.get, "watchlists", version: 1, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "watchlists", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
@@ -16,10 +17,11 @@ extension API {
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: SignalProducer with the watchlist identifier as its value.
     public func createWatchlist(name: String, epics: [String]) -> SignalProducer<(identifier: String, areAllInstrumentAdded: Bool),API.Error> {
-        return self.makeRequest(.post, "watchlists", version: 1, credentials: true, body: {
-                let body = try API.Request.Watchlist.Creation(name: name, epics: epics)
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> API.Request.Watchlist.Creation in
+                try .init(name: name, epics: epics)
+            }.request(.post, "watchlists", version: 1, credentials: true, body: { (_, payload) in
+                (.json, try API.Codecs.jsonEncoder().encode(payload))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WatchlistCreationWrapper) in (w.identifier, w.areAllInstrumentAdded) }
@@ -28,10 +30,13 @@ extension API {
     /// Returns the targeted watchlist.
     /// - parameter id: The identifier for the watchlist being targeted.
     public func watchlist(id: String) -> SignalProducer<[API.Response.Watchlist.Market],API.Error> {
-        return self.makeRequest(.get, "watchlists/\(id)", version: 1, credentials: true, queries: {
-                guard !id.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist retrieval failed! The watchlist identifier cannot be empty.") }
-                return []
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !id.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist retrieval failed! The watchlist identifier cannot be empty.")
+                }
+            }
+            .request(.get, "watchlists/\(id)", version: 1, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WatchlistRetrievalWrapper) in w.markets }
@@ -42,14 +47,18 @@ extension API {
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updateWatchlist(id: String, addingEpic epic: String) -> SignalProducer<Void,API.Error> {
-        return self.makeRequest(.put, "watchlists/\(id)", version: 1, credentials: true, queries: {
-                guard !id.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.") }
-                guard !epic.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.") }
-                return []
-          }, body: {
-                let body = ["epic": epic]
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> String in
+                guard !id.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.")
+                }
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.")
+                }
+                return epic
+            }.request(.put, "watchlists/\(id)", version: 1, credentials: true, body: { (_, epic) in
+                let payload = ["epic": epic]
+                return (.json, try API.Codecs.jsonEncoder().encode(payload))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WatchlistUpdateWrapper) in return }
@@ -60,11 +69,15 @@ extension API {
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updateWatchlist(id: String, removingEpic epic: String) -> SignalProducer<Void,API.Error> {
-        return self.makeRequest(.delete, "watchlists/\(id)/\(epic)", version: 1, credentials: true, queries: {
-                guard !id.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.") }
-                guard !epic.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.") }
-                return []
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !id.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.")
+                }
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.")
+                }
+            }.request(.delete, "watchlists/\(id)/\(epic)", version: 1, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WatchlistUpdateWrapper) in return }
@@ -74,10 +87,12 @@ extension API {
     /// - parameter id: The identifier for the watchlist being targeted.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func deleteWatchlist(id: String) -> SignalProducer<Void,API.Error> {
-        return self.makeRequest(.delete, "watchlists/\(id)", version: 1, credentials: true, queries: {
-                guard !id.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist deletion failed! The watchlist identifier cannot be empty.") }
-                return []
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !id.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist deletion failed! The watchlist identifier cannot be empty.")
+                }
+            }.request(.delete, "watchlists/\(id)", version: 1, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WatchlistDeletionWrapper) in return }
@@ -90,7 +105,7 @@ extension API.Request {
     /// List of watchlist related requests.
     fileprivate enum Watchlist {
         /// A watchlist creation request payload.
-        fileprivate struct Creation: Encodable {
+        struct Creation: Encodable {
             let name: String
             let epics: [String]
             

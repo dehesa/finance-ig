@@ -24,13 +24,13 @@ extension API {
             
                 let pageNumber = (page.number > 0) ? page.number : 1
                 return (page.size, pageNumber, formatter)
-            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) -> [URLQueryItem] in
+            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) in
                 return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
                         URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
                         URLQueryItem(name: "resolution", value: resolution.rawValue),
                         URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
                         URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
-            }).paginate(request: { (api, initialRequest, previous) -> URLRequest? in
+            }).paginate(request: { (api, initialRequest, previous) in
                 guard let previous = previous else {
                     return initialRequest
                 }
@@ -136,7 +136,7 @@ extension API.Response {
 
 extension API.Response.PagedPrices {
     /// Page's extra information.
-    internal struct Metadata: Decodable {
+    fileprivate struct Metadata: Decodable {
         /// Historical price data allowance.
         let allowance: API.Response.Price.Allowance
         /// Variables related to the current page.
@@ -154,7 +154,7 @@ extension API.Response.PagedPrices {
         }
         
         /// Variables for the current page.
-        internal struct Page: Decodable {
+        struct Page: Decodable {
             /// The total amount (maximum) of price points that the current page can hold.
             let size: Int
             /// The page number.
@@ -220,13 +220,13 @@ extension API.Response.Price {
     /// Price Snap.
     public struct Point: Decodable {
         /// Ask price (i.e. buy price).
-        let ask: Double
+        public let ask: Double
         /// Bid price (i.e. sell price).
-        let bid: Double
+        public let bid: Double
         /// Last traded price.
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
-        let lastTraded: Double?
+        public let lastTraded: Double?
         
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }

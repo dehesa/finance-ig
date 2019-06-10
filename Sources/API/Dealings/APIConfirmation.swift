@@ -10,10 +10,12 @@ extension API {
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay. Also not the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Targeted deal reference.
     public func confirmation(reference: String) -> SignalProducer<APIResponseConfirmation,API.Error> {
-        return self.makeRequest(.get, "confirms/\(reference)", version: 1, credentials: true, queries: { () -> [URLQueryItem] in
-            guard !reference.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Deal confirmation failed! The deal identifier cannot be empty.") }
-            return []
-        }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !reference.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Deal confirmation failed! The deal identifier cannot be empty.")
+                }
+            }.request(.get, "confirms/\(reference)", version: 1, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .attemptMap { (request, header, data) -> Result<APIResponseConfirmation,API.Error> in
                 let decoder = API.Codecs.jsonDecoder(request: request, responseHeader: header)

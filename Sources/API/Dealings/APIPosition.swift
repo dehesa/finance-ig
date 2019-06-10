@@ -6,7 +6,8 @@ extension API {
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
     public func positions() -> SignalProducer<[API.Response.Position],API.Error> {
-        return self.makeRequest(.get, "positions", version: 2, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
@@ -18,10 +19,12 @@ extension API {
     /// A position is a running bet, which may be long (buy) or short (sell).
     /// - parameter id: Targeted deal identifier.
     public func position(id: String) -> SignalProducer<API.Response.Position,API.Error> {
-        return self.makeRequest(.get, "positions/\(id)", version: 2, credentials: true, queries: {
-                guard !id.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Position retrieval failed! The deal identifier cannot be empty.") }
-                return []
-          }).send(expecting: .json)
+        return SignalProducer(api: self) { (_) -> Void in
+                guard !id.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position retrieval failed! The deal identifier cannot be empty.")
+                }
+            }.request(.get, "positions/\(id)", version: 2, credentials: true)
+            .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
     }

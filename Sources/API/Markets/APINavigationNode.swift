@@ -26,8 +26,8 @@ extension API {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Search for markets failed! The search term cannot be empty")
                 }
                 return searchTerm
-            }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) -> [URLQueryItem] in
-                return [URLQueryItem(name: "searchTerm", value: searchTerm)]
+            }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) in
+                [URLQueryItem(name: "searchTerm", value: searchTerm)]
             }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()

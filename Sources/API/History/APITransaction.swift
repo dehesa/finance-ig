@@ -12,7 +12,7 @@ extension API {
                 let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
                 formatter.timeZone = api.timeZone
                 return formatter
-            }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) -> [URLQueryItem] in
+            }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
                 if let to = to {
@@ -25,7 +25,7 @@ extension API {
                 
                 queries.append(URLQueryItem(name: "pageSize", value: String(page.size)))
                 return queries
-            }).paginate(request: { (_, initialRequest, previous) -> URLRequest? in
+            }).paginate(request: { (_, initialRequest, previous) in
                 let nextPage: UInt
                 if let previous = previous {
                     guard let nextIteration = previous.meta.next else { return nil }

@@ -6,9 +6,10 @@ extension API {
     /// - parameter request: Data for the new working order, with some in-client validation.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func createWorkingOrder(_ request: API.Request.WorkingOrder.Creation) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
-                return (.json, try API.Codecs.jsonEncoder().encode(request))
-          }).send(expecting: .json)
+        return SignalProducer(api: self)
+            .request(.post, "workingorders/otc", version: 2, credentials: true, body: { (_,_) in
+                (.json, try API.Codecs.jsonEncoder().encode(request))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WorkingOrder.ReferenceWrapper) in w.dealReference }
@@ -19,15 +20,18 @@ extension API {
     /// This method changes one or many of the given parameters. Arguments not given are not modified.
     /// - parameter request: Data for the new working order, with some in-client validation.
     public func updateWorkingOrder(identifier dealId: String, type: API.WorkingOrder.Kind? = nil, level: Double? = nil, limit: API.WorkingOrder.Boundary.Limit? = nil, stop: API.WorkingOrder.Boundary.Stop? = nil, expiration: API.WorkingOrder.Expiration? = nil) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.put, "workingorders/otc/\(dealId)", version: 2, credentials: true, queries: {
-                guard !dealId.isEmpty else { throw API.Error.invalidRequest(underlyingError: nil, message: "Working order update failed! The deal identifier cannot be empty.") }
-                return []
-            }, body: {
-                guard let body = API.Request.WorkingOrder.Update(type: type, level: level, limit: limit, stop: stop, expiration: expiration) else {
+        return SignalProducer(api: self) { (_) -> API.Request.WorkingOrder.Update in
+                guard !dealId.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Working order update failed! The deal identifier cannot be empty.")
+                }
+            
+                guard let payload = API.Request.WorkingOrder.Update(type: type, level: level, limit: limit, stop: stop, expiration: expiration) else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Working order update failed! No parameters were provided.")
                 }
-                return (.json, try API.Codecs.jsonEncoder().encode(body))
-          }).send(expecting: .json)
+                return payload
+            }.request(.put, "workingorders/otc/\(dealId)", version: 2, credentials: true, body: { (_,payload) in
+                (.json, try API.Codecs.jsonEncoder().encode(payload))
+            }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
             .map { (w: API.Response.WorkingOrder.ReferenceWrapper) in w.dealReference }
@@ -38,7 +42,8 @@ extension API {
     /// - parameter dealId: A permanent deal reference for a confirmed trade.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func deleteWorkingOrder(identifier dealId: String) -> SignalProducer<String,API.Error> {
-        return self.makeRequest(.delete, "workingorders/otc/\(dealId)", version: 2, credentials: true)
+        return SignalProducer(api: self)
+            .request(.delete, "workingorders/otc/\(dealId)", version: 2, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()

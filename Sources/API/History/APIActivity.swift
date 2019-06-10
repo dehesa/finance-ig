@@ -12,7 +12,6 @@ extension API {
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func activity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = API.Request.Activity.PageSize.default) -> SignalProducer<[API.Response.Activity],API.Error> {
-        
         var dateFormatter: Foundation.DateFormatter! = nil
         
         return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
@@ -20,7 +19,7 @@ extension API {
                 formatter.timeZone = api.timeZone
                 dateFormatter = formatter
                 return formatter
-            }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) -> [URLQueryItem] in
+            }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
                 if let to = to {
@@ -40,7 +39,7 @@ extension API {
                 }
                 
                 return queries
-            }).paginate(request: { (api, initialRequest, previous) -> URLRequest? in
+            }).paginate(request: { (api, initialRequest, previous) in
                 guard let previous = previous else {
                     return initialRequest
                 }
@@ -53,7 +52,7 @@ extension API {
                 nextRequest.url = nextURL
                 return nextRequest
             }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedActivities.Metadata.Page,[API.Response.Activity]),API.Error> in
-                producer.send(expecting: .json)
+                return producer.send(expecting: .json)
                     .validateLadenData(statusCodes: [200])
                     .decodeJSON { (request, responseHeader) -> JSONDecoder in
                         let result = API.Codecs.jsonDecoder(request: request, responseHeader: responseHeader)
@@ -113,18 +112,18 @@ extension API.Response {
 
 extension API.Response.PagedActivities.Metadata {
     /// Paging metadata response.
-    public struct Page: Decodable {
+    fileprivate struct Page: Decodable {
         /// The number of resources/answers delivered in the response.
-        public let size: Int
+        let size: Int
         /// The relative url to hit next for getting the following page.
-        public let nextRelativeURL: URL?
+        let nextRelativeURL: URL?
         
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
         
         /// The absolute `next` URL.
         /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
-        public func nextURL(rootURL: URL) -> URL? {
+        func nextURL(rootURL: URL) -> URL? {
             guard let url = self.nextRelativeURL,
                   let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
                   var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {

@@ -4,7 +4,8 @@ import Foundation
 extension API {
     /// Returns all open working orders for the active account.
     public func workingOrders() -> SignalProducer<[API.Response.WorkingOrder],API.Error> {
-        return self.makeRequest(.get, "workingorders", version: 2, credentials: true)
+        return SignalProducer(api: self)
+            .request(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
