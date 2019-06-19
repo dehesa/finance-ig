@@ -40,7 +40,14 @@ public final class Services {
             }
     }
     
-    //#warning("TODO: Create a make function accepting tokens instead of passwords")
+    /// Initializes and request credentials for all platform services with the given API token.
+    /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL hit IG's production environment.
+    /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
+    /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
+    /// - todo: Create a make function accepting tokens instead of passwords.
+//    public static func make(rootURL: URL = API.rootURL, token: API.Credentials.Token.Kind) -> SignalProducer<Services,Services.Error> {
+//        
+//    }
 }
 
 extension Services {
