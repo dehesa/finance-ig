@@ -38,7 +38,8 @@ extension API {
             self.token = token
         }
         
-        /// Request headers for the underlying credentials.
+        /// Key-value pairs to be added to the request headers.
+        /// - returns: The key-value pairs of the underlying credentials.
         internal var requestHeaders: [API.HTTP.Header.Key:String] {
             var result: [API.HTTP.Header.Key:String] = [.apiKey: self.apiKey]
             switch self.token.value {
@@ -54,7 +55,7 @@ extension API {
     }
 }
 
-extension API.Credentials: CustomDebugStringConvertible {
+extension API.Credentials {
     /// Storage for one of the login types supported by the servers.
     public struct Token {
         /// Expiration date for the underlying token (only references the access token).
@@ -67,58 +68,16 @@ extension API.Credentials: CustomDebugStringConvertible {
             self.expirationDate = expirationDate
             self.value = value
         }
-        
-        /// The type of token stored.
-        public enum Kind: CustomDebugStringConvertible {
-            /// Session token (v2) with a CST and Security tokens.
-            case certificate(access: String, security: String)
-            /// OAuth token (v3) with access and refresh tokens.
-            case oauth(access: String, refresh: String, scope: String, type: String)
-            
-            public var debugDescription: String {
-                switch self {
-                case .certificate(let access, let security):
-                    return """
-                    Token CST {
-                        Access: \(access)
-                        Security: \(security)
-                    }
-                    """
-                case .oauth(let access, let refresh, _, let type):
-                    return """
-                    Token OAuth {
-                        Access: \(type) \(access)
-                        Refresh: \(refresh)
-                    }
-                    """
-                }
-            }
-        }
     }
-    
-    public var debugDescription: String {
-        var result = """
-        API credentials {
-            Client ID:       \(self.clientId)
-            Account ID:      \(self.accountId)
-            API key:         \(self.apiKey)
-            Streamer URL:    \(self.streamerURL)
-            Timezone:        \(self.timezone)
-        """
-        
-        switch self.token.value {
-        case .certificate(let access, let security):
-            result.append("\n    CST token:       \(access)")
-            result.append("\n    Security header: \(security)")
-        case .oauth(let access, let refresh, let scope, let type):
-            result.append("\n    OAuth token:     \(access)")
-            result.append("\n    OAuth scope:     \(scope)")
-            result.append("\n    OAuth type:      \(type)")
-            result.append("\n    Refresh token:   \(refresh)")
-        }
-        
-        result.append("\n}")
-        return result
+}
+
+extension API.Credentials.Token {
+    /// The type of token stored.
+    public enum Kind {
+        /// Session token (v2) with a CST and Security tokens.
+        case certificate(access: String, security: String)
+        /// OAuth token (v3) with access and refresh tokens.
+        case oauth(access: String, refresh: String, scope: String, type: String)
     }
 }
 
@@ -165,16 +124,68 @@ extension API.Request {
             self.username = username
             self.password = password
         }
+    }
+}
+
+// MARK: Debug helpers
+
+extension API.Credentials: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = """
+        API credentials {
+            Client ID:       \(self.clientId)
+            Account ID:      \(self.accountId)
+            API key:         \(self.apiKey)
+            Streamer URL:    \(self.streamerURL)
+            Timezone:        \(self.timezone)
+        """
         
-        public var debugDescription: String {
-            return """
-             API login {
-                Account ID: \(self.accountId)
-                API key:    \(self.apiKey)
-                Username:   \(self.username)
-                Password:   \(self.password)
-             }
-             """
+        switch self.token.value {
+        case .certificate(let access, let security):
+            result.append("\n    CST token:       \(access)")
+            result.append("\n    Security header: \(security)")
+        case .oauth(let access, let refresh, let scope, let type):
+            result.append("\n    OAuth token:     \(access)")
+            result.append("\n    OAuth scope:     \(scope)")
+            result.append("\n    OAuth type:      \(type)")
+            result.append("\n    Refresh token:   \(refresh)")
         }
+        
+        result.append("\n}")
+        return result
+    }
+}
+
+extension API.Credentials.Token.Kind: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        switch self {
+        case .certificate(let access, let security):
+            return """
+            Token CST {
+                Access: \(access)
+                Security: \(security)
+            }
+            """
+        case .oauth(let access, let refresh, _, let type):
+            return """
+            Token OAuth {
+                Access: \(type) \(access)
+                Refresh: \(refresh)
+            }
+            """
+        }
+    }
+}
+
+extension API.Request.Login {
+    public var debugDescription: String {
+        return """
+        API login {
+            Account ID: \(self.accountId)
+            API key:    \(self.apiKey)
+            Username:   \(self.username)
+            Password:   \(self.password)
+        }
+        """
     }
 }

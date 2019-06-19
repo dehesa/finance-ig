@@ -1,8 +1,9 @@
 import Foundation
 
 extension URLRequest {
-    /// Convenience function to append the given queries to the receiving URL request.
-    /// - parameter queries: URL queries to be appended at the end of the given URL.
+    /// Convenience function to append the given URL queries to the receiving URL request.
+    /// - parameter newQueries: URL queries to be appended at the end of the given URL.
+    /// - throws: `API.Error.invalidRequest` if the receiving request have no URL (or cannot be transformed into `URLComponents`) or the given queries cannot be appended to the receiving request URL.
     internal mutating func addQueries(_ newQueries: [URLQueryItem]) throws {
         guard !newQueries.isEmpty else {
             return
@@ -58,8 +59,11 @@ extension URLRequest {
     }
     
     /// Serialize as JSON data and add the passed parameter to the receiving request body.
+    ///
+    /// This convenience function will both replace the receiving request HTTP body with the encoded argument and will set the receiving request header content type to indicate the body contains a JSON payload.
     /// - parameter body: The Swift types to be serialized into JSON data.
-    /// - throws: `API.Error.invalidRequest` only.
+    /// - parameter encoder: The JSON encoder  used to serialize the given type.
+    /// - throws: `API.Error.invalidRequest` if the given argument couldn't be serialized. The API error will wrap the encoding error.
     internal mutating func attachJSON<T:Encodable>(_ body: T, with encoder: JSONEncoder) throws {
         do {
             // self.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
