@@ -12,36 +12,6 @@ extension Streamer {
         /// The client and server are disconnected.
         case disconnected(isRetrying: Bool)
         
-        /// The type of connection established between the client and server.
-        public enum Connection: Equatable {
-            /// Connection over WebSocket.
-            case websocket(isPolling: Bool)
-            /// Connection over HTTP.
-            case http(isPolling: Bool)
-            /// The client has received a first response from the server and is not evaluating if a streaming connection is fully functional.
-            case sensing
-            
-            /// Boolean indicating whether the connection is polling the server (undesirable) or streaming.
-            ///
-            /// Streaming connections are better and more responsive than polling connection.
-            public var isPolling: Bool {
-                switch self {
-                case .websocket(let isPolling): return isPolling
-                case .http(let isPolling): return isPolling
-                case .sensing: return false
-                }
-            }
-            
-            public static func == (lhs: Connection, rhs: Connection) -> Bool {
-                switch (lhs, rhs) {
-                case (.websocket(let a), .websocket(let b)): return a == b
-                case (.http(let a), .http(let b)): return a == b
-                case (.sensing, .sensing): return true
-                default: return false
-                }
-            }
-        }
-        
         public init?(rawValue: String) {
             switch rawValue {
             case Key.connecting.rawValue: self = .connecting
@@ -68,15 +38,6 @@ extension Streamer {
                 }
             case .stalled: return Key.stalled.rawValue
             case .disconnected(let isRetrying): return (!isRetrying) ? Key.disconnectedNoRetry.rawValue : Key.disconnectedRetrying.rawValue
-            }
-        }
-        
-        public static func == (lhs: Status, rhs: Status) -> Bool {
-            switch (lhs, rhs) {
-            case (.connecting, .connecting), (.stalled, .stalled): return true
-            case (.connected(let a), .connected(let b)): return a == b
-            case (.disconnected(let a), .disconnected(let b)): return a == b
-            default: return false
             }
         }
         
@@ -119,7 +80,32 @@ extension Streamer {
             case disconnectedNoRetry = "DISCONNECTED"
         }
     }
+}
 
+extension Streamer.Status {
+    /// The type of connection established between the client and server.
+    public enum Connection: Equatable {
+        /// Connection over WebSocket.
+        case websocket(isPolling: Bool)
+        /// Connection over HTTP.
+        case http(isPolling: Bool)
+        /// The client has received a first response from the server and is not evaluating if a streaming connection is fully functional.
+        case sensing
+        
+        /// Boolean indicating whether the connection is polling the server (undesirable) or streaming.
+        ///
+        /// Streaming connections are better and more responsive than polling connection.
+        public var isPolling: Bool {
+            switch self {
+            case .websocket(let isPolling): return isPolling
+            case .http(let isPolling): return isPolling
+            case .sensing: return false
+            }
+        }
+    }
+}
+
+extension Streamer {
     /// Possible Lightstreamer modes.
     internal enum Mode: String {
         /// Lightstreamer MERGE mode.
