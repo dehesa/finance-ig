@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 51;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,12 +12,12 @@
 		8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */; };
 		8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */; };
 		8D1CC97D229B0706009AB4D3 /* APIProducers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC97C229B0706009AB4D3 /* APIProducers.swift */; };
+		8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8D23A90622C1E41E00518EC9 /* ReactiveSwift */; };
 		8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D845A6F229C7AA800A0049A /* APIEntities.swift */; };
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
-		8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */; };
 		8DC4CC082149B10300344CBF /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
 		8DC4CC0A2149B11100344CBF /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Helpers.swift */; };
 		8DC4CC0D2149B2C300344CBF /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
@@ -207,7 +207,6 @@
 		8DC4CBFF2149AB1200344CBF /* Streamer */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Streamer; sourceTree = "<group>"; };
 		8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
 		8DC4CC052149AF2500344CBF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ReactiveSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -216,7 +215,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */,
-				8DC4CC072149B0AA00344CBF /* ReactiveSwift.framework in Frameworks */,
+				8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,9 +325,9 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA5C2149A6CE00344CBF /* Streamer.swift */,
+				8DC4CA5D2149A6CE00344CBF /* StreamerConstants.swift */,
 				8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */,
 				8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */,
-				8DC4CA5D2149A6CE00344CBF /* StreamerConstants.swift */,
 				8DC4CA522149A6CE00344CBF /* Subscription */,
 				8DC4CA572149A6CE00344CBF /* Markets */,
 				8DC4CA5F2149A6CE00344CBF /* Account */,
@@ -600,7 +599,6 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */,
-				8DC4CC062149B0AA00344CBF /* ReactiveSwift.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -633,6 +631,9 @@
 			dependencies = (
 			);
 			name = "IG [macOS]";
+			packageProductDependencies = (
+				8D23A90622C1E41E00518EC9 /* ReactiveSwift */,
+			);
 			productName = IG;
 			productReference = 8DC4CBE12149A78700344CBF /* IG.framework */;
 			productType = "com.apple.product-type.framework";
@@ -674,7 +675,7 @@
 				};
 			};
 			buildConfigurationList = 8DC4CA372149A60900344CBF /* Build configuration list for PBXProject "IG" */;
-			compatibilityVersion = "Xcode 10.0";
+			compatibilityVersion = "Xcode 11.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -682,6 +683,9 @@
 				Base,
 			);
 			mainGroup = 8DC4CA332149A60900344CBF;
+			packageReferences = (
+				8D23A90522C1E41E00518EC9 /* XCRemoteSwiftPackageReference "ReactiveSwift" */,
+			);
 			productRefGroup = 8DC4CBE22149A78700344CBF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1070,6 +1074,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8D23A90522C1E41E00518EC9 /* XCRemoteSwiftPackageReference "ReactiveSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:ReactiveCocoa/ReactiveSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8D23A90622C1E41E00518EC9 /* ReactiveSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D23A90522C1E41E00518EC9 /* XCRemoteSwiftPackageReference "ReactiveSwift" */;
+			productName = ReactiveSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8DC4CA342149A60900344CBF /* Project object */;
 }

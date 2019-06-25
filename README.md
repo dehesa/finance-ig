@@ -2,12 +2,14 @@
     <img src="Assets/IG.svg" alt="Codable CSV"/>
 </p>
 
-![Swift 5](https://img.shields.io/badge/Swift-5-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS-lightgrey.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
+![Swift 5](https://img.shields.io/badge/Swift-5-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS-lightgrey.svg) ![Xcode 11](https://img.shields.io/badge/Xcode-11-blueviolet.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
 
 This framework provides:
 - Interface to IG's **HTTP APIs and Lightstreamer service**.
+  <br>The Lighstreamer binaries are packaged with the source code. IG only supports an older version from the Lightstreamer framework and this framework will provide the latest supported version. To know more, check [labs.ig.com](https://labs.ig.com/lightstreamer-downloads).
 - Session management helpers.
 - **ReactiveSwift support** for easy endpoint pipelining.
+  <br>Dependency provided through Swift Package Manager.
 
 Usage
 =====
@@ -97,27 +99,6 @@ services.streamer.subscribe(account: "ABC12", updates: [.confirmations]).startWi
     print("is accepted: \(confirmation.isAccepted)")
 }
 ```
-
-Installation
-============
-
-This framework has the following dependencies:
-- [ReactiveSwift](https://github.com/ReactiveCocoa/ReactiveSwift).
-- [Lightstreamer](https://lightstreamer.com/download/).
-  IG only supports an older version from the Lightstreamer framework. Check  [labs.ig.com](https://labs.ig.com/lightstreamer-downloads) for information on the latest Lightstreamer version supported.
-
-To hold this framework binaries you have two options.
-- Grab the `.framework` file for the platform of your choice from [the Github releases page](https://github.com/dehesa/IG/releases).
-    - Download the framework file to your computer.
-    - Drag-and-drop it within your project.
-    - If you are using Xcode, drag-and-drop the framework in `Linked Frameworks & Libraries` and don't forget to add the dependencies there either.
-- Clone and build with Xcode.
-    - Clone the git project: `git clone --recursive git@github.com:dehesa/IG.git`
-    - Go inside the ReactiveSwift folder `cd IG/Dependencies/ReactiveSwift` and run `git submodule update --init --recursive`
-    - Open the `IG.xcworkspace` with Xcode.
-    - Select the build scheme for your targeted platform (e.g. `IG [macOS]`).
-    - Product > Build (or keyboard shortcut `⌘+B`).
-    - Open the project's `Products` folder and drag-and-drop the built framework in your project (or right-click in it and `Show in Finder`).
 
 Roadmap
 =======

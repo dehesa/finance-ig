@@ -83,7 +83,7 @@ extension API.Credentials.Token {
 
 extension API.Request {
     /// Data needed to requests API credentials.
-    public struct Login: CustomDebugStringConvertible {
+    public struct Login: Codable, CustomDebugStringConvertible {
         /// API key given by the IG platform identifying the usage of the IG endpoints.
         public let apiKey: String
         /// String representing an IG account.
@@ -127,7 +127,7 @@ extension API.Request {
     }
 }
 
-// MARK: Debug helpers
+// MARK: - Debug helpers
 
 extension API.Credentials: CustomDebugStringConvertible {
     public var debugDescription: String {
