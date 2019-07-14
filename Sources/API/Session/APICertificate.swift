@@ -49,7 +49,7 @@ extension API.Request.Session {
     ///
     /// Region-specific login restrictions may apply.
     /// - note: No credentials are needed for this endpoint.
-    /// - todo: Do the password encryption! Currently it is ignoring the parameter.
+    /// - todo: Password encryption doesn't work! Currently it is ignoring the parameter.
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.

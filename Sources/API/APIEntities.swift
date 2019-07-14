@@ -1,38 +1,6 @@
 import Foundation
 
 extension API {
-    /// Market related entities.
-    public enum Market {
-        /// The current status of the market.
-        public enum Status: String, Codable {
-            /// The market is open for trading.
-            case tradeable = "TRADEABLE"
-            /// The market is closed for the moment. Look at the market's opening hours for further information.
-            case closed = "CLOSED"
-            case editsOnly = "EDITS_ONLY"
-            case onAuction = "ON_AUCTION"
-            case onAuctionNoEdits = "ON_AUCTION_NO_EDITS"
-            case offline = "OFFLINE"
-            /// The market is suspended for trading temporarily.
-            case suspended = "SUSPENDED"
-        }
-        
-        /// Distance/Size preference.
-        public struct Distance: Decodable {
-            /// The distance value.
-            public let value: Double
-            /// The unit at which the `value` is measured against.
-            public let unit: Unit
-            
-            public enum Unit: String, Decodable {
-                case points = "POINTS"
-                case percentage = "PERCENTAGE"
-            }
-        }
-    }
-}
-
-extension API {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
@@ -91,6 +59,38 @@ extension API {
         private enum CodingKeys: String, CodingKey {
             case dfb = "DFB"
             case none = "-"
+        }
+    }
+}
+
+extension API {
+    /// Market related entities.
+    public enum Market {
+        /// The current status of the market.
+        public enum Status: String, Codable {
+            /// The market is open for trading.
+            case tradeable = "TRADEABLE"
+            /// The market is closed for the moment. Look at the market's opening hours for further information.
+            case closed = "CLOSED"
+            case editsOnly = "EDITS_ONLY"
+            case onAuction = "ON_AUCTION"
+            case onAuctionNoEdits = "ON_AUCTION_NO_EDITS"
+            case offline = "OFFLINE"
+            /// The market is suspended for trading temporarily.
+            case suspended = "SUSPENDED"
+        }
+        
+        /// Distance/Size preference.
+        public struct Distance: Decodable {
+            /// The distance value.
+            public let value: Double
+            /// The unit at which the `value` is measured against.
+            public let unit: Unit
+            
+            public enum Unit: String, Decodable {
+                case points = "POINTS"
+                case percentage = "PERCENTAGE"
+            }
         }
     }
 }

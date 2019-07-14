@@ -4,15 +4,24 @@ import Foundation
 extension API.Request {
     /// Contains all functionality related to the API session.
     public struct Session {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
-        unowned let api: API
+        /// Pointer to the API instance in charge of calling the session endpoints.
+        private var pointer: Unmanaged<API>?
         /// The credentials used to call API endpoints.
-        var credentials: API.Credentials? = nil
+        var credentials: API.Credentials?
+        
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        /// - attention: Before using the getter, be sure to have set this property or the application will crash.
+        var api: API {
+            get { return pointer!.takeUnretainedValue() }
+            set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
+        }
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the session endpoints.
-        init(api: API) {
-            self.api = api
+        /// - parameter credentials: The credentials to be stored within this API session.
+        init(credentials: API.Credentials?) {
+            self.pointer = nil
+            self.credentials = credentials
         }
     }
 }
