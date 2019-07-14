@@ -6,7 +6,7 @@ extension API {
         /// Client identifier.
         public let clientId: Int
         /// Active account identifier.
-        public let accountId: String
+        public internal(set) var accountId: String
         /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
         /// Timezone of the active account.
@@ -14,7 +14,7 @@ extension API {
         /// API key given by the IG platform identifying the usage of the IG endpoints.
         public let apiKey: String
         /// The actual token values/headers.
-        public let token: Token
+        public internal(set) var token: Token
         
         /// Creates a credentials structure from hardcoded data.
         public init(clientId: Int, accountId: String, apiKey: String, token: Token, streamerURL: URL, timezone: TimeZone) {
@@ -23,18 +23,6 @@ extension API {
             self.streamerURL = streamerURL
             self.timezone = timezone
             self.apiKey = apiKey
-            self.token = token
-        }
-        
-        /// Creates a new credentials instance from a previous one and a new token.
-        /// - parameter credentials: The credential instance where to get all properties except the token one.
-        /// - parameter token: The new valid tokens.
-        internal init(_ credentials: API.Credentials, token: API.Credentials.Token) {
-            self.apiKey = credentials.apiKey
-            self.clientId = credentials.clientId
-            self.accountId = credentials.accountId
-            self.streamerURL = credentials.streamerURL
-            self.timezone = credentials.timezone
             self.token = token
         }
         
@@ -64,8 +52,18 @@ extension API.Credentials {
         public let value: Kind
         
         /// Initializes a token with hardcoded values.
+        /// - parameter value: The type of token used in the credentials (whether certificate or OAuth).
+        /// - parameter expirationDate: When is the provided token expiring.
         public init(_ value: Kind, expirationDate: Date) {
             self.expirationDate = expirationDate
+            self.value = value
+        }
+        
+        /// Initializes a token with hardcoded values (and a expiration date offset).
+        /// - parameter value: The type of token used in the credentials (whether certificate or OAuth).
+        /// - parameter seconds: The amount of seconds this token will expires in.
+        public init(_ value: Kind, expiresIn seconds: TimeInterval) {
+            self.expirationDate = Date(timeIntervalSinceNow: seconds)
             self.value = value
         }
     }
@@ -78,52 +76,6 @@ extension API.Credentials.Token {
         case certificate(access: String, security: String)
         /// OAuth token (v3) with access and refresh tokens.
         case oauth(access: String, refresh: String, scope: String, type: String)
-    }
-}
-
-extension API.Request {
-    /// Data needed to requests API credentials.
-    public struct Login: Codable, CustomDebugStringConvertible {
-        /// API key given by the IG platform identifying the usage of the IG endpoints.
-        public let apiKey: String
-        /// String representing an IG account.
-        public let accountId: String
-        /// User name to log in into an IG account.
-        public let username: String
-        /// User password to log in into an IG account.
-        public let password: String
-        
-        /// Designated initializer for the Login Request.
-        /// - parameter apiKey: The API key provided by your application developer.
-        /// - parameter accountId: The targeted user's account identifier.
-        /// - parameter username: The targeted user's name/identifier.
-        /// - parameter password: The targeted user's password.
-        /// - throws: `API.Error` if any of the passed argument is invalid.
-        public init(apiKey: String, accountId: String, username: String, password: String) throws {
-            let length: (apiKey: Int, accountId: Int) = (40, 5)
-            let errorBlurb = "Login request failed!"
-            
-            guard apiKey.utf8.count == length.apiKey else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The API key provided must be exactly \(length.apiKey) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
-            }
-            
-            guard accountId.utf8.count == length.accountId else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The accountId provided must be exactly \(length.accountId) UTF8 characteres. The one provided (\"\(accountId)\") has \(accountId.utf8.count) characters.")
-            }
-            
-            guard !username.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The username provided cannot be empty.")
-            }
-            
-            guard !password.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) The password provided cannot be empty.")
-            }
-            
-            self.apiKey = apiKey
-            self.accountId = accountId
-            self.username = username
-            self.password = password
-        }
     }
 }
 
@@ -174,18 +126,5 @@ extension API.Credentials.Token.Kind: CustomDebugStringConvertible {
             }
             """
         }
-    }
-}
-
-extension API.Request.Login {
-    public var debugDescription: String {
-        return """
-        API login {
-            Account ID: \(self.accountId)
-            API key:    \(self.apiKey)
-            Username:   \(self.username)
-            Password:   \(self.password)
-        }
-        """
     }
 }

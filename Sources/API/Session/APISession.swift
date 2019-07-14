@@ -1,129 +1,60 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
-    /// Creates a trading session, obtaining session tokens for subsequent API access.
-    /// - parameter apiKey: The API key which the encryption key will be associated to.
-    /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
-    /// - note: No credentials are needed for this endpoint.
-    public func sessionEncryptionKey(apiKey: String) -> SignalProducer<API.Response.Session.EncryptionKey,API.Error> {
-        return SignalProducer(api: self) { (_) -> String in
-                guard !apiKey.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-                }
-                return apiKey
-            }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
-             .send(expecting: .json)
-             .validateLadenData(statusCodes: [200])
-             .decodeJSON()
-    }
-    
-    /// Logs in a user/account.
-    /// - parameter info: LogIn credentials for the platform.
-    /// - parameter type: The type of session the user want to perform.
-    /// - returns: `SignalProducer` returning `type` credentials to use priviledge API endpoints.
-    /// - note: No credentials are needed for this endpoint.
-    public func sessionLogin(_ info: API.Request.Login, type: API.Request.Session) -> SignalProducer<API.Credentials,API.Error> {
-        switch type {
-        case .certificate: return self.certificateLogin(info)
-        case .oauth: return self.oauthLogin(info)
-        }
-    }
-    
-    /// Returns the user's session details.
-    /// - returns: `SignalProducer` returning information about the current user's session.
-    public func session() -> SignalProducer<API.Response.Session,API.Error> {
-        return SignalProducer(api: self)
-            .request(.get, "session", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-    
-    /// Switches active accounts, optionally setting the default account.
-    /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
-    /// - parameter accountId: The identifier for the account that the user want to switch to.
-    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func sessionSwitch(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Response.Session.Switch,API.Error> {
-        return SignalProducer(api: self) { (api) -> API.Request.Session.Switch in
-                guard !accountId.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
-                }
-                return .init(accountId: accountId, defaultAccount: makingDefault)
-            }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-    
-    /// Log out from the current session.
-    ///
-    /// If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
-    /// - attention: Login out is a priviledge call, that is why without credentials no actually endpoint is hit.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func sessionLogout() -> SignalProducer<Void,API.Error> {
-        return SignalProducer { [weak weakAPI = self] (input, lifetime) in
-            guard let api = weakAPI else {
-                return input.send(error: .sessionExpired)
-            }
-            
-            guard let creds = try? api.credentials() else {
-                input.send(value: ())
-                return input.sendCompleted()
-            }
-            
-            let url = api.rootURL.appendingPathComponent("session")
-            let request = URLRequest(url: url).set {
-                $0.httpMethod = API.HTTP.Method.delete.rawValue
-                $0.addHeaders(version: 1, credentials: creds)
-            }
-            
-            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (api,request))
-                .send()
-                .validate(statusCodes: [204])
-                .start {
-                    switch $0 {
-                    case .value(_):
-                        weakAPI?.removeCredentials()
-                        input.send(value: ())
-                    case .completed: input.sendCompleted()
-                    case .failed(let e): input.send(error: e)
-                    case .interrupted: input.sendInterrupted()
-                    }
-                }
-            lifetime.observeEnded(disposable.dispose)
+extension API.Request {
+    /// Contains all functionality related to the API session.
+    public struct Session {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        unowned let api: API
+        /// The credentials used to call API endpoints.
+        var credentials: API.Credentials? = nil
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the session endpoints.
+        init(api: API) {
+            self.api = api
         }
     }
 }
 
-// MARK: -
+// MARK: - POST /session
 
-extension API.Request {
+extension API.Request.Session {
     /// Type of sessions available
-    public enum Session {
+    public enum Kind {
         /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
         case certificate
         /// OAuth sessions are valid for a limited period (e.g. 60 seconds) as specified in the expiration date from the response.
         case oauth
     }
-}
-
-extension API.Request.Session {
-    /// Payload for the session switch request.
-    fileprivate struct Switch: Encodable {
-        /// The account identifier to switch to.
-        let accountId: String
-        /// Whether the given account should be mark as "default".
-        let defaultAccount: Bool
+    
+    /// Logs a user in the platform and stores the credentials within the API instance.
+    ///
+    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+    /// - note: No credentials are needed for this endpoint.
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter user: User name and password to log in into an IG account.
+    /// - returns: `SignalProducer` indicating whether the endpoint was successful.
+    public func login(type: API.Request.Session.Kind, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Void,API.Error> {
+        var result: SignalProducer<API.Credentials,API.Error>
+        
+        switch type {
+        case .certificate:
+            result = self.loginCertificate(apiKey: apiKey, user: user, encryptPassword: false)
+        case .oauth:
+            result = self.loginOAuth(apiKey: apiKey, user: user)
+        }
+        
+        return result.map { [weak weakAPI = self.api] (credentials) in
+            weakAPI?.session.credentials = credentials
+            return ()
+        }
     }
 }
 
-// MARK: -
+// MARK: - GET /session
 
-extension API.Response {
+extension API {
     /// Representation of a dealing session.
     public struct Session: Decodable {
         /// Client identifier.
@@ -149,7 +80,6 @@ extension API.Response {
             let offset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
-//                API.Response.Session.Error.invalidTimeZone(offset: offset)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
             self.currency = try container.decode(String.self, forKey: .currency)
@@ -162,28 +92,42 @@ extension API.Response {
     }
 }
 
-extension API.Response.Session {
-    /// Encryption key message returned from the server.
-    public struct EncryptionKey: Decodable {
-        /// The key (in base 64) to be used on encryption.
-        public let encryptionKey: String
-        /// Current timestamp in milliseconds since epoch.
-        public let timeStamp: Date
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
-            let epoch = try container.decode(Double.self, forKey: .timeStamp)
-            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case encryptionKey, timeStamp
-        }
+extension API.Request.Session {
+    /// Returns the user's session details.
+    /// - returns: `SignalProducer` returning information about the current user's session.
+    public func get() -> SignalProducer<API.Session,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "session", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
+    }
+    
+    /// Returns the user's session details for the given credentials.
+    /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
+    /// - parameter token: The credentials for the user session to query.
+    /// - returns: `SignalProducer` returning information about the current user's session.
+    public func get(apiKey: String, token: API.Credentials.Token) -> SignalProducer<API.Session,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "session", version: 1, credentials: false, headers: { (_,_) in
+                var result = [API.HTTP.Header.Key.apiKey: apiKey]
+                switch token.value {
+                case .certificate(let access, let security):
+                    result[.clientSessionToken] = access
+                    result[.securityToken] = security
+                case .oauth(let access, _, _, let type):
+                    result[.authorization] = "\(type) \(access)"
+                }
+                return result
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
     }
 }
 
-extension API.Response.Session {
+// MARK: - PUT /session
+
+extension API.Session {
     /// Payload received when accounts are switched.
     public struct Switch: Decodable {
         /// Boolean indicating whether trailing stops are currently enabled for the given account.
@@ -199,6 +143,91 @@ extension API.Response.Session {
             case isTrailingStopEnabled = "trailingStopsEnabled"
             case isDealingEnabled = "dealingEnabled"
             case hasActiveDemoAccounts, hasActiveLiveAccounts
+        }
+    }
+}
+
+extension API.Request.Session {
+    /// Switches active accounts, optionally setting the default account.
+    ///
+    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+    /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
+    /// - parameter accountId: The identifier for the account that the user want to switch to.
+    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
+    /// - returns: `SignalProducer` indicating the success of the operation.
+    public func `switch`(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
+        /// Payload for the session switch request.
+        struct Payload: Encodable {
+            let accountId: String
+            let defaultAccount: Bool
+        }
+        
+        return SignalProducer(api: self.api) { (api) -> Payload in
+                guard !accountId.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
+                }
+                return .init(accountId: accountId, defaultAccount: makingDefault)
+            }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
+                let data = try API.Codecs.jsonEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
+            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Switch) -> Result<API.Session.Switch,API.Error> in
+                guard let api = weakAPI else {
+                    return .failure(.sessionExpired)
+                }
+                
+                guard var credentials = api.session.credentials else {
+                    return .failure(.invalidCredentials(nil, message: "The API instance doesn't have any credentials."))
+                }
+                
+                credentials.accountId = accountId
+                api.session.credentials = credentials
+                return .success(sessionSwitch)
+            }
+    }
+}
+
+// MARK: - DELETE /session
+
+extension API.Request.Session {
+    /// Log out from the current session.
+    ///
+    /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
+    /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
+    /// - returns: `SignalProducer` indicating the success of the operation.
+    public func logout() -> SignalProducer<Void,API.Error> {
+        return SignalProducer { [weak weakAPI = self.api] (input, lifetime) in
+            guard let api = weakAPI else {
+                return input.send(error: .sessionExpired)
+            }
+            
+            guard let creds = api.session.credentials else {
+                input.send(value: ())
+                return input.sendCompleted()
+            }
+            
+            let url = api.rootURL.appendingPathComponent("session")
+            let request = URLRequest(url: url).set {
+                $0.httpMethod = API.HTTP.Method.delete.rawValue
+                $0.addHeaders(version: 1, credentials: creds)
+            }
+            
+            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (api,request))
+                .send()
+                .validate(statusCodes: [204])
+                .start {
+                    switch $0 {
+                    case .value(_):
+                        weakAPI?.session.credentials = nil
+                        input.send(value: ())
+                    case .completed: input.sendCompleted()
+                    case .failed(let e): input.send(error: e)
+                    case .interrupted: input.sendInterrupted()
+                    }
+                }
+            lifetime.observeEnded(disposable.dispose)
         }
     }
 }

@@ -1,56 +1,97 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
+// MARK: - GET /session/encryptionKey
+
+extension API.Session {
+    /// Encryption key message returned from the server.
+    fileprivate struct EncryptionKey: Decodable {
+        /// The key (in base 64) to be used on encryption.
+        let encryptionKey: String
+        /// Current timestamp in milliseconds since epoch.
+        let timeStamp: Date
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
+            let epoch = try container.decode(Double.self, forKey: .timeStamp)
+            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case encryptionKey, timeStamp
+        }
+    }
+}
+
+extension API.Request.Session {
+    /// Returns an encryption key to use in order to send the user password in an encrypted form.
+    /// - parameter apiKey: The API key which the encryption key will be associated to.
+    /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
+    /// - note: No credentials are needed for this endpoint.
+    fileprivate func generateEncryptionKey(apiKey: String) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
+        return SignalProducer(api: self.api) { (_) -> String in
+            guard !apiKey.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+            }
+            return apiKey
+        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
+    }
+}
+
+// MARK: - POST /session
+
+extension API.Request.Session {
     /// Creates a trading session, obtaining session tokens for subsequent API access.
     ///
     /// Region-specific login restrictions may apply.
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter info: Certificate credentials for the IG platform.
-    /// - parameter isPasswordEncrypted: Boolean indicating whether the given password (in `info`) is encrypted.
+    /// - todo: Do the password encryption! Currently it is ignoring the parameter.
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter user: User name and password to log in into an IG account.
+    /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func certificateLogin(_ info: API.Request.Login, isPasswordEncrypted: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self) { (_) -> API.Request.Certificate in
-                guard !info.username.isEmpty else {
+    internal func loginCertificate(apiKey: String, user: (name: String, password: String), encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
+        /// Log-in through certificate required payload.
+        struct RequestPayload: Encodable {
+            let identifier: String
+            let password: String
+            let encryptedPassword: Bool
+        }
+        
+        return SignalProducer(api: self.api) { (_) -> RequestPayload in
+                let apiKeyLength: Int = 40
+                guard apiKey.utf8.count == apiKeyLength else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
+                }
+            
+                guard !user.name.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
                 }
-                guard !info.password.isEmpty else {
+                guard !user.password.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
                 }
-                guard !info.apiKey.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-                }
-                return .init(identifier: info.username, password: info.password, encryptedPassword: isPasswordEncrypted)
-            }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey] }, body: { (_, payload) in
+            
+                return .init(identifier: user.name, password: user.password, encryptedPassword: false)
+            }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_, payload) in
                 let data = try API.Codecs.jsonEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
-            .map { (r: API.Response.Certificate) in
+            .map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
 }
 
-// MARK: -
+// MARK: - File Helpers
 
-extension API.Request {
-    /// Log-in through certificate required payload.
-    fileprivate struct Certificate: Encodable {
-        /// Client login identifier.
-        let identifier: String
-        /// Client login password.
-        let password: String
-        /// Whether the password has been sent encrypted.
-        let encryptedPassword: Bool
-    }
-}
-
-// MARK: -
-
-extension API.Response {
+extension API.Session {
     /// CST credentials used to access the IG platform.
     fileprivate struct Certificate: Decodable {
         /// Client identifier.
@@ -94,7 +135,7 @@ extension API.Response {
     }
 }
 
-extension API.Response.Certificate {
+extension API.Session.Certificate {
     /// Certificate (CST) token with metadata information such as expiration date.
     fileprivate struct Token {
         /// Acess token expiration date.

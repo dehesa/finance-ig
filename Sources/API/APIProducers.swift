@@ -181,8 +181,12 @@ extension SignalProducer where Error==API.Error {
             request.httpMethod = method.rawValue
             
             do {
-                let credentials: API.Credentials? = (usingCredentials) ? try validated.api.credentials() : nil
-                request.addHeaders(version: version, credentials: credentials, try headerGenerator?(validated.api, validated.values))
+                if usingCredentials {
+                    guard let credentials = validated.api.session.credentials else {
+                        return .failure(.invalidCredentials(nil, message: "No credentials found."))
+                    }
+                    request.addHeaders(version: version, credentials: credentials, try headerGenerator?(validated.api, validated.values))
+                }
                 
                 if let bodyGenerator = bodyGenerator {
                     let body = try bodyGenerator(validated.api, validated.values)
@@ -218,7 +222,7 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                 /// - note: The task WON'T be cancelled by calling `dispose()`
                 var detacher: Disposable?
 
-                let task = api.sessionURL.dataTask(with: request) { [request, generator] (data, response, error) in
+                let task = api.channel.dataTask(with: request) { [request, generator] (data, response, error) in
                     detacher?.dispose()
                     
                     if let error = error {

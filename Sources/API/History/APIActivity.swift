@@ -15,8 +15,12 @@ extension API {
         var dateFormatter: Foundation.DateFormatter! = nil
         
         return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                }
+            
                 let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = api.timeZone
+                formatter.timeZone = timezone
                 dateFormatter = formatter
                 return formatter
             }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in

@@ -2,7 +2,7 @@ import Foundation
 
 extension API {
     /// List of errors that can be generated through the API.
-    public enum Error: Swift.Error, CustomDebugStringConvertible {
+    public enum Error: Swift.Error {
         /// The API/URLSession experied before the endpoint call could finish.
         case sessionExpired
         /// There were no credentials or a problem was encountered when unpacking login credentials.
@@ -13,42 +13,44 @@ extension API {
         case callFailed(request: URLRequest, response: URLResponse?, underlyingError: Swift.Error?, message: String)
         /// The received response was invalid. In most cases `URLResponse` will be of type `HTTPURLResponse`.
         case invalidResponse(HTTPURLResponse, request: URLRequest, data: Data?, underlyingError: Swift.Error?, message: String)
+    }
+}
+
+extension API.Error: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = "\n\n"
+        result.append("[API Error]")
         
-        public var debugDescription: String {
-            var result = "\n\n"
-            result.append("[API Error]")
-            
-            switch self {
-            case .sessionExpired:
-                result.addTitle("The session has expired.")
-                result.addDetail("The underlying URL session or the \(API.self) instance cannot be found. You can probably solve this problem by creating a strong reference to the \(API.self) instance.")
-            case .invalidCredentials(let credentials, let message):
-                result.addTitle(message)
-                result.addDetail(credentials) { "Please check the following credentials carefully:\n\($0)" }
-            case .invalidRequest(let error, let message):
-                result.addTitle(message)
-                result.addDetail(error) { "error:\n\($0)" }
-            case .callFailed(let request, let response, let error, let message):
-                result.addTitle(message)
-                result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
-                result.addDetail(response) {"response: \($0.representation)"}
-                result.addDetail(error) { "error:\n\($0)" }
-            case .invalidResponse(let response, let request, let data, let error, let message):
-                result.addTitle(message)
-                result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
-                result.addDetail("response: \(response.representation)")
-                if let data = data {
-                    result.addDetail("data [\(data)]")
-                    if let representation = String(data: data, encoding: .utf8) {
-                        result.append(": \(representation)")
-                    }
+        switch self {
+        case .sessionExpired:
+            result.addTitle("The session has expired.")
+            result.addDetail("The underlying URL session or the \(API.self) instance cannot be found. You can probably solve this problem by creating a strong reference to the \(API.self) instance.")
+        case .invalidCredentials(let credentials, let message):
+            result.addTitle(message)
+            result.addDetail(credentials) { "Please check the following credentials carefully:\n\($0)" }
+        case .invalidRequest(let error, let message):
+            result.addTitle(message)
+            result.addDetail(error) { "error:\n\($0)" }
+        case .callFailed(let request, let response, let error, let message):
+            result.addTitle(message)
+            result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
+            result.addDetail(response) {"response: \($0.representation)"}
+            result.addDetail(error) { "error:\n\($0)" }
+        case .invalidResponse(let response, let request, let data, let error, let message):
+            result.addTitle(message)
+            result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
+            result.addDetail("response: \(response.representation)")
+            if let data = data {
+                result.addDetail("data [\(data)]")
+                if let representation = String(data: data, encoding: .utf8) {
+                    result.append(": \(representation)")
                 }
-                result.addDetail(error) { "error:\n\($0)"}
             }
-            
-            result.append("\n\n")
-            return result
+            result.addDetail(error) { "error:\n\($0)"}
         }
+        
+        result.append("\n\n")
+        return result
     }
 }
 
