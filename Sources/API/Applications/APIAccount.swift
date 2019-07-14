@@ -5,7 +5,7 @@ extension API.Request {
     /// Contains all functionality related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        unowned let api: API
+        fileprivate unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the session endpoints.

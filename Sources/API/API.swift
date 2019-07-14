@@ -9,14 +9,20 @@ public final class API {
     /// URL root address.
     public let rootURL: URL
     /// The URL Session instance for performing HTTPS requests.
-    let channel: URLMockableSession
+    internal let channel: URLMockableSession
     
     /// It holds data and functionality related to the user's session.
-    public internal(set) lazy var session = API.Request.Session(api: self)
+    public internal(set) var session: API.Request.Session
     /// It holds functionality related to the user's applications.
-    public private(set) lazy var applications = API.Request.Applications(api: self)
+    public var applications: API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
-    public private(set) lazy var accounts = API.Request.Accounts(api: self)
+    public var accounts: API.Request.Accounts { return .init(api: self) }
+    /// It holds functionality related to the user's activity.
+    public var activity: API.Request.Activity { return .init(api: self) }
+    /// It holds functionality related to the user's transactions.
+    public var transactions: API.Request.Transactions { return .init(api: self) }
+    /// It holds functionality related to price history queries.
+    public var price: API.Request.Price { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
@@ -36,9 +42,8 @@ public final class API {
     init(rootURL: URL, channel: URLMockableSession, credentials: API.Credentials? = nil) {
         self.rootURL = rootURL
         self.channel = channel
-        
-        guard let credentials = credentials else { return }
-        self.session.credentials = credentials
+        self.session = .init(credentials: credentials)
+        self.session.api = self
     }
     
     deinit {

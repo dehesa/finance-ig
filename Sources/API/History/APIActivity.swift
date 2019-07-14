@@ -1,7 +1,69 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
+extension API.Request {
+    /// Contains all functionality related to a user's activity.
+    public struct Activity {
+        /// Pointer to the actual API instance in charge of calling the endpoints.
+        fileprivate unowned let api: API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the session endpoints.
+        init(api: API) {
+            self.api = api
+        }
+    }
+}
+
+// MARK: - GET /history/activity
+
+extension API.Request.Activity {
+    /// Variables related to the paging responses.
+    public enum PageSize {
+        /// The minimum amount of pages that can be asked for.
+        public static var minimum: UInt { return 10 }
+        /// The default amount of transactions received in a page.
+        public static var `default`: UInt { return 50 }
+        /// The maximum amount of pages that can be asked for.
+        public static var maximum: UInt { return 500 }
+    }
+    
+    /// A single page of activity requests.
+    private struct PagedActivities: Decodable {
+        let activities: [API.Activity]
+        let metadata: Metadata
+        
+        struct Metadata: Decodable {
+            let paging: Page
+            
+            struct Page: Decodable {
+                /// The number of resources/answers delivered in the response.
+                let size: Int
+                /// The relative url to hit next for getting the following page.
+                let nextRelativeURL: URL?
+                
+                /// The absolute `next` URL.
+                /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
+                /// - returns: If there are more pages to be queried, a URL is returned; if not, `nil` is returned.
+                func nextURL(rootURL: URL) -> URL? {
+                    guard let url = self.nextRelativeURL,
+                        let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
+                        var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {
+                            return nil
+                    }
+                    
+                    root.path = root.path.appending(next.path)
+                    root.queryItems = next.queryItems
+                    return root.url
+                }
+                
+                private enum CodingKeys: String, CodingKey {
+                    case size, nextRelativeURL = "next"
+                }
+            }
+        }
+    }
+    
     /// Returns the account's activity history.
     ///
     /// This is a paged-request, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
@@ -11,10 +73,11 @@ extension API {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func activity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = API.Request.Activity.PageSize.default) -> SignalProducer<[API.Response.Activity],API.Error> {
+    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
+        
         var dateFormatter: Foundation.DateFormatter! = nil
         
-        return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
+        return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
@@ -55,109 +118,31 @@ extension API {
                 var nextRequest = initialRequest
                 nextRequest.url = nextURL
                 return nextRequest
-            }, endpoint: { (producer) -> SignalProducer<(API.Response.PagedActivities.Metadata.Page,[API.Response.Activity]),API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
                 return producer.send(expecting: .json)
                     .validateLadenData(statusCodes: [200])
                     .decodeJSON { (request, responseHeader) -> JSONDecoder in
                         let result = API.Codecs.jsonDecoder(request: request, responseHeader: responseHeader)
                         result.userInfo[.dateFormatter] = dateFormatter!
                         return result
-                    }.map { (response: API.Response.PagedActivities) in
-                        (response.metadata.page, response.activities)
+                    }.map { (response: PagedActivities) in
+                        (response.metadata.paging, response.activities)
                     }
             })
     }
 }
 
-// MARK: -
-
-extension API.Request {
-    /// Request constants when asking the platform for trading activities.
-    public enum Activity {
-        /// Variables related to the paging responses.
-        public enum PageSize {
-            /// The minimum amount of pages that can be asked for.
-            public static var minimum: UInt { return 10 }
-            /// The default amount of transactions received in a page.
-            public static var `default`: UInt { return 50 }
-            /// The maximum amount of pages that can be asked for.
-            public static var maximum: UInt { return 500 }
-        }
-    }
-}
-
-// MARK: -
-
-extension API.Response {
-    /// Single page of activities request.
-    fileprivate struct PagedActivities: Decodable {
-        /// Wrapper around the queried activities.
-        let activities: [API.Response.Activity]
-        /// Metadata information about current request.
-        let metadata: Metadata
-        
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
-        
-        /// Page's extra information.
-        struct Metadata: Decodable {
-            /// Variables related to the current page.
-            let page: Page
-            
-            /// Do not call! The only way to initialize is through `Decodable`.
-            private init?() { fatalError("Unaccessible initializer") }
-            
-            private enum CodingKeys: String, CodingKey {
-                case page = "paging"
-            }
-        }
-    }
-}
-
-extension API.Response.PagedActivities.Metadata {
-    /// Paging metadata response.
-    fileprivate struct Page: Decodable {
-        /// The number of resources/answers delivered in the response.
-        let size: Int
-        /// The relative url to hit next for getting the following page.
-        let nextRelativeURL: URL?
-        
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
-        
-        /// The absolute `next` URL.
-        /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
-        func nextURL(rootURL: URL) -> URL? {
-            guard let url = self.nextRelativeURL,
-                  let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
-                  var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {
-                return nil
-            }
-            
-            root.path = root.path.appending(next.path)
-            root.queryItems = next.queryItems
-            return root.url
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case size
-            case nextRelativeURL = "next"
-        }
-    }
-}
-
-extension API.Response {
+extension API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
-        /// The date of the activity item.
-        /// The date is relative to the timezone of the account.
-        public let date: Date
-        /// Deal identifier.
-        public let dealId: String
         /// Activity type.
         public let type: Kind
+        /// Deal identifier.
+        public let dealId: String
         /// Action status.
         public let status: Status
+        /// The date of the activity item.
+        public let date: Date
         /// The channel which triggered the activity.
         public let channel: Channel
         /// Instrument epic identifier.
@@ -193,7 +178,7 @@ extension API.Response {
     }
 }
 
-extension API.Response.Activity {
+extension API.Activity {
     /// Activity Type.
     public enum Kind: String, Decodable {
         /// System generated activity.
@@ -302,7 +287,7 @@ extension API.Response.Activity {
     }
 }
 
-extension API.Response.Activity.Details {
+extension API.Activity.Details {
     /// Deal affected by an activity.
     public struct Action: Decodable {
         /// Action type.
@@ -360,7 +345,7 @@ extension API.Response.Activity.Details {
     }
 }
 
-extension API.Response.Activity.Details.Action {
+extension API.Activity.Details.Action {
     /// Type of action.
     public enum Kind: String, Decodable {
         case limitOrderOpened = "LIMIT_ORDER_OPENED"
@@ -383,7 +368,8 @@ extension API.Response.Activity.Details.Action {
         case stopOrderRolled = "STOP_ORDER_ROLLED"
         case stopOrderDeleted = "STOP_ORDER_DELETED"
         
-        case unknown = "UNKNOWN"
         case workingOrderDeleted = "WORKING_ORDER_DELETED"
+        
+        case unknown = "UNKNOWN"
     }
 }
