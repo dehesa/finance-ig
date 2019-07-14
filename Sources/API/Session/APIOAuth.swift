@@ -1,77 +1,86 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
+// MARK: - POST /session
+
+extension API.Request.Session {
     /// Performs the OAuth login request to the dealing system with the login credential passed as parameter.
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter info: OAuth credentials for the IG platform.
-    /// - returns: SignalProducer with the new refreshed credentials.
-    internal func oauthLogin(_ info: API.Request.Login) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self) { (_) -> API.Request.OAuth in
-                guard !info.username.isEmpty else {
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter user: User name and password to log in into an IG account.
+    /// - returns: `SignalProducer` with the new refreshed credentials.
+    internal func loginOAuth(apiKey: String, user: (name: String, password: String)) -> SignalProducer<API.Credentials,API.Error> {
+        struct RequestPayload: Encodable {
+            let identifier: String
+            let password: String
+        }
+        
+        return SignalProducer(api: self.api) { (_) -> RequestPayload in
+                let apiKeyLength = 40
+                guard apiKey.utf8.count == apiKeyLength else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
+                }
+            
+                guard !user.name.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
                 }
-                guard !info.password.isEmpty else {
+            
+                guard !user.password.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
                 }
-                guard !info.apiKey.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-                }
-                guard !info.accountId.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
-                }
-                return .init(identifier: info.username, password: info.password)
-            }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: info.apiKey, .account: info.accountId] }, body: { (_, payload) in
+            
+                return .init(identifier: user.name, password: user.password)
+            }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_, payload) in
                 let data = try API.Codecs.jsonEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
-            .map { (r: API.Response.OAuth) in
+            .map { (r: API.Session.OAuth) in
                 let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: info.apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
-    
+}
+
+// MARK: - POST /session/refresh-token
+
+extension API.Request.Session {
     /// Refreshes a trading session token, obtaining new session for subsequent API.
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter credentials: Current platform credentials.
+    /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: SignalProducer with the new refreshed credentials.
-    internal func oauthRefresh(current credentials: API.Credentials) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self) { [credentials] (_) -> String in
-                guard case .oauth(_, let refreshToken, _, _) = credentials.token.value else {
-                    throw API.Error.invalidCredentials(credentials, message: "The credentials stored were not of OAuth type.")
+    internal func refreshOAuth(token: String, apiKey: String) -> SignalProducer<API.Credentials.Token,API.Error> {
+        typealias V = (refreshToken: String, apiKey: String)
+        
+        return SignalProducer(api: self.api) { (_) -> V in
+                guard !token.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The OAuth refresh token can't be empty.")
                 }
-                return refreshToken
-            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_,_) in
-                [.apiKey: credentials.apiKey, .account: credentials.accountId]
-            }, body: { (_, refreshToken) in
-                (.json, try API.Codecs.jsonEncoder().encode(["refresh_token": refreshToken]))
+            
+                let apiKeyLength = 40
+                guard apiKey.utf8.count == apiKeyLength else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
+                }
+            
+                return (token, apiKey)
+            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: V) in
+                [.apiKey: values.apiKey]
+            }, body: { (_, values: V) in
+                (.json, try API.Codecs.jsonEncoder().encode(["refresh_token": values.refreshToken]))
             }).send(expecting: .json)
             .validateLadenData(statusCodes: [200])
             .decodeJSON()
-            .map { (r: API.Response.OAuth.Token) in
-                let token = API.Credentials.Token(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
-                return API.Credentials(credentials, token: token)
+            .map { (r: API.Session.OAuth.Token) in
+                return .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }
     }
 }
 
-// MARK: -
+// MARK: - File helpers
 
-extension API.Request {
-    /// Log-in through OAuth required payload.
-    fileprivate struct OAuth: Encodable {
-        /// Client login identifier.
-        let identifier: String
-        /// Client login password.
-        let password: String
-    }
-}
-
-// MARK: -
-
-extension API.Response {
+extension API.Session {
     /// Oauth credentials used to access the IG platform.
     fileprivate struct OAuth: Decodable {
         /// Client identifier.
@@ -83,7 +92,7 @@ extension API.Response {
         /// Timezone of the active account.
         let timezone: TimeZone
         /// The OAuth token granting access to the platform
-        let tokens: OAuth.Token
+        let tokens: Token
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -98,7 +107,7 @@ extension API.Response {
             let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             
-            self.tokens = try container.decode(API.Response.OAuth.Token.self, forKey: .tokens)
+            self.tokens = try container.decode(API.Session.OAuth.Token.self, forKey: .tokens)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -111,7 +120,7 @@ extension API.Response {
     }
 }
 
-extension API.Response.OAuth {
+extension API.Session.OAuth {
     /// OAuth token with metadata information such as expiration date or refresh token.
     fileprivate struct Token: Decodable {
         /// Acess token expiration date.
@@ -134,7 +143,8 @@ extension API.Response.OAuth {
             self.type = try container.decode(String.self, forKey: .type)
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
-            let seconds = try Double(secondsString) ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
+            let seconds = try Double(secondsString)
+                ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
             
             if let response = decoder.userInfo[.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[API.HTTP.Header.Key.date] as? String,

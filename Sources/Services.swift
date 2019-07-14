@@ -18,36 +18,60 @@ public final class Services {
     
     /// Initializes and request credentials for all platform services.
     /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL hit IG's production environment.
-    /// - parameter loginInfo: The login information to enable the HTTP and Lightstreamer interfaces.
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter user: User name and password to log in into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(rootURL: URL = API.rootURL, loginInfo: API.Request.Login) -> SignalProducer<Services,Services.Error> {
+    public static func make(rootURL: URL = API.rootURL, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Services,Services.Error> {
         let api = API(rootURL: rootURL, credentials: nil)
         
-        return api.sessionLogin(loginInfo, type: .certificate)
+        return api.session.login(type: .certificate, apiKey: apiKey, user: user)
             .mapError(Services.Error.api)
-            .attemptMap { (credentials) -> Result<Services,Services.Error> in
-                api.updateCredentials(credentials)
+            .attemptMap { (_) -> Result<Services,Services.Error> in
+                guard let credentials = api.session.credentials else {
+                    return .failure(.api(error: .invalidCredentials(nil, message: "No credentials were found.")))
+                }
                 
-                let priviledge: Streamer.Credentials
+                let secret: Streamer.Credentials
                 do {
-                    priviledge = try credentials.streamer()
+                    secret = try credentials.streamer()
                 } catch let error {
                     return .failure(.streamer(error: error as! Streamer.Error))
                 }
                 
-                let streamer = Streamer(rootURL: credentials.streamerURL, credentials: priviledge)
+                let streamer = Streamer(rootURL: credentials.streamerURL, credentials: secret)
                 return .success(.init(api: api, streamer: streamer))
             }
     }
     
     /// Initializes and request credentials for all platform services with the given API token.
+    /// - attention: Only API tokens of type `.certificate` are allowed here.
     /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL hit IG's production environment.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    /// - todo: Create a make function accepting tokens instead of passwords.
-//    public static func make(rootURL: URL = API.rootURL, token: API.Credentials.Token.Kind) -> SignalProducer<Services,Services.Error> {
-//        
-//    }
+    public static func make(rootURL: URL = API.rootURL, apiKey: String, token: API.Credentials.Token) -> SignalProducer<Services,Services.Error> {
+        guard case .certificate = token.value else {
+            return SignalProducer(error: .api(error: .invalidCredentials(nil, message: "Only certificate credentials are allowed to create a streamer instance")))
+        }
+        
+        let api = API(rootURL: rootURL, credentials: nil)
+
+        return api.session.get(apiKey: apiKey, token: token)
+            .mapError(Services.Error.api)
+            .attemptMap { (session) -> Result<Services,Services.Error> in
+                let credentials = API.Credentials(clientId: session.clientId, accountId: session.accountId, apiKey: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
+                api.session.credentials = credentials
+                
+                let secret: Streamer.Credentials
+                do {
+                    secret = try credentials.streamer()
+                } catch let error {
+                    return .failure(.streamer(error: error as! Streamer.Error))
+                }
+                
+                let streamer = Streamer(rootURL: credentials.streamerURL, credentials: secret)
+                return .success(.init(api: api, streamer: streamer))
+            }
+    }
 }
 
 extension Services {

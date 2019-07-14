@@ -15,8 +15,12 @@ extension API {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
                 }
             
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                }
+            
                 let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = api.timeZone
+                formatter.timeZone = timezone
             
                 guard let page = page else {
                     return (0, 1, formatter)
@@ -66,7 +70,7 @@ extension API.Request {
             case hour = "HOUR", hours2 = "HOUR_2", hours3 = "HOUR_3", hours4 = "HOUR_4"
             case day = "DAY", week = "WEEK", month = "MONTH"
             
-            /// Creates a resolution closest to the amount of seconds passed as argument.
+            /// Creates a resolution from the available ones closest to the amount of seconds passed as argument.
             /// - parameter seconds: Amount of seconds desired for a resolution.
             public init(seconds: Int) {
                 var result: (resolution: Resolution, distance: Int) = (.second, .max)

@@ -1,81 +1,23 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
-    /// Returns a list of client-owned applications.
-    public func applications() -> SignalProducer<[API.Response.Application],API.Error> {
-        return SignalProducer(api: self)
-            .request(.get, "operations/application", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-    
-    /// Alters the details of a given user application.
-    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
-    /// - parameter status: The status to apply to the receiving application.
-    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func updateApplication(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Response.Application,API.Error> {
-        return SignalProducer(api: self) { (api) -> API.Request.Application.Update in
-                let apiKey = try (apiKey ?? api.credentials().apiKey)
-                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
-            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-}
-
-// MARK: -
-
 extension API.Request {
-    /// Client Application.
-    fileprivate enum Application {
-        /// Let the user updates one parameter of its application.
-        fileprivate struct Update: Encodable {
-            /// API key to be added to the request.
-            let apiKey: String
-            /// Desired application status.
-            let status: API.Application.Status?
-            /// Per account request per minute allowance.
-            let overallAccountAllowance: Int?
-            /// Per account trading request per minute allowance.
-            let tradingAccountAllowance: Int?
-            
-            /// Designated initializer. It checks that at least one parameter is set.
-            init(apiKey: String, status: API.Application.Status? = nil, overallAccountAllowance: Int? = nil, tradingAccountAllowance: Int? = nil) throws {
-                guard (status != nil) || (overallAccountAllowance != nil) || (tradingAccountAllowance != nil) else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Applicaion modifications failed! At least one parameter needs to be set when setting an application.")
-                }
-                self.apiKey = apiKey
-                self.status = status
-                self.overallAccountAllowance = overallAccountAllowance
-                self.tradingAccountAllowance = tradingAccountAllowance
-            }
-            
-            func encode(to encoder: Encoder) throws {
-                var container = encoder.container(keyedBy: CodingKeys.self)
-                try container.encode(self.apiKey, forKey: .apiKey)
-                try container.encodeIfPresent(self.status, forKey: .status)
-                try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
-                try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
-            }
-            
-            private enum CodingKeys: String, CodingKey {
-                case apiKey
-                case status
-                case overallAccountAllowance = "allowanceAccountOverall"
-                case tradingAccountAllowance = "allowanceAccountTrading"
-            }
+    /// Contains all functionality related to API applications.
+    public struct Applications {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        unowned let api: API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the session endpoints.
+        init(api: API) {
+            self.api = api
         }
     }
 }
 
-// MARK: -
+// MARK: - GET /operations/application
 
-extension API.Response {
+extension API {
     /// Client application.
     public struct Application: Decodable {
         /// Application name given by the developer.
@@ -107,7 +49,19 @@ extension API.Response {
     }
 }
 
-extension API.Response.Application {
+extension API.Application {
+    /// Application status in the platform.
+    public enum Status: String, Codable {
+        /// The application is enabled and thus ready to receive/send data.
+        case enabled = "ENABLED"
+        /// The application has been disabled by the developer.
+        case disabled = "DISABLED"
+        /// The application has been revoked by the admins.
+        case revoked = "REVOKED"
+    }
+}
+
+extension API.Application {
     /// The platform allowance to the application's and account's allowances (e.g. requests per minute).
     public struct Allowance: Decodable {
         /// Boolean indicating if access to equity prices is permitted.
@@ -134,7 +88,7 @@ extension API.Response.Application {
     }
 }
 
-extension API.Response.Application.Allowance {
+extension API.Application.Allowance {
     /// Limits and allowances for lightstreamer connections.
     public struct LightStreamer: Decodable {
         /// Concurrent subscriptioon limit per lightstreamer connection.
@@ -143,7 +97,7 @@ extension API.Response.Application.Allowance {
     
     /// The requests (per minute) that the application or account can perform.
     public struct Requests: Decodable {
-        /// Overal request per minute allowance.
+        /// Overal application request per minute allowance.
         public let application: Int
         /// Account related requests per minute allowance.
         public let account: Account
@@ -160,7 +114,7 @@ extension API.Response.Application.Allowance {
     }
 }
 
-extension API.Response.Application.Allowance.Requests {
+extension API.Application.Allowance.Requests {
     // Limit and allowances for the targeted account.
     public struct Account: Decodable {
         /// Per account request per minute allowance.
@@ -175,5 +129,76 @@ extension API.Response.Application.Allowance.Requests {
             case trading = "allowanceAccountTrading"
             case historicalData = "allowanceAccountHistoricalData"
         }
+    }
+}
+
+extension API.Request.Applications {
+    /// Returns a list of client-owned applications.
+    public func getAll() -> SignalProducer<[API.Application],API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "operations/application", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
+    }
+}
+
+// MARK: - PUT /operations/application
+
+extension API.Request.Applications {
+    /// Let the user updates one parameter of its application.
+    private struct Update: Encodable {
+        /// API key to be added to the request.
+        let apiKey: String
+        /// Desired application status.
+        let status: API.Application.Status?
+        /// Per account request per minute allowance.
+        let overallAccountAllowance: Int?
+        /// Per account trading request per minute allowance.
+        let tradingAccountAllowance: Int?
+        
+        /// Designated initializer. It checks that at least one parameter is set.
+        init(apiKey: String, status: API.Application.Status? = nil, overallAccountAllowance: Int? = nil, tradingAccountAllowance: Int? = nil) throws {
+            guard (status != nil) || (overallAccountAllowance != nil) || (tradingAccountAllowance != nil) else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Applicaion modifications failed! At least one parameter needs to be set when setting an application.")
+            }
+            self.apiKey = apiKey
+            self.status = status
+            self.overallAccountAllowance = overallAccountAllowance
+            self.tradingAccountAllowance = tradingAccountAllowance
+        }
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(self.apiKey, forKey: .apiKey)
+            try container.encodeIfPresent(self.status, forKey: .status)
+            try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
+            try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case apiKey, status
+            case overallAccountAllowance = "allowanceAccountOverall"
+            case tradingAccountAllowance = "allowanceAccountTrading"
+        }
+    }
+    
+    /// Alters the details of a given user application.
+    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
+    /// - parameter status: The status to apply to the receiving application.
+    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
+    public func update(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Application,API.Error> {
+        return SignalProducer(api: self.api) { (api) -> API.Request.Applications.Update in
+                guard let apiKey = api.session.credentials?.apiKey else {
+                    throw API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
+                }
+            
+                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
+                let data = try API.Codecs.jsonEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: [200])
+            .decodeJSON()
     }
 }

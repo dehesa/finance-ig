@@ -381,9 +381,9 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA7C2149A6CE00344CBF /* API.swift */,
-				8DC4CA6A2149A6CE00344CBF /* APIConstants.swift */,
 				8D1CC97C229B0706009AB4D3 /* APIProducers.swift */,
 				8DC4CA632149A6CE00344CBF /* APIError.swift */,
+				8DC4CA6A2149A6CE00344CBF /* APIConstants.swift */,
 				8D845A6F229C7AA800A0049A /* APIEntities.swift */,
 				8DC4CA7D2149A6CE00344CBF /* Session */,
 				8DC4CA792149A6CE00344CBF /* Applications */,
@@ -918,6 +918,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -957,6 +958,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;

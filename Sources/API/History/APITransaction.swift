@@ -9,8 +9,12 @@ extension API {
     /// - parameter page: Paging variables for the transactions page received.
     public func transactions(from: Date, to: Date? = nil, type: API.Request.Transaction.Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Response.Transaction],API.Error> {
         return SignalProducer(api: self) { (api) -> Foundation.DateFormatter in
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                }
+            
                 let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = api.timeZone
+                formatter.timeZone = timezone
                 return formatter
             }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]

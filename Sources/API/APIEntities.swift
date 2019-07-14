@@ -1,21 +1,6 @@
 import Foundation
 
 extension API {
-    /// Application related entities (both for responses and requests).
-    public enum Application {
-        /// Application status in the platform.
-        public enum Status: String, Codable {
-            /// The application is enabled and thus ready to receive/send data.
-            case enabled = "ENABLED"
-            /// The application has been disabled by the developer.
-            case disabled = "DISABLED"
-            /// The application has been revoked by the admins.
-            case revoked = "REVOKED"
-        }
-    }
-}
-
-extension API {
     /// Market related entities.
     public enum Market {
         /// The current status of the market.
