@@ -6,19 +6,22 @@ import ReactiveSwift
 final class APIActivityTests: APITestCase {
     /// Tests paginated activity retrieval.
     func testActivities() {
-        var components = DateComponents()
-        components.timeZone = TimeZone(abbreviation: "CET")
-        (components.year, components.month, components.day) = (2019, 01, 01)
-        (components.hour, components.minute) = (0, 0)
+        let components = DateComponents().set {
+            $0.timeZone = TimeZone.current
+            ($0.year, $0.month, $0.day) = (2019, 07, 01)
+            ($0.hour, $0.minute) = (0, 0)
+        }
+        
+        let date = Calendar(identifier: .gregorian).date(from: components)!
         
         var counter = 0
-        let date = Calendar(identifier: .gregorian).date(from: components)!
-        let endpoint = self.api.activity(from: date, detailed: false).on(completed: {
+        let endpoint = self.api.activity.get(from: date, detailed: false).on(completed: {
             XCTAssertGreaterThan(counter, 0)
         }, value: {
             counter += $0.count
+            print(counter)
         })
         
-        self.test("Activities (history)", endpoint, signingProcess: .oauth, timeout: 1)
+        self.test("Activities (history)", endpoint, signingProcess: .oauth, timeout: 3)
     }
 }

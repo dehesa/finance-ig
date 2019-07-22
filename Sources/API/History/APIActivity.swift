@@ -1,12 +1,14 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /history/activity
-
 extension API.Request.Activity {
+    
+    // MARK: GET /history/activity
+    
     /// Returns the account's activity history.
     ///
     /// This is a paged-request, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
+    /// - attention: The results are returned from newest to oldest.
     /// - parameter from: The start date.
     /// - parameter to: The end date (if `nil` means the end of `from` date).
     /// - parameter detailed: Boolean indicating whether to retrieve additional details about the activity.
@@ -14,9 +16,7 @@ extension API.Request.Activity {
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
-        
         var dateFormatter: Foundation.DateFormatter! = nil
-        
         return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
@@ -45,18 +45,30 @@ extension API.Request.Activity {
                     queries.append(URLQueryItem(name: "filter", value: filter))
                 }
                 
+                let size: UInt = (pageSize < PageSize.minimum) ? PageSize.minimum :
+                                 (pageSize > PageSize.maximum) ? PageSize.maximum : pageSize
+                queries.append(URLQueryItem(name: "pageSize", value: String(size)))
                 return queries
             }).paginate(request: { (api, initialRequest, previous) in
                 guard let previous = previous else {
                     return initialRequest
                 }
                 
-                guard let nextURL = previous.meta.nextURL(rootURL: api.rootURL) else {
+                guard let next = previous.meta.next else {
                     return nil
                 }
                 
+                guard let queries = URLComponents(string: next)?.queryItems else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activities couldn't be processed because there were no \"next\" queries.")
+                }
+                
+                guard let from = queries.first(where: { $0.name == "from" }),
+                      let to = queries.first(where: { $0.name == "to" }) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activies couldn't be processed because the \"from\" and/or \"to\" queries couldn't be found.")
+                }
+                
                 var nextRequest = initialRequest
-                nextRequest.url = nextURL
+                try nextRequest.addQueries([from, to])
                 return nextRequest
             }, endpoint: { (producer) -> SignalProducer<(PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
                 return producer.send(expecting: .json)
@@ -88,6 +100,8 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
 extension API.Request.Activity {
     /// Variables related to the paging responses.
     public enum PageSize {
@@ -98,7 +112,11 @@ extension API.Request.Activity {
         /// The maximum amount of pages that can be asked for.
         public static var maximum: UInt { return 500 }
     }
-    
+}
+
+// MARK: Response Entities
+
+extension API.Request.Activity {
     /// A single page of activity requests.
     private struct PagedActivities: Decodable {
         let activities: [API.Activity]
@@ -111,26 +129,7 @@ extension API.Request.Activity {
                 /// The number of resources/answers delivered in the response.
                 let size: Int
                 /// The relative url to hit next for getting the following page.
-                let nextRelativeURL: URL?
-                
-                /// The absolute `next` URL.
-                /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
-                /// - returns: If there are more pages to be queried, a URL is returned; if not, `nil` is returned.
-                func nextURL(rootURL: URL) -> URL? {
-                    guard let url = self.nextRelativeURL,
-                        let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
-                        var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {
-                            return nil
-                    }
-                    
-                    root.path = root.path.appending(next.path)
-                    root.queryItems = next.queryItems
-                    return root.url
-                }
-                
-                private enum CodingKeys: String, CodingKey {
-                    case size, nextRelativeURL = "next"
-                }
+                let next: String?
             }
         }
     }

@@ -176,12 +176,17 @@ extension SignalProducer where Error==API.Error {
             request.httpMethod = method.rawValue
             
             do {
+                var credentials: API.Credentials? = nil
+                
                 if usingCredentials {
-                    guard let credentials = validated.api.session.credentials else {
+                    if let storedCredentials = validated.api.session.credentials {
+                        credentials = storedCredentials
+                    } else {
                         return .failure(.invalidCredentials(nil, message: "No credentials found."))
                     }
-                    request.addHeaders(version: version, credentials: credentials, try headerGenerator?(validated.api, validated.values))
                 }
+                
+                request.addHeaders(version: version, credentials: credentials, try headerGenerator?(validated.api, validated.values))
                 
                 if let bodyGenerator = bodyGenerator {
                     let body = try bodyGenerator(validated.api, validated.values)
@@ -193,7 +198,6 @@ extension SignalProducer where Error==API.Error {
             } catch let error {
                 return .failure(.invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
             }
-            
             return .success( (validated.api, request) )
         }
     }

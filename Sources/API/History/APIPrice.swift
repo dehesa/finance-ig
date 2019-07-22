@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /prices/{epic}
-
 extension API.Request.Price {
+    
+    // MARK: GET /prices/{epic}
+    
     /// Returns historical prices for a particular instrument.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
@@ -79,6 +80,8 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
 extension API.Request.Price {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
@@ -124,7 +127,11 @@ extension API.Request.Price {
             }
         }
     }
-    
+}
+
+// MARK: Response Entities
+
+extension API.Request.Price {
     /// Single page of prices request.
     private struct PagedPrices: Decodable {
         let instrumentType: API.Instrument.Kind
@@ -168,10 +175,10 @@ extension API {
         let open: Point
         /// Close session price.
         let close: Point
-        /// Highest price.
-        let highest: Point
         /// Lowest price.
         let lowest: Point
+        /// Highest price.
+        let highest: Point
         /// Last traded volume.
         ///
         /// This will generally be `nil` for non exchange traded instrument.
@@ -201,10 +208,10 @@ extension API {
 extension API.Price {
     /// Price Snap.
     public struct Point: Decodable {
-        /// Ask price (i.e. buy price).
-        public let ask: Double
-        /// Bid price (i.e. sell price).
+        /// Bid price (i.e. the price being offered  to buy an asset).
         public let bid: Double
+        /// Ask price (i.e. the price being asked to sell an asset).
+        public let ask: Double
         /// Last traded price.
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
@@ -230,7 +237,7 @@ extension API.Price {
             
             let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
             if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
-               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date] as? String,
+               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
                let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
                 self.resetDate = date.addingTimeInterval(numSeconds)
             } else {

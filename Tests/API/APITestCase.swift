@@ -30,24 +30,18 @@ extension APITestCase {
     /// - returns: API instance/session that can be file-based or ULR-based depending on the testing environment variables specified in `account`.
     static func makeAPI(url: URL) -> API {
         switch Account.SupportedScheme(url: url)! {
-        case .file:  return API(rootURL: url, session: APIFileSession())
-        case .https: return API(rootURL: url, session: URLSession(configuration: API.defaultSessionConfigurations))
+        case .file:  return API(rootURL: url, channel: APIFileSession())
+        case .https: return API(rootURL: url, channel: URLSession(configuration: API.defaultSessionConfigurations))
         }
-    }
-    
-    /// Convenience property that returns the data within `account` into a Login Request information package.
-    static func loginData(account: Account) -> API.Request.Login {
-        let api = account.api
-        return try! API.Request.Login(apiKey: api.key, accountId: account.accountId, username: api.username, password: api.password)
     }
     
     /// Convenience function starting the signal passed as parameter and expecting it to complete.
     /// - parameter description: The description for the test expectation.
     /// - parameter endpoints: Endpoint/s being tested.
     /// - parameter signingProcess: Whether the log in/out calls will be added to the endpoint test (at the beginning and end).
-    /// - parameter timeout: The time to wait before the expectation fail. If a signing process is selected, 1 second is added to the timeout.
+    /// - parameter timeout: The time to wait before the expectation fail. If a signing process is selected, `timeoutAddition` seconds are added to the timeout.
     /// - parameter expectationHandler: The handler called in whathever outcome of the expectation.
-    func test<V>(_ description: String, _ endpoints: SignalProducer<V,API.Error>, signingProcess: API.Request.Session? = nil, timeout: TimeInterval, expectationHandler: XCWaitCompletionHandler? = nil) {
+    func test<V>(_ description: String, _ endpoints: SignalProducer<V,API.Error>, signingProcess: API.Request.Session.Kind?, timeout: TimeInterval, expectationHandler: XCWaitCompletionHandler? = nil) {
         let expectation = self.expectation(description: description)
         
         let eventHandler: Signal<Void,API.Error>.Observer.Action = {
@@ -60,17 +54,17 @@ extension APITestCase {
         }
         
         var wait: TimeInterval = timeout
+        let timeoutAddition: TimeInterval = 1.5
         let disposable: Disposable
         
         if let signingProcess = signingProcess {
-            // If there is a signing process expected, +1.5 seconds are added to the timeout.
-            wait += 1.5
-            let loginData = APITestCase.loginData(account: self.account)
-            disposable = self.api.sessionLogin(loginData, type: signingProcess)
-                .flatMap(.latest) { (credentials) -> SignalProducer<V,API.Error> in
-                    self.api.updateCredentials(credentials)
-                    return endpoints
-               }.then(api.sessionLogout())
+            let user = (self.account.api.username, self.account.api.password)
+            // If signing is requred, then +1.5 seconds are added to the timeout.
+            wait += timeoutAddition
+            
+            disposable = self.api.session.login(type: signingProcess, apiKey: self.account.api.key, user: user)
+                .then(endpoints.map { _ in return })
+                .then(api.session.logout())
                 .start(eventHandler)
         } else {
             disposable = endpoints.start {

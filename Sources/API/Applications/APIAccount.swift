@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /accounts
-
 extension API.Request.Accounts {
+    
+    // MARK:  GET /accounts
+    
     /// Returns a list of accounts belonging to the logged-in client.
     public func getAll() -> SignalProducer<[API.Account],API.Error> {
         return SignalProducer(api: self.api)
@@ -11,17 +12,11 @@ extension API.Request.Accounts {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: Wrapper) in w.accounts }
+            .map { (w: WrapperList) in w.accounts }
     }
     
-    private struct Wrapper: Decodable {
-        let accounts: [API.Account]
-    }
-}
-
-// MARK: - GET /accounts/preferences
-
-extension API.Request.Accounts {
+    // MARK:  GET /accounts/preferences
+    
     /// Returns the targeted account preferences.
     public func preferences() -> SignalProducer<API.Account.Preferences,API.Error> {
         return SignalProducer(api: self.api)
@@ -30,26 +25,20 @@ extension API.Request.Accounts {
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
-}
 
-// MARK: - PUT /accounts/preferences
-
-extension API.Request.Accounts {
+    // MARK:  PUT /accounts/preferences
+    
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Payload in
+        return SignalProducer(api: self.api) { (_) -> PayloadPreferences in
                 return .init(trailingStopsEnabled: trailingStops)
             }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json)
             .validate(statusCodes: 200)
             .map { (_) in return }
-    }
-    
-    private struct Payload: Encodable {
-        let trailingStopsEnabled: Bool
     }
 }
 
@@ -69,6 +58,22 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
+extension API.Request.Accounts {
+    private struct PayloadPreferences: Encodable {
+        let trailingStopsEnabled: Bool
+    }
+}
+
+// MARK: Response Entities
+
+extension API.Request.Accounts {
+    private struct WrapperList: Decodable {
+        let accounts: [API.Account]
+    }
+}
+
 extension API {
     /// Client account.
     public struct Account: Decodable {
@@ -78,6 +83,8 @@ extension API {
         public let name: String
         /// Account alias.
         public let alias: String?
+        /// Account type
+        public let type: Kind
         /// Account status
         public let status: Status
         /// Default login account.
@@ -86,8 +93,6 @@ extension API {
         public let currency: String
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
-        /// Account type
-        public let type: Kind
         /// Account balance.
         public let balance: Balance
         
@@ -158,9 +163,7 @@ extension API.Account {
             case available
         }
     }
-}
 
-extension API.Account {
     /// Account preferences.
     public struct Preferences: Decodable {
         /// Whether the user wants to be allowed to define trailing stop rules for his trade operations.
