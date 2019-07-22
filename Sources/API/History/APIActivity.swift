@@ -1,69 +1,9 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request {
-    /// Contains all functionality related to a user's activity.
-    public struct Activity {
-        /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
-        init(api: API) {
-            self.api = api
-        }
-    }
-}
-
 // MARK: - GET /history/activity
 
 extension API.Request.Activity {
-    /// Variables related to the paging responses.
-    public enum PageSize {
-        /// The minimum amount of pages that can be asked for.
-        public static var minimum: UInt { return 10 }
-        /// The default amount of transactions received in a page.
-        public static var `default`: UInt { return 50 }
-        /// The maximum amount of pages that can be asked for.
-        public static var maximum: UInt { return 500 }
-    }
-    
-    /// A single page of activity requests.
-    private struct PagedActivities: Decodable {
-        let activities: [API.Activity]
-        let metadata: Metadata
-        
-        struct Metadata: Decodable {
-            let paging: Page
-            
-            struct Page: Decodable {
-                /// The number of resources/answers delivered in the response.
-                let size: Int
-                /// The relative url to hit next for getting the following page.
-                let nextRelativeURL: URL?
-                
-                /// The absolute `next` URL.
-                /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
-                /// - returns: If there are more pages to be queried, a URL is returned; if not, `nil` is returned.
-                func nextURL(rootURL: URL) -> URL? {
-                    guard let url = self.nextRelativeURL,
-                        let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
-                        var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {
-                            return nil
-                    }
-                    
-                    root.path = root.path.appending(next.path)
-                    root.queryItems = next.queryItems
-                    return root.url
-                }
-                
-                private enum CodingKeys: String, CodingKey {
-                    case size, nextRelativeURL = "next"
-                }
-            }
-        }
-    }
-    
     /// Returns the account's activity history.
     ///
     /// This is a paged-request, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
@@ -120,15 +60,79 @@ extension API.Request.Activity {
                 return nextRequest
             }, endpoint: { (producer) -> SignalProducer<(PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
                 return producer.send(expecting: .json)
-                    .validateLadenData(statusCodes: [200])
-                    .decodeJSON { (request, responseHeader) -> JSONDecoder in
-                        let result = API.Codecs.jsonDecoder(request: request, responseHeader: responseHeader)
-                        result.userInfo[.dateFormatter] = dateFormatter!
-                        return result
+                    .validateLadenData(statusCodes: 200)
+                    .decodeJSON { (_,responseHeader) -> JSONDecoder in
+                        return JSONDecoder().set {
+                            $0.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter!
+                        }
                     }.map { (response: PagedActivities) in
                         (response.metadata.paging, response.activities)
                     }
             })
+    }
+}
+
+// MARK: - Supporting Entities
+
+extension API.Request {
+    /// Contains all functionality related to a user's activity.
+    public struct Activity {
+        /// Pointer to the actual API instance in charge of calling the endpoints.
+        fileprivate unowned let api: API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoints.
+        init(api: API) {
+            self.api = api
+        }
+    }
+}
+
+extension API.Request.Activity {
+    /// Variables related to the paging responses.
+    public enum PageSize {
+        /// The minimum amount of pages that can be asked for.
+        public static var minimum: UInt { return 10 }
+        /// The default amount of transactions received in a page.
+        public static var `default`: UInt { return 50 }
+        /// The maximum amount of pages that can be asked for.
+        public static var maximum: UInt { return 500 }
+    }
+    
+    /// A single page of activity requests.
+    private struct PagedActivities: Decodable {
+        let activities: [API.Activity]
+        let metadata: Metadata
+        
+        struct Metadata: Decodable {
+            let paging: Page
+            
+            struct Page: Decodable {
+                /// The number of resources/answers delivered in the response.
+                let size: Int
+                /// The relative url to hit next for getting the following page.
+                let nextRelativeURL: URL?
+                
+                /// The absolute `next` URL.
+                /// - parameter rootURL: The URL where the the relative URL will be appended to. It shall not have query iems.
+                /// - returns: If there are more pages to be queried, a URL is returned; if not, `nil` is returned.
+                func nextURL(rootURL: URL) -> URL? {
+                    guard let url = self.nextRelativeURL,
+                        let next = URLComponents(url: url, resolvingAgainstBaseURL: true),
+                        var root = URLComponents(url: rootURL, resolvingAgainstBaseURL: true) else {
+                            return nil
+                    }
+                    
+                    root.path = root.path.appending(next.path)
+                    root.queryItems = next.queryItems
+                    return root.url
+                }
+                
+                private enum CodingKeys: String, CodingKey {
+                    case size, nextRelativeURL = "next"
+                }
+            }
+        }
     }
 }
 
@@ -157,7 +161,7 @@ extension API {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
-            guard let formatter = decoder.userInfo[.dateFormatter] as? Foundation.DateFormatter else {
+            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? Foundation.DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             }
             
@@ -250,7 +254,7 @@ extension API.Activity {
             self.size = try container.decode(Double.self, forKey: .size)
             
             if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {
-                guard let formatter = decoder.userInfo[.dateFormatter] as? Foundation.DateFormatter else {
+                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? Foundation.DateFormatter else {
                     throw DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
                 }
                 self.goodTillDate = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: formatter.parseErrorLine(date: dateString))

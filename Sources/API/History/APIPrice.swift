@@ -1,6 +1,70 @@
 import ReactiveSwift
 import Foundation
 
+// MARK: - GET /prices/{epic}
+
+extension API.Request.Price {
+    /// Returns historical prices for a particular instrument.
+    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// - parameter from: The date from which to start the query.
+    /// - parameter to: The date from which to end the query.
+    /// - parameter resolution: It defines the resolution of requested prices.
+    /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
+    /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
+    public func get(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(price: [API.Price], allowance: API.Price.Allowance),API.Error> {
+        return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
+                }
+            
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                }
+            
+                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                formatter.timeZone = timezone
+            
+                guard let page = page else {
+                    return (0, 1, formatter)
+                }
+            
+                let pageNumber = (page.number > 0) ? page.number : 1
+                return (page.size, pageNumber, formatter)
+            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) in
+                return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
+                        URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
+                        URLQueryItem(name: "resolution", value: resolution.rawValue),
+                        URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
+                        URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
+            }).paginate(request: { (api, initialRequest, previous) in
+                guard let previous = previous else {
+                    return initialRequest
+                }
+                
+                guard let pageNumber = previous.meta.next else {
+                    return nil
+                }
+                
+                var request = initialRequest
+                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
+                return request
+            }, endpoint: { (producer) -> SignalProducer<(PagedPrices.Metadata.Page, (price: [API.Price], allowance: API.Price.Allowance)), API.Error> in
+                producer.send(expecting: .json)
+                    .validateLadenData(statusCodes: 200)
+                    .decodeJSON { (_,responseHeader) -> JSONDecoder in
+                        return JSONDecoder().set {
+                            $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                        }
+                    }.map { (response: PagedPrices) in
+                        let result = (response.prices, allowance: response.metadata.allowance)
+                        return (response.metadata.page, result)
+                    }
+            })
+    }
+}
+
+// MARK: - Supporting Entities
+
 extension API.Request {
     /// Contains all functionality related to price history.
     public struct Price {
@@ -8,14 +72,12 @@ extension API.Request {
         fileprivate unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
+        /// - parameter api: The instance calling the actual endpoints.
         init(api: API) {
             self.api = api
         }
     }
 }
-
-// MARK: - GET /prices/...epic...
 
 extension API.Request.Price {
     /// Resolution of requested prices.
@@ -95,64 +157,7 @@ extension API.Request.Price {
             }
         }
     }
-    
-    /// Returns historical prices for a particular instrument.
-    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - parameter from: The date from which to start the query.
-    /// - parameter to: The date from which to end the query.
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
-    /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func get(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(price: [API.Price], allowance: API.Price.Allowance),API.Error> {
-        return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
-                guard !epic.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
-                }
-            
-                guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
-                }
-            
-                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = timezone
-            
-                guard let page = page else {
-                    return (0, 1, formatter)
-                }
-            
-                let pageNumber = (page.number > 0) ? page.number : 1
-                return (page.size, pageNumber, formatter)
-            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) in
-                return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
-                        URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
-                        URLQueryItem(name: "resolution", value: resolution.rawValue),
-                        URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
-                        URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
-            }).paginate(request: { (api, initialRequest, previous) in
-                guard let previous = previous else {
-                    return initialRequest
-                }
-                
-                guard let pageNumber = previous.meta.next else {
-                    return nil
-                }
-                
-                var request = initialRequest
-                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
-                return request
-            }, endpoint: { (producer) -> SignalProducer<(PagedPrices.Metadata.Page, (price: [API.Price], allowance: API.Price.Allowance)), API.Error> in
-                producer.send(expecting: .json)
-                    .validateLadenData(statusCodes: [200])
-                    .decodeJSON()
-                    .map { (response: PagedPrices) in
-                        let result = (response.prices, allowance: response.metadata.allowance)
-                        return (response.metadata.page, result)
-                    }
-            })
-    }
 }
-
-// MARK: -
 
 extension API {
     /// Historical market price snapshot.
@@ -170,7 +175,7 @@ extension API {
         /// Last traded volume.
         ///
         /// This will generally be `nil` for non exchange traded instrument.
-        let lastTradedVolume: UInt?
+        let volume: UInt?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -179,7 +184,7 @@ extension API {
             self.close = try container.decode(Point.self, forKey: .close)
             self.highest = try container.decode(Point.self, forKey: .highest)
             self.lowest = try container.decode(Point.self, forKey: .lowest)
-            self.lastTradedVolume = try container.decodeIfPresent(UInt.self, forKey: .lastTradedVolume)
+            self.volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -188,7 +193,7 @@ extension API {
             case close = "closePrice"
             case highest = "highPrice"
             case lowest = "lowPrice"
-            case lastTradedVolume
+            case volume = "lastTradedVolume"
         }
     }
 }
@@ -224,7 +229,7 @@ extension API.Price {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
-            if let response = decoder.userInfo[.responseHeader] as? HTTPURLResponse,
+            if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[API.HTTP.Header.Key.date] as? String,
                let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
                 self.resetDate = date.addingTimeInterval(numSeconds)

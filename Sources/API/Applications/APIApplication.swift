@@ -1,6 +1,44 @@
 import ReactiveSwift
 import Foundation
 
+// MARK: - GET /operations/application
+
+extension API.Request.Applications {
+    /// Returns a list of client-owned applications.
+    public func getAll() -> SignalProducer<[API.Application],API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "operations/application", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+    }
+}
+
+// MARK: - PUT /operations/application
+
+extension API.Request.Applications {
+    /// Alters the details of a given user application.
+    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
+    /// - parameter status: The status to apply to the receiving application.
+    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
+    public func update(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Application,API.Error> {
+        return SignalProducer(api: self.api) { (api) -> API.Request.Applications.Update in
+                guard let apiKey = api.session.credentials?.apiKey else {
+                    throw API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
+                }
+            
+                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
+                let data = try JSONEncoder().encode(payload)
+                return (.json, data)
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+    }
+}
+
+// MARK: - Supporting Entities
+
 extension API.Request {
     /// Contains all functionality related to API applications.
     public struct Applications {
@@ -8,14 +46,12 @@ extension API.Request {
         fileprivate unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
+        /// - parameter api: The instance calling the actual endpoints.
         init(api: API) {
             self.api = api
         }
     }
 }
-
-// MARK: - GET /operations/application
 
 extension API {
     /// Client application.
@@ -133,19 +169,6 @@ extension API.Application.Allowance.Requests {
 }
 
 extension API.Request.Applications {
-    /// Returns a list of client-owned applications.
-    public func getAll() -> SignalProducer<[API.Application],API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "operations/application", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-}
-
-// MARK: - PUT /operations/application
-
-extension API.Request.Applications {
     /// Let the user updates one parameter of its application.
     private struct Update: Encodable {
         /// API key to be added to the request.
@@ -181,24 +204,5 @@ extension API.Request.Applications {
             case overallAccountAllowance = "allowanceAccountOverall"
             case tradingAccountAllowance = "allowanceAccountTrading"
         }
-    }
-    
-    /// Alters the details of a given user application.
-    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
-    /// - parameter status: The status to apply to the receiving application.
-    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Application,API.Error> {
-        return SignalProducer(api: self.api) { (api) -> API.Request.Applications.Update in
-                guard let apiKey = api.session.credentials?.apiKey else {
-                    throw API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
-                }
-            
-                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
-            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
     }
 }

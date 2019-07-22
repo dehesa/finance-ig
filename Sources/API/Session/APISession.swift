@@ -1,42 +1,9 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request {
-    /// Contains all functionality related to the API session.
-    public struct Session {
-        /// Pointer to the API instance in charge of calling the session endpoints.
-        private var pointer: Unmanaged<API>?
-        /// The credentials used to call API endpoints.
-        var credentials: API.Credentials?
-        
-        /// Pointer to the actual API instance in charge of calling the endpoint.
-        /// - attention: Before using the getter, be sure to have set this property or the application will crash.
-        var api: API {
-            get { return pointer!.takeUnretainedValue() }
-            set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
-        }
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
-        /// - parameter credentials: The credentials to be stored within this API session.
-        init(credentials: API.Credentials?) {
-            self.pointer = nil
-            self.credentials = credentials
-        }
-    }
-}
-
 // MARK: - POST /session
 
 extension API.Request.Session {
-    /// Type of sessions available
-    public enum Kind {
-        /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
-        case certificate
-        /// OAuth sessions are valid for a limited period (e.g. 60 seconds) as specified in the expiration date from the response.
-        case oauth
-    }
-    
     /// Logs a user in the platform and stores the credentials within the API instance.
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
@@ -63,44 +30,6 @@ extension API.Request.Session {
 
 // MARK: - GET /session
 
-extension API {
-    /// Representation of a dealing session.
-    public struct Session: Decodable {
-        /// Client identifier.
-        public let clientId: Int
-        /// Active account identifier.
-        public let accountId: String
-        /// Lightstreamer endpoint for subscribing to account and price updates.
-        public let streamerURL: URL
-        /// Timezone of the active account.
-        public let timezone: TimeZone
-        /// The language locale to use on the platform
-        public let locale: Locale
-        /// The default currency used in this session.
-        public let currency: String
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            
-            let clientString = try container.decode(String.self, forKey: .clientId)
-            self.clientId = try Int(clientString)
-                ?! DecodingError.typeMismatch(Int.self, .init(codingPath: container.codingPath, debugDescription: "The clientId \"\(clientString)\" couldn't be parsed to a number."))
-            self.accountId = try container.decode(String.self, forKey: .accountId)
-            let offset = try container.decode(Int.self, forKey: .timezoneOffset)
-            self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
-                ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
-            self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
-            self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(String.self, forKey: .currency)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case clientId, accountId, timezoneOffset
-            case locale, currency, streamerURL = "lightstreamerEndpoint"
-        }
-    }
-}
-
 extension API.Request.Session {
     /// Returns the user's session details.
     /// - returns: `SignalProducer` returning information about the current user's session.
@@ -108,7 +37,7 @@ extension API.Request.Session {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: true)
             .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
+            .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
     
@@ -129,32 +58,12 @@ extension API.Request.Session {
                 }
                 return result
             }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
+            .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
 }
 
 // MARK: - PUT /session
-
-extension API.Session {
-    /// Payload received when accounts are switched.
-    public struct Switch: Decodable {
-        /// Boolean indicating whether trailing stops are currently enabled for the given account.
-        public let isTrailingStopEnabled: Bool
-        /// Boolean indicating whether it is possible to make "deals" on the given account.
-        public let isDealingEnabled: Bool
-        /// Boolean indicating whther the demo account is active.
-        public let hasActiveDemoAccounts: Bool
-        /// Boolean indicating whether the live account is active.
-        public let hasActiveLiveAccounts: Bool
-        
-        private enum CodingKeys: String, CodingKey {
-            case isTrailingStopEnabled = "trailingStopsEnabled"
-            case isDealingEnabled = "dealingEnabled"
-            case hasActiveDemoAccounts, hasActiveLiveAccounts
-        }
-    }
-}
 
 extension API.Request.Session {
     /// Switches active accounts, optionally setting the default account.
@@ -177,10 +86,10 @@ extension API.Request.Session {
                 }
                 return .init(accountId: accountId, defaultAccount: makingDefault)
             }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
+                let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
+            .validateLadenData(statusCodes: 200)
             .decodeJSON()
             .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Switch) -> Result<API.Session.Switch,API.Error> in
                 guard let api = weakAPI else {
@@ -225,7 +134,7 @@ extension API.Request.Session {
             
             let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (api,request))
                 .send()
-                .validate(statusCodes: [204])
+                .validate(statusCodes: 204)
                 .start {
                     switch $0 {
                     case .value(_):
@@ -237,6 +146,101 @@ extension API.Request.Session {
                     }
                 }
             lifetime.observeEnded(disposable.dispose)
+        }
+    }
+}
+
+// MARK: - Supporting Entities
+
+extension API.Request {
+    /// Contains all functionality related to the API session.
+    public struct Session {
+        /// Pointer to the API instance in charge of calling the session endpoints.
+        private var pointer: Unmanaged<API>?
+        /// The credentials used to call API endpoints.
+        var credentials: API.Credentials?
+        
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        /// - attention: Before using the getter, be sure to have set this property or the application will crash.
+        var api: API {
+            get { return pointer!.takeUnretainedValue() }
+            set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
+        }
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the session endpoints.
+        /// - parameter credentials: The credentials to be stored within this API session.
+        init(credentials: API.Credentials?) {
+            self.pointer = nil
+            self.credentials = credentials
+        }
+    }
+}
+
+extension API.Request.Session {
+    /// Type of sessions available
+    public enum Kind {
+        /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
+        case certificate
+        /// OAuth sessions are valid for a limited period (e.g. 60 seconds) as specified in the expiration date from the response.
+        case oauth
+    }
+}
+
+extension API {
+    /// Representation of a dealing session.
+    public struct Session: Decodable {
+        /// Client identifier.
+        public let clientId: Int
+        /// Active account identifier.
+        public let accountId: String
+        /// Lightstreamer endpoint for subscribing to account and price updates.
+        public let streamerURL: URL
+        /// Timezone of the active account.
+        public let timezone: TimeZone
+        /// The language locale to use on the platform
+        public let locale: Locale
+        /// The default currency used in this session.
+        public let currency: String
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            let clientString = try container.decode(String.self, forKey: .clientId)
+            self.clientId = try Int(clientString)
+                ?! DecodingError.typeMismatch(Int.self, .init(codingPath: container.codingPath, debugDescription: "The clientId \"\(clientString)\" couldn't be parsed to a number."))
+            self.accountId = try container.decode(String.self, forKey: .accountId)
+            let offset = try container.decode(Int.self, forKey: .timezoneOffset)
+            self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
+                ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
+            self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
+            self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
+            self.currency = try container.decode(String.self, forKey: .currency)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case clientId, accountId, timezoneOffset
+            case locale, currency, streamerURL = "lightstreamerEndpoint"
+        }
+    }
+}
+
+extension API.Session {
+    /// Payload received when accounts are switched.
+    public struct Switch: Decodable {
+        /// Boolean indicating whether trailing stops are currently enabled for the given account.
+        public let isTrailingStopEnabled: Bool
+        /// Boolean indicating whether it is possible to make "deals" on the given account.
+        public let isDealingEnabled: Bool
+        /// Boolean indicating whther the demo account is active.
+        public let hasActiveDemoAccounts: Bool
+        /// Boolean indicating whether the live account is active.
+        public let hasActiveLiveAccounts: Bool
+        
+        private enum CodingKeys: String, CodingKey {
+            case isTrailingStopEnabled = "trailingStopsEnabled"
+            case isDealingEnabled = "dealingEnabled"
+            case hasActiveDemoAccounts, hasActiveLiveAccounts
         }
     }
 }

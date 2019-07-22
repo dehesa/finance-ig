@@ -28,7 +28,7 @@ final class APIFileSessionDataTask: URLMockableSessionDataTask {
             return send(data: nil, response: response, error: nil)
         }
         
-        let result = try! API.Codecs.jsonEncoder().encode(body)
+        let result = try! JSONEncoder().encode(body)
         return send(data: result, response: response, error: nil)
     }
     
