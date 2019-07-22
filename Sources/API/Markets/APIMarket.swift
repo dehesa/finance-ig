@@ -1,6 +1,49 @@
 import ReactiveSwift
 import Foundation
 
+extension API.Request.Markets {
+    
+    // MARK: GET /markets/{epic}
+    
+    /// Returns the details of a given market.
+    public func market(epic: String) -> SignalProducer<API.Market,API.Error> {
+        return SignalProducer(api: self.api) { (_) -> Void in
+                guard !epic.isEmpty else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Market retrieval failed! The epic cannot be empty.")
+                }
+            }.request(.get, "markets/\(epic)", version: 3, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+    }
+    
+    // MARK: GET /markets
+    
+    /// Returns the details of the given markets.
+    /// - parameter epics: The market epics to target onto. It cannot be empty.
+    public func markets(epics: [String]) -> SignalProducer<[API.Market],API.Error> {
+        return SignalProducer(api: self.api) { (_) -> [String] in
+            let validatedEpics = epics.filter { !$0.isEmpty }
+            
+            let errorBlurb = "Search for market epics failed!"
+            guard !validatedEpics.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) There needs to be at least one epic defined.")
+            }
+            guard validatedEpics.count <= 50 else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.")
+            }
+            
+            return validatedEpics
+        }.request(.get, "markets", version: 2, credentials: true, queries: { (_, epics) -> [URLQueryItem] in
+            [URLQueryItem(name: "filter", value: "ALL"),
+             URLQueryItem(name: "epics", value: epics.joined(separator: ",")) ]
+        }).send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+            .map { (list: API.Request.Markets.WrapperList) in list.marketDetails }
+    }
+}
+
 // MARK: - Supporting Entities
 
 extension API.Request {
@@ -17,70 +60,33 @@ extension API.Request {
     }
 }
 
-//extension API {
-//    /// Returns the details of the given markets.
-//    /// - parameter epics: The market epics to target onto. It cannot be empty.
-//    public func markets(epics: [String]) -> SignalProducer<[API.Response.Market],API.Error> {
-//        return SignalProducer(api: self) { (_) -> [String] in
-//                let validatedEpics = epics.filter { !$0.isEmpty }
-//            
-//                let errorBlurb = "Search for market epics failed!"
-//                guard !validatedEpics.isEmpty else {
-//                    throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) There needs to be at least one epic defined.")
-//                }
-//                guard validatedEpics.count <= 50 else {
-//                    throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.")
-//                }
-//            
-//                return validatedEpics
-//            }.request(.get, "markets", version: 2, credentials: true, queries: { (_, epics) -> [URLQueryItem] in
-//                [URLQueryItem(name: "filter", value: "ALL"),
-//                 URLQueryItem(name: "epics", value: epics.joined(separator: ",")) ]
-//            }).send(expecting: .json)
-//            .validateLadenData(statusCodes: 200)
-//            .decodeJSON()
-//            .map { (list: API.Response.MarketList) in list.marketDetails }
-//    }
-//    
-//    /// Returns the details of a given market.
-//    public func market(epic: String) -> SignalProducer<API.Response.Market,API.Error> {
-//        return SignalProducer(api: self) { (_) -> Void in
-//                guard !epic.isEmpty else {
-//                    throw API.Error.invalidRequest(underlyingError: nil, message: "Market retrieval failed! The epic cannot be empty.")
-//                }
-//            }.request(.get, "markets/\(epic)", version: 3, credentials: true)
-//            .send(expecting: .json)
-//            .validateLadenData(statusCodes: 200)
-//            .decodeJSON()
-//    }
-//}
-//
-//// MARK: -
-//
-//extension API.Response {
-//    /// List of targeted markets.
-//    fileprivate struct MarketList: Decodable {
-//        /// Wrapper key for the market list use by these endpoints.
-//        let marketDetails: [Market]
-//        
-//        /// Do not call! The only way to initialize is through `Decodable`.
-//        private init?() { fatalError("Unaccessible initializer") }
-//    }
-//    
-//    /// Market details.
-//    public struct Market: Decodable {
+// MARK: Response Entities
+
+extension API.Request.Markets {
+    private struct WrapperList: Decodable {
+        let marketDetails: [API.Market]
+    }
+}
+
+extension API {
+    /// A platform's market.
+    public struct Market: Decodable {
 //        /// Market's dealing rules.
-//        public let dealingRules: Rules
+//        public let rules: Rules
 //        /// Instrument details.
 //        public let instrument: Instrument
 //        /// Market snapshot data.
 //        public let snapshot: Snapshot
-//        
 //        /// Do not call! The only way to initialize is through `Decodable`.
 //        private init?() { fatalError("Unaccessible initializer") }
-//    }
-//}
 //
+//        private enum CodingKeys: String, CodingKey {
+//            case rules = "dealingRules"
+//            case instrument, snapshot
+//        }
+    }
+}
+
 //extension API.Response.Market {
 //    /// Instrument details.
 //    public struct Instrument: Decodable {
@@ -227,59 +233,59 @@ extension API.Request {
 //            case trailingStops = "trailingStopsPreference"
 //        }
 //    }
-//    
-//    /// Market snapshot data.
-//    public struct Snapshot: Decodable {
-//        /// The current status of a given market.
-//        public let status: API.Market.Status
-//        /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-//        public let scalingFactor: Double
-//        /// Number of decimal positions for market levels.
-//        public let decimalPlacesFactor: Int
-//        /// The number of points to add on each side of the market as an additional spread when placing a guaranteed stop trade.
-//        public let extraSpreadForControlledRisk: Double
-//        /// Binary odds.
-//        public let binaryOdds: Double?
-//        /// Time of the last price update.
-//        public let lastUpdate: Date
-//        /// Offer (buy) and bid (sell) price.
-//        public let price: (offer: Double, bid: Double, delay: Double)
-//        /// Highest and lowest price of the day.
-//        public let range: (low: Double, high: Double)
-//        /// Price change net and percentage change on that day.
-//        public let change: (net: Double, percentage: Double)
-//        
-//        public init(from decoder: Decoder) throws {
-//            let container = try decoder.container(keyedBy: CodingKeys.self)
-//            self.status = try container.decode(API.Market.Status.self, forKey: .status)
-//            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
-//            self.decimalPlacesFactor = try container.decode(Int.self, forKey: .decimalPlacesFactor)
-//            self.extraSpreadForControlledRisk = try container.decode(Double.self, forKey: .extraSpreadForControlledRisk)
-//            self.binaryOdds = try container.decodeIfPresent(Double.self, forKey: .binaryOdds)
-//            self.lastUpdate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
-//            let offer = try container.decode(Double.self, forKey: .offer)
-//            let bid = try container.decode(Double.self, forKey: .bid)
-//            let delay = try container.decode(Double.self, forKey: .delay)
-//            self.price = (offer, bid, delay)
-//            let low = try container.decode(Double.self, forKey: .low)
-//            let high = try container.decode(Double.self, forKey: .high)
-//            self.range = (low, high)
-//            let netChange = try container.decode(Double.self, forKey: .netChange)
-//            let percentageChange = try container.decode(Double.self, forKey: .percentageChange)
-//            self.change = (netChange, percentageChange)
-//        }
-//        
-//        private enum CodingKeys: String, CodingKey {
-//            case status = "marketStatus"
-//            case scalingFactor, decimalPlacesFactor
-//            case extraSpreadForControlledRisk = "controlledRiskExtraSpread"
-//            case binaryOdds
-//            case lastUpdate = "updateTime"
-//            case bid, offer, delay = "delayTime"
-//            case high, low, netChange, percentageChange
-//        }
-//    }
-//}
+extension API.Market {
+    /// Market snapshot data.
+    public struct Snapshot: Decodable {
+        /// The current status of a given market.
+        public let status: API.Market.Status
+        /// Multiplying factor to determine actual pip value for the levels used by the instrument.
+        public let scalingFactor: Double
+        /// Number of decimal positions for market levels.
+        public let decimalPlacesFactor: Int
+        /// The number of points to add on each side of the market as an additional spread when placing a guaranteed stop trade.
+        public let extraSpreadForControlledRisk: Double
+        /// Binary odds.
+        public let binaryOdds: Double?
+        /// Time of the last price update.
+        public let lastUpdate: Date
+        /// Offer (buy) and bid (sell) price.
+        public let price: (offer: Double, bid: Double, delay: Double)
+        /// Highest and lowest price of the day.
+        public let range: (low: Double, high: Double)
+        /// Price change net and percentage change on that day.
+        public let change: (net: Double, percentage: Double)
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.status = try container.decode(API.Market.Status.self, forKey: .status)
+            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
+            self.decimalPlacesFactor = try container.decode(Int.self, forKey: .decimalPlacesFactor)
+            self.extraSpreadForControlledRisk = try container.decode(Double.self, forKey: .extraSpreadForControlledRisk)
+            self.binaryOdds = try container.decodeIfPresent(Double.self, forKey: .binaryOdds)
+            self.lastUpdate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
+            let offer = try container.decode(Double.self, forKey: .offer)
+            let bid = try container.decode(Double.self, forKey: .bid)
+            let delay = try container.decode(Double.self, forKey: .delay)
+            self.price = (offer, bid, delay)
+            let low = try container.decode(Double.self, forKey: .low)
+            let high = try container.decode(Double.self, forKey: .high)
+            self.range = (low, high)
+            let netChange = try container.decode(Double.self, forKey: .netChange)
+            let percentageChange = try container.decode(Double.self, forKey: .percentageChange)
+            self.change = (netChange, percentageChange)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case status = "marketStatus"
+            case scalingFactor, decimalPlacesFactor
+            case extraSpreadForControlledRisk = "controlledRiskExtraSpread"
+            case binaryOdds
+            case lastUpdate = "updateTime"
+            case bid, offer, delay = "delayTime"
+            case high, low, netChange, percentageChange
+        }
+    }
+}
 //
 //extension API.Response.Market.Instrument {
 //    /// An instrument currency.

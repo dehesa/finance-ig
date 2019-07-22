@@ -6,12 +6,11 @@ import ReactiveSwift
 final class APISessionTests: APITestCase {
     /// Tests the Session information retrieval mechanisms.
     func testSession() {
-        let info = APITestCase.loginData(account: self.account)
+        let info: (accountId: String, apiKey: String, username: String, password: String) = (self.account.accountId, self.account.api.key, self.account.api.username, self.account.api.password)
         
-        let endpoints = self.api.sessionLogin(info, type: .oauth)
-            .call(on: self.api) { (api, credentials) -> SignalProducer<API.Response.Session,API.Error> in
-                api.updateCredentials(credentials)
-                return api.session()
+        let endpoints = self.api.session.login(type: .oauth, apiKey: info.apiKey, user: (info.username, info.password))
+            .call(on: self.api) { (api, credentials) -> SignalProducer<API.Session,API.Error> in
+                return api.session.get()
             }.on(value: { (response) in
                 XCTAssertGreaterThan(response.clientId, 0)
                 XCTAssertEqual(response.accountId, info.accountId)
@@ -19,23 +18,9 @@ final class APISessionTests: APITestCase {
                 XCTAssertEqual(response.streamerURL.scheme!, "https")
                 XCTAssertEqual(response.currency.count, 3)
             }).call(on: self.api) { (api, _) in
-                api.sessionLogout()
+                api.session.logout()
             }
         
-        self.test("Session lifecycle", endpoints, timeout: 2)
-    }
-    
-    /// Tests the retrieval of encryption keys.
-    func testEncryption() {
-        let apiKey = APITestCase.loginData(account: self.account).apiKey
-        
-        let now = Date()
-        
-        let endpoint = self.api.sessionEncryptionKey(apiKey: apiKey).on(value: {
-            XCTAssertFalse($0.encryptionKey.isEmpty)
-            XCTAssertGreaterThan($0.timeStamp, now)
-        })
-        
-        self.test("Session encryption key", endpoint, signingProcess: .oauth, timeout: 2)
+        self.test("Session lifecycle", endpoints, signingProcess: nil, timeout: 2)
     }
 }

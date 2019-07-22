@@ -63,22 +63,20 @@ extension API {
     }
 }
 
-extension API {
-    /// Market related entities.
-    public enum Market {
-        /// The current status of the market.
-        public enum Status: String, Codable {
-            /// The market is open for trading.
-            case tradeable = "TRADEABLE"
-            /// The market is closed for the moment. Look at the market's opening hours for further information.
-            case closed = "CLOSED"
-            case editsOnly = "EDITS_ONLY"
-            case onAuction = "ON_AUCTION"
-            case onAuctionNoEdits = "ON_AUCTION_NO_EDITS"
-            case offline = "OFFLINE"
-            /// The market is suspended for trading temporarily.
-            case suspended = "SUSPENDED"
-        }
+extension API.Market {
+    /// The current status of the market.
+    public enum Status: String, Codable {
+        /// The market is open for trading.
+        case tradeable = "TRADEABLE"
+        /// The market is closed for the moment. Look at the market's opening hours for further information.
+        case closed = "CLOSED"
+        case editsOnly = "EDITS_ONLY"
+        case onAuction = "ON_AUCTION"
+        case onAuctionNoEdits = "ON_AUCTION_NO_EDITS"
+        case offline = "OFFLINE"
+        /// The market is suspended for trading temporarily.
+        case suspended = "SUSPENDED"
+    }
 
 //        /// Distance/Size preference.
 //        public struct Distance: Decodable {
@@ -92,7 +90,6 @@ extension API {
 //                case percentage = "PERCENTAGE"
 //            }
 //        }
-    }
 }
 
 extension API {

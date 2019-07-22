@@ -7,13 +7,13 @@ import Foundation
 final class APIAccountTests: APITestCase {
     /// Tests Account information retrieval.
     func testAccounts() {
-        let loginData = APITestCase.loginData(account: self.account)
+        let accountId = self.account.accountId
         
-        let endpoint = self.api.accounts().on(value: {
-            XCTAssertFalse($0.isEmpty)
-            
-            let account = $0.first!
-            XCTAssertEqual(account.identifier, loginData.accountId)
+        let endpoint = self.api.accounts.getAll().on(value: {
+            guard let account = $0.first else {
+                return XCTFail("No accounts were found.")
+            }
+            XCTAssertEqual(account.identifier, accountId)
             XCTAssertFalse(account.name.isEmpty)
             XCTAssertFalse(account.currency.isEmpty)
         })
@@ -24,20 +24,19 @@ final class APIAccountTests: APITestCase {
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
         var initialTrailingStop: Bool! = nil
-        
-        let endpoint = self.api.accountPreferences().on(value: {
-            XCTAssertTrue($0.trailingStops)
+
+        let endpoint = self.api.accounts.preferences().on(value: {
             initialTrailingStop = $0.trailingStops
         }).call(on: self.api) { (api, preferences) -> SignalProducer<Void,API.Error> in
-            api.updateAccountPreferences(trailingStops: !preferences.trailingStops)
-        }.call(on: self.api) { (api, initialTrailingStop) -> SignalProducer<API.Response.Account.Preferences,API.Error> in
-            api.accountPreferences()
+            api.accounts.updatePreferences(trailingStops: !preferences.trailingStops)
+        }.call(on: self.api) { (api, _) -> SignalProducer<API.Account.Preferences,API.Error> in
+            api.accounts.preferences()
         }.on(value: {
-            XCTAssertNotEqual(initialTrailingStop, $0.trailingStops)
+            XCTAssertNotEqual($0.trailingStops, initialTrailingStop)
         }).call(on: self.api) { (api, _) -> SignalProducer<Void,API.Error> in
-            api.updateAccountPreferences(trailingStops: initialTrailingStop)
+            api.accounts.updatePreferences(trailingStops: initialTrailingStop)
         }
-        
-        self.test("Account Preferences", endpoint, signingProcess: .oauth, timeout: 1)
+
+        self.test("Account Preferences", endpoint, signingProcess: .oauth, timeout: 2)
     }
 }

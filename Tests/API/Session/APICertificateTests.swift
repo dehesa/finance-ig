@@ -6,12 +6,12 @@ import ReactiveSwift
 final class APICertificateTests: APITestCase {
     /// Tests the CST lifecycle: session creation, refresh, and disconnection.
     func testCertificateLogInOut() {
-        // The info needed to request CST credentials.
-        let info = APITestCase.loginData(account: self.account)
+        /// The info needed to request CST credentials.
+        let info: (accountId: String, apiKey: String, username: String, password: String) = (self.account.accountId, self.account.api.key, self.account.api.username, self.account.api.password)
         
-        let endpoints = api.certificateLogin(info).on(value: {
-            XCTAssertGreaterThan($0.apiKey.count, 0)
+        let endpoints = self.api.session.loginCertificate(apiKey: info.apiKey, user: (info.username, info.password)).on(value: {
             XCTAssertGreaterThan($0.clientId, 0)
+            XCTAssertEqual($0.apiKey, info.apiKey)
             XCTAssertEqual($0.accountId, info.accountId)
             XCTAssertGreaterThan($0.token.expirationDate, Date())
             
@@ -22,15 +22,14 @@ final class APICertificateTests: APITestCase {
             XCTAssertFalse(security.isEmpty)
             
             let headers = $0.requestHeaders
-            XCTAssertNotNil(headers[.clientSessionToken])
-            XCTAssertNotNil(headers[.securityToken])
+            XCTAssertEqual(headers[.clientSessionToken], access)
+            XCTAssertEqual(headers[.securityToken], security)
         }).call(on: self.api) { (api, credentials) in
-            api.updateCredentials(credentials)
-            return api.sessionLogout()
+            return api.session.logout()
         }.on(value: {
-            XCTAssertNil(try? self.api.credentials())
+            XCTAssertNil(self.api.session.credentials)
         })
 
-        self.test("Certificate Login procedure", endpoints, timeout: 2)
+        self.test("Certificate Login procedure", endpoints, signingProcess: nil, timeout: 2)
     }
 }

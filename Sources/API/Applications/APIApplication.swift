@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /operations/application
-
 extension API.Request.Applications {
+    
+    // MARK: GET /operations/application
+    
     /// Returns a list of client-owned applications.
     public func getAll() -> SignalProducer<[API.Application],API.Error> {
         return SignalProducer(api: self.api)
@@ -12,22 +13,20 @@ extension API.Request.Applications {
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
-}
 
-// MARK: - PUT /operations/application
+    // MARK: PUT /operations/application
 
-extension API.Request.Applications {
     /// Alters the details of a given user application.
     /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(apiKey: String? = nil, status: API.Application.Status? = nil, accountAllowance: (overall: Int?, trading: Int?) = (nil, nil)) -> SignalProducer<API.Application,API.Error> {
-        return SignalProducer(api: self.api) { (api) -> API.Request.Applications.Update in
+    public func update(apiKey: String? = nil, status: API.Application.Status, accountAllowance: (overall: Int, trading: Int)) -> SignalProducer<API.Application,API.Error> {
+        return SignalProducer(api: self.api) { (api) -> API.Request.Applications.PayloadUpdate in
                 guard let apiKey = api.session.credentials?.apiKey else {
                     throw API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
                 }
             
-                return try .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+                return .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -53,6 +52,38 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
+extension API.Request.Applications {
+    /// Let the user updates one parameter of its application.
+    private struct PayloadUpdate: Encodable {
+        /// API key to be added to the request.
+        let apiKey: String
+        /// Desired application status.
+        let status: API.Application.Status
+        /// Per account request per minute allowance.
+        let overallAccountAllowance: Int
+        /// Per account trading request per minute allowance.
+        let tradingAccountAllowance: Int
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(self.apiKey, forKey: .apiKey)
+            try container.encodeIfPresent(self.status, forKey: .status)
+            try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
+            try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case apiKey, status
+            case overallAccountAllowance = "allowanceAccountOverall"
+            case tradingAccountAllowance = "allowanceAccountTrading"
+        }
+    }
+}
+
+// MARK: Response Entities
+
 extension API {
     /// Client application.
     public struct Application: Decodable {
@@ -72,7 +103,7 @@ extension API {
             self.name = try container.decode(String.self, forKey: .name)
             self.apiKey = try container.decode(String.self, forKey: .apiKey)
             self.status = try container.decode(API.Application.Status.self, forKey: .status)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.DateFormatter.humanReadableNoTime)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.DateFormatter.yearMonthDay)
             self.allowance = try Allowance(from: decoder)
         }
         
@@ -164,45 +195,6 @@ extension API.Application.Allowance.Requests {
             case overall = "allowanceAccountOverall"
             case trading = "allowanceAccountTrading"
             case historicalData = "allowanceAccountHistoricalData"
-        }
-    }
-}
-
-extension API.Request.Applications {
-    /// Let the user updates one parameter of its application.
-    private struct Update: Encodable {
-        /// API key to be added to the request.
-        let apiKey: String
-        /// Desired application status.
-        let status: API.Application.Status?
-        /// Per account request per minute allowance.
-        let overallAccountAllowance: Int?
-        /// Per account trading request per minute allowance.
-        let tradingAccountAllowance: Int?
-        
-        /// Designated initializer. It checks that at least one parameter is set.
-        init(apiKey: String, status: API.Application.Status? = nil, overallAccountAllowance: Int? = nil, tradingAccountAllowance: Int? = nil) throws {
-            guard (status != nil) || (overallAccountAllowance != nil) || (tradingAccountAllowance != nil) else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "Applicaion modifications failed! At least one parameter needs to be set when setting an application.")
-            }
-            self.apiKey = apiKey
-            self.status = status
-            self.overallAccountAllowance = overallAccountAllowance
-            self.tradingAccountAllowance = tradingAccountAllowance
-        }
-        
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(self.apiKey, forKey: .apiKey)
-            try container.encodeIfPresent(self.status, forKey: .status)
-            try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
-            try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case apiKey, status
-            case overallAccountAllowance = "allowanceAccountOverall"
-            case tradingAccountAllowance = "allowanceAccountTrading"
         }
     }
 }

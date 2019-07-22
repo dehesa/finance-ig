@@ -1,29 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /session/encryptionKey
-
 extension API.Request.Session {
-    /// Returns an encryption key to use in order to send the user password in an encrypted form.
-    /// - parameter apiKey: The API key which the encryption key will be associated to.
-    /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
-    /// - note: No credentials are needed for this endpoint.
-    fileprivate func generateEncryptionKey(apiKey: String) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> String in
-            guard !apiKey.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-            }
-            return apiKey
-        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-}
+    
+    // MARK: POST /session
 
-// MARK: - POST /session
-
-extension API.Request.Session {
     /// Creates a trading session, obtaining session tokens for subsequent API access.
     ///
     /// Region-specific login restrictions may apply.
@@ -34,14 +15,7 @@ extension API.Request.Session {
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
     internal func loginCertificate(apiKey: String, user: (name: String, password: String), encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
-        /// Log-in through certificate required payload.
-        struct RequestPayload: Encodable {
-            let identifier: String
-            let password: String
-            let encryptedPassword: Bool
-        }
-        
-        return SignalProducer(api: self.api) { (_) -> RequestPayload in
+        return SignalProducer(api: self.api) { (_) -> PayloadCertificate in
                 let apiKeyLength: Int = 40
                 guard apiKey.utf8.count == apiKeyLength else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
@@ -70,30 +44,40 @@ extension API.Request.Session {
                 return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
+    
+    // MARK: GET /session/encryptionKey
+    
+    /// Returns an encryption key to use in order to send the user password in an encrypted form.
+    /// - parameter apiKey: The API key which the encryption key will be associated to.
+    /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
+    /// - note: No credentials are needed for this endpoint.
+    fileprivate func generateEncryptionKey(apiKey: String) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
+        return SignalProducer(api: self.api) { (_) -> String in
+            guard !apiKey.isEmpty else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
+            }
+            return apiKey
+        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+    }
 }
 
 // MARK: - Supporting Entities
 
-extension API.Session {
-    /// Encryption key message returned from the server.
-    fileprivate struct EncryptionKey: Decodable {
-        /// The key (in base 64) to be used on encryption.
-        let encryptionKey: String
-        /// Current timestamp in milliseconds since epoch.
-        let timeStamp: Date
-        
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
-            let epoch = try container.decode(Double.self, forKey: .timeStamp)
-            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case encryptionKey, timeStamp
-        }
+// MARK: Request Entities
+
+extension API.Request.Session {
+    /// Log-in through certificate required payload.
+    private struct PayloadCertificate: Encodable {
+        let identifier: String
+        let password: String
+        let encryptedPassword: Bool
     }
 }
+
+// MARK: Response Entities
 
 extension API.Session {
     /// CST credentials used to access the IG platform.
@@ -163,6 +147,27 @@ extension API.Session.Certificate {
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: timeInterval)
             }
+        }
+    }
+}
+
+extension API.Session {
+    /// Encryption key message returned from the server.
+    fileprivate struct EncryptionKey: Decodable {
+        /// The key (in base 64) to be used on encryption.
+        let encryptionKey: String
+        /// Current timestamp in milliseconds since epoch.
+        let timeStamp: Date
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
+            let epoch = try container.decode(Double.self, forKey: .timeStamp)
+            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case encryptionKey, timeStamp
         }
     }
 }

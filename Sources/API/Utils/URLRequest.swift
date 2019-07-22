@@ -75,3 +75,17 @@ extension URLRequest {
         self.addValue(API.HTTP.Header.Value.ContentType.json.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
     }
 }
+
+// MARK: - Debug Helpers
+
+extension URLRequest {
+    internal var debugDescription: String {
+        var result = "\(self.httpMethod ?? "nil") \(self.description)\n"
+        if let headers = self.allHTTPHeaderFields {
+            for header in headers {
+                result.append("\t\(header.key): \(header.value)\n")
+            }
+        }
+        return result
+    }
+}

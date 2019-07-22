@@ -14,7 +14,13 @@
 		8D1CC97D229B0706009AB4D3 /* APIProducers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC97C229B0706009AB4D3 /* APIProducers.swift */; };
 		8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8D23A90622C1E41E00518EC9 /* ReactiveSwift */; };
 		8D34D89022E46AEB00EF4A97 /* APIProducer+Convenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D34D88F22E46AEB00EF4A97 /* APIProducer+Convenience.swift */; };
+		8D5F347222E60F3900D2B44A /* APIActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */; };
 		8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D845A6F229C7AA800A0049A /* APIEntities.swift */; };
+		8D9CAFF422E5BC1600837AFB /* APIOAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */; };
+		8D9CAFF522E5F45100837AFB /* APICertificateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */; };
+		8D9CAFF622E5F69D00837AFB /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
+		8D9CAFF722E5FAE700837AFB /* APIApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */; };
+		8D9CAFF822E604C000837AFB /* APIAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9F2149A6CE00344CBF /* APIAccountTests.swift */; };
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -70,23 +76,9 @@
 		8DE1B2BD214A63DF00C1FF13 /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
 		8DE1B2BF214A641D00C1FF13 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAF32149A6CE00344CBF /* Account.swift */; };
 		8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAAD2149A6CE00344CBF /* APIMockedJSON.swift */; };
-		8DE1B2C1214A642000C1FF13 /* StreamerMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAF42149A6CE00344CBF /* StreamerMockedJSON.swift */; };
 		8DE1B2C2214A647F00C1FF13 /* APIFileSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA842149A6CE00344CBF /* APIFileSession.swift */; };
 		8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
 		8DE1B2C7214A64C700C1FF13 /* APITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA12149A6CE00344CBF /* APITestCase.swift */; };
-		8DE1B2C8214A651300C1FF13 /* APICertificateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */; };
-		8DE1B2C9214A651300C1FF13 /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
-		8DE1B2CA214A651300C1FF13 /* APIOAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */; };
-		8DE1B2CC214A6CC800C1FF13 /* APIApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */; };
-		8DE1B2CD214A6CC800C1FF13 /* APIAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9F2149A6CE00344CBF /* APIAccountTests.swift */; };
-		8DE1B2CE214A6CC800C1FF13 /* APIActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */; };
-		8DE1B2CF214A6CC800C1FF13 /* APITransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9B2149A6CE00344CBF /* APITransactionTests.swift */; };
-		8DE1B2D0214A6CC800C1FF13 /* APIPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9C2149A6CE00344CBF /* APIPriceTests.swift */; };
-		8DE1B2D1214A6CC800C1FF13 /* APINavigationNodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA992149A6CE00344CBF /* APINavigationNodeTests.swift */; };
-		8DE1B2D2214A6CC800C1FF13 /* APIMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA972149A6CE00344CBF /* APIMarketTests.swift */; };
-		8DE1B2D3214A6CC800C1FF13 /* APIWatchlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA982149A6CE00344CBF /* APIWatchlistTests.swift */; };
-		8DE1B2D4214A6CC800C1FF13 /* APIPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */; };
-		8DE1B2D5214A6CC800C1FF13 /* APIWorkingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -775,30 +767,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DE1B2BF214A641D00C1FF13 /* Account.swift in Sources */,
 				8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */,
+				8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */,
+				8D1CC9792299EE80009AB4D3 /* AnyDecodable.swift in Sources */,
+				8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */,
+				8DE1B2BF214A641D00C1FF13 /* Account.swift in Sources */,
 				8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */,
 				8DE1B2C2214A647F00C1FF13 /* APIFileSession.swift in Sources */,
-				8D1CC9792299EE80009AB4D3 /* AnyDecodable.swift in Sources */,
-				8DE1B2C7214A64C700C1FF13 /* APITestCase.swift in Sources */,
-				8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */,
-				8DE1B2C9214A651300C1FF13 /* APISessionTests.swift in Sources */,
-				8DE1B2CA214A651300C1FF13 /* APIOAuthTests.swift in Sources */,
-				8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */,
-				8D0DA40222ACD69D00636806 /* APIPlaygroundTests.swift in Sources */,
-				8DE1B2C8214A651300C1FF13 /* APICertificateTests.swift in Sources */,
-				8DE1B2CC214A6CC800C1FF13 /* APIApplicationTests.swift in Sources */,
-				8DE1B2CD214A6CC800C1FF13 /* APIAccountTests.swift in Sources */,
 				8D34D89022E46AEB00EF4A97 /* APIProducer+Convenience.swift in Sources */,
-				8DE1B2CE214A6CC800C1FF13 /* APIActivityTests.swift in Sources */,
-				8DE1B2CF214A6CC800C1FF13 /* APITransactionTests.swift in Sources */,
-				8DE1B2D0214A6CC800C1FF13 /* APIPriceTests.swift in Sources */,
-				8DE1B2D1214A6CC800C1FF13 /* APINavigationNodeTests.swift in Sources */,
-				8DE1B2D2214A6CC800C1FF13 /* APIMarketTests.swift in Sources */,
-				8DE1B2D3214A6CC800C1FF13 /* APIWatchlistTests.swift in Sources */,
-				8DE1B2D4214A6CC800C1FF13 /* APIPositionTests.swift in Sources */,
-				8DE1B2D5214A6CC800C1FF13 /* APIWorkingOrderTests.swift in Sources */,
-				8DE1B2C1214A642000C1FF13 /* StreamerMockedJSON.swift in Sources */,
+				8DE1B2C7214A64C700C1FF13 /* APITestCase.swift in Sources */,
+				8D9CAFF422E5BC1600837AFB /* APIOAuthTests.swift in Sources */,
+				8D9CAFF522E5F45100837AFB /* APICertificateTests.swift in Sources */,
+				8D9CAFF622E5F69D00837AFB /* APISessionTests.swift in Sources */,
+				8D9CAFF722E5FAE700837AFB /* APIApplicationTests.swift in Sources */,
+				8D9CAFF822E604C000837AFB /* APIAccountTests.swift in Sources */,
+				8D5F347222E60F3900D2B44A /* APIActivityTests.swift in Sources */,
+				8D0DA40222ACD69D00636806 /* APIPlaygroundTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

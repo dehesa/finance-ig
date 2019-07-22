@@ -26,6 +26,12 @@ extension API {
             $0.configureForUTC()
         }
         
+        /// Standard human readable format (e.g. 2018/06/16).
+        static let yearMonthDay = Foundation.DateFormatter().set {
+            $0.dateFormat = "yyyy-MM-dd"
+            $0.configureForUTC()
+        }
+        
         /// Month/Day formatter (e.g. DEC29).
         static let dayMonthYear = Foundation.DateFormatter().set {
             $0.dateFormat = "dd-MMM-yy"
@@ -41,12 +47,6 @@ extension API {
         /// Standard human readable format (e.g. 2018/06/16 16:24:03).
         static let humanReadable = Foundation.DateFormatter().set {
             $0.dateFormat = "yyyy/MM/dd HH:mm:ss"
-            $0.configureForUTC()
-        }
-        
-        /// Standard human readable format (e.g. 2018/06/16).
-        static let humanReadableNoTime = Foundation.DateFormatter().set {
-            $0.dateFormat = "yyyy/MM/dd"
             $0.configureForUTC()
         }
         

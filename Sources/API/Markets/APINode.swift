@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /marketnavigation/{nodeId}
-
 extension API.Request.Nodes {
+    
+    // MARK: GET Aggregator
+    
     /// Returns the navigation node with the given id and all the children till a specified depth.
     /// - attention: For depths bigger than 0, several endpoints are hit; thus, the callback may be received later on in the future.
     /// - parameter identifier: The identifier for the targeted node. If `nil`, the top-level nodes are returned.
@@ -18,11 +19,9 @@ extension API.Request.Nodes {
         
         return self.iterate(node: .init(identifier: identifier, name: name), depth: layers)
     }
-}
 
-// MARK: - GET /markets/{searchTerm}
-
-extension API.Request.Nodes {
+    // MARK: GET /markets/{searchTerm}
+    
     /// Returns all markets matching the search term.
     ///
     /// The search term cannot be an empty string.
@@ -40,11 +39,9 @@ extension API.Request.Nodes {
             .decodeJSON()
             .map { (w: MarketSearch) in w.markets }
     }
-}
 
-// MARK: - Supporting functionality
-
-extension API.Request.Nodes {
+    // MARK: GET /marketnavigation/{nodeId}
+    
     /// Returns the navigation node described by the given entity.
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - returns: Signal returning the node as a value and completing right after that.
@@ -64,6 +61,8 @@ extension API.Request.Nodes {
                 return decoder
             }
     }
+    
+    // MARK: GET Recursive
     
     /// Returns the navigation node indicated by the given node argument as well as all its children till a given depth.
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
@@ -148,6 +147,8 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
 extension API.Request.Nodes {
     /// Express the depth of a computed tree.
     public enum Depth: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral {
@@ -183,6 +184,8 @@ extension API.Request.Nodes {
         let markets: [API.Node.Market]
     }
 }
+
+// MARK: Response Entities
 
 extension API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node identifier will be stored.
@@ -249,22 +252,15 @@ extension API {
 extension API.Node {
     /// Market data hanging from a hierarchical node.
     public struct Market: Decodable {
-        /// Describes the current status of a given market
-        public let status: API.Market.Status
         /// The market's instrument.
         public let instrument: API.Node.Market.Instrument
         /// The market's prices.
         public let snapshot: API.Node.Market.Snapshot
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.status = try container.decode(API.Market.Status.self, forKey: .status)
+            /// - todo: Research if `container.superDecoder` should be used instead.
             self.instrument = try .init(from: decoder)
             self.snapshot = try .init(from: decoder)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case status = "marketStatus"
         }
     }
 }
@@ -283,8 +279,6 @@ extension API.Node.Market {
         /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
         /// - note: This property is set when querying nodes, but `nil` when querying markets.
         public let lotSize: UInt?
-        /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-        public let scalingFactor: Double
         /// `true` if streaming prices are available, i.e. the market is tradeable and the client holds the necessary access permission.
         public let isAvailableByStreaming: Bool
         /// `true` if Over-The-Counter tradeable.
@@ -298,7 +292,6 @@ extension API.Node.Market {
             self.type = try container.decode(API.Instrument.Kind.self, forKey: .type)
             self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
             self.lotSize = try container.decodeIfPresent(UInt.self, forKey: .lotSize)
-            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
             self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.isOTCTradeable = try container.decodeIfPresent(Bool.self, forKey: .isOTCTradeable)
         }
@@ -306,7 +299,7 @@ extension API.Node.Market {
         private enum CodingKeys: String, CodingKey {
             case epic, name = "instrumentName"
             case type = "instrumentType"
-            case expiry, lotSize, scalingFactor
+            case expiry, lotSize
             case isAvailableByStreaming = "streamingPricesAvailable"
             case isOTCTradeable = "otcTradeable"
         }
@@ -314,41 +307,60 @@ extension API.Node.Market {
 }
 
 extension API.Node.Market {
-    /// Market's prices.
+    /// A snapshot of the state of a market.
     public struct Snapshot: Decodable {
         /// Time of the last price update.
         public let date: Date
-        /// Offer (buy) and bid (sell) price. Also the price delay is marked in minutes.
-        public let price: (offer: Double, bid: Double, delay: Double)?
-        /// Highest and lowest price of the day.
-        public let range: (low: Double, high: Double)
-        /// Price change net and percentage change on that day.
-        public let change: (net: Double, percentage: Double)
+        /// Pirce delay marked in minutes.
+        public let delay: Double
+        /// Describes the current status of a given market
+        public let status: API.Market.Status
+        /// The state of the market price at the time of the snapshot.
+        public let price: API.Node.Market.Snapshot.Price
+        /// Multiplying factor to determine actual pip value for the levels used by the instrument.
+        public let scalingFactor: Double
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.date = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
-            let low = try container.decode(Double.self, forKey: .low)
-            let high = try container.decode(Double.self, forKey: .high)
-            self.range = (low, high)
-            let netChange = try container.decode(Double.self, forKey: .netChange)
-            let percentageChange = try container.decode(Double.self, forKey: .percentageChange)
-            self.change = (netChange, percentageChange)
-            
-            if let offer = try container.decodeIfPresent(Double.self, forKey: .offer),
-                let bid = try container.decodeIfPresent(Double.self, forKey: .bid),
-                let delay = try container.decodeIfPresent(Double.self, forKey: .delay) {
-                self.price = (offer, bid, delay)
-            } else {
-                self.price = nil
-            }
+            self.delay = try container.decode(Double.self, forKey: .delay)
+            self.status = try container.decode(API.Market.Status.self, forKey: .status)
+            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
+            /// - todo: Research if `container.superDecoder` should be used instead.
+            self.price = try Price(from: decoder)
         }
         
         private enum CodingKeys: String, CodingKey {
             case lastUpdate = "updateTimeUTC"
-            case offer, bid, delay = "delayTime"
-            case high, low
-            case netChange, percentageChange
+            case delay = "delayTime"
+            case status = "marketStatus"
+            case scalingFactor
+        }
+    }
+}
+
+extension API.Node.Market.Snapshot {
+    /// Market's price at the time of the snapshot.
+    public struct Price: Decodable {
+        /// The price being offered (to buy an asset).
+        public let bid: Double?
+        /// The price being asked (to sell an asset).
+        public let offer: Double?
+        /// Lowest price of the day.
+        public let lowest: Double
+        /// Highest price of the day.
+        public let highest: Double
+        /// Net change price on that day.
+        public let changeNet: Double
+        /// Percentage change price on that day.
+        public let changePercentage: Double
+        
+        private enum CodingKeys: String, CodingKey {
+            case bid, offer
+            case lowest = "low"
+            case highest = "high"
+            case changeNet = "netChange"
+            case changePercentage = "percentageChange"
         }
     }
 }

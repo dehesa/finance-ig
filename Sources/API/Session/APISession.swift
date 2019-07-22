@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - POST /session
-
 extension API.Request.Session {
+    
+    // MARK: POST /session
+    
     /// Logs a user in the platform and stores the credentials within the API instance.
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
@@ -26,11 +27,9 @@ extension API.Request.Session {
             return ()
         }
     }
-}
 
-// MARK: - GET /session
+    // MARK: GET /session
 
-extension API.Request.Session {
     /// Returns the user's session details.
     /// - returns: `SignalProducer` returning information about the current user's session.
     public func get() -> SignalProducer<API.Session,API.Error> {
@@ -61,11 +60,9 @@ extension API.Request.Session {
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
-}
 
-// MARK: - PUT /session
-
-extension API.Request.Session {
+    // MARK: PUT /session
+    
     /// Switches active accounts, optionally setting the default account.
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
@@ -74,13 +71,7 @@ extension API.Request.Session {
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func `switch`(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
-        /// Payload for the session switch request.
-        struct Payload: Encodable {
-            let accountId: String
-            let defaultAccount: Bool
-        }
-        
-        return SignalProducer(api: self.api) { (api) -> Payload in
+        return SignalProducer(api: self.api) { (api) -> PayloadSwitch in
                 guard !accountId.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
                 }
@@ -105,11 +96,9 @@ extension API.Request.Session {
                 return .success(sessionSwitch)
             }
     }
-}
 
-// MARK: - DELETE /session
-
-extension API.Request.Session {
+    // MARK: DELETE /session
+    
     /// Log out from the current session.
     ///
     /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
@@ -177,6 +166,8 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
 extension API.Request.Session {
     /// Type of sessions available
     public enum Kind {
@@ -185,7 +176,15 @@ extension API.Request.Session {
         /// OAuth sessions are valid for a limited period (e.g. 60 seconds) as specified in the expiration date from the response.
         case oauth
     }
+    
+    /// Payload for the session switch request.
+    private struct PayloadSwitch: Encodable {
+        let accountId: String
+        let defaultAccount: Bool
+    }
 }
+
+// MARK: Response Entities
 
 extension API {
     /// Representation of a dealing session.

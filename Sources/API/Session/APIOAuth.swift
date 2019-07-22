@@ -1,21 +1,17 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - POST /session
-
 extension API.Request.Session {
+    
+    // MARK: POST /session
+    
     /// Performs the OAuth login request to the dealing system with the login credential passed as parameter.
     /// - note: No credentials are needed for this endpoint.
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` with the new refreshed credentials.
     internal func loginOAuth(apiKey: String, user: (name: String, password: String)) -> SignalProducer<API.Credentials,API.Error> {
-        struct RequestPayload: Encodable {
-            let identifier: String
-            let password: String
-        }
-        
-        return SignalProducer(api: self.api) { (_) -> RequestPayload in
+        return SignalProducer(api: self.api) { (_) -> PayloadOAuth in
                 let apiKeyLength = 40
                 guard apiKey.utf8.count == apiKeyLength else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
@@ -44,20 +40,16 @@ extension API.Request.Session {
                 return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
-}
 
-// MARK: - POST /session/refresh-token
+    // MARK: POST /session/refresh-token
 
-extension API.Request.Session {
     /// Refreshes a trading session token, obtaining new session for subsequent API.
     /// - note: No credentials are needed for this endpoint.
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: SignalProducer with the new refreshed credentials.
     internal func refreshOAuth(token: String, apiKey: String) -> SignalProducer<API.Credentials.Token,API.Error> {
-        typealias V = (refreshToken: String, apiKey: String)
-        
-        return SignalProducer(api: self.api) { (_) -> V in
+        return SignalProducer(api: self.api) { (_) -> TemporaryRefresh in
                 guard !token.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The OAuth refresh token can't be empty.")
                 }
@@ -67,10 +59,10 @@ extension API.Request.Session {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
                 }
             
-                return (token, apiKey)
-            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: V) in
+                return .init(refreshToken: token, apiKey: apiKey)
+            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: TemporaryRefresh) in
                 [.apiKey: values.apiKey]
-            }, body: { (_, values: V) in
+            }, body: { (_, values: TemporaryRefresh) in
                 (.json, try JSONEncoder().encode(["refresh_token": values.refreshToken]))
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
@@ -85,6 +77,22 @@ extension API.Request.Session {
 }
 
 // MARK: - Supporting Entities
+
+// MARK: Request Entities
+
+extension API.Request.Session {
+    private struct PayloadOAuth: Encodable {
+        let identifier: String
+        let password: String
+    }
+    
+    private struct TemporaryRefresh {
+        let refreshToken: String
+        let apiKey: String
+    }
+}
+
+// MARK: Response Entities
 
 extension API.Session {
     /// Oauth credentials used to access the IG platform.
@@ -109,7 +117,7 @@ extension API.Session {
             self.accountId = try container.decode(String.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             
-            /// - todo: There is a bug where in OAuth there is an hour less accounted.
+            /// - bug: The server returns one hour less for the timezone offset.
             let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             
@@ -153,7 +161,7 @@ extension API.Session.OAuth {
                 ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
             
             if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
-               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date] as? String,
+               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
                let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(seconds)
             } else {

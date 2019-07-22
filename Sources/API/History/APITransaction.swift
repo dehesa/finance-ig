@@ -1,9 +1,10 @@
 import ReactiveSwift
 import Foundation
 
-// MARK: - GET /history/transactions
-
 extension API.Request.Transactions {
+    
+    // MARK: GET /history/transactions
+    
     /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
     /// - parameter from: The start date.
     /// - parameter to: The end date (if `nil` means "today").
@@ -70,6 +71,8 @@ extension API.Request {
     }
 }
 
+// MARK: Request Entities
+
 extension API.Request.Transactions {
     /// Transaction type.
     public enum Kind: String {
@@ -86,7 +89,11 @@ extension API.Request.Transactions {
             }
         }
     }
-    
+}
+
+// MARK: Response Entities
+
+extension API.Request.Transactions {
     /// A single Page of transactions request.
     private struct PagedTransactions: Decodable {
         let transactions: [API.Transaction]
