@@ -79,19 +79,19 @@ extension API {
             /// The market is suspended for trading temporarily.
             case suspended = "SUSPENDED"
         }
-        
-        /// Distance/Size preference.
-        public struct Distance: Decodable {
-            /// The distance value.
-            public let value: Double
-            /// The unit at which the `value` is measured against.
-            public let unit: Unit
-            
-            public enum Unit: String, Decodable {
-                case points = "POINTS"
-                case percentage = "PERCENTAGE"
-            }
-        }
+
+//        /// Distance/Size preference.
+//        public struct Distance: Decodable {
+//            /// The distance value.
+//            public let value: Double
+//            /// The unit at which the `value` is measured against.
+//            public let unit: Unit
+//
+//            public enum Unit: String, Decodable {
+//                case points = "POINTS"
+//                case percentage = "PERCENTAGE"
+//            }
+//        }
     }
 }
 

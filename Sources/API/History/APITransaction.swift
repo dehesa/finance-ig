@@ -1,6 +1,61 @@
 import ReactiveSwift
 import Foundation
 
+// MARK: - GET /history/transactions
+
+extension API.Request.Transactions {
+    /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
+    /// - parameter from: The start date.
+    /// - parameter to: The end date (if `nil` means "today").
+    /// - parameter type: Filter for the transaction types being returned.
+    /// - parameter page: Paging variables for the transactions page received.
+    public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
+        return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                }
+            
+                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                formatter.timeZone = timezone
+                return formatter
+            }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
+                var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
+                
+                if let to = to {
+                    queries.append(URLQueryItem(name: "to", value: formatter.string(from: to)))
+                }
+                
+                if type != .all {
+                    queries.append(URLQueryItem(name: "type", value: type.rawValue))
+                }
+                
+                queries.append(URLQueryItem(name: "pageSize", value: String(page.size)))
+                return queries
+            }).paginate(request: { (_, initialRequest, previous) in
+                let nextPage: UInt
+                if let previous = previous {
+                    guard let nextIteration = previous.meta.next else { return nil }
+                    nextPage = nextIteration
+                } else {
+                    nextPage = 1
+                }
+                
+                var request = initialRequest
+                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(nextPage))] )
+                return request
+            }, endpoint: { (producer) -> SignalProducer<(PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
+                producer.send(expecting: .json)
+                    .validateLadenData(statusCodes: 200)
+                    .decodeJSON()
+                    .map { (response: PagedTransactions) in
+                        return (response.metadata.page, response.transactions)
+                    }
+            })
+    }
+}
+
+// MARK: - Supporting Entities
+
 extension API.Request {
     /// Contains all functionality related to user's transactions.
     public struct Transactions {
@@ -8,14 +63,12 @@ extension API.Request {
         fileprivate unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
+        /// - parameter api: The instance calling the actual endpoints.
         init(api: API) {
             self.api = api
         }
     }
 }
-
-// MARK: - GET /history/transactions
 
 extension API.Request.Transactions {
     /// Transaction type.
@@ -73,55 +126,6 @@ extension API.Request.Transactions {
                 }
             }
         }
-    }
-    
-    /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
-    /// - parameter from: The start date.
-    /// - parameter to: The end date (if `nil` means "today").
-    /// - parameter type: Filter for the transaction types being returned.
-    /// - parameter page: Paging variables for the transactions page received.
-    public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
-        return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
-                }
-            
-                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = timezone
-                return formatter
-            }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
-                var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
-                
-                if let to = to {
-                    queries.append(URLQueryItem(name: "to", value: formatter.string(from: to)))
-                }
-                
-                if type != .all {
-                    queries.append(URLQueryItem(name: "type", value: type.rawValue))
-                }
-                
-                queries.append(URLQueryItem(name: "pageSize", value: String(page.size)))
-                return queries
-            }).paginate(request: { (_, initialRequest, previous) in
-                let nextPage: UInt
-                if let previous = previous {
-                    guard let nextIteration = previous.meta.next else { return nil }
-                    nextPage = nextIteration
-                } else {
-                    nextPage = 1
-                }
-                
-                var request = initialRequest
-                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(nextPage))] )
-                return request
-            }, endpoint: { (producer) -> SignalProducer<(PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
-                producer.send(expecting: .json)
-                    .validateLadenData(statusCodes: [200])
-                    .decodeJSON()
-                    .map { (response: PagedTransactions) in
-                        return (response.metadata.page, response.transactions)
-                    }
-            })
     }
 }
 

@@ -20,5 +20,7 @@ extension SetUp where Self: Any {
 }
 
 extension URLRequest: SetUp {}
+extension JSONDecoder: SetUp {}
 extension DateComponents: SetUp {}
+
 extension NSObject: SetUp {}

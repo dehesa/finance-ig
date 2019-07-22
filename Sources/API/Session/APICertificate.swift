@@ -3,27 +3,6 @@ import Foundation
 
 // MARK: - GET /session/encryptionKey
 
-extension API.Session {
-    /// Encryption key message returned from the server.
-    fileprivate struct EncryptionKey: Decodable {
-        /// The key (in base 64) to be used on encryption.
-        let encryptionKey: String
-        /// Current timestamp in milliseconds since epoch.
-        let timeStamp: Date
-        
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
-            let epoch = try container.decode(Double.self, forKey: .timeStamp)
-            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case encryptionKey, timeStamp
-        }
-    }
-}
-
 extension API.Request.Session {
     /// Returns an encryption key to use in order to send the user password in an encrypted form.
     /// - parameter apiKey: The API key which the encryption key will be associated to.
@@ -37,7 +16,7 @@ extension API.Request.Session {
             return apiKey
         }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
             .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
+            .validateLadenData(statusCodes: 200)
             .decodeJSON()
     }
 }
@@ -77,11 +56,15 @@ extension API.Request.Session {
             
                 return .init(identifier: user.name, password: user.password, encryptedPassword: false)
             }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_, payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
+                let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON(with: { (request, responseHeader) -> JSONDecoder in
+                let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                return decoder
+            })
             .map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
@@ -89,7 +72,28 @@ extension API.Request.Session {
     }
 }
 
-// MARK: - File Helpers
+// MARK: - Supporting Entities
+
+extension API.Session {
+    /// Encryption key message returned from the server.
+    fileprivate struct EncryptionKey: Decodable {
+        /// The key (in base 64) to be used on encryption.
+        let encryptionKey: String
+        /// Current timestamp in milliseconds since epoch.
+        let timeStamp: Date
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
+            let epoch = try container.decode(Double.self, forKey: .timeStamp)
+            self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case encryptionKey, timeStamp
+        }
+    }
+}
 
 extension API.Session {
     /// CST credentials used to access the IG platform.
@@ -117,7 +121,7 @@ extension API.Session {
             let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             
-            guard let response = decoder.userInfo[.responseHeader] as? HTTPURLResponse,
+            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let tokens = Token(headerFields: headerFields) else {
                 let errorContext = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")

@@ -1,6 +1,60 @@
 import ReactiveSwift
 import Foundation
 
+// MARK: - GET /accounts
+
+extension API.Request.Accounts {
+    /// Returns a list of accounts belonging to the logged-in client.
+    public func getAll() -> SignalProducer<[API.Account],API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "accounts", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+            .map { (w: Wrapper) in w.accounts }
+    }
+    
+    private struct Wrapper: Decodable {
+        let accounts: [API.Account]
+    }
+}
+
+// MARK: - GET /accounts/preferences
+
+extension API.Request.Accounts {
+    /// Returns the targeted account preferences.
+    public func preferences() -> SignalProducer<API.Account.Preferences,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "accounts/preferences", version: 1, credentials: true)
+            .send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON()
+    }
+}
+
+// MARK: - PUT /accounts/preferences
+
+extension API.Request.Accounts {
+    /// Updates the account preferences.
+    /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
+    /// - returns: `SignalProducer` indicating the success of the operation.
+    public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
+        return SignalProducer(api: self.api) { (_) -> Payload in
+                return .init(trailingStopsEnabled: trailingStops)
+            }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
+                return (.json, try JSONEncoder().encode(payload))
+            }).send(expecting: .json)
+            .validate(statusCodes: 200)
+            .map { (_) in return }
+    }
+    
+    private struct Payload: Encodable {
+        let trailingStopsEnabled: Bool
+    }
+}
+
+// MARK: - Supporting Entities
+
 extension API.Request {
     /// Contains all functionality related to user accounts.
     public struct Accounts {
@@ -8,14 +62,12 @@ extension API.Request {
         fileprivate unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
+        /// - parameter api: The instance calling the actual endpoints.
         init(api: API) {
             self.api = api
         }
     }
 }
-
-// MARK: - GET /accounts
 
 extension API {
     /// Client account.
@@ -108,24 +160,6 @@ extension API.Account {
     }
 }
 
-extension API.Request.Accounts {
-    /// Returns a list of accounts belonging to the logged-in client.
-    public func getAll() -> SignalProducer<[API.Account],API.Error> {
-        struct Wrapper: Decodable {
-            let accounts: [API.Account]
-        }
-        
-        return SignalProducer(api: self.api)
-            .request(.get, "accounts", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-            .map { (w: Wrapper) in w.accounts }
-    }
-}
-
-// MARK: - GET /accounts/preferences
-
 extension API.Account {
     /// Account preferences.
     public struct Preferences: Decodable {
@@ -140,37 +174,5 @@ extension API.Account {
         private enum CodingKeys: String, CodingKey {
             case trailingStops = "trailingStopsEnabled"
         }
-    }
-}
-
-extension API.Request.Accounts {
-    /// Returns the targeted account preferences.
-    public func preferences() -> SignalProducer<API.Account.Preferences,API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "accounts/preferences", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-    }
-}
-
-// MARK: - PUT /accounts/preferences
-
-extension API.Request.Accounts {
-    /// Updates the account preferences.
-    /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
-        struct Payload: Encodable {
-            let trailingStopsEnabled: Bool
-        }
-        
-        return SignalProducer(api: self.api) { (_) -> Payload in
-                return .init(trailingStopsEnabled: trailingStops)
-            }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
-                return (.json, try API.Codecs.jsonEncoder().encode(payload))
-            }).send(expecting: .json)
-            .validate(statusCodes: [200])
-            .map { (_) in return }
     }
 }

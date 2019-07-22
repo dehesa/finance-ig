@@ -62,20 +62,4 @@ extension API {
             return formatter.copy() as! Foundation.DateFormatter
         }
     }
-    
-    /// Default codecs (encoders/decoders) for requests/responses.
-    internal enum Codecs {
-        /// Default JSON encoder.
-        static func jsonEncoder() -> JSONEncoder {
-            return JSONEncoder()
-        }
-        
-        /// Default JSON decoder returning the request and response header in its user info dictionary.
-        static func jsonDecoder(request: URLRequest, responseHeader: HTTPURLResponse) -> JSONDecoder {
-            let result = JSONDecoder()
-            result.userInfo[.urlRequest] = request
-            result.userInfo[.responseHeader] = responseHeader
-            return result
-        }
-    }
 }

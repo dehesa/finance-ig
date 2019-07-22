@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: Credential Entities
+
 extension API {
     /// Credentials used within the API session.
     public struct Credentials {

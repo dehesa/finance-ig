@@ -31,12 +31,15 @@ extension API.Request.Session {
             
                 return .init(identifier: user.name, password: user.password)
             }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_, payload) in
-                let data = try API.Codecs.jsonEncoder().encode(payload)
+                let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-            .map { (r: API.Session.OAuth) in
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON { (_,responseHeader) -> JSONDecoder in
+                return JSONDecoder().set {
+                    $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                }
+            }.map { (r: API.Session.OAuth) in
                 let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
@@ -68,17 +71,20 @@ extension API.Request.Session {
             }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: V) in
                 [.apiKey: values.apiKey]
             }, body: { (_, values: V) in
-                (.json, try API.Codecs.jsonEncoder().encode(["refresh_token": values.refreshToken]))
+                (.json, try JSONEncoder().encode(["refresh_token": values.refreshToken]))
             }).send(expecting: .json)
-            .validateLadenData(statusCodes: [200])
-            .decodeJSON()
-            .map { (r: API.Session.OAuth.Token) in
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON { (_,responseHeader) -> JSONDecoder in
+                return JSONDecoder().set {
+                    $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                }
+            }.map { (r: API.Session.OAuth.Token) in
                 return .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }
     }
 }
 
-// MARK: - File helpers
+// MARK: - Supporting Entities
 
 extension API.Session {
     /// Oauth credentials used to access the IG platform.
@@ -146,7 +152,7 @@ extension API.Session.OAuth {
             let seconds = try Double(secondsString)
                 ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
             
-            if let response = decoder.userInfo[.responseHeader] as? HTTPURLResponse,
+            if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[API.HTTP.Header.Key.date] as? String,
                let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(seconds)
