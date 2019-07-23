@@ -50,7 +50,7 @@ extension API.Request {
         /// - parameter request: The URL request that returned the `response`.
         /// - parameter response: The HTTP response received from the execution of `request`.
         /// - returns: A JSON decoder (to typically decode the response's payload).
-        typealias Decoder = (_ request: URLRequest, _ response: HTTPURLResponse) -> JSONDecoder
+        typealias Decoder = (_ request: URLRequest, _ response: HTTPURLResponse) throws -> JSONDecoder
     }
     
     /// Wrapper around a `URLRequest` and the API instance that will (most probably) execute such request.
@@ -350,9 +350,11 @@ extension SignalProducer where Value==API.Response.DataWrapper, Error==API.Error
     /// - parameter decoderGenerator: Callback receiving the url request and HTTP header. It must return the JSON decoder to actually decode the data.
     internal func decodeJSON<T:Decodable>(with decoderGenerator: API.Request.Generator.Decoder? = nil) -> SignalProducer<T,API.Error> {
         return self.attemptMap { (request, header, data) -> Result<T,API.Error> in
-            let decoder: JSONDecoder = decoderGenerator?(request, header) ?? JSONDecoder()
             do {
+                let decoder: JSONDecoder = try decoderGenerator?(request, header) ?? JSONDecoder()
                 return .success(try decoder.decode(T.self, from: data))
+            } catch let error as API.Error {
+                return .failure(error)
             } catch let e {
                 let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: e, message: #"The response body could not be parsed to the expected type: "\#(T.self)"."#)
                 return .failure(error)

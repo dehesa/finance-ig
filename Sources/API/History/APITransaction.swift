@@ -7,9 +7,9 @@ extension API.Request.Transactions {
     
     /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
     /// - parameter from: The start date.
-    /// - parameter to: The end date (if `nil` means "today").
+    /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    /// - parameter page: Paging variables for the transactions page received.
+    /// - parameter page: Paging variables for the transactions page received (`0` means paging is disabled).
     public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
         return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
@@ -42,7 +42,7 @@ extension API.Request.Transactions {
                 }
                 
                 var request = initialRequest
-                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(nextPage))] )
+                try request.addQueries([URLQueryItem(name: "pageNumber", value: String(nextPage))])
                 return request
             }, endpoint: { (producer) -> SignalProducer<(PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
                 producer.send(expecting: .json)

@@ -16,16 +16,15 @@ extension API.Request.Activity {
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
-        var dateFormatter: Foundation.DateFormatter! = nil
+        let dateFormatter: Foundation.DateFormatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+        
         return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                    throw API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
                 }
             
-                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
-                formatter.timeZone = timezone
-                dateFormatter = formatter
-                return formatter
+                dateFormatter.timeZone = timezone
+                return dateFormatter
             }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
@@ -73,10 +72,10 @@ extension API.Request.Activity {
             }, endpoint: { (producer) -> SignalProducer<(PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
                 return producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
-                    .decodeJSON { (_,responseHeader) -> JSONDecoder in
-                        return JSONDecoder().set {
-                            $0.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter!
-                        }
+                    .decodeJSON { (_,_) -> JSONDecoder in
+                        let decoder = JSONDecoder()
+                        decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
+                        return decoder
                     }.map { (response: PagedActivities) in
                         (response.metadata.paging, response.activities)
                     }

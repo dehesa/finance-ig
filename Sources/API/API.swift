@@ -22,7 +22,7 @@ public final class API {
     /// It holds functionality related to the user's transactions.
     public var transactions: API.Request.Transactions { return .init(api: self) }
     /// It holds functionality related to price history queries.
-    public var price: API.Request.Price { return .init(api: self) }
+    public var prices: API.Request.Price { return .init(api: self) }
     /// It holds functionality related to market navigation nodes.
     public var nodes: API.Request.Nodes { return .init(api: self) }
     /// It holds functionality related to platform market.
@@ -144,6 +144,8 @@ extension API {
         enum DecoderKey {
             /// Key for JSON decoders under which the URL response will be stored.
             static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
+            /// Key for JSON decoders under which the response date is stored.
+            static let responseDate = CodingUserInfoKey(rawValue: "urlResponseDate")!
             /// Key for JSON decoders under which a date formatter will be stored.
             static let dateFormatter = CodingUserInfoKey(rawValue: "dateFormatter")!
         }

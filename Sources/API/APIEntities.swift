@@ -77,19 +77,64 @@ extension API.Market {
         /// The market is suspended for trading temporarily.
         case suspended = "SUSPENDED"
     }
+    
+    /// Market's price at a snapshot's time.
+    public struct Price: Decodable {
+        /// The price being offered (to buy an asset).
+        public let bid: Double?
+        /// The price being asked (to sell an asset).
+        public let offer: Double?
+        /// Lowest price of the day.
+        public let lowest: Double
+        /// Highest price of the day.
+        public let highest: Double
+        /// Net change price on that day.
+        public let changeNet: Double
+        /// Percentage change price on that day.
+        public let changePercentage: Double
+        
+        private enum CodingKeys: String, CodingKey {
+            case bid, offer
+            case lowest = "low"
+            case highest = "high"
+            case changeNet = "netChange"
+            case changePercentage = "percentageChange"
+        }
+    }
+    
+    /// Market order trading preference.
+    public enum Order: Decodable {
+        /// Market orders are not allowed for the current site and/or instrument.
+        case unavailable
+        /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
+        /// The user has also decided whether that should be the default.
+        case available(default: Bool)
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let preference = try container.decode(String.self)
+            
+            switch preference {
+            case "NOT_AVAILABLE": self = .unavailable
+            case "AVAILABLE_DEFAULT_ON": self = .available(default: true)
+            case "AVAILABLE_DEFAULT_OFF": self = .available(default: false)
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market order preference \"\(preference)\" not recognized.")
+            }
+        }
+    }
 
-//        /// Distance/Size preference.
-//        public struct Distance: Decodable {
-//            /// The distance value.
-//            public let value: Double
-//            /// The unit at which the `value` is measured against.
-//            public let unit: Unit
-//
-//            public enum Unit: String, Decodable {
-//                case points = "POINTS"
-//                case percentage = "PERCENTAGE"
-//            }
-//        }
+    /// Distance/Size preference.
+    public struct Distance: Decodable {
+        /// The distance value.
+        public let value: Double
+        /// The unit at which the `value` is measured against.
+        public let unit: Unit
+        
+        public enum Unit: String, Decodable {
+            case points = "POINTS"
+            case percentage = "PERCENTAGE"
+        }
+    }
 }
 
 extension API {
