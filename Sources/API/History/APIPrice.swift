@@ -139,7 +139,7 @@ extension API.Request.Price {
 extension API.Request.Price {
     /// Single page of prices request.
     private struct PagedPrices: Decodable {
-        let instrumentType: API.Instrument.Kind
+        let instrumentType: API.Instrument
         let prices: [API.Price]
         let metadata: Metadata
         
