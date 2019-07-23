@@ -29,6 +29,8 @@ public final class API {
     public var markets: API.Request.Markets { return .init(api: self) }
     /// It holds functionality related to watchlists.
     public var watchlists: API.Request.Watchlists { return .init(api: self) }
+    /// It holds functionality related to watchlists.
+    public var positions: API.Request.Positions { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.

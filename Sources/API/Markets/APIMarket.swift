@@ -6,10 +6,12 @@ extension API.Request.Markets {
     // MARK: GET /markets/{epic}
     
     /// Returns the details of a given market.
+    /// - parameter epic: The market epic to target onto. It cannot be empty.
+    /// - returns: Information about the targeted market.
     public func get(epic: String) -> SignalProducer<API.Market,API.Error> {
         let dateFormatter: Foundation.DateFormatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezoneSeconds)
         
-        return SignalProducer(api: self.api) { (api) -> Void in
+        return SignalProducer(api: self.api) { (api) in
                 guard !epic.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Market retrieval failed! The epic cannot be empty.")
                 }
@@ -33,6 +35,7 @@ extension API.Request.Markets {
     
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
+    /// - returns: Extended information of all the requested markets.
     public func get(epics: [String]) -> SignalProducer<[API.Market],API.Error> {
         let dateFormatter: Foundation.DateFormatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezoneSeconds)
         
@@ -73,7 +76,7 @@ extension API.Request {
     /// Contains all functionality related to API markets.
     public struct Markets {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: API
+        internal unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
@@ -96,7 +99,10 @@ extension API {
     ///
     /// IG instruments are organised in the form a navigable market hierarchy
     public struct Market: Decodable {
-        /// Market identifier.
+        /// The name of a natural grouping of a set of IG markets
+        ///
+        /// It typically represents the underlying 'real-world' market. For example, `VOD-UK` represents Vodafone Group PLC (UK).
+        /// This identifier is primarily used in the our market research services, such as client sentiment, and may be found on the /market/{epic} service
         public let identifier: String
         /// IG tradeable financial instrument (market), typically based on some underlying financial market instrument.
         ///
@@ -141,7 +147,7 @@ extension API.Market {
         /// Instrument name.
         public let name: String
         /// Instrument type.
-        public let type: API.Instrument.Kind
+        public let type: API.Instrument
         /// Market expiration date details.
         public let expiration: API.Market.Instrument.Expiration
         /// Country.
@@ -194,7 +200,7 @@ extension API.Market {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.epic = try container.decode(String.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
-            self.type = try container.decode(API.Instrument.Kind.self, forKey: .type)
+            self.type = try container.decode(API.Instrument.self, forKey: .type)
             self.expiration = try .init(from: decoder)
             self.country = try container.decodeIfPresent(String.self, forKey: .country)
             self.currencies = try container.decodeIfPresent([API.Market.Instrument.Currency].self, forKey: .currencies) ?? []
@@ -444,7 +450,7 @@ extension API.Market {
         ///
         /// An order that you use to specify the direction and size of a bet, but not the price.
         /// This ensures we will fill your order as quickly as possible, even if the price indicated on the deal ticket is not available for your requested order size
-        public let marketOrder: API.Market.Order
+        public let marketOrder: API.Market.Rules.Order
         /// Minimum deal size.
         public let minimumDealSize: API.Market.Distance
         /// Rules for setting postions' limits.
@@ -455,7 +461,7 @@ extension API.Market {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.marketOrder = try container.decode(API.Market.Order.self, forKey: .marketOrder)
+            self.marketOrder = try container.decode(API.Market.Rules.Order.self, forKey: .marketOrder)
             self.minimumDealSize = try container.decode(API.Market.Distance.self, forKey: .minimumDealSize)
             self.limit = try .init(from: decoder)
             self.stop = try .init(from: decoder)
@@ -464,6 +470,27 @@ extension API.Market {
         private enum CodingKeys: String, CodingKey {
             case marketOrder = "marketOrderPreference"
             case minimumDealSize = "minDealSize"
+        }
+        
+        /// Market order trading preference.
+        public enum Order: Decodable {
+            /// Market orders are not allowed for the current site and/or instrument.
+            case unavailable
+            /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
+            /// The user has also decided whether that should be the default.
+            case available(default: Bool)
+            
+            public init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                let preference = try container.decode(String.self)
+                
+                switch preference {
+                case "NOT_AVAILABLE": self = .unavailable
+                case "AVAILABLE_DEFAULT_ON": self = .available(default: true)
+                case "AVAILABLE_DEFAULT_OFF": self = .available(default: false)
+                default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market order preference \"\(preference)\" not recognized.")
+                }
+            }
         }
         
         /// Settings for positions' limits.

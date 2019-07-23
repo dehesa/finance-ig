@@ -1,7 +1,31 @@
 import ReactiveSwift
 import Foundation
 
+extension API.Request.Positions {
+    
+    // MARK: GET /positions
+    
+    // MARK: GET /positions/{dealId}
+    
+    // MARK: GET /confirms/{dealReference}
+    
+}
+
 // MARK: - Supporting Entities
+
+extension API.Request {
+    /// Contains all functionality related to API watchlists.
+    public struct Positions {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        fileprivate unowned let api: API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoint.
+        init(api: API) {
+            self.api = api
+        }
+    }
+}
 
 //extension API {
 //    /// Returns all open positions for the active account.

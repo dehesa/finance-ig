@@ -63,6 +63,32 @@ extension API {
     }
 }
 
+extension API {
+    /// Instrument related entities.
+    public enum Instrument: String, Codable {
+        /// A binary allows you to take a view on whether a specific outcome will or won't occur. For example, 'Will Wall Street be up at the close of the day?' If the answer is 'yes', the binary settles at 100. If the answer is 'no', the binary settles at 0. Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
+        case binary = "BINARY"
+        case bungeeCapped  = "BUNGEE_CAPPED"
+        case bungeeCommodities  = "BUNGEE_COMMODITIES"
+        case bungeeCurrencies = "BUNGEE_CURRENCIES"
+        case bungeeIndices = "BUNGEE_INDICES"
+        case commodities = "COMMODITIES"
+        case currencies = "CURRENCIES"
+        case indices = "INDICES"
+        case optCommodities = "OPT_COMMODITIES"
+        case optCurrencies = "OPT_CURRENCIES"
+        case optIndices = "OPT_INDICES"
+        case optRates = "OPT_RATES"
+        case optShares = "OPT_SHARES"
+        case rates = "RATES"
+        case sectors = "SECTORS"
+        case shares = "SHARES"
+        case sprintMarket = "SPRINT_MARKET"
+        case testMarket = "TEST_MARKET"
+        case unknown = "UNKNOWN"
+    }
+}
+
 extension API.Market {
     /// The current status of the market.
     public enum Status: String, Codable {
@@ -102,27 +128,6 @@ extension API.Market {
         }
     }
     
-    /// Market order trading preference.
-    public enum Order: Decodable {
-        /// Market orders are not allowed for the current site and/or instrument.
-        case unavailable
-        /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
-        /// The user has also decided whether that should be the default.
-        case available(default: Bool)
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let preference = try container.decode(String.self)
-            
-            switch preference {
-            case "NOT_AVAILABLE": self = .unavailable
-            case "AVAILABLE_DEFAULT_ON": self = .available(default: true)
-            case "AVAILABLE_DEFAULT_OFF": self = .available(default: false)
-            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market order preference \"\(preference)\" not recognized.")
-            }
-        }
-    }
-
     /// Distance/Size preference.
     public struct Distance: Decodable {
         /// The distance value.
@@ -137,34 +142,111 @@ extension API.Market {
     }
 }
 
-extension API {
-    /// Instrument related entities.
-    public enum Instrument {
-        /// The type of instrument.
-        public enum Kind: String, Codable {
-            /// A binary allows you to take a view on whether a specific outcome will or won't occur. For example, 'Will Wall Street be up at the close of the day?' If the answer is 'yes', the binary settles at 100. If the answer is 'no', the binary settles at 0. Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
-            case binary = "BINARY"
-            case bungeeCapped  = "BUNGEE_CAPPED"
-            case bungeeCommodities  = "BUNGEE_COMMODITIES"
-            case bungeeCurrencies = "BUNGEE_CURRENCIES"
-            case bungeeIndices = "BUNGEE_INDICES"
-            case commodities = "COMMODITIES"
-            case currencies = "CURRENCIES"
-            case indices = "INDICES"
-            case optCommodities = "OPT_COMMODITIES"
-            case optCurrencies = "OPT_CURRENCIES"
-            case optIndices = "OPT_INDICES"
-            case optRates = "OPT_RATES"
-            case optShares = "OPT_SHARES"
-            case rates = "RATES"
-            case sectors = "SECTORS"
-            case shares = "SHARES"
-            case sprintMarket = "SPRINT_MARKET"
-            case testMarket = "TEST_MARKET"
-            case unknown = "UNKNOWN"
+extension API.Node {
+    /// Market data hanging from a hierarchical node.
+    public struct Market: Decodable {
+        /// The market's instrument.
+        public let instrument: API.Node.Market.Instrument
+        /// The market's prices.
+        public let snapshot: API.Node.Market.Snapshot
+        
+        public init(from decoder: Decoder) throws {
+            self.instrument = try .init(from: decoder)
+            self.snapshot = try .init(from: decoder)
         }
     }
 }
+
+extension API.Node.Market {
+    /// Market's instrument properties.
+    public struct Instrument: Decodable {
+        /// Instrument epic identifier.
+        public let epic: String
+        /// Instrument name.
+        public let name: String
+        /// Instrument type.
+        public let type: API.Instrument
+        /// Instrument expiry period.
+        public let expiry: API.Expiry
+        /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
+        /// - note: This property is set when querying nodes, but `nil` when querying markets.
+        public let lotSize: UInt?
+        /// `true` if streaming prices are available, i.e. the market is tradeable and the client holds the necessary access permission.
+        public let isAvailableByStreaming: Bool
+        /// `true` if Over-The-Counter tradeable.
+        /// - note: This property is set when querying nodes, but `nil` when querying markets.
+        public let isOTCTradeable: Bool?
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.epic = try container.decode(String.self, forKey: .epic)
+            self.name = try container.decode(String.self, forKey: .name)
+            self.type = try container.decode(API.Instrument.self, forKey: .type)
+            self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
+            self.lotSize = try container.decodeIfPresent(UInt.self, forKey: .lotSize)
+            self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
+            self.isOTCTradeable = try container.decodeIfPresent(Bool.self, forKey: .isOTCTradeable)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case epic, name = "instrumentName"
+            case type = "instrumentType"
+            case expiry, lotSize
+            case isAvailableByStreaming = "streamingPricesAvailable"
+            case isOTCTradeable = "otcTradeable"
+        }
+    }
+}
+
+extension API.Node.Market {
+    /// A snapshot of the state of a market.
+    public struct Snapshot: Decodable {
+        /// Time of the last price update.
+        /// - attention: Although a full date is given, only the hours:minutes:seconds are meaningful.
+        public let date: Date
+        /// Pirce delay marked in minutes.
+        public let delay: Double
+        /// Describes the current status of a given market
+        public let status: API.Market.Status
+        /// The state of the market price at the time of the snapshot.
+        public let price: API.Market.Price
+        /// Multiplying factor to determine actual pip value for the levels used by the instrument.
+        public let scalingFactor: Double
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
+            
+            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
+                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
+            }
+            
+            if update > responseDate {
+                guard let newDate = UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
+                    throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
+                }
+                self.date = newDate
+            } else {
+                self.date = update
+            }
+            
+            self.delay = try container.decode(Double.self, forKey: .delay)
+            self.status = try container.decode(API.Market.Status.self, forKey: .status)
+            self.price = try .init(from: decoder)
+            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case lastUpdate = "updateTimeUTC"
+            case delay = "delayTime"
+            case status = "marketStatus"
+            case scalingFactor
+        }
+    }
+}
+
 
 extension API {
     /// Position related entities (both for responses and requests).

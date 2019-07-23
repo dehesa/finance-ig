@@ -250,7 +250,7 @@ final class APIPlaygroundTests: XCTestCase {
 //fileprivate final class Market: Codable, Hashable, CustomStringConvertible, CustomDebugStringConvertible {
 //    let epic: String
 //    let name: String
-//    let type: API.Instrument.Kind
+//    let type: API.Instrument
 //    let expiry: API.Expiry
 //    let isAvailableByStreaming: Bool
 //    let status: API.Market.Status
