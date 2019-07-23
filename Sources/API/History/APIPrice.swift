@@ -12,7 +12,7 @@ extension API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func get(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(price: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func get(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
         return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
                 guard !epic.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
@@ -49,13 +49,18 @@ extension API.Request.Price {
                 var request = initialRequest
                 try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
                 return request
-            }, endpoint: { (producer) -> SignalProducer<(PagedPrices.Metadata.Page, (price: [API.Price], allowance: API.Price.Allowance)), API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(PagedPrices.Metadata.Page, (prices: [API.Price], allowance: API.Price.Allowance)), API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
-                    .decodeJSON { (_,responseHeader) -> JSONDecoder in
-                        return JSONDecoder().set {
-                            $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                    .decodeJSON { (request, response) -> JSONDecoder in
+                        guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                              let date = API.DateFormatter.humanReadableLong.date(from: dateString) else {
+                            throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
                         }
+                        
+                        let decoder = JSONDecoder()
+                        decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
+                        return decoder
                     }.map { (response: PagedPrices) in
                         let result = (response.prices, allowance: response.metadata.allowance)
                         return (response.metadata.page, result)
@@ -217,6 +222,11 @@ extension API.Price {
         /// This will generally be `nil` for non-exchanged-traded instruments.
         public let lastTraded: Double?
         
+        /// The middle price between the *bid* and the *ask* price.
+        public var mid: Double {
+            return bid + 0.5 * (ask - bid)
+        }
+        
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
     }
@@ -236,13 +246,10 @@ extension API.Price {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
-            if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
-               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
-                self.resetDate = date.addingTimeInterval(numSeconds)
-            } else {
-                self.resetDate = Date(timeIntervalSinceNow: numSeconds)
+            guard let date = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date else {
+                throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: "The JSON decoder didn't have the response date in its userinfo property.")
             }
+            self.resetDate = date.addingTimeInterval(numSeconds)
             
             self.remaining = try container.decode(Int.self, forKey: .remainingDataPoints)
             self.total = try container.decode(Int.self, forKey: .totalDataPoints)

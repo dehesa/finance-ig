@@ -36,7 +36,16 @@ extension API.Request.Nodes {
             [URLQueryItem(name: "searchTerm", value: searchTerm)]
         }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON()
+            .decodeJSON { (request, response) in
+                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = API.DateFormatter.humanReadableLong.date(from: dateString) else {
+                    throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
+                }
+                
+                let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
+                return decoder
+            }
             .map { (w: MarketSearch) in w.markets }
     }
 
@@ -50,14 +59,17 @@ extension API.Request.Nodes {
             .request(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_,_) -> JSONDecoder in
+            .decodeJSON { (_, responseHeader) -> JSONDecoder in
                 let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                
                 if let identifier = node.identifier {
                     decoder.userInfo[API.JSON.DecoderKey.nodeIdentifier] = identifier
                 }
                 if let name = node.name {
                     decoder.userInfo[API.JSON.DecoderKey.nodeName] = name
                 }
+                
                 return decoder
             }
     }
@@ -179,10 +191,6 @@ extension API.Request.Nodes {
             }
         }
     }
-    
-    private struct MarketSearch: Decodable {
-        let markets: [API.Node.Market]
-    }
 }
 
 // MARK: Response Entities
@@ -192,6 +200,12 @@ extension API.JSON.DecoderKey {
     fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "nodeId")!
     /// Key for JSON decoders under which a node name will be stored.
     fileprivate static let nodeName = CodingUserInfoKey(rawValue: "nodeName")!
+}
+
+extension API.Request.Nodes {
+    private struct MarketSearch: Decodable {
+        let markets: [API.Node.Market]
+    }
 }
 
 extension API {
@@ -235,7 +249,7 @@ extension API {
             if container.contains(.markets), try !container.decodeNil(forKey: .markets) {
                 self.markets = try container.decode([API.Node.Market].self, forKey: .markets)
             } else {
-                self.markets = nil
+                self.markets = []
             }
         }
         
@@ -258,7 +272,6 @@ extension API.Node {
         public let snapshot: API.Node.Market.Snapshot
         
         public init(from decoder: Decoder) throws {
-            /// - todo: Research if `container.superDecoder` should be used instead.
             self.instrument = try .init(from: decoder)
             self.snapshot = try .init(from: decoder)
         }
@@ -310,24 +323,40 @@ extension API.Node.Market {
     /// A snapshot of the state of a market.
     public struct Snapshot: Decodable {
         /// Time of the last price update.
+        /// - attention: Although a full date is given, only the hours:minutes:seconds are meaningful.
         public let date: Date
         /// Pirce delay marked in minutes.
         public let delay: Double
         /// Describes the current status of a given market
         public let status: API.Market.Status
         /// The state of the market price at the time of the snapshot.
-        public let price: API.Node.Market.Snapshot.Price
+        public let price: API.Market.Price
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
         public let scalingFactor: Double
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
+            
+            let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
+            
+            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
+                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
+            }
+
+            if update > responseDate {
+                guard let newDate = UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
+                    throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
+                }
+                self.date = newDate
+            } else {
+                self.date = update
+            }
+            
             self.delay = try container.decode(Double.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
+            self.price = try .init(from: decoder)
             self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
-            /// - todo: Research if `container.superDecoder` should be used instead.
-            self.price = try Price(from: decoder)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -335,32 +364,6 @@ extension API.Node.Market {
             case delay = "delayTime"
             case status = "marketStatus"
             case scalingFactor
-        }
-    }
-}
-
-extension API.Node.Market.Snapshot {
-    /// Market's price at the time of the snapshot.
-    public struct Price: Decodable {
-        /// The price being offered (to buy an asset).
-        public let bid: Double?
-        /// The price being asked (to sell an asset).
-        public let offer: Double?
-        /// Lowest price of the day.
-        public let lowest: Double
-        /// Highest price of the day.
-        public let highest: Double
-        /// Net change price on that day.
-        public let changeNet: Double
-        /// Percentage change price on that day.
-        public let changePercentage: Double
-        
-        private enum CodingKeys: String, CodingKey {
-            case bid, offer
-            case lowest = "low"
-            case highest = "high"
-            case changeNet = "netChange"
-            case changePercentage = "percentageChange"
         }
     }
 }

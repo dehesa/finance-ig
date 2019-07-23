@@ -6,17 +6,21 @@ import ReactiveSwift
 final class APITransactionTests: APITestCase {
     /// Tests paginated transaction retrieval.
     func testTransactions() {
-        var components = DateComponents()
-        components.timeZone = TimeZone(abbreviation: "CET")
-        (components.year, components.month, components.day) = (2018, 6, 5)
-        (components.hour, components.minute) = (11, 15)
+        let components = DateComponents().set {
+            $0.timeZone = TimeZone.current
+            ($0.year, $0.month, $0.day) = (2019, 7, 1)
+            ($0.hour, $0.minute) = (0, 0)
+        }
         
         let date = Calendar(identifier: .gregorian).date(from: components)!
         
-        let endpoint = self.api.transactions(from: date).on(value: {
-            XCTAssertFalse($0.isEmpty)
+        var counter = 0
+        let endpoint = self.api.transactions.get(from: date).on(completed: {
+            XCTAssertGreaterThan(counter, 0)
+        }, value: {
+            counter += $0.count
         })
         
-        self.test("Transactions (history)", endpoint, signingProcess: .oauth, timeout: 1)
+        self.test("Transactions (history)", endpoint, signingProcess: .oauth, timeout: 2)
     }
 }
