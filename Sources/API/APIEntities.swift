@@ -26,9 +26,9 @@ extension API {
             
             let string = try container.decode(String.self)
             switch string {
-            case CodingKeys.none.rawValue:
+            case Self.CodingKeys.none.rawValue:
                 self = .none
-            case CodingKeys.dfb.rawValue, CodingKeys.dfb.rawValue.lowercased():
+            case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
                 self = .dailyFunded
             default:
                 if let date = API.DateFormatter.dayMonthYear.date(from: string) {
@@ -47,9 +47,9 @@ extension API {
             var container = encoder.singleValueContainer()
             switch self {
             case .none:
-                try container.encode(CodingKeys.none.rawValue)
+                try container.encode(Self.CodingKeys.none.rawValue)
             case .dailyFunded:
-                try container.encode(CodingKeys.dfb.rawValue)
+                try container.encode(Self.CodingKeys.dfb.rawValue)
             case .forward(let date):
                 let formatter = (date.isLastDayOfMonth) ? API.DateFormatter.monthYear : API.DateFormatter.dayMonthYear
                 try container.encode(formatter.string(from: date))
@@ -146,9 +146,9 @@ extension API.Node {
     /// Market data hanging from a hierarchical node.
     public struct Market: Decodable {
         /// The market's instrument.
-        public let instrument: API.Node.Market.Instrument
+        public let instrument: Self.Instrument
         /// The market's prices.
-        public let snapshot: API.Node.Market.Snapshot
+        public let snapshot: Self.Snapshot
         
         public init(from decoder: Decoder) throws {
             self.instrument = try .init(from: decoder)
@@ -161,7 +161,7 @@ extension API.Node.Market {
     /// Market's instrument properties.
     public struct Instrument: Decodable {
         /// Instrument epic identifier.
-        public let epic: String
+        public let epic: Epic
         /// Instrument name.
         public let name: String
         /// Instrument type.
@@ -178,8 +178,8 @@ extension API.Node.Market {
         public let isOTCTradeable: Bool?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.epic = try container.decode(String.self, forKey: .epic)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            self.epic = try container.decode(Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
             self.type = try container.decode(API.Instrument.self, forKey: .type)
             self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
@@ -214,7 +214,7 @@ extension API.Node.Market {
         public let scalingFactor: Double
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
@@ -248,144 +248,236 @@ extension API.Node.Market {
 }
 
 
-extension API {
-    /// Position related entities (both for responses and requests).
-    public enum Position {
-        /// Position status.
-        public enum Status: Decodable {
-            case open
-            case amended
-            case partiallyClosed
-            case closed
-            case deleted
-            
-            public init(from decoder: Decoder) throws {
-                let container = try decoder.singleValueContainer()
-                let value = try container.decode(String.self)
-                switch value {
-                case CodingKeys.openA.rawValue, CodingKeys.openB.rawValue: self = .open
-                case CodingKeys.amended.rawValue: self = .amended
-                case CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
-                case CodingKeys.closedA.rawValue, CodingKeys.closedB.rawValue: self = .closed
-                case CodingKeys.deleted.rawValue: self = .deleted
-                default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value \"\(value)\" couldn't be parsed.")
-                }
+extension API.Position {
+    /// Position's permanent identifier.
+    public struct Identifier: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+        public let rawValue: String
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError("The deal identifier couldn't be identified or is not in the correct format.") }
+            self.rawValue = value
+        }
+        
+        public init?(rawValue: String) {
+            guard Self.validate(rawValue) else { return nil }
+            self.rawValue = rawValue
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            guard Self.validate(rawValue) else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
             }
-            
-            private enum CodingKeys: String, CodingKey {
-                case openA = "OPEN", openB = "OPENED"
-                case amended = "AMENDED"
-                case partiallyClosed = "PARTIALLY_CLOSED"
-                case closedA = "FULLY_CLOSED", closedB = "CLOSED"
-                case deleted = "DELETED"
+            self.rawValue = rawValue
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(self.rawValue)
+        }
+        
+        private static func validate(_ value: String) -> Bool {
+            return (1...30).contains(value.count)
+        }
+    }
+    
+    /// Transient deal identifier (for an unconfirmed trade).
+    public struct Reference: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+        public let rawValue: String
+        /// The allowed character set.
+        private static let allowedSet: CharacterSet = {
+            var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
+            result.formUnion(CharacterSet.Framework.lowercaseANSI)
+            result.formUnion(CharacterSet.Framework.uppercaseANSI)
+            result.formUnion(CharacterSet.decimalDigits)
+            return result
+        }()
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError("The deal reference couldn't be identified or is not in the correct format.") }
+            self.rawValue = value
+        }
+        
+        public init?(rawValue: String) {
+            guard Self.validate(rawValue) else { return nil }
+            self.rawValue = rawValue
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            guard Self.validate(rawValue) else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
+            }
+            self.rawValue = rawValue
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(self.rawValue)
+        }
+        
+        private static func validate(_ value: String) -> Bool {
+            let allowedRange = 1...30
+            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        }
+    }
+    
+    /// Position status.
+    public enum Status: Decodable {
+        case open
+        case amended
+        case partiallyClosed
+        case closed
+        case deleted
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            switch value {
+            case Self.CodingKeys.openA.rawValue, Self.CodingKeys.openB.rawValue: self = .open
+            case Self.CodingKeys.amended.rawValue: self = .amended
+            case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
+            case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
+            case Self.CodingKeys.deleted.rawValue: self = .deleted
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value \"\(value)\" couldn't be parsed.")
             }
         }
         
-        /// Deal direction.
-        public enum Direction: String, Codable {
-            case buy = "BUY"
-            case sell = "SELL"
-            
-            public var oppossite: Direction {
-                switch self {
-                case .buy:  return .sell
-                case .sell: return .buy
-                }
+        private enum CodingKeys: String, CodingKey {
+            case openA = "OPEN", openB = "OPENED"
+            case amended = "AMENDED"
+            case partiallyClosed = "PARTIALLY_CLOSED"
+            case closedA = "FULLY_CLOSED", closedB = "CLOSED"
+            case deleted = "DELETED"
+        }
+    }
+    
+    /// Deal direction.
+    public enum Direction: String, Codable {
+        case buy = "BUY"
+        case sell = "SELL"
+        
+        public var oppossite: Direction {
+            switch self {
+            case .buy:  return .sell
+            case .sell: return .buy
             }
         }
+    }
+    
+    /// Describes how the user's order must be executed.
+    public enum Order {
+        /// A market order is an instruction to buy or sell at the best available price for the size of your order.
+        ///
+        /// When using this type of order you choose the size and direction of your order, but not the price (a level cannot be specified).
+        /// - note: Not applicable to BINARY instruments.
+        case market
+        /// A limit fill or kill order is an instruction to buy or sell in a specified size within a specified price limit, which is either filled completely or rejected.
+        ///
+        /// Provided the market price is within the specified limit and there is sufficient volume available, the order will be filled at the prevailing market price.
+        ///
+        /// The entire order will be rejected if:
+        /// - The market price is outside your specified limit (higher for buy orders, lower for sell orders).
+        /// - There is insufficient volume available to satisfy the full order size.
+        case limit(level: Double)
+        /// Quote orders get executed at the specified level.
+        ///
+        /// The level has to be accompanied by a valid quote id (i.e. Lightstreamer price quote identifier).
+        ///
+        /// A quoteID is the two-way market price that we are making for a given instrument. Because it is two-way, you can 'buy' or 'sell', according to whether you think the price will rise or fall
+        /// - note: This type is only available subject to agreement with IG.
+        case quote(id: String, level: Double)
         
-        /// Indicates the price for a given instrument.
-        public enum Boundary {
-            /// The type of limit being set.
-            public enum Limit {
-                /// The limit or stop is given explicitly (as a value).
-                case position(Double)
-                /// The limit or stop is measured as the distance from a given level.
-                case distance(Double)
-            }
-            
-            /// The level/price at which the user doesn't want to incur more lose.
-            public enum Stop {
-                /// Absolute value of the stop (e.g. 1.653 USD/EUR).
-                case position(Double)
-                /// Distance from the buy/sell level where the stop will be placed.
-                case distance(Double)
-                /// A distance from the buy/sell level stop with the tweak that the stop will be moved towards the current level in case of a favourable trade.
-                /// - parameter distance: The distance from the buy/sell price.
-                /// - parameter increment: The increment step in pips.
-                case trailing(distance: Double, increment: Double)
-            }
+        /// The order fill strategy.
+        public enum Strategy: String, Encodable {
+            /// Execute and eliminate.
+            case execute = "EXECUTE_AND_ELIMINATE"
+            /// Fill or kill.
+            case fillOrKill = "FILL_OR_KILL"
+        }
+    }
+    
+    /// The level/price at which the user doesn't want to incur more lose.
+    public enum Stop {
+        /// Absolute value of the stop (e.g. 1.653 USD/EUR).
+        /// - parameter level: The stop absolute level.
+        /// - parameter risk: The risk exposed when exercising the stop loss.
+        case position(level: Double, risk: Self.Risk)
+        /// A distance from the buy/sell level stop with the tweak that the stop will be moved towards the current level in case of a favourable trade.
+        /// - parameter distance: The distance from the buy/sell price.
+        /// - parameter increment: The increment step in pips.
+        case trailing(distance: Double, increment: Double)
+        
+        /// Defines the amount of risk being exposed while closing the stop loss.
+        public enum Risk {
+            /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
+            case limited(premium: Double? = nil)
+            case exposed
         }
     }
 }
 
-extension API {
-    /// Working order related entities.
-    public enum WorkingOrder {
-        /// The type of working order.
-        public enum Kind: String, Codable {
-            case limit = "LIMIT"
-            case stop = "STOP"
-        }
-        
-        /// Describes when the working order will expire.
-        public enum Expiration {
-            case tillCancelled
-            case tillDate(Date)
-            
-            /// Designated initializer to create an expiration for working orders.
-            /// - throws `Expiration.Error` if the raw value is invalid.
-            internal init(_ rawValue: String, date: Date?) throws {
-                switch rawValue {
-                case CodingKeys.tillCancelled.rawValue:
-                    self = .tillCancelled
-                case CodingKeys.tillDate.rawValue:
-                    guard let date = date else { throw Error.unavailableDate }
-                    self = .tillDate(date)
-                default:
-                    throw Error.invalidExpirationRawValue(rawValue)
-                }
-            }
-            
-            fileprivate enum Error: Swift.Error {
-                case invalidExpirationRawValue(String)
-                case unavailableDate
-            }
-            
-            internal var rawValue: String {
-                switch self {
-                case .tillCancelled: return CodingKeys.tillCancelled.rawValue
-                case .tillDate(_): return CodingKeys.tillDate.rawValue
-                }
-            }
-            
-            private enum CodingKeys: String {
-                case tillCancelled = "GOOD_TILL_CANCELLED"
-                case tillDate = "GOOD_TILL_DATE"
-            }
-        }
-        
-        /// Indicates the price for a given instrument.
-        public enum Boundary {
-            /// The type of limit being set.
-            public typealias Limit = API.Position.Boundary.Limit
-            
-            /// The level/price at which the user doesn't want to incur more lose.
-            public typealias Stop = Limit
-        }
-    }
-}
-
-/// Reflect the boundaries for a deal level.
-public protocol APIPositionBoundaries {
-    /// The limit level at which the user is happy with his/her profits.
-    var limit: API.Position.Boundary.Limit? { get }
-    /// The stop level at which the user don't want to take more losses.
-    var stop: API.Position.Boundary.Stop? { get }
-}
-
-extension APIPositionBoundaries {
-    /// Returns a boolean indicating whether there are no boundaries set.
-    public var isEmpty: Bool { return (self.limit == nil) && (self.stop == nil) }
-}
+//extension API {
+//    /// Working order related entities.
+//    public enum WorkingOrder {
+//        /// The type of working order.
+//        public enum Kind: String, Codable {
+//            case limit = "LIMIT"
+//            case stop = "STOP"
+//        }
+//        
+//        /// Describes when the working order will expire.
+//        public enum Expiration {
+//            case tillCancelled
+//            case tillDate(Date)
+//            
+//            /// Designated initializer to create an expiration for working orders.
+//            /// - throws `Expiration.Error` if the raw value is invalid.
+//            internal init(_ rawValue: String, date: Date?) throws {
+//                switch rawValue {
+//                case CodingKeys.tillCancelled.rawValue:
+//                    self = .tillCancelled
+//                case CodingKeys.tillDate.rawValue:
+//                    guard let date = date else { throw Error.unavailableDate }
+//                    self = .tillDate(date)
+//                default:
+//                    throw Error.invalidExpirationRawValue(rawValue)
+//                }
+//            }
+//            
+//            fileprivate enum Error: Swift.Error {
+//                case invalidExpirationRawValue(String)
+//                case unavailableDate
+//            }
+//            
+//            internal var rawValue: String {
+//                switch self {
+//                case .tillCancelled: return CodingKeys.tillCancelled.rawValue
+//                case .tillDate(_): return CodingKeys.tillDate.rawValue
+//                }
+//            }
+//            
+//            private enum CodingKeys: String {
+//                case tillCancelled = "GOOD_TILL_CANCELLED"
+//                case tillDate = "GOOD_TILL_DATE"
+//            }
+//        }
+//        
+//        /// Indicates the price for a given instrument.
+//        public enum Boundary {
+//            /// The type of limit being set.
+//            public typealias Limit = API.Position.Boundary.Limit
+//            
+//            /// The level/price at which the user doesn't want to incur more lose.
+//            public typealias Stop = Limit
+//        }
+//    }
+//}
+//
+//extension APIPositionBoundaries {
+//    /// Returns a boolean indicating whether there are no boundaries set.
+//    public var isEmpty: Bool { return (self.limit == nil) && (self.stop == nil) }
+//}
 

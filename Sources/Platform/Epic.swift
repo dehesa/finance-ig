@@ -1,36 +1,45 @@
+import Foundation
+
 /// An epic represents a unique tradeable market.
-public protocol Epic {
-    /// Unique identifier through the IG platform.
-    var identifier: String { get }
-}
-
-extension Array where Element == Epic {
-    /// Checks that the array of Epics are unique and there is at least one epic.
-    /// - returns: Boolean indicating whether the array has at least one value and those values are unique.
-    var isUniquelyLaden: Bool {
-        guard !self.isEmpty else { return false }
-        
-        var set = Set<String>(minimumCapacity: self.count)
-        for epic in self {
-            let identifier = epic.identifier
-            guard !identifier.isEmpty,
-                  set.insert(identifier).inserted else { return false }
+public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+    public let rawValue: String
+    /// The allowed character set for epics.
+    ///
+    /// It is used on validation.
+    private static let allowedSet: CharacterSet = {
+        var result = CharacterSet(arrayLiteral: ".", "_")
+        result.formUnion(CharacterSet.Framework.lowercaseANSI)
+        result.formUnion(CharacterSet.Framework.uppercaseANSI)
+        result.formUnion(CharacterSet.decimalDigits)
+        return result
+    }()
+    
+    public init(stringLiteral value: String) {
+        guard Self.validate(value) else { fatalError("The epic couldn't be identified or is not in the correct format.") }
+        self.rawValue = value
+    }
+    
+    public init?(rawValue: String) {
+        guard Epic.validate(rawValue) else { return nil }
+        self.rawValue = rawValue
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        guard Self.validate(rawValue) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
         }
-        
-        return set.count == self.count
+        self.rawValue = rawValue
     }
-}
-
-extension Array where Element: Hashable {
-    /// Checks that the array of elements are unique and there is at least one value.
-    /// - returns: Boolean indicating whether the array has at least one value and those values are unique.
-    var isUniquelyLaden: Bool {
-        return !self.isEmpty && Set(self).count == self.count
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
     }
-}
-
-/// List of all tradable markets.
-public enum Market {
-    /// Foreign exchange related markets.
-    public enum Forex {}
+    
+    private static func validate(_ value: String) -> Bool {
+        let allowedRange = 6...30
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+    }
 }

@@ -12,7 +12,7 @@ extension API.Request.Session {
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` indicating whether the endpoint was successful.
-    public func login(type: API.Request.Session.Kind, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Void,API.Error> {
+    public func login(type: Self.Kind, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Void,API.Error> {
         var result: SignalProducer<API.Credentials,API.Error>
         
         switch type {
@@ -71,7 +71,7 @@ extension API.Request.Session {
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func `switch`(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
-        return SignalProducer(api: self.api) { (api) -> PayloadSwitch in
+        return SignalProducer(api: self.api) { (api) -> Self.PayloadSwitch in
                 guard !accountId.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
                 }
@@ -200,10 +200,10 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currency: String
+        public let currency: Currency
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let clientString = try container.decode(String.self, forKey: .clientId)
             self.clientId = try Int(clientString)
@@ -214,7 +214,7 @@ extension API {
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(String.self, forKey: .currency)
+            self.currency = try container.decode(Currency.self, forKey: .currency)
         }
         
         private enum CodingKeys: String, CodingKey {

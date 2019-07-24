@@ -15,7 +15,7 @@ extension API.Request.Session {
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
     internal func loginCertificate(apiKey: String, user: (name: String, password: String), encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> PayloadCertificate in
+        return SignalProducer(api: self.api) { (_) -> Self.PayloadCertificate in
                 let apiKeyLength: Int = 40
                 guard apiKey.utf8.count == apiKeyLength else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
@@ -91,10 +91,10 @@ extension API.Session {
         /// Timezone of the active account.
         let timezone: TimeZone
         /// The certificate tokens granting access to the platform.
-        let tokens: Certificate.Token
+        let tokens: Self.Token
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let client = try container.decode(String.self, forKey: .clientId)
             self.clientId = try Int(client) ?! DecodingError.dataCorruptedError(forKey: .clientId, in: container, debugDescription: "The clientID \"\(client)\" couldn't be transformed into an integer.")
@@ -160,7 +160,7 @@ extension API.Session {
         let timeStamp: Date
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
             let epoch = try container.decode(Double.self, forKey: .timeStamp)
             self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)

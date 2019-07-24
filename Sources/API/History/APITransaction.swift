@@ -44,11 +44,11 @@ extension API.Request.Transactions {
                 var request = initialRequest
                 try request.addQueries([URLQueryItem(name: "pageNumber", value: String(nextPage))])
                 return request
-            }, endpoint: { (producer) -> SignalProducer<(PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON()
-                    .map { (response: PagedTransactions) in
+                    .map { (response: Self.PagedTransactions) in
                         return (response.metadata.page, response.transactions)
                     }
             })
@@ -97,14 +97,14 @@ extension API.Request.Transactions {
     /// A single Page of transactions request.
     private struct PagedTransactions: Decodable {
         let transactions: [API.Transaction]
-        let metadata: Metadata
+        let metadata: Self.Metadata
         
         struct Metadata: Decodable {
-            let page: Page
+            let page: Self.Page
             
             init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                let subContainer = try container.nestedContainer(keyedBy: Page.CodingKeys.self, forKey: .pageData)
+                let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+                let subContainer = try container.nestedContainer(keyedBy: Self.Page.CodingKeys.self, forKey: .pageData)
                 
                 let size = try container.decode(UInt.self, forKey: .size)
                 let number = try subContainer.decode(UInt.self, forKey: .pageNumber)
@@ -140,7 +140,7 @@ extension API {
     /// A financial transaction between accounts.
     public struct Transaction: Decodable {
         /// The type of transaction.
-        public let type: Kind
+        public let type: Self.Kind
         /// Deal Reference.
         public let reference: String
         /// Instrument name.
@@ -161,9 +161,9 @@ extension API {
         public let isCash: Bool
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            self.type = try container.decode(Kind.self, forKey: .type)
+            self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.reference = try container.decode(String.self, forKey: .reference)
             
             self.description = try container.decode(String.self, forKey: .description)

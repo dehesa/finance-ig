@@ -9,20 +9,19 @@ extension API.Request.Watchlists {
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: SignalProducer with the watchlist identifier as its value.
-    public func create(name: String, epics: [String]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),API.Error> {
-        return SignalProducer(api: self.api) { (_) -> API.Request.Watchlists.PayloadCreation in
+    public func create(name: String, epics: [Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),API.Error> {
+        return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist creation failed! The watchlist name cannot be empty.")
                 }
-                let filteredEpics = epics.filter { !$0.isEmpty }
-                return .init(name: name, epics: filteredEpics)
+                return .init(name: name, epics: epics.uniqueElements)
             }.request(.post, "watchlists", version: 1, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Watchlists.ResponseCreation) in (w.identifier, w.areAllInstrumentsAdded) }
+            .map { (w: Self.WrapperCreation) in (w.identifier, w.areAllInstrumentsAdded) }
     }
 
     
@@ -35,7 +34,7 @@ extension API.Request.Watchlists {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Watchlists.WrapperList) in w.watchlists }
+            .map { (w: Self.WrapperList) in w.watchlists }
     }
     
     // MARK: GET /watchlists/{watchlistId}
@@ -51,7 +50,7 @@ extension API.Request.Watchlists {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Watchlists.Wrapper) in w.markets }
+            .map { (w: Self.WrapperWatchlist) in w.markets }
     }
     
     // MARK: PUT /watchlists/{watchlistId}
@@ -60,13 +59,10 @@ extension API.Request.Watchlists {
     /// - parameter watchlistIdentifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier watchlistIdentifier: String, addingEpic epic: String) -> SignalProducer<Void,API.Error> {
+    public func update(identifier watchlistIdentifier: String, addingEpic epic: Epic) -> SignalProducer<Void,API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !watchlistIdentifier.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.")
-                }
-                guard !epic.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.")
                 }
             }.request(.put, "watchlists/\(watchlistIdentifier)", version: 1, credentials: true, body: { (_,_) in
                 let payload = ["epic": epic]
@@ -75,7 +71,7 @@ extension API.Request.Watchlists {
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (_: API.Request.Watchlists.WrapperUpdate) in return }
+            .map { (_: Self.WrapperUpdate) in return }
     }
 
     
@@ -85,19 +81,16 @@ extension API.Request.Watchlists {
     /// - parameter watchlistIdentifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier watchlistIdentifier: String, removingEpic epic: String) -> SignalProducer<Void,API.Error> {
+    public func update(identifier watchlistIdentifier: String, removingEpic epic: Epic) -> SignalProducer<Void,API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !watchlistIdentifier.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The watchlist identifier cannot be empty.")
                 }
-                guard !epic.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist update failed! The epic to be added cannot be empty.")
-                }
-            }.request(.delete, "watchlists/\(watchlistIdentifier)/\(epic)", version: 1, credentials: true)
+            }.request(.delete, "watchlists/\(watchlistIdentifier)/\(epic.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (_: API.Request.Watchlists.WrapperUpdate) in return }
+            .map { (_: Self.WrapperUpdate) in return }
     }
     
     // MARK: DELETE /watchlists/{watchlistId}
@@ -114,7 +107,7 @@ extension API.Request.Watchlists {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Watchlists.WrapperUpdate) in return }
+            .map { (w: Self.WrapperUpdate) in return }
     }
 }
 
@@ -134,24 +127,24 @@ extension API.Request {
     }
 }
 
-// MARK: - Request Entities
+// MARK: Request Entities
 
 extension API.Request.Watchlists {
     private struct PayloadCreation: Encodable {
         let name: String
-        let epics: [String]
+        let epics: [Epic]
     }
 }
 
-// MARK: - Response Entities
+// MARK: Response Entities
 
 extension API.Request.Watchlists {
-    private struct ResponseCreation: Decodable {
+    private struct WrapperCreation: Decodable {
         let identifier: String
         let areAllInstrumentsAdded: Bool
 
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.identifier = try container.decode(String.self, forKey: .identifier)
             let status = try container.decode(CodingKeys.Status.self, forKey: .status)
             self.areAllInstrumentsAdded = (status == .success)
@@ -168,7 +161,7 @@ extension API.Request.Watchlists {
         }
     }
     
-    private struct Wrapper: Decodable {
+    private struct WrapperWatchlist: Decodable {
         let markets: [API.Node.Market]
     }
     
@@ -177,7 +170,7 @@ extension API.Request.Watchlists {
     }
     
     private struct WrapperUpdate: Decodable {
-        let status: Status
+        let status: Self.Status
         
         enum Status: String, Decodable {
             case success = "SUCCESS"

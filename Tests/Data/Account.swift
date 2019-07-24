@@ -94,7 +94,9 @@ extension Account {
             if let password = try? container.decode(String.self, forKey: .password) {
                 self.password = password
             } else if let credentials = try container.decodeIfPresent(Credentials.self, forKey: .password) {
-                self.password = IG.Streamer.Credentials.password(fromCST: credentials.cst, security: credentials.security)
+//                self.password = IG.Streamer.Credentials.password(fromCST: credentials.cst, security: credentials.security)
+                /// - todo: Uncomment later and delete the followng line.
+                self.password = nil
             } else {
                 self.password = nil
             }

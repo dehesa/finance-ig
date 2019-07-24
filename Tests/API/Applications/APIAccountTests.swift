@@ -15,7 +15,6 @@ final class APIAccountTests: APITestCase {
             }
             XCTAssertEqual(account.identifier, accountId)
             XCTAssertFalse(account.name.isEmpty)
-            XCTAssertFalse(account.currency.isEmpty)
         })
 
         self.test("Accounts", endpoint, signingProcess: .oauth, timeout: 1)

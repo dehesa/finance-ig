@@ -11,7 +11,7 @@ extension API.Request.Session {
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` with the new refreshed credentials.
     internal func loginOAuth(apiKey: String, user: (name: String, password: String)) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> PayloadOAuth in
+        return SignalProducer(api: self.api) { (_) -> Self.PayloadOAuth in
                 let apiKeyLength = 40
                 guard apiKey.utf8.count == apiKeyLength else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
@@ -49,7 +49,7 @@ extension API.Request.Session {
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: SignalProducer with the new refreshed credentials.
     internal func refreshOAuth(token: String, apiKey: String) -> SignalProducer<API.Credentials.Token,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> TemporaryRefresh in
+        return SignalProducer(api: self.api) { (_) -> Self.TemporaryRefresh in
                 guard !token.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The OAuth refresh token can't be empty.")
                 }
@@ -106,10 +106,10 @@ extension API.Session {
         /// Timezone of the active account.
         let timezone: TimeZone
         /// The OAuth token granting access to the platform
-        let tokens: Token
+        let tokens: Self.Token
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let client = try container.decode(String.self, forKey: .clientId)
             self.clientId = try Int(client) ?! DecodingError.dataCorruptedError(forKey: .clientId, in: container, debugDescription: "The clientID \"\(client)\" couldn't be transformed into an integer.")
@@ -149,7 +149,7 @@ extension API.Session.OAuth {
         let type: String
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             self.accessToken = try container.decode(String.self, forKey: .accessToken)
             self.refreshToken = try container.decode(String.self, forKey: .refreshToken)
