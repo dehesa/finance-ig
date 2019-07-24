@@ -12,12 +12,8 @@ extension API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func get(epic: String, from: Date, to: Date = Date(), resolution: API.Request.Price.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func get(epic: Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
         return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
-                guard !epic.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The provided epic for price query is empty.")
-                }
-            
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
@@ -31,7 +27,7 @@ extension API.Request.Price {
             
                 let pageNumber = (page.number > 0) ? page.number : 1
                 return (page.size, pageNumber, formatter)
-            }).request(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (_,validated) in
+            }).request(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (_,validated) in
                 return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
                         URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
                         URLQueryItem(name: "resolution", value: resolution.rawValue),
@@ -49,7 +45,7 @@ extension API.Request.Price {
                 var request = initialRequest
                 try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
                 return request
-            }, endpoint: { (producer) -> SignalProducer<(PagedPrices.Metadata.Page, (prices: [API.Price], allowance: API.Price.Allowance)), API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedPrices.Metadata.Page, (prices: [API.Price], allowance: API.Price.Allowance)), API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON { (request, response) -> JSONDecoder in
@@ -61,7 +57,7 @@ extension API.Request.Price {
                         let decoder = JSONDecoder()
                         decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
                         return decoder
-                    }.map { (response: PagedPrices) in
+                    }.map { (response: Self.PagedPrices) in
                         let result = (response.prices, allowance: response.metadata.allowance)
                         return (response.metadata.page, result)
                     }
@@ -98,9 +94,9 @@ extension API.Request.Price {
         /// Creates a resolution from the available ones closest to the amount of seconds passed as argument.
         /// - parameter seconds: Amount of seconds desired for a resolution.
         public init(seconds: Int) {
-            var result: (resolution: Resolution, distance: Int) = (.second, .max)
+            var result: (resolution: Self, distance: Int) = (.second, .max)
             
-            for resolution in Resolution.allCases {
+            for resolution in Self.allCases {
                 let distance = abs(resolution.seconds - seconds)
                 guard result.distance > distance else {
                     self = result.resolution; return
@@ -141,11 +137,11 @@ extension API.Request.Price {
     private struct PagedPrices: Decodable {
         let instrumentType: API.Instrument
         let prices: [API.Price]
-        let metadata: Metadata
+        let metadata: Self.Metadata
         
         struct Metadata: Decodable {
             let allowance: API.Price.Allowance
-            let page: Page
+            let page: Self.Page
             /// The total amount of price points after all pages have been loaded.
             let totalCount: UInt
             
@@ -177,25 +173,25 @@ extension API {
         /// Snapshot date.
         let date: Date
         /// Open session price.
-        let open: Point
+        let open: Self.Point
         /// Close session price.
-        let close: Point
+        let close: Self.Point
         /// Lowest price.
-        let lowest: Point
+        let lowest: Self.Point
         /// Highest price.
-        let highest: Point
+        let highest: Self.Point
         /// Last traded volume.
         ///
         /// This will generally be `nil` for non exchange traded instrument.
         let volume: UInt?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.date = try container.decode(Date.self, forKey: .date, with: API.DateFormatter.iso8601NoTimezone)
-            self.open = try container.decode(Point.self, forKey: .open)
-            self.close = try container.decode(Point.self, forKey: .close)
-            self.highest = try container.decode(Point.self, forKey: .highest)
-            self.lowest = try container.decode(Point.self, forKey: .lowest)
+            self.open = try container.decode(Self.Point.self, forKey: .open)
+            self.close = try container.decode(Self.Point.self, forKey: .close)
+            self.highest = try container.decode(Self.Point.self, forKey: .highest)
+            self.lowest = try container.decode(Self.Point.self, forKey: .lowest)
             self.volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
         }
         
@@ -243,7 +239,7 @@ extension API.Price {
         public let total: Int
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
             guard let date = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date else {

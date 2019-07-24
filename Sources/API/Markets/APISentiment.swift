@@ -19,7 +19,7 @@ extension API.Request.Markets {
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Markets.WrapperList) in w.clientSentiments }
+            .map { (w: Self.WrapperList) in w.clientSentiments }
     }
     
     // MARK: GET /clientsentiment/{marketId}
@@ -50,7 +50,7 @@ extension API.Request.Markets {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: API.Request.Markets.WrapperList) in w.clientSentiments }
+            .map { (w: Self.WrapperList) in w.clientSentiments }
     }
     
 }

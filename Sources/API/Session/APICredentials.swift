@@ -1,7 +1,5 @@
 import Foundation
 
-// MARK: Credential Entities
-
 extension API {
     /// Credentials used within the API session.
     public struct Credentials {
@@ -16,10 +14,10 @@ extension API {
         /// API key given by the IG platform identifying the usage of the IG endpoints.
         public let apiKey: String
         /// The actual token values/headers.
-        public internal(set) var token: Token
+        public internal(set) var token: Self.Token
         
         /// Creates a credentials structure from hardcoded data.
-        public init(clientId: Int, accountId: String, apiKey: String, token: Token, streamerURL: URL, timezone: TimeZone) {
+        public init(clientId: Int, accountId: String, apiKey: String, token: Self.Token, streamerURL: URL, timezone: TimeZone) {
             self.clientId = clientId
             self.accountId = accountId
             self.streamerURL = streamerURL
@@ -51,7 +49,7 @@ extension API.Credentials {
         /// Expiration date for the underlying token (only references the access token).
         public let expirationDate: Date
         /// The actual token values.
-        public let value: Kind
+        public let value: Self.Kind
         
         /// Initializes a token with hardcoded values.
         /// - parameter value: The type of token used in the credentials (whether certificate or OAuth).

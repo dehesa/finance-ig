@@ -16,7 +16,6 @@ final class APISessionTests: APITestCase {
                 XCTAssertEqual(response.accountId, info.accountId)
                 XCTAssertNotNil(response.streamerURL.scheme)
                 XCTAssertEqual(response.streamerURL.scheme!, "https")
-                XCTAssertEqual(response.currency.count, 3)
             }).call(on: self.api) { (api, _) in
                 api.session.logout()
             }

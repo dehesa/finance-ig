@@ -20,10 +20,11 @@ final class APIWatchlistTests: APITestCase {
     func testWatchlistLifecycle() {
         /// This will be filled up by the created watchlist.
         var watchlistId: String? = nil
+        
         /// Epics to be added to the watchlist.
-        let startEpics = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted()
-        let addedEpic = "CS.D.GBPEUR.CFD.IP"
-        let endEpics = (startEpics + [addedEpic]).sorted()
+        let startEpics: [Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0.rawValue > $1.rawValue }
+        let addedEpic: Epic = "CS.D.GBPEUR.CFD.IP"
+        let endEpics = (startEpics + [addedEpic]).sorted { $0.rawValue > $1.rawValue }
 
         // 1. Creates a watchlist.
         let endpoints = self.api.watchlists.create(name: "Test Watchlist", epics: startEpics).on(value: {
@@ -34,7 +35,7 @@ final class APIWatchlistTests: APITestCase {
             // 2. Check the data of the created watchlist.
             api.watchlists.get(identifier: result.identifier)
             }.on(value: { (markets) in
-                let receivedEpics = markets.map { $0.instrument.epic }.sorted()
+                let receivedEpics = markets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue }
                 XCTAssertEqual(receivedEpics, startEpics)
         }).call(on: self.api) { (api, markets) in
             // 3. Add a new epic to the watchlist.
@@ -43,7 +44,7 @@ final class APIWatchlistTests: APITestCase {
             // 4. Retrieve data from the watchlist.
             api.watchlists.get(identifier: watchlistId!)
             }.on(value: { (markets) in
-                let receivedEpics = markets.map { $0.instrument.epic }.sorted()
+                let receivedEpics = markets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue }
                 XCTAssertEqual(receivedEpics, endEpics)
         }).call(on: self.api) { (api, _) in
             // 5. Removes the epic just added.
@@ -52,7 +53,7 @@ final class APIWatchlistTests: APITestCase {
             // 6. Retrieve data from the watchlist.
             api.watchlists.get(identifier: watchlistId!)
             }.on(value: { (markets) in
-                let receivedEpics = markets.map { $0.instrument.epic }.sorted()
+                let receivedEpics = markets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue }
                 XCTAssertEqual(receivedEpics, startEpics)
         }).call(on: self.api) { (api, _) in
             // 7. Deletes the whole test wachtlist.

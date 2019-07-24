@@ -12,7 +12,7 @@ extension API.Request.Accounts {
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (w: WrapperList) in w.accounts }
+            .map { (w: Self.WrapperList) in w.accounts }
     }
     
     // MARK:  GET /accounts/preferences
@@ -32,7 +32,7 @@ extension API.Request.Accounts {
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> PayloadPreferences in
+        return SignalProducer(api: self.api) { (_) -> Self.PayloadPreferences in
                 return .init(trailingStopsEnabled: trailingStops)
             }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
                 return (.json, try JSONEncoder().encode(payload))
@@ -84,26 +84,26 @@ extension API {
         /// Account alias.
         public let alias: String?
         /// Account type
-        public let type: Kind
+        public let type: Self.Kind
         /// Account status
-        public let status: Status
+        public let status: Self.Status
         /// Default login account.
         public let preferred: Bool
         /// Account currency.
-        public let currency: String
+        public let currency: IG.Currency
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
-        public let balance: Balance
+        public let balance: Self.Balance
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.identifier = try container.decode(String.self, forKey: .identifier)
             self.name = try container.decode(String.self, forKey: .name)
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
             self.preferred = try container.decode(Bool.self, forKey: .preferred)
-            self.currency = try container.decode(String.self, forKey: .currency)
+            self.currency = try container.decode(Currency.self, forKey: .currency)
             let transferIn = try container.decode(Bool.self, forKey: .transfersIn)
             let transferOut = try container.decode(Bool.self, forKey: .transfersOut)
             self.transfersAllowed = (transferIn, transferOut)

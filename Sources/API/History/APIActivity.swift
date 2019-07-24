@@ -15,7 +15,7 @@ extension API.Request.Activity {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
+    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
         let dateFormatter: Foundation.DateFormatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
         
         return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
@@ -44,8 +44,8 @@ extension API.Request.Activity {
                     queries.append(URLQueryItem(name: "filter", value: filter))
                 }
                 
-                let size: UInt = (pageSize < PageSize.minimum) ? PageSize.minimum :
-                                 (pageSize > PageSize.maximum) ? PageSize.maximum : pageSize
+                let size: UInt = (pageSize < Self.PageSize.minimum) ? Self.PageSize.minimum :
+                                 (pageSize > Self.PageSize.maximum) ? Self.PageSize.maximum : pageSize
                 queries.append(URLQueryItem(name: "pageSize", value: String(size)))
                 return queries
             }).paginate(request: { (api, initialRequest, previous) in
@@ -69,14 +69,14 @@ extension API.Request.Activity {
                 var nextRequest = initialRequest
                 try nextRequest.addQueries([from, to])
                 return nextRequest
-            }, endpoint: { (producer) -> SignalProducer<(PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
                 return producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON { (_,_) -> JSONDecoder in
                         let decoder = JSONDecoder()
                         decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
                         return decoder
-                    }.map { (response: PagedActivities) in
+                    }.map { (response: Self.PagedActivities) in
                         (response.metadata.paging, response.activities)
                     }
             })
@@ -138,26 +138,26 @@ extension API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
         /// Activity type.
-        public let type: Kind
+        public let type: Self.Kind
         /// Deal identifier.
         public let dealId: String
         /// Action status.
-        public let status: Status
+        public let status: Self.Status
         /// The date of the activity item.
         public let date: Date
         /// The channel which triggered the activity.
-        public let channel: Channel
+        public let channel: Self.Channel
         /// Instrument epic identifier.
-        public let epic: String
+        public let epic: Epic
         /// The period of the activity item.
         public let period: API.Expiry
         /// Activity description.
         public let description: String
         /// Activity details.
-        public let details: Details?
+        public let details: Self.Details?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? Foundation.DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
@@ -165,13 +165,13 @@ extension API {
             
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.dealId = try container.decode(String.self, forKey: .dealId)
-            self.type = try container.decode(Kind.self, forKey: .type)
-            self.status = try container.decode(Status.self, forKey: .status)
-            self.channel = try container.decode(Channel.self, forKey: .channel)
+            self.type = try container.decode(Self.Kind.self, forKey: .type)
+            self.status = try container.decode(Self.Status.self, forKey: .status)
+            self.channel = try container.decode(Self.Channel.self, forKey: .channel)
             self.description = try container.decode(String.self, forKey: .description)
-            self.epic = try container.decode(String.self, forKey: .epic)
+            self.epic = try container.decode(Epic.self, forKey: .epic)
             self.period = try container.decodeIfPresent(API.Expiry.self, forKey: .period) ?? .none
-            self.details = try container.decodeIfPresent(Details.self, forKey: .details)
+            self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -224,11 +224,11 @@ extension API.Activity {
         /// Transient deal reference for an unconfirmed trade.
         public let dealReference : String?
         /// Deal affected by an activity.
-        public let actions: [Action]
+        public let actions: [Self.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination (e.g. `GBP`).
-        public let currency: String
+        public let currency: Currency
         /// Deal direction.
         public let direction: API.Position.Direction
         /// Deal size.
@@ -238,16 +238,16 @@ extension API.Activity {
         /// Instrument price at which the activity has been "commited"
         public let level: Double?
         /// Limit level and distance (from deal price).
-        public let limit: Limit?
+        public let limit: Self.Limit?
         /// Stop level and distance (from deal price).
-        public let stop: Stop?
+        public let stop: Self.Stop?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.dealReference = try container.decodeIfPresent(String.self, forKey: .dealReference)
             self.actions = try container.decode([Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
-            self.currency = try container.decode(String.self, forKey: .currency)
+            self.currency = try container.decode(Currency.self, forKey: .currency)
             self.direction = try container.decode(API.Position.Direction.self, forKey: .direction)
             self.size = try container.decode(Double.self, forKey: .size)
             
@@ -293,7 +293,7 @@ extension API.Activity.Details {
     /// Deal affected by an activity.
     public struct Action: Decodable {
         /// Action type.
-        public let type: Kind
+        public let type: Self.Kind
         /// Affected deal identifier.
         public let dealId: String
         
@@ -323,7 +323,7 @@ extension API.Activity.Details {
         /// A stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade. Please note that guaranteed stops come at the price of an increased spread.
         public let isGuaranteed: Bool
         /// Whether it is a trailing stop or not (`nil`).
-        public let trailing: Trailing?
+        public let trailing: Self.Trailing?
         
         /// Designated initializer.
         fileprivate init(level: Double, distance: Double, isGuaranteed: Bool, trailing: (distance: Double?, step: Double?)) {
