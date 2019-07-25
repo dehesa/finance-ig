@@ -8,8 +8,8 @@ public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hasha
     /// It is used on validation.
     private static let allowedSet: CharacterSet = {
         var result = CharacterSet(arrayLiteral: ".", "_")
-        result.formUnion(CharacterSet.Framework.lowercaseANSI)
-        result.formUnion(CharacterSet.Framework.uppercaseANSI)
+        result.formUnion(CharacterSet.IG.lowercaseANSI)
+        result.formUnion(CharacterSet.IG.uppercaseANSI)
         result.formUnion(CharacterSet.decimalDigits)
         return result
     }()

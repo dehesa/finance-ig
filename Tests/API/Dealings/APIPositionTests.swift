@@ -29,7 +29,7 @@ final class APIPositionTests: APITestCase {
         let stop: API.Request.Positions.Stop = .trailing(distance: stopDistance, increment: stopIncrement)
         let scalingFactor: Double = 10000
         
-        var stored: (reference: API.Position.Reference?, identifier: API.Position.Identifier?) = (nil, nil)
+        var stored: (reference: API.Deal.Reference?, identifier: API.Deal.Identifier?) = (nil, nil)
         
         let endpoints = self.api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: .distance(limitDistance), stop: stop)
             .call(on: self.api) { (api, reference) -> SignalProducer<API.Position.Confirmation,API.Error> in
@@ -62,7 +62,7 @@ final class APIPositionTests: APITestCase {
                 XCTAssertNil(details.profit)
             }).call(on: self.api) { (api, confirmation) -> SignalProducer<API.Position,API.Error> in
                 api.positions.get(identifier: confirmation.identifier)
-            }.call(on: self.api) { (api, position) -> SignalProducer<API.Position.Reference,API.Error> in
+            }.call(on: self.api) { (api, position) -> SignalProducer<API.Deal.Reference,API.Error> in
                 api.positions.delete(matchedBy: .identifier(position.identifier), direction: direction.oppossite, order: order, strategy: strategy, size: size)
             }.call(on: self.api) { (api, reference) -> SignalProducer<API.Position.Confirmation,API.Error> in
                 api.positions.confirm(reference: reference)

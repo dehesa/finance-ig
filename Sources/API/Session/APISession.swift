@@ -200,7 +200,7 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currency: Currency
+        public let currency: IG.Currency
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -214,7 +214,7 @@ extension API {
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(Currency.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
         }
         
         private enum CodingKeys: String, CodingKey {

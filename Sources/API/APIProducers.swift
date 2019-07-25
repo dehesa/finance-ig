@@ -1,75 +1,7 @@
 import Foundation
 import ReactiveSwift
 
-// MARK: - Request types
-
-extension API.Request {
-    /// Request values that have been verified/validated.
-    internal struct ValidatedValues<T> {
-        /// An API instance that hasn't expired yet.
-        let api: API
-        /// Values that have been validated.
-        let values: T
-        
-        /// Designated initializer.
-        /// - parameter api: Instance in charge of performing the request.
-        /// - parameter values: The values that will "somehow" be added to the request.
-        init(_ api: API, validated values: T) {
-            self.api = api
-            self.values = values
-        }
-    }
-    
-    /// List of typealias representing closures which generate a specific data type.
-    internal enum Generator {
-        /// Closure receiving a valid API session and returning validated values.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - returns: The validated values.
-        typealias Validation<T> = (_ api: API) throws -> T
-        /// Closure which returns a newly created `URLRequest` and provides with it an API instance.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: A newly created `URLRequest`.
-        internal typealias Request<T> = (_ api: API, _ values: T) throws -> URLRequest
-        /// Closure which returns a bunch of query items to be used in a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Array of `URLQueryItem`s to be added to a `URLRequest`.
-        internal typealias Query<T> = (_ api: API, _ values: T) throws -> [URLQueryItem]
-        /// Closure which returns a bunch of header key-values to be used in a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Key-value pairs to be added to a `URLRequest`.
-        internal typealias Header<T> = (_ api: API, _ values: T) throws -> [API.HTTP.Header.Key:String]
-        /// Closure which returns a body to be appended to a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Tuple containing information about what type of body has been compiled and its data.
-        internal typealias Body<T>  = (_ api: API, _ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
-        /// Closure which given a request and its actual response, generates a JSON decoder (typically to decode the responses payload).
-        /// - parameter request: The URL request that returned the `response`.
-        /// - parameter response: The HTTP response received from the execution of `request`.
-        /// - returns: A JSON decoder (to typically decode the response's payload).
-        typealias Decoder = (_ request: URLRequest, _ response: HTTPURLResponse) throws -> JSONDecoder
-    }
-    
-    /// Wrapper around a `URLRequest` and the API instance that will (most probably) execute such request.
-    /// - returns: A `URLRequest` and an `API` instance.
-    internal typealias Wrapper = (api: API, request: URLRequest)
-}
-
-// MARK: - Response types
-
-extension API.Response {
-    /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
-    internal typealias Wrapper = (request: URLRequest, header: HTTPURLResponse, data: Data?)
-    /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and a data payload.
-    internal typealias DataWrapper = (request: URLRequest, header: HTTPURLResponse, data: Data)
-}
-
-// MARK: - SignalProducers
-
-extension SignalProducer where Value==API.Request.ValidatedValues<Void>, Error==API.Error {
+extension SignalProducer where Value==API.Request.Values<Void>, Error==API.Error {
     /// Initializes a `SignalProducer` that checks (when started) whether the passed API session has expired.
     /// - attention: This initializer creates a weak bond with the  API instance passed as argument. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
@@ -79,7 +11,7 @@ extension SignalProducer where Value==API.Request.ValidatedValues<Void>, Error==
                 return input.send(error: .sessionExpired)
             }
             
-            input.send(value: .init(api, validated: ()))
+            input.send(value: (api, ()))
             input.sendCompleted()
         }
     }
@@ -90,7 +22,7 @@ extension SignalProducer where Error==API.Error {
     /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
     /// - parameter validating: Closure validating some values that will pass with the signal event to the following step.
-    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where SignalProducer.Value==API.Request.ValidatedValues<T> {
+    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where SignalProducer.Value==API.Request.Values<T> {
         self.init { [weak api] (input, _) in
             guard let api = api else {
                 return input.send(error: .sessionExpired)
@@ -105,7 +37,7 @@ extension SignalProducer where Error==API.Error {
                 return input.send(error: .invalidRequest(underlyingError: error, message: "The request validation failed."))
             }
             
-            input.send(value: .init(api, validated: values))
+            input.send(value: (api, values))
             input.sendCompleted()
         }
     }
@@ -114,7 +46,7 @@ extension SignalProducer where Error==API.Error {
     /// - parameter requestGenerator: The callback actually creating the `URLRequest`.
     /// - returns: New `SignalProducer` returning the request and the API instance.
     /// - seealso: URLRequest
-    internal func request<T>(_ requestGenerator: @escaping API.Request.Generator.Request<T>) -> SignalProducer<API.Request.Wrapper,API.Error> where Value==API.Request.ValidatedValues<T> {
+    internal func request<T>(_ requestGenerator: @escaping API.Request.Generator.Request<T>) -> SignalProducer<API.Request.Wrapper,API.Error> where Value==API.Request.Values<T> {
         return self.attemptMap { (validated) -> Result<API.Request.Wrapper,API.Error> in
             let request: URLRequest
             do {
@@ -142,7 +74,7 @@ extension SignalProducer where Error==API.Error {
     internal func request<T>(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool,
                              queries queryGenerator: API.Request.Generator.Query<T>? = nil,
                              headers headerGenerator: API.Request.Generator.Header<T>? = nil,
-                             body bodyGenerator: API.Request.Generator.Body<T>? = nil) -> SignalProducer<API.Request.Wrapper,API.Error>  where Value==API.Request.ValidatedValues<T> {
+                             body bodyGenerator: API.Request.Generator.Body<T>? = nil) -> SignalProducer<API.Request.Wrapper,API.Error>  where Value==API.Request.Values<T> {
         return self.attemptMap { (validated) -> Result<API.Request.Wrapper,API.Error> in
             // Generate the absolute URL.
             var url = validated.api.rootURL.appendingPathComponent(relativeURL)

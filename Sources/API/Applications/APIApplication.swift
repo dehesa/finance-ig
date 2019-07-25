@@ -96,14 +96,14 @@ extension API {
         /// Application creation date (referencing UTC dates, although no time data is stored).
         public let creationDate: Date
         /// What the platform allows the application or account to do (e.g. requests per minute).
-        public let allowance: Allowance
+        public let allowance: Self.Allowance
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.name = try container.decode(String.self, forKey: .name)
             self.apiKey = try container.decode(String.self, forKey: .apiKey)
             self.status = try container.decode(API.Application.Status.self, forKey: .status)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.DateFormatter.yearMonthDay)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.TimeFormatter.yearMonthDay)
             self.allowance = try Allowance(from: decoder)
         }
         

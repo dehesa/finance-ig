@@ -21,10 +21,10 @@ extension API.Request.Positions {
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market. This variable will be set to `true` if the limit and/or the stop are set.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade).
-    public func create(epic: Epic, expiry: API.Expiry = .none, currency: Currency,
+    public func create(epic: Epic, expiry: API.Expiry = .none, currency: IG.Currency,
                        direction: API.Position.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy,
                        size: Double, limit: Self.Limit?, stop: Self.Stop?,
-                       forceOpen: Bool = true, reference: API.Position.Reference? = nil) -> SignalProducer<API.Position.Reference,API.Error> {
+                       forceOpen: Bool = true, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "positions/otc", version: 2, credentials: true, body: { (_,_) in
                 let payload = Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
@@ -45,7 +45,7 @@ extension API.Request.Positions {
     /// - parameter limit: .Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: API.Position.Identifier, limit: Double?, stop: API.Position.Stop?) -> SignalProducer<API.Position.Reference,API.Error> {
+    public func update(identifier: API.Deal.Identifier, limit: Double?, stop: API.Position.Stop?) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)  { (_) -> Self.PayloadUpdate in
                 if let stop = stop {
                     if case .position(_, let risk) = stop, case .limited(_) = risk {
@@ -73,7 +73,7 @@ extension API.Request.Positions {
     /// - parameter request: A filter to match the positions to be deleted.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func delete(matchedBy identification: Self.Identification, direction: API.Position.Direction,
-                       order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Double) -> SignalProducer<API.Position.Reference,API.Error> {
+                       order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Double) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "positions/otc", version: 1, credentials: true, headers: { (_,_) in
                 [._method: API.HTTP.Method.delete.rawValue]
@@ -96,7 +96,7 @@ extension API.Request.Positions {
     private struct PayloadCreation: Encodable {
         let epic: Epic
         let expiry: API.Expiry
-        let currency: Currency
+        let currency: IG.Currency
         let direction: API.Position.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
@@ -104,7 +104,7 @@ extension API.Request.Positions {
         let limit: API.Request.Positions.Limit?
         let stop: API.Request.Positions.Stop?
         let forceOpen: Bool
-        let reference: API.Position.Reference?
+        let reference: API.Deal.Reference?
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: Self.CodingKeys.self)
@@ -142,19 +142,19 @@ extension API.Request.Positions {
                 case .position(let level, let isGuaranteed):
                     forceOpen = true
                     try container.encode(level, forKey: .stopLevel)
-                    try container.encode(isGuaranteed, forKey: .isGuaranteedStop)
+                    try container.encode(isGuaranteed, forKey: .isStopGuaranteed)
                 case .distance(let distance, let isGuaranteed):
                     forceOpen = true
                     try container.encode(distance, forKey: .stopDistance)
-                    try container.encode(isGuaranteed, forKey: .isGuaranteedStop)
+                    try container.encode(isGuaranteed, forKey: .isStopGuaranteed)
                 case .trailing(let distance, let increment):
-                    try container.encode(false, forKey: .isGuaranteedStop)
+                    try container.encode(false, forKey: .isStopGuaranteed)
                     try container.encode(true, forKey: .isTrailingStop)
                     try container.encode(distance, forKey: .stopDistance)
                     try container.encode(increment, forKey: .trailingStopIncrement)
                 }
             } else {
-                try container.encode(false, forKey: .isGuaranteedStop)
+                try container.encode(false, forKey: .isStopGuaranteed)
             }
             
             try container.encode(forceOpen, forKey: .forceOpen)
@@ -169,7 +169,7 @@ extension API.Request.Positions {
             case fillStrategy = "timeInForce"
             case size
             case limitLevel, limitDistance
-            case stopLevel, stopDistance, isGuaranteedStop = "guaranteedStop"
+            case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
             case isTrailingStop = "trailingStop", trailingStopIncrement
             case forceOpen
             case reference = "dealReference"
@@ -293,7 +293,7 @@ extension API.Request.Positions {
     /// Identification mechanism at deletion time.
     public enum Identification {
         /// Permanent deal identifier for a confirmed trade.
-        case identifier(API.Position.Identifier)
+        case identifier(API.Deal.Identifier)
         /// Instrument epic identifier.
         case epic(Epic, expiry: API.Expiry)
     }
@@ -314,6 +314,6 @@ extension API.Position.Order {
 
 extension API.Request.Positions {
     private struct WrapperReference: Decodable {
-        let dealReference: API.Position.Reference
+        let dealReference: API.Deal.Reference
     }
 }

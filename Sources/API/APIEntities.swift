@@ -1,6 +1,117 @@
 import Foundation
 
 extension API {
+    /// Domain namespace retaining anything related to API requests.
+    public enum Request {}
+    /// Domain namespace retaining anything related to API responses.
+    public enum Response {}
+    /// Namespace for commonly used value/class types related to deals.
+    public enum Deal {}
+}
+
+extension API.Deal {
+    /// Position's permanent identifier.
+    public struct Identifier: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+        public let rawValue: String
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError("The deal identifier couldn't be identified or is not in the correct format.") }
+            self.rawValue = value
+        }
+        
+        public init?(rawValue: String) {
+            guard Self.validate(rawValue) else { return nil }
+            self.rawValue = rawValue
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            guard Self.validate(rawValue) else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
+            }
+            self.rawValue = rawValue
+        }
+        
+        public var description: String {
+            return self.rawValue
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(self.rawValue)
+        }
+        
+        private static func validate(_ value: String) -> Bool {
+            return (1...30).contains(value.count)
+        }
+    }
+    
+    /// Transient deal identifier (for an unconfirmed trade).
+    public struct Reference: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+        public let rawValue: String
+        /// The allowed character set.
+        private static let allowedSet: CharacterSet = {
+            var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
+            result.formUnion(CharacterSet.IG.lowercaseANSI)
+            result.formUnion(CharacterSet.IG.uppercaseANSI)
+            result.formUnion(CharacterSet.decimalDigits)
+            return result
+        }()
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError("The deal reference couldn't be identified or is not in the correct format.") }
+            self.rawValue = value
+        }
+        
+        public init?(rawValue: String) {
+            guard Self.validate(rawValue) else { return nil }
+            self.rawValue = rawValue
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            guard Self.validate(rawValue) else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
+            }
+            self.rawValue = rawValue
+        }
+        
+        public var description: String {
+            return self.rawValue
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(self.rawValue)
+        }
+        
+        private static func validate(_ value: String) -> Bool {
+            let allowedRange = 1...30
+            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        }
+    }
+    
+    /// Profit value and currency.
+    public struct ProfitLoss: CustomStringConvertible {
+        /// The actual profit value (it can be negative).
+        public let value: Double
+        /// The profit currency.
+        public let currency: IG.Currency
+        
+        internal init(value: Double, currency: IG.Currency) {
+            self.value = value
+            self.currency = currency
+        }
+        
+        public var description: String {
+            return "\(self.currency)\(self.value)"
+        }
+    }
+}
+
+extension API {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
@@ -31,14 +142,14 @@ extension API {
             case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
                 self = .dailyFunded
             default:
-                if let date = API.DateFormatter.dayMonthYear.date(from: string) {
+                if let date = API.TimeFormatter.dayMonthYear.date(from: string) {
                     self = .forward(date)
-                } else if let date = API.DateFormatter.monthYear.date(from: string) {
+                } else if let date = API.TimeFormatter.monthYear.date(from: string) {
                     self = .forward(date.lastDayOfMonth)
-                } else if let date = API.DateFormatter.iso8601NoTimezone.date(from: string) {
+                } else if let date = API.TimeFormatter.iso8601NoTimezone.date(from: string) {
                     self = .forward(date)
                 } else {
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: API.DateFormatter.dayMonthYear.parseErrorLine(date: string))
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: API.TimeFormatter.dayMonthYear.parseErrorLine(date: string))
                 }
             }
         }
@@ -51,7 +162,7 @@ extension API {
             case .dailyFunded:
                 try container.encode(Self.CodingKeys.dfb.rawValue)
             case .forward(let date):
-                let formatter = (date.isLastDayOfMonth) ? API.DateFormatter.monthYear : API.DateFormatter.dayMonthYear
+                let formatter = (date.isLastDayOfMonth) ? API.TimeFormatter.monthYear : API.TimeFormatter.dayMonthYear
                 try container.encode(formatter.string(from: date))
             }
         }
@@ -217,7 +328,7 @@ extension API.Node.Market {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.DateFormatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.TimeFormatter.time)
             
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
                 throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
@@ -247,91 +358,7 @@ extension API.Node.Market {
     }
 }
 
-
 extension API.Position {
-    /// Position's permanent identifier.
-    public struct Identifier: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
-        public let rawValue: String
-        
-        public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The deal identifier couldn't be identified or is not in the correct format.") }
-            self.rawValue = value
-        }
-        
-        public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
-            self.rawValue = rawValue
-        }
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
-            }
-            self.rawValue = rawValue
-        }
-        
-        public var description: String {
-            return self.rawValue
-        }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            try container.encode(self.rawValue)
-        }
-        
-        private static func validate(_ value: String) -> Bool {
-            return (1...30).contains(value.count)
-        }
-    }
-    
-    /// Transient deal identifier (for an unconfirmed trade).
-    public struct Reference: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
-        public let rawValue: String
-        /// The allowed character set.
-        private static let allowedSet: CharacterSet = {
-            var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
-            result.formUnion(CharacterSet.Framework.lowercaseANSI)
-            result.formUnion(CharacterSet.Framework.uppercaseANSI)
-            result.formUnion(CharacterSet.decimalDigits)
-            return result
-        }()
-        
-        public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The deal reference couldn't be identified or is not in the correct format.") }
-            self.rawValue = value
-        }
-        
-        public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
-            self.rawValue = rawValue
-        }
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
-            }
-            self.rawValue = rawValue
-        }
-        
-        public var description: String {
-            return self.rawValue
-        }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            try container.encode(self.rawValue)
-        }
-        
-        private static func validate(_ value: String) -> Bool {
-            let allowedRange = 1...30
-            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
-        }
-    }
-    
     /// Position status.
     public enum Status: Decodable {
         case open
@@ -363,7 +390,7 @@ extension API.Position {
     }
     
     /// Deal direction.
-    public enum Direction: String, Codable {
+    public enum Direction: String, Equatable, Codable {
         case buy = "BUY"
         case sell = "SELL"
         

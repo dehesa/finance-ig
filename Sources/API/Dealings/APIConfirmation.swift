@@ -12,7 +12,7 @@ extension API.Request.Positions {
     /// - **Confirmation**. A deal identifier is received by subscribing to the `TRADES:CONFIRMS` streaming messages (recommended), or by polling this endpoint (`confirmTransientPositions`).
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay. Also not the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: API.Position.Reference) -> SignalProducer<API.Position.Confirmation,API.Error> {
+    public func confirm(reference: API.Deal.Reference) -> SignalProducer<API.Position.Confirmation,API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -29,9 +29,9 @@ extension API.Position {
     /// Confirmation data returned just after opening a position or a working order.
     public struct Confirmation: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: API.Position.Identifier
+        public let identifier: API.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
-        public let reference: API.Position.Reference
+        public let reference: API.Deal.Reference
         /// Date the position was created.
         public let date: Date
         /// Instrument epic identifier.
@@ -43,9 +43,9 @@ extension API.Position {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.identifier = try container.decode(API.Position.Identifier.self, forKey: .identifier)
-            self.reference = try container.decode(API.Position.Reference.self, forKey: .reference)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.DateFormatter.iso8601Miliseconds)
+            self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
+            self.reference = try container.decode(API.Deal.Reference.self, forKey: .reference)
+            self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601Miliseconds)
             
             self.epic = try container.decode(Epic.self, forKey: .epic)
             self.expiry = try container.decode(API.Expiry.self, forKey: .expiry)
@@ -108,7 +108,7 @@ extension API.Position.Confirmation {
         /// The level at which the user doesn't want to incur more losses.
         public let stop: API.Position.Stop?
         /// Profit (value and currency).
-        public let profit: API.Position.Confirmation.Profit?
+        public let profit: API.Deal.ProfitLoss?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -177,23 +177,6 @@ extension API.Position.Confirmation {
         private enum CodingKeys: String, CodingKey {
             case identifier = "dealId"
             case status
-        }
-    }
-    
-    /// Profit value and currency.
-    public struct Profit: CustomStringConvertible {
-        /// The actual profit value (it can be negative).
-        public let value: Double
-        /// The profit currency.
-        public let currency: Currency
-        
-        fileprivate init(value: Double, currency: Currency) {
-            self.value = value
-            self.currency = currency
-        }
-        
-        public var description: String {
-            return "\(self.currency)\(self.value)"
         }
     }
 

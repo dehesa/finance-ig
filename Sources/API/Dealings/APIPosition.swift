@@ -21,7 +21,7 @@ extension API.Request.Positions {
     
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
-    public func get(identifier: API.Position.Identifier) -> SignalProducer<API.Position,API.Error> {
+    public func get(identifier: API.Deal.Identifier) -> SignalProducer<API.Position,API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json)
@@ -58,14 +58,14 @@ extension API {
     /// Open position data.
     public struct Position: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: Self.Identifier
+        public let identifier: API.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
-        public let reference: Self.Reference
+        public let reference: API.Deal.Reference
         /// Date the position was created.
         public let date: Date
         
         /// Position currency ISO code.
-        public let currency: Currency
+        public let currency: IG.Currency
         /// Size of the contract.
         public let contractSize: Double
         /// Deal size.
@@ -87,11 +87,11 @@ extension API {
             self.market = try container.decode(API.Node.Market.self, forKey: .market)
             
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
-            self.identifier = try nestedContainer.decode(Self.Identifier.self, forKey: .identifier)
-            self.reference = try nestedContainer.decode(Self.Reference.self, forKey: .reference)
-            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.DateFormatter.iso8601NoTimezone)
+            self.identifier = try nestedContainer.decode(API.Deal.Identifier.self, forKey: .identifier)
+            self.reference = try nestedContainer.decode(API.Deal.Reference.self, forKey: .reference)
+            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
             
-            self.currency = try nestedContainer.decode(Currency.self, forKey: .currency)
+            self.currency = try nestedContainer.decode(IG.Currency.self, forKey: .currency)
             self.contractSize = try nestedContainer.decode(Double.self, forKey: .contractSize)
             self.size = try nestedContainer.decode(Double.self, forKey: .size)
             
@@ -104,10 +104,10 @@ extension API {
                 return
             }
             
-            let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isGuaranteedStop)
+            let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isStopGuaranteed)
             let trailingDistance = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingDistance)
-            let trailingStep = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingStep)
-            let isTrailing = trailingDistance != nil || trailingStep != nil
+            let trailingIncrement = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingIncrement)
+            let isTrailing = trailingDistance != nil || trailingIncrement != nil
             
             switch (isGuaranteed, isTrailing) {
             case (false, false):
@@ -119,13 +119,13 @@ extension API {
                 guard let distance = trailingDistance else {
                     throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: nestedContainer, debugDescription: "The distance for trailing stops cannot be found.")
                 }
-                guard let step = trailingStep else {
-                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingStep, in: nestedContainer, debugDescription: "The increment for trailing stops cannot be found.")
+                guard let increment = trailingIncrement else {
+                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingIncrement, in: nestedContainer, debugDescription: "The increment for trailing stops cannot be found.")
                 }
                 
-                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: step))
+                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: increment))
             case (true, true):
-                throw DecodingError.dataCorruptedError(forKey: .isGuaranteedStop, in: nestedContainer, debugDescription: "A guaranteed stop cannot be a trailing stop.")
+                throw DecodingError.dataCorruptedError(forKey: .isStopGuaranteed, in: nestedContainer, debugDescription: "A guaranteed stop cannot be a trailing stop.")
             }
         }
         
@@ -140,10 +140,10 @@ extension API {
                 case currency, contractSize, size
                 case level, direction
                 case limitLevel, stopLevel
-                case isGuaranteedStop = "controlledRisk"
+                case isStopGuaranteed = "controlledRisk"
                 case limitedRiskPremium
                 case stopTrailingDistance = "trailingStopDistance"
-                case stopTrailingStep = "trailingStep"
+                case stopTrailingIncrement = "trailingStep"
             }
         }
     }

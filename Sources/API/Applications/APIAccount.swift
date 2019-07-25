@@ -103,7 +103,7 @@ extension API {
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
             self.preferred = try container.decode(Bool.self, forKey: .preferred)
-            self.currency = try container.decode(Currency.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
             let transferIn = try container.decode(Bool.self, forKey: .transfersIn)
             let transferOut = try container.decode(Bool.self, forKey: .transfersOut)
             self.transfersAllowed = (transferIn, transferOut)
