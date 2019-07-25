@@ -1,6 +1,22 @@
 import ReactiveSwift
 import Foundation
 
+extension API.Request.WorkingOrders {
+    
+    // MARK: POST /workingorders/otc
+    
+    
+    
+    // MARK: PUT /workingorders/otc/{dealId}
+    
+    
+    
+    // MARK: DELETE /workingorders/otc/{dealId}
+    
+    
+    
+}
+
 // MARK: - Supporting Entities
 
 //extension API {

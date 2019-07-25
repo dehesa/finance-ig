@@ -1,7 +1,7 @@
 import Foundation
 
 /// One of the currencies as described in ISO 4217.
-public struct Currency: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
+public struct Currency: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
     public let rawValue: String
     
     public init(stringLiteral value: String) {
@@ -33,7 +33,7 @@ public struct Currency: RawRepresentable, Codable, ExpressibleByStringLiteral, H
     }
     
     private static func validate(_ value: String) -> Bool {
-        let characterSet = CharacterSet.Framework.uppercaseANSI
+        let characterSet = CharacterSet.IG.uppercaseANSI
         return value.count == 3 && value.unicodeScalars.allSatisfy { characterSet.contains($0) }
     }
 }

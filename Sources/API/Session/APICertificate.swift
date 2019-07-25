@@ -147,7 +147,7 @@ extension API.Session.Certificate {
             // Default token duration (in seconds): 6 hours
             let timeInterval: TimeInterval = 6 * 60 * 60
             if let dateString = headerFields[API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = API.DateFormatter.humanReadableLong.date(from: dateString) {
+               let date = API.TimeFormatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(timeInterval)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: timeInterval)

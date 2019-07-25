@@ -11,12 +11,12 @@ extension API.Request.Transactions {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received (`0` means paging is disabled).
     public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
-        return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
+        return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
             
-                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                let formatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
                 formatter.timeZone = timezone
                 return formatter
             }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
@@ -147,8 +147,6 @@ extension API {
         public let description: String
         /// Instrument expiry period.
         public let period: API.Expiry
-        /// Internation currency code.
-        public let currency: String
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
         public let size: Double?
         /// Open position level/price and date.
@@ -156,7 +154,7 @@ extension API {
         /// Close position level/price and date.
         public let close: (date: Date, level: Double?)
         /// Realised profit and loss is the amount of money you have made or lost on a bet once the bet has been closed. Realised profit or loss will add or subtract from your cash balance.
-        public let profitLoss: String
+        public let profitLoss: API.Deal.ProfitLoss
         /// Boolean indicating whether this was a cash transaction.
         public let isCash: Bool
         
@@ -168,7 +166,6 @@ extension API {
             
             self.description = try container.decode(String.self, forKey: .description)
             self.period = try container.decodeIfPresent(API.Expiry.self, forKey: .period) ?? .none
-            self.currency = try container.decode(String.self, forKey: .currency)
             
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {
@@ -179,7 +176,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string \"\(sizeString)\" couldn't be parsed into a number")
             }
             
-            let openDate = try container.decode(Date.self, forKey: .openDate, with: API.DateFormatter.iso8601NoTimezone)
+            let openDate = try container.decode(Date.self, forKey: .openDate, with: API.TimeFormatter.iso8601NoTimezone)
             let openString = try container.decode(String.self, forKey: .openLevel)
             if openString == "-" {
                 self.open = (openDate, nil)
@@ -189,8 +186,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level \"\(openString)\" couldn't be parsed into a number.")
             }
             
-            
-            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: API.DateFormatter.iso8601NoTimezone)
+            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: API.TimeFormatter.iso8601NoTimezone)
             let closeString = try container.decode(String.self, forKey: .closeLevel)
             if let closeLevel = Double(closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
@@ -198,7 +194,15 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level \"\(closeString)\" couldn't be parsed into a number.")
             }
             
-            self.profitLoss = try container.decode(String.self, forKey: .profitLoss)
+            let currencyInitial = try container.decode(String.self, forKey: .currency)
+            let profitLoss = try container.decode(String.self, forKey: .profitLoss)
+            guard profitLoss.hasPrefix(currencyInitial),
+                  let valuePL = API.DigitFormatter.profitLoss.number(from: String(profitLoss[currencyInitial.endIndex...])) else {
+                throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string \"\(profitLoss)\" cannot be process with currency \"\(currencyInitial)\"")
+            }
+            let currency = try Self.map(currencyInitial: currencyInitial, codingPath: container.codingPath)
+            self.profitLoss = .init(value: valuePL.doubleValue, currency: currency)
+            
             self.isCash = try container.decode(Bool.self, forKey: .isCash)
         }
         
@@ -206,12 +210,12 @@ extension API {
             case type = "transactionType"
             case reference
             case description = "instrumentName"
-            case period, currency, size
+            case period, size
             case openDate = "openDateUtc"
             case openLevel
             case closeDate = "dateUtc"
             case closeLevel = "closeLevel"
-            case profitLoss = "profitAndLoss"
+            case profitLoss = "profitAndLoss", currency
             case isCash = "cashTransaction"
         }
     }
@@ -223,5 +227,16 @@ extension API.Transaction {
         case deal = "DEAL"
         case deposit = "DEPO"
         case withdrawal = "WITH"
+    }
+    
+    /// Transform the currency initial given into  a proper ISO currency.
+    /// - todo: Figure out other currencies. Currently there is only €.
+    private static func map(currencyInitial currency: String, codingPath: [CodingKey]) throws -> IG.Currency {
+        switch currency {
+        case "E": return "EUR"
+        default:
+            let context = DecodingError.Context(codingPath: codingPath, debugDescription: "The currency \"\(currency)\" for this transaction couldn't be identified.")
+            throw DecodingError.dataCorrupted(context)
+        }
     }
 }

@@ -29,8 +29,10 @@ public final class API {
     public var markets: API.Request.Markets { return .init(api: self) }
     /// It holds functionality related to watchlists.
     public var watchlists: API.Request.Watchlists { return .init(api: self) }
-    /// It holds functionality related to watchlists.
+    /// It holds functionality related to positions.
     public var positions: API.Request.Positions { return .init(api: self) }
+    /// It holds functionality related to working orders.
+    public var workingOrders: API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
@@ -63,93 +65,19 @@ extension API {
     /// The root address for the IG endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     
-    /// Domain namespace retaining anything related to API requests.
-    public enum Request {}
-    /// Domain namespace retaining anything related to API responses.
-    public enum Response {}
-    
     /// Default configuration for the underlying URLSession
     public static var defaultSessionConfigurations: URLSessionConfiguration {
-        return URLSessionConfiguration.ephemeral.set {
-            $0.networkServiceType = .default
-            $0.allowsCellularAccess = true
-            $0.httpCookieAcceptPolicy = .never
-            $0.httpCookieStorage = nil
-            $0.httpShouldSetCookies = false
-            $0.httpShouldUsePipelining = true
-            $0.urlCache = nil
-            $0.requestCachePolicy = .reloadIgnoringLocalCacheData
-            $0.waitsForConnectivity = false
-            $0.tlsMinimumSupportedProtocol = .tlsProtocol12
-        }
-    }
-}
-
-extension API {
-    /// HTTP related constants.
-    internal enum HTTP {
-        /// The HTTP method supported by this API
-        /// - seealso: [w3.org website specifying the RFC2616 protocol](http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html)
-        enum Method: String {
-            /// POST method ask the resource at the given URI to do something with the provided entity. Usually, it creates a new entity.
-            case post = "POST"
-            /// GET method is used to retrieve information.
-            case get = "GET"
-            /// PUT method stores an entity at a URI. It is used to create a new entity or update an existing one.
-            case put = "PUT"
-            /// DELETE method request a resource to be removed.
-            case delete = "DELETE"
-        }
-        
-        /// HTTP header constants used by IG endpoints.
-        enum Header {
-            /// HTTP header keys used throughout IG endpoints.
-            enum Key: String {
-                /// Header key pointing to an IG account identifier.
-                case account = "IG-ACCOUNT-ID"
-                /// Header key pointing to an API key identifying an application/developer.
-                case apiKey = "X-IG-API-KEY"
-                /// OAuth header key.
-                case authorization = "Authorization"
-                /// Certificate header key.
-                case clientSessionToken = "CST"
-                /// Header key pointing at the date of package generation.
-                case date = "Date"
-                /// The platform specific request identifier.
-                case requestId = "X-REQUEST-ID"
-                /// They type of content in the package.
-                case requestType = "Content-Type"
-                /// The type of content is expected in the response package.
-                case responseType = "Accept"
-                /// Platform specific security key.
-                case securityToken = "X-SECURITY-TOKEN"
-                /// Platform specific versioning system for API endpoints.
-                case version = "Version"
-                /// Specifically used in the platform to change the type of HTTP method.
-                case _method = "_method"
-            }
-            
-            /// HTTP header values used throughout IG endpoints.
-            enum Value {
-                /// The type of content types supported by this API
-                enum ContentType: String {
-                    /// A JSON content type is expected.
-                    case json = "application/json; charset=UTF-8"
-                }
-            }
-        }
-    }
-    
-    /// Namespace for all JSON related constants (pertaining the API).
-    internal enum JSON {
-        /// Namesapce for JSON decoding keys.
-        enum DecoderKey {
-            /// Key for JSON decoders under which the URL response will be stored.
-            static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
-            /// Key for JSON decoders under which the response date is stored.
-            static let responseDate = CodingUserInfoKey(rawValue: "urlResponseDate")!
-            /// Key for JSON decoders under which a date formatter will be stored.
-            static let dateFormatter = CodingUserInfoKey(rawValue: "dateFormatter")!
-        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.networkServiceType = .default
+        configuration.allowsCellularAccess = true
+        configuration.httpCookieAcceptPolicy = .never
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.httpShouldUsePipelining = true
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.waitsForConnectivity = false
+        configuration.tlsMinimumSupportedProtocol = .tlsProtocol12
+        return configuration
     }
 }

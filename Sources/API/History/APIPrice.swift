@@ -13,12 +13,12 @@ extension API.Request.Price {
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
     public func get(epic: Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
-        return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: Foundation.DateFormatter) in
+        return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: DateFormatter) in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
             
-                let formatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+                let formatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
                 formatter.timeZone = timezone
             
                 guard let page = page else {
@@ -50,7 +50,7 @@ extension API.Request.Price {
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON { (request, response) -> JSONDecoder in
                         guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                              let date = API.DateFormatter.humanReadableLong.date(from: dateString) else {
+                              let date = API.TimeFormatter.humanReadableLong.date(from: dateString) else {
                             throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
                         }
                         
@@ -187,7 +187,7 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.DateFormatter.iso8601NoTimezone)
+            self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)

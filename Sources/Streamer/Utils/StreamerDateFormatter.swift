@@ -4,7 +4,7 @@ extension Streamer {
     /// Reusable streamer date formatter utility instances.
     internal enum DateFormatter {
         /// Time formatter (e.g. 17:30:29).
-        static var time: Foundation.DateFormatter { return API.DateFormatter.time }
+        static var time: DateFormatter { return API.DateFormatter.time }
     }
     
     /// Default codecs (encoders/decoders) for requests/responses.

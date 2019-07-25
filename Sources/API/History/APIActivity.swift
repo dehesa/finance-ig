@@ -16,9 +16,9 @@ extension API.Request.Activity {
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
-        let dateFormatter: Foundation.DateFormatter = API.DateFormatter.deepCopy(API.DateFormatter.iso8601NoTimezone)
+        let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
         
-        return SignalProducer(api: self.api) { (api) -> Foundation.DateFormatter in
+        return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
                 }
@@ -137,10 +137,10 @@ extension API.Request.Activity {
 extension API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
+        /// Deal identifier.
+        public let dealIdentifier: API.Deal.Identifier
         /// Activity type.
         public let type: Self.Kind
-        /// Deal identifier.
-        public let dealId: String
         /// Action status.
         public let status: Self.Status
         /// The date of the activity item.
@@ -150,32 +150,34 @@ extension API {
         /// Instrument epic identifier.
         public let epic: Epic
         /// The period of the activity item.
-        public let period: API.Expiry
+        public let expiry: API.Expiry
         /// Activity description.
-        public let description: String
+        public let title: String
         /// Activity details.
         public let details: Self.Details?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? Foundation.DateFormatter else {
+            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             }
             
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
-            self.dealId = try container.decode(String.self, forKey: .dealId)
+            self.dealIdentifier = try container.decode(API.Deal.Identifier.self, forKey: .dealId)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.status = try container.decode(Self.Status.self, forKey: .status)
             self.channel = try container.decode(Self.Channel.self, forKey: .channel)
-            self.description = try container.decode(String.self, forKey: .description)
+            self.title = try container.decode(String.self, forKey: .title)
             self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.period = try container.decodeIfPresent(API.Expiry.self, forKey: .period) ?? .none
+            self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case date, dealId, type, status, channel, epic, period, description, details
+            case dealId, type, status, date, channel
+            case epic, expiry = "period"
+            case title = "description", details
         }
     }
 }
@@ -222,13 +224,13 @@ extension API.Activity {
     /// Further details of the targeted activity.
     public struct Details: Decodable {
         /// Transient deal reference for an unconfirmed trade.
-        public let dealReference : String?
+        public let dealReference : API.Deal.Reference?
         /// Deal affected by an activity.
         public let actions: [Self.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination (e.g. `GBP`).
-        public let currency: Currency
+        public let currency: IG.Currency
         /// Deal direction.
         public let direction: API.Position.Direction
         /// Deal size.
@@ -237,22 +239,22 @@ extension API.Activity {
         public let goodTillDate: Date?
         /// Instrument price at which the activity has been "commited"
         public let level: Double?
-        /// Limit level and distance (from deal price).
-        public let limit: Self.Limit?
-        /// Stop level and distance (from deal price).
-        public let stop: Self.Stop?
+        /// Limit level (from deal price).
+        public let limit: Double?
+        /// Stop for the targeted deal
+        public let stop: API.Position.Stop?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.dealReference = try container.decodeIfPresent(String.self, forKey: .dealReference)
+            self.dealReference = try container.decodeIfPresent(API.Deal.Reference.self, forKey: .dealReference)
             self.actions = try container.decode([Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
-            self.currency = try container.decode(Currency.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
             self.direction = try container.decode(API.Position.Direction.self, forKey: .direction)
             self.size = try container.decode(Double.self, forKey: .size)
             
             if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {
-                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? Foundation.DateFormatter else {
+                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
                     throw DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
                 }
                 self.goodTillDate = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
@@ -262,29 +264,45 @@ extension API.Activity {
             
             self.level = try container.decodeIfPresent(Double.self, forKey: .level)
             
-            if let level = try container.decodeIfPresent(Double.self, forKey: .limitLevel),
-               let distance = try container.decodeIfPresent(Double.self, forKey: .limitDistance) {
-                self.limit = .init(level: level, distance: distance)
-            } else {
-                self.limit = nil
+            // "limitDistance" is being ignored, since it can be calculated at any point.
+            self.limit = try container.decodeIfPresent(Double.self, forKey: .limitLevel)
+            
+            // "stopDistance" is being ignored, since it can be calculated at any point.
+            guard let stopLevel = try container.decodeIfPresent(Double.self, forKey: .stopLevel) else {
+                self.stop = nil
+                return
             }
             
-            if let level = try container.decodeIfPresent(Double.self, forKey: .stopLevel),
-               let distance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
-                let guaranteed = try container.decode(Bool.self, forKey: .guaranteedStop)
-                let td = try container.decodeIfPresent(Double.self, forKey: .trailingStopDistance)
-                let ts = try container.decodeIfPresent(Double.self, forKey: .trailingStep)
-                self.stop = .init(level: level, distance: distance, isGuaranteed: guaranteed, trailing: (td, ts))
-            } else {
-                self.stop = nil
+            let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
+            let trailingDistance = try container.decodeIfPresent(Double.self, forKey: .stopTrailingDistance)
+            let trailingIncrement = try container.decodeIfPresent(Double.self, forKey: .stopTrailingIncrement)
+            let isTrailing = trailingDistance != nil || trailingIncrement != nil
+            
+            switch (isGuaranteed, isTrailing) {
+            case (false, false):
+                self.stop = .position(level: stopLevel, risk: .exposed)
+            case (true, false):
+                self.stop = .position(level: stopLevel, risk: .limited(premium: nil))
+            case (false, true):
+                guard let distance = trailingDistance else {
+                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: container, debugDescription: "The distance for trailing stops cannot be found.")
+                }
+                guard let increment = trailingIncrement else {
+                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingIncrement, in: container, debugDescription: "The increment for trailing stops cannot be found.")
+                }
+                
+                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: increment))
+            case (true, true):
+                throw DecodingError.dataCorruptedError(forKey: .isStopGuaranteed, in: container, debugDescription: "A guaranteed stop cannot be a trailing stop.")
             }
         }
         
         private enum CodingKeys: String, CodingKey {
-            case actions, currency, dealReference, direction, goodTillDate
-            case guaranteedStop, level, limitDistance, limitLevel
-            case marketName, size, stopDistance, stopLevel
-            case trailingStep, trailingStopDistance
+            case dealReference, actions, currency, direction, goodTillDate
+            case marketName, size
+            case level, limitLevel, limitDistance
+            case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
+            case stopTrailingDistance = "trailingStopDistance", stopTrailingIncrement = "trailingStep"
         }
     }
 }
@@ -295,83 +313,41 @@ extension API.Activity.Details {
         /// Action type.
         public let type: Self.Kind
         /// Affected deal identifier.
-        public let dealId: String
+        public let dealIdentifier: API.Deal.Identifier
         
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
         
         private enum CodingKeys: String, CodingKey {
             case type = "actionType"
-            case dealId = "affectedDealId"
-        }
-    }
-    
-    /// Indicates the limit level and the distance from the deal price.
-    public struct Limit {
-        /// The absolute price level of the limit.
-        public let level: Double
-        /// The price distance from the deal level.
-        public let distance: Double
-    }
-    
-    /// Indicates the limit level and the distance from the deal price.
-    public struct Stop {
-        /// The absolute price level of the limit.
-        public let level: Double
-        /// The price distance from the deal level.
-        public let distance: Double
-        /// A stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade. Please note that guaranteed stops come at the price of an increased spread.
-        public let isGuaranteed: Bool
-        /// Whether it is a trailing stop or not (`nil`).
-        public let trailing: Self.Trailing?
-        
-        /// Designated initializer.
-        fileprivate init(level: Double, distance: Double, isGuaranteed: Bool, trailing: (distance: Double?, step: Double?)) {
-            self.level = level
-            self.distance = distance
-            self.isGuaranteed = isGuaranteed
-            if let td = trailing.distance, let ts = trailing.step {
-                self.trailing = .init(distance: td, step: ts)
-            } else {
-                self.trailing = nil
-            }
+            case dealIdentifier = "affectedDealId"
         }
         
-        /// A type of stop order that moves automatically when the market moves in your favour, locking in gains while your position is open.
-        public struct Trailing {
-            /// Trailing stop distance.
-            public let distance: Double
-            /// Trailing step size.
-            public let step: Double
+        /// Type of action.
+        public enum Kind: String, Decodable {
+            case limitOrderOpened = "LIMIT_ORDER_OPENED"
+            case limitOrderFilled = "LIMIT_ORDER_FILLED"
+            case limitOrderAmended = "LIMIT_ORDER_AMENDED"
+            case limitOrderRolled = "LIMIT_ORDER_ROLLED"
+            case limitOrderDeleted = "LIMIT_ORDER_DELETED"
+            
+            case positionOpenend = "POSITION_OPENED"
+            case positionRolled = "POSITION_ROLLED"
+            case positionPartiallyClosed = "POSITION_PARTIALLY_CLOSED"
+            case positionClosed = "POSITION_CLOSED"
+            case positionDeleted = "POSITION_DELETED"
+            
+            case stopLimitAmended = "STOP_LIMIT_AMENDED"
+            
+            case stopOrderOpened = "STOP_ORDER_OPENED"
+            case stopOrderFilled = "STOP_ORDER_FILLED"
+            case stopOrderAmended = "STOP_ORDER_AMENDED"
+            case stopOrderRolled = "STOP_ORDER_ROLLED"
+            case stopOrderDeleted = "STOP_ORDER_DELETED"
+            
+            case workingOrderDeleted = "WORKING_ORDER_DELETED"
+            
+            case unknown = "UNKNOWN"
         }
-    }
-}
-
-extension API.Activity.Details.Action {
-    /// Type of action.
-    public enum Kind: String, Decodable {
-        case limitOrderOpened = "LIMIT_ORDER_OPENED"
-        case limitOrderFilled = "LIMIT_ORDER_FILLED"
-        case limitOrderAmended = "LIMIT_ORDER_AMENDED"
-        case limitOrderRolled = "LIMIT_ORDER_ROLLED"
-        case limitOrderDeleted = "LIMIT_ORDER_DELETED"
-        
-        case positionOpenend = "POSITION_OPENED"
-        case positionRolled = "POSITION_ROLLED"
-        case positionPartiallyClosed = "POSITION_PARTIALLY_CLOSED"
-        case positionClosed = "POSITION_CLOSED"
-        case positionDeleted = "POSITION_DELETED"
-        
-        case stopLimitAmended = "STOP_LIMIT_AMENDED"
-        
-        case stopOrderOpened = "STOP_ORDER_OPENED"
-        case stopOrderFilled = "STOP_ORDER_FILLED"
-        case stopOrderAmended = "STOP_ORDER_AMENDED"
-        case stopOrderRolled = "STOP_ORDER_ROLLED"
-        case stopOrderDeleted = "STOP_ORDER_DELETED"
-        
-        case workingOrderDeleted = "WORKING_ORDER_DELETED"
-        
-        case unknown = "UNKNOWN"
     }
 }

@@ -1,7 +1,27 @@
 import ReactiveSwift
 import Foundation
 
+extension API.Request.WorkingOrders {
+    
+    // MARK: GET /workingorders
+    
+}
+
 // MARK: - Supporting Entities
+
+extension API.Request {
+    /// Contains all functionality related to API working orders.
+    public struct WorkingOrders {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        internal unowned let api: API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoint.
+        init(api: API) {
+            self.api = api
+        }
+    }
+}
 
 //extension API {
 //    /// Returns all open working orders for the active account.
@@ -14,8 +34,6 @@ import Foundation
 //            .map { (w: API.Response.WorkingOrderListWrapper) in w.workingOrders }
 //    }
 //}
-//
-//// MARK: -
 //
 //extension API.Response {
 //    /// Wrapper around a list of working orders.
