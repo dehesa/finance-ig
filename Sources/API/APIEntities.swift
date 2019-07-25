@@ -4,7 +4,7 @@ extension API {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
-    public enum Expiry: Codable, ExpressibleByNilLiteral {
+    public enum Expiry: Codable, ExpressibleByNilLiteral, Equatable {
         /// DFBs (i.e. "Daily Funded Bets") run for as long as you choose to keep them open, with a default expiry some way off in the future.
         ///
         /// The cost of maintaining your DFB position is levied on your account each day: hence daily funded bet. You would generally use a daily funded bet to speculate on short-term market movements.
@@ -250,7 +250,7 @@ extension API.Node.Market {
 
 extension API.Position {
     /// Position's permanent identifier.
-    public struct Identifier: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+    public struct Identifier: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
@@ -272,6 +272,10 @@ extension API.Position {
             self.rawValue = rawValue
         }
         
+        public var description: String {
+            return self.rawValue
+        }
+        
         public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
@@ -283,7 +287,7 @@ extension API.Position {
     }
     
     /// Transient deal identifier (for an unconfirmed trade).
-    public struct Reference: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+    public struct Reference: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
         public let rawValue: String
         /// The allowed character set.
         private static let allowedSet: CharacterSet = {
@@ -311,6 +315,10 @@ extension API.Position {
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
             }
             self.rawValue = rawValue
+        }
+        
+        public var description: String {
+            return self.rawValue
         }
         
         public func encode(to encoder: Encoder) throws {
@@ -405,16 +413,33 @@ extension API.Position {
         /// - parameter level: The stop absolute level.
         /// - parameter risk: The risk exposed when exercising the stop loss.
         case position(level: Double, risk: Self.Risk)
-        /// A distance from the buy/sell level stop with the tweak that the stop will be moved towards the current level in case of a favourable trade.
-        /// - parameter distance: The distance from the buy/sell price.
-        /// - parameter increment: The increment step in pips.
-        case trailing(distance: Double, increment: Double)
+        /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
+        /// - parameter level: The absolute level at which the current stop is in.
+        /// - parameter tail: It specifies the distance from the market level at which the stop will get incremented.
+        case trailing(level: Double, tail: Tail?)
+        
+        /// Returns the current stop level (independently of the type of stop).
+        public var level: Double {
+            switch self {
+            case .position(let level, _): return level
+            case .trailing(let level, _): return level
+            }
+        }
         
         /// Defines the amount of risk being exposed while closing the stop loss.
         public enum Risk {
             /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
+            /// - parameter premium: The number of pips that are being charged for your limited risk (i.e. guaranteed stop).
             case limited(premium: Double? = nil)
             case exposed
+        }
+        
+        /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
+        public struct Tail {
+            /// The distance from the  market price.
+            public let distance: Double
+            /// The stop level increment step in pips.
+            public let increment: Double
         }
     }
 }

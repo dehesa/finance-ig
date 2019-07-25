@@ -48,6 +48,11 @@ extension API.Request.Session {
     // MARK: GET /session/encryptionKey
     
     /// Returns an encryption key to use in order to send the user password in an encrypted form.
+    ///
+    /// To encrypt a password:
+    /// 1. call /session/encryptionKey which gives a key and timestamp
+    /// 2. create a RSA token using the key.
+    /// 3. encrypt password + "|" + timestamp
     /// - parameter apiKey: The API key which the encryption key will be associated to.
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.

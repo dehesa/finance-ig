@@ -1,7 +1,7 @@
 import Foundation
 
 /// One of the currencies as described in ISO 4217.
-public struct Currency: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+public struct Currency: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
     public let rawValue: String
     
     public init(stringLiteral value: String) {
@@ -21,6 +21,10 @@ public struct Currency: RawRepresentable, Codable, ExpressibleByStringLiteral, H
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
         }
         self.rawValue = rawValue
+    }
+    
+    public var description: String {
+        return self.rawValue
     }
     
     public func encode(to encoder: Encoder) throws {

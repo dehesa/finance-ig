@@ -1,7 +1,7 @@
 import Foundation
 
 /// An epic represents a unique tradeable market.
-public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable {
+public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
     public let rawValue: String
     /// The allowed character set for epics.
     ///
@@ -31,6 +31,10 @@ public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hasha
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
         }
         self.rawValue = rawValue
+    }
+    
+    public var description: String {
+        return self.rawValue
     }
     
     public func encode(to encoder: Encoder) throws {

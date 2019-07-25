@@ -99,20 +99,33 @@ extension API {
             self.direction = try nestedContainer.decode(Self.Direction.self, forKey: .direction)
             self.limit = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitLevel)
             
-            if let stopLevel = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopLevel) {
-                let risk: Self.Stop.Risk
-                if try nestedContainer.decode(Bool.self, forKey: .isGuaranteedStop) {
-                    let premium = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitedRiskPremium)
-                    risk = .limited(premium: premium)
-                } else {
-                    risk = .exposed
-                }
-                self.stop = .position(level: stopLevel, risk: risk)
-            } else if let trailingDistance = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingDistance),
-               let trailingStep = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingStep) {
-                self.stop = .trailing(distance: trailingDistance, increment: trailingStep)
-            } else {
+            guard let stopLevel = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopLevel) else {
                 self.stop = nil
+                return
+            }
+            
+            let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isGuaranteedStop)
+            let trailingDistance = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingDistance)
+            let trailingStep = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingStep)
+            let isTrailing = trailingDistance != nil || trailingStep != nil
+            
+            switch (isGuaranteed, isTrailing) {
+            case (false, false):
+                self.stop = .position(level: stopLevel, risk: .exposed)
+            case (true, false):
+                let premium = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitedRiskPremium)
+                self.stop = .position(level: stopLevel, risk: .limited(premium: premium))
+            case (false, true):
+                guard let distance = trailingDistance else {
+                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: nestedContainer, debugDescription: "The distance for trailing stops cannot be found.")
+                }
+                guard let step = trailingStep else {
+                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingStep, in: nestedContainer, debugDescription: "The increment for trailing stops cannot be found.")
+                }
+                
+                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: step))
+            case (true, true):
+                throw DecodingError.dataCorruptedError(forKey: .isGuaranteedStop, in: nestedContainer, debugDescription: "A guaranteed stop cannot be a trailing stop.")
             }
         }
         
