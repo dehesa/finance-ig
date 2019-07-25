@@ -294,8 +294,8 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA462149A6CE00344CBF /* Epic.swift */,
-				8DC4CA472149A6CE00344CBF /* MarketForex.swift */,
 				8D74741422E8439B00B0BA41 /* Currency.swift */,
+				8DC4CA472149A6CE00344CBF /* MarketForex.swift */,
 			);
 			path = Platform;
 			sourceTree = "<group>";

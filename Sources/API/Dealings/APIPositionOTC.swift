@@ -45,10 +45,16 @@ extension API.Request.Positions {
     /// - parameter limit: .Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: API.Position.Identifier, limit: Double?, stop: (level: Double, trailing: (distance: Double, increment: Double)?)?) -> SignalProducer<API.Position.Reference,API.Error> {
+    public func update(identifier: API.Position.Identifier, limit: Double?, stop: API.Position.Stop?) -> SignalProducer<API.Position.Reference,API.Error> {
         return SignalProducer(api: self.api)  { (_) -> Self.PayloadUpdate in
-                guard limit != nil || stop != nil else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! No parameters were provided.")
+                if let stop = stop {
+                    if case .position(_, let risk) = stop, case .limited(_) = risk {
+                        throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's limit will automatically make it \"risk exposed\"")
+                    } else if case .trailing(_, nil) = stop {
+                        throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's trailng stop requires the trailing tail (i.e. distance and increment.")
+                    }
+                } else if case .none = limit {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! You need to provide a limit or stop.")
                 }
                 return .init(limit: limit, stop: stop)
             }.request(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
@@ -85,30 +91,8 @@ extension API.Request.Positions {
 // MARK: - Supporting Entities
 
 // MARK: Request Entities
-//
+
 extension API.Request.Positions {
-    /// The type of limit being set.
-    public enum Limit {
-        /// The limit or stop is given explicitly (as a value).
-        case position(level: Double)
-        /// The limit or stop is measured as the distance from a given level.
-        case distance(Double)
-    }
-    
-    /// The level/price at which the user doesn't want to incur more lose.
-    public enum Stop {
-        /// Absolute value of the stop (e.g. 1.653 USD/EUR).
-        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
-        case position(level: Double, isGuaranteed: Bool)
-        /// Distance from the buy/sell level where the stop will be placed.
-        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
-        case distance(Double, isGuaranteed: Bool)
-        /// A distance from the buy/sell level stop with the tweak that the stop will be moved towards the current level in case of a favourable trade.
-        /// - parameter distance: The distance from the buy/sell price.
-        /// - parameter increment: The increment step in pips.
-        case trailing(distance: Double, increment: Double)
-    }
-    
     private struct PayloadCreation: Encodable {
         let epic: Epic
         let expiry: API.Expiry
@@ -192,12 +176,50 @@ extension API.Request.Positions {
         }
     }
     
-    /// Identification mechanism at deletion time.
-    public enum Identification {
-        /// Permanent deal identifier for a confirmed trade.
-        case identifier(API.Position.Identifier)
-        /// Instrument epic identifier.
-        case epic(Epic, expiry: API.Expiry)
+    private struct PayloadUpdate: Encodable {
+        let limit: Double?
+        let stop: API.Position.Stop?
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            
+            if let limit = self.limit {
+                try container.encodeIfPresent(limit, forKey: .limitLevel)
+            } else {
+                try container.encodeNil(forKey: .limitLevel)
+            }
+            
+            switch self.stop {
+            case nil:
+                try container.encodeNil(forKey: .stopLevel)
+            case .position(let stopLevel, let risk):
+                guard case .exposed = risk else {
+                    let ctx = EncodingError.Context(codingPath: container.codingPath, debugDescription: "Setting a stop level will always make the stop exposed to risk.")
+                    throw EncodingError.invalidValue(risk, ctx)
+                }
+                try container.encode(stopLevel, forKey: .stopLevel)
+            case .trailing(let stopLevel, let tail?):
+                try container.encode(stopLevel, forKey: .stopLevel)
+                try container.encode(true, forKey: .isTrailingStop)
+                try container.encode(tail.distance, forKey: .trailingStopDistance)
+                try container.encode(tail.increment, forKey: .trailingStopIncrement)
+                return
+            case .trailing(let stopLevel, nil):
+                let ctx = EncodingError.Context(codingPath: container.codingPath, debugDescription: "A trailing stop for stop level \"\(stopLevel)\" cannot be set without specifying a trailing tail (i.e. distance and increment.")
+                throw EncodingError.invalidValue(self.stop!, ctx)
+            }
+            
+            try container.encode(false, forKey: .isTrailingStop)
+            try container.encodeNil(forKey: .trailingStopDistance)
+            try container.encodeNil(forKey: .trailingStopIncrement)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case limitLevel, stopLevel
+            case isTrailingStop = "trailingStop"
+            case trailingStopDistance
+            case trailingStopIncrement
+        }
     }
     
     private struct PayloadDeletion: Encodable {
@@ -244,6 +266,39 @@ extension API.Request.Positions {
     }
 }
 
+extension API.Request.Positions {
+    /// The type of limit being set.
+    public enum Limit {
+        /// The limit or stop is given explicitly (as a value).
+        case position(level: Double)
+        /// The limit or stop is measured as the distance from a given level (or in its absence, the market level).
+        case distance(Double)
+    }
+    
+    /// The level/price at which the user doesn't want to incur more lose.
+    public enum Stop {
+        /// Absolute level where to place the stop loss.
+        /// - parameter level: The absolute stop level (e.g. 1.653 USD/EUR).
+        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
+        case position(level: Double, isGuaranteed: Bool)
+        /// Distance from the buy/sell level where the stop will be placed.
+        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
+        case distance(Double, isGuaranteed: Bool)
+        /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
+        /// - parameter distance: The distance from the  buy/sell price.
+        /// - parameter increment: The increment step in pips.
+        case trailing(distance: Double, increment: Double)
+    }
+    
+    /// Identification mechanism at deletion time.
+    public enum Identification {
+        /// Permanent deal identifier for a confirmed trade.
+        case identifier(API.Position.Identifier)
+        /// Instrument epic identifier.
+        case epic(Epic, expiry: API.Expiry)
+    }
+}
+
 extension API.Position.Order {
     /// The representation understood by the server.
     fileprivate var rawValue: String {
@@ -260,44 +315,5 @@ extension API.Position.Order {
 extension API.Request.Positions {
     private struct WrapperReference: Decodable {
         let dealReference: API.Position.Reference
-    }
-
-    private struct PayloadUpdate: Encodable {
-        let limit: Double?
-        let stop: (level: Double, trailing: (distance: Double, increment: Double)?)?
-
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
-            
-            if let limit = self.limit {
-                try container.encodeIfPresent(limit, forKey: .limitLevel)
-            } else {
-                try container.encodeNil(forKey: .limitLevel)
-            }
-            
-            guard let stop = self.stop else {
-                try container.encodeNil(forKey: .stopLevel)
-                try container.encode(false, forKey: .isTrailingStop)
-                try container.encodeNil(forKey: .trailingStopDistance)
-                return try container.encodeNil(forKey: .trailingStopIncrement)
-            }
-            
-            try container.encode(stop.level, forKey: .stopLevel)
-            guard let trailing = stop.trailing else {
-                try container.encode(false, forKey: .isTrailingStop)
-                try container.encodeNil(forKey: .trailingStopDistance)
-                return try container.encodeNil(forKey: .trailingStopIncrement)
-            }
-            
-            try container.encode(trailing.distance, forKey: .trailingStopDistance)
-            try container.encode(trailing.increment, forKey: .trailingStopIncrement)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case limitLevel, stopLevel
-            case isTrailingStop = "trailingStop"
-            case trailingStopDistance
-            case trailingStopIncrement
-        }
     }
 }
