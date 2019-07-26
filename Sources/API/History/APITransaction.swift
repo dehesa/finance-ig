@@ -146,7 +146,7 @@ extension API {
         /// Instrument name.
         public let description: String
         /// Instrument expiry period.
-        public let period: API.Expiry
+        public let period: API.Instrument.Expiry
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
         public let size: Double?
         /// Open position level/price and date.
@@ -165,7 +165,7 @@ extension API {
             self.reference = try container.decode(String.self, forKey: .reference)
             
             self.description = try container.decode(String.self, forKey: .description)
-            self.period = try container.decodeIfPresent(API.Expiry.self, forKey: .period) ?? .none
+            self.period = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .period) ?? .none
             
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {

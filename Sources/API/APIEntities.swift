@@ -42,6 +42,8 @@ extension API.Deal {
             try container.encode(self.rawValue)
         }
         
+        /// Tests the given argument/rawValue for a matching instance.
+        /// - parameter value: The future raw value of this instance.
         private static func validate(_ value: String) -> Bool {
             return (1...30).contains(value.count)
         }
@@ -50,7 +52,7 @@ extension API.Deal {
     /// Transient deal identifier (for an unconfirmed trade).
     public struct Reference: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
         public let rawValue: String
-        /// The allowed character set.
+        /// The allowed character set used on validation.
         private static let allowedSet: CharacterSet = {
             var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
             result.formUnion(CharacterSet.IG.lowercaseANSI)
@@ -87,10 +89,35 @@ extension API.Deal {
             try container.encode(self.rawValue)
         }
         
+        /// Tests the given argument/rawValue for a matching instance.
+        /// - parameter value: The future raw value of this instance.
         private static func validate(_ value: String) -> Bool {
             let allowedRange = 1...30
             return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
         }
+    }
+    
+    /// Deal direction.
+    public enum Direction: String, Equatable, Codable {
+        case buy = "BUY"
+        case sell = "SELL"
+        
+        /// Returns the opposite direction from the receiving direction.
+        /// - returns: `.buy` if receiving is `.sell`, and `.sell` if receiving is `.buy`.
+        public var oppossite: Direction {
+            switch self {
+            case .buy:  return .sell
+            case .sell: return .buy
+            }
+        }
+    }
+    
+    /// The type of limit for the hosting deal.
+    public enum Limit {
+        /// The limit is given explicitly (as a value).
+        case position(level: Double)
+        /// The limit is measured as the distance from a given level (or in its absence, the market level).
+        case distance(Double)
     }
     
     /// Profit value and currency.
@@ -112,6 +139,32 @@ extension API.Deal {
 }
 
 extension API {
+    /// Instrument related entities.
+    public enum Instrument: String, Codable {
+        /// A binary allows you to take a view on whether a specific outcome will or won't occur. For example, 'Will Wall Street be up at the close of the day?' If the answer is 'yes', the binary settles at 100. If the answer is 'no', the binary settles at 0. Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
+        case binary = "BINARY"
+        case bungeeCapped  = "BUNGEE_CAPPED"
+        case bungeeCommodities  = "BUNGEE_COMMODITIES"
+        case bungeeCurrencies = "BUNGEE_CURRENCIES"
+        case bungeeIndices = "BUNGEE_INDICES"
+        case commodities = "COMMODITIES"
+        case currencies = "CURRENCIES"
+        case indices = "INDICES"
+        case optCommodities = "OPT_COMMODITIES"
+        case optCurrencies = "OPT_CURRENCIES"
+        case optIndices = "OPT_INDICES"
+        case optRates = "OPT_RATES"
+        case optShares = "OPT_SHARES"
+        case rates = "RATES"
+        case sectors = "SECTORS"
+        case shares = "SHARES"
+        case sprintMarket = "SPRINT_MARKET"
+        case testMarket = "TEST_MARKET"
+        case unknown = "UNKNOWN"
+    }
+}
+
+extension API.Instrument {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
@@ -171,32 +224,6 @@ extension API {
             case dfb = "DFB"
             case none = "-"
         }
-    }
-}
-
-extension API {
-    /// Instrument related entities.
-    public enum Instrument: String, Codable {
-        /// A binary allows you to take a view on whether a specific outcome will or won't occur. For example, 'Will Wall Street be up at the close of the day?' If the answer is 'yes', the binary settles at 100. If the answer is 'no', the binary settles at 0. Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
-        case binary = "BINARY"
-        case bungeeCapped  = "BUNGEE_CAPPED"
-        case bungeeCommodities  = "BUNGEE_COMMODITIES"
-        case bungeeCurrencies = "BUNGEE_CURRENCIES"
-        case bungeeIndices = "BUNGEE_INDICES"
-        case commodities = "COMMODITIES"
-        case currencies = "CURRENCIES"
-        case indices = "INDICES"
-        case optCommodities = "OPT_COMMODITIES"
-        case optCurrencies = "OPT_CURRENCIES"
-        case optIndices = "OPT_INDICES"
-        case optRates = "OPT_RATES"
-        case optShares = "OPT_SHARES"
-        case rates = "RATES"
-        case sectors = "SECTORS"
-        case shares = "SHARES"
-        case sprintMarket = "SPRINT_MARKET"
-        case testMarket = "TEST_MARKET"
-        case unknown = "UNKNOWN"
     }
 }
 
@@ -273,12 +300,14 @@ extension API.Node.Market {
     public struct Instrument: Decodable {
         /// Instrument epic identifier.
         public let epic: Epic
+        /// Exchange identifier for the instrument.
+        public let exchangeIdentifier: String?
         /// Instrument name.
         public let name: String
         /// Instrument type.
         public let type: API.Instrument
         /// Instrument expiry period.
-        public let expiry: API.Expiry
+        public let expiry: API.Instrument.Expiry
         /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
         /// - note: This property is set when querying nodes, but `nil` when querying markets.
         public let lotSize: UInt?
@@ -291,16 +320,18 @@ extension API.Node.Market {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.epic = try container.decode(Epic.self, forKey: .epic)
+            self.exchangeIdentifier = try container.decodeIfPresent(String.self, forKey: .exchangeId)
             self.name = try container.decode(String.self, forKey: .name)
             self.type = try container.decode(API.Instrument.self, forKey: .type)
-            self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
+            self.expiry = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .expiry) ?? .none
             self.lotSize = try container.decodeIfPresent(UInt.self, forKey: .lotSize)
             self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.isOTCTradeable = try container.decodeIfPresent(Bool.self, forKey: .isOTCTradeable)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case epic, name = "instrumentName"
+            case epic, exchangeId
+            case name = "instrumentName"
             case type = "instrumentType"
             case expiry, lotSize
             case isAvailableByStreaming = "streamingPricesAvailable"
@@ -389,19 +420,6 @@ extension API.Position {
         }
     }
     
-    /// Deal direction.
-    public enum Direction: String, Equatable, Codable {
-        case buy = "BUY"
-        case sell = "SELL"
-        
-        public var oppossite: Direction {
-            switch self {
-            case .buy:  return .sell
-            case .sell: return .buy
-            }
-        }
-    }
-    
     /// Describes how the user's order must be executed.
     public enum Order {
         /// A market order is an instruction to buy or sell at the best available price for the size of your order.
@@ -471,65 +489,27 @@ extension API.Position {
     }
 }
 
-//extension API {
-//    /// Working order related entities.
-//    public enum WorkingOrder {
-//        /// The type of working order.
-//        public enum Kind: String, Codable {
-//            case limit = "LIMIT"
-//            case stop = "STOP"
-//        }
-//        
-//        /// Describes when the working order will expire.
-//        public enum Expiration {
-//            case tillCancelled
-//            case tillDate(Date)
-//            
-//            /// Designated initializer to create an expiration for working orders.
-//            /// - throws `Expiration.Error` if the raw value is invalid.
-//            internal init(_ rawValue: String, date: Date?) throws {
-//                switch rawValue {
-//                case CodingKeys.tillCancelled.rawValue:
-//                    self = .tillCancelled
-//                case CodingKeys.tillDate.rawValue:
-//                    guard let date = date else { throw Error.unavailableDate }
-//                    self = .tillDate(date)
-//                default:
-//                    throw Error.invalidExpirationRawValue(rawValue)
-//                }
-//            }
-//            
-//            fileprivate enum Error: Swift.Error {
-//                case invalidExpirationRawValue(String)
-//                case unavailableDate
-//            }
-//            
-//            internal var rawValue: String {
-//                switch self {
-//                case .tillCancelled: return CodingKeys.tillCancelled.rawValue
-//                case .tillDate(_): return CodingKeys.tillDate.rawValue
-//                }
-//            }
-//            
-//            private enum CodingKeys: String {
-//                case tillCancelled = "GOOD_TILL_CANCELLED"
-//                case tillDate = "GOOD_TILL_DATE"
-//            }
-//        }
-//        
-//        /// Indicates the price for a given instrument.
-//        public enum Boundary {
-//            /// The type of limit being set.
-//            public typealias Limit = API.Position.Boundary.Limit
-//            
-//            /// The level/price at which the user doesn't want to incur more lose.
-//            public typealias Stop = Limit
-//        }
-//    }
-//}
-//
-//extension APIPositionBoundaries {
-//    /// Returns a boolean indicating whether there are no boundaries set.
-//    public var isEmpty: Bool { return (self.limit == nil) && (self.stop == nil) }
-//}
-
+extension API.WorkingOrder {
+    /// Working order type.
+    public enum Kind: String, Codable {
+        /// An instruction to deal if the price moves to a more favourable level.
+        ///
+        /// For examples, to 'buy' if the price goes down to a specified level
+        case limit = "LIMIT"
+        /// - todo: Figure out the diference with `.limit`
+        case stop = "STOP"
+    }
+    
+    /// Describes when the working order will expire.
+    public enum Expiration {
+        /// The order remains in place till it is explicitly cancelled.
+        case tillCancelled
+        /// The order remains in place till it is fulfill or the associated date is reached.
+        case tillDate(Date)
+        
+        internal enum CodingKeys: String {
+            case tillCancelled = "GOOD_TILL_CANCELLED"
+            case tillDate = "GOOD_TILL_DATE"
+        }
+    }
+}

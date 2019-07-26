@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - DateFormatters
+// MARK: - Date Formatters
 
 extension API {
     /// Reusable date formatter utility instances.
@@ -79,7 +79,7 @@ extension DateFormatter {
 }
 
 
-// MARK: - DateFormatters
+// MARK: - Number Formatters
 
 extension API {
     /// Reusable number formatter utility instances.

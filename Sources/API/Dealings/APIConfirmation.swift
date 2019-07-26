@@ -37,7 +37,7 @@ extension API.Position {
         /// Instrument epic identifier.
         public let epic: Epic
         /// Instrument expiration period.
-        public let expiry: API.Expiry
+        public let expiry: API.Instrument.Expiry
         /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
         public let status: Self.Status
         
@@ -48,7 +48,7 @@ extension API.Position {
             self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601Miliseconds)
             
             self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.expiry = try container.decode(API.Expiry.self, forKey: .expiry)
+            self.expiry = try container.decode(API.Instrument.Expiry.self, forKey: .expiry)
             
             let status = try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status)
             guard case .accepted = status else {
@@ -98,7 +98,7 @@ extension API.Position.Confirmation {
         /// Affected deals.
         public let affectedDeals: [API.Position.Confirmation.Deal]
         /// Deal direction.
-        public let direction: API.Position.Direction
+        public let direction: API.Deal.Direction
         /// The deal size
         public let size: Double
         /// Instrument price.
@@ -115,7 +115,7 @@ extension API.Position.Confirmation {
             self.status = try container.decode(API.Position.Status.self, forKey: .status)
             self.affectedDeals = try container.decode([API.Position.Confirmation.Deal].self, forKey: .affectedDeals)
             
-            self.direction = try container.decode(API.Position.Direction.self, forKey: .direction)
+            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Double.self, forKey: .size)
             self.level = try container.decode(Double.self, forKey: .level)
             
@@ -140,6 +140,7 @@ extension API.Position.Confirmation {
                 self.stop = nil
             }
             
+            #warning("Working orders only work with distances.")
             if let stopDistance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
                 throw DecodingError.dataCorruptedError(forKey: .stopDistance, in: container, debugDescription: "In testing \"\(Self.CodingKeys.stopDistance.rawValue)\" has never been set. Here, however, seems to have a value of \"\(stopDistance)\". Please report this deal/confirmation to the maintainer.")
             }

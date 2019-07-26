@@ -16,14 +16,14 @@ extension API.Request.Positions {
     /// - parameter order: Describes how the user's order must be executed (and at which level).
     /// - parameter strategy: The order fill strategy.
     /// - parameter size: Deal size. Precision shall not be more than 12 decimal places.
-    /// - parameter limit: The limit level/distance at which the user will like to take profit). It can be marked as a distance from the buy/sell level, or as an absolute value, or none (in which the position is open).
+    /// - parameter limit: The limit level/distance at which the user will like to take profit. It can be marked as a distance from the buy/sell level, or as an absolute value, or none (in which the position is open).
     /// - parameter stop: The stop at which the user doesn't want to incur more losses.
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market. This variable will be set to `true` if the limit and/or the stop are set.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade).
-    public func create(epic: Epic, expiry: API.Expiry = .none, currency: IG.Currency,
-                       direction: API.Position.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy,
-                       size: Double, limit: Self.Limit?, stop: Self.Stop?,
+    public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: IG.Currency, direction: API.Deal.Direction,
+                       order: API.Position.Order, strategy: API.Position.Order.Strategy,
+                       size: Double, limit: API.Deal.Limit?, stop: Self.Stop?,
                        forceOpen: Bool = true, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "positions/otc", version: 2, credentials: true, body: { (_,_) in
@@ -38,11 +38,11 @@ extension API.Request.Positions {
     
     // MARK: PUT /positions/otc/{dealId}
     
-    /// Edits an opened position (identified by the `dealId`).
+    /// Edits an opened position (identified by the given argument).
     ///
     /// This endpoint modifies an openned position. The returned refence is not considered as taken into effect until the server confirms the "transient" position reference and give the user a deal identifier.
-    /// - parameter dealId: A permanent deal reference for a confirmed trade.
-    /// - parameter limit: .Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
+    /// - parameter identifier: A permanent deal reference for a confirmed trade.
+    /// - parameter limit: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func update(identifier: API.Deal.Identifier, limit: Double?, stop: API.Position.Stop?) -> SignalProducer<API.Deal.Reference,API.Error> {
@@ -72,7 +72,7 @@ extension API.Request.Positions {
     /// Closes one or more positions.
     /// - parameter request: A filter to match the positions to be deleted.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func delete(matchedBy identification: Self.Identification, direction: API.Position.Direction,
+    public func delete(matchedBy identification: Self.Identification, direction: API.Deal.Direction,
                        order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Double) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "positions/otc", version: 1, credentials: true, headers: { (_,_) in
@@ -95,13 +95,13 @@ extension API.Request.Positions {
 extension API.Request.Positions {
     private struct PayloadCreation: Encodable {
         let epic: Epic
-        let expiry: API.Expiry
+        let expiry: API.Instrument.Expiry
         let currency: IG.Currency
-        let direction: API.Position.Direction
+        let direction: API.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
         let size: Double
-        let limit: API.Request.Positions.Limit?
+        let limit: API.Deal.Limit?
         let stop: API.Request.Positions.Stop?
         let forceOpen: Bool
         let reference: API.Deal.Reference?
@@ -158,7 +158,7 @@ extension API.Request.Positions {
             }
             
             try container.encode(forceOpen, forKey: .forceOpen)
-            try container.encode(self.reference, forKey: .reference)
+            try container.encodeIfPresent(self.reference, forKey: .reference)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -195,7 +195,7 @@ extension API.Request.Positions {
             case .position(let stopLevel, let risk):
                 guard case .exposed = risk else {
                     let ctx = EncodingError.Context(codingPath: container.codingPath, debugDescription: "Setting a stop level will always make the stop exposed to risk.")
-                    throw EncodingError.invalidValue(risk, ctx)
+                    throw EncodingError.invalidValue(self.stop!, ctx)
                 }
                 try container.encode(stopLevel, forKey: .stopLevel)
             case .trailing(let stopLevel, let tail?):
@@ -224,7 +224,7 @@ extension API.Request.Positions {
     
     private struct PayloadDeletion: Encodable {
         let identification: API.Request.Positions.Identification
-        let direction: API.Position.Direction
+        let direction: API.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
         let size: Double
@@ -267,14 +267,6 @@ extension API.Request.Positions {
 }
 
 extension API.Request.Positions {
-    /// The type of limit being set.
-    public enum Limit {
-        /// The limit or stop is given explicitly (as a value).
-        case position(level: Double)
-        /// The limit or stop is measured as the distance from a given level (or in its absence, the market level).
-        case distance(Double)
-    }
-    
     /// The level/price at which the user doesn't want to incur more lose.
     public enum Stop {
         /// Absolute level where to place the stop loss.
@@ -295,7 +287,7 @@ extension API.Request.Positions {
         /// Permanent deal identifier for a confirmed trade.
         case identifier(API.Deal.Identifier)
         /// Instrument epic identifier.
-        case epic(Epic, expiry: API.Expiry)
+        case epic(Epic, expiry: API.Instrument.Expiry)
     }
 }
 

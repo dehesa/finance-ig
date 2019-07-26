@@ -18,9 +18,9 @@ final class APIPositionTests: APITestCase {
     /// Tests the position creation, confirmation, retrieval, and deletion.
     func testPositionLifecycle() {
         let epic: Epic = "CS.D.EURUSD.MINI.IP"
-        let expiry: API.Expiry = nil
+        let expiry: API.Instrument.Expiry = nil
         let currency: Currency = "USD"
-        let direction: API.Position.Direction = .sell
+        let direction: API.Deal.Direction = .sell
         let order: API.Position.Order = .market
         let strategy: API.Position.Order.Strategy = .execute
         let size: Double = 1
@@ -30,7 +30,6 @@ final class APIPositionTests: APITestCase {
         let scalingFactor: Double = 10000
         
         var stored: (reference: API.Deal.Reference?, identifier: API.Deal.Identifier?) = (nil, nil)
-        
         let endpoints = self.api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: .distance(limitDistance), stop: stop)
             .call(on: self.api) { (api, reference) -> SignalProducer<API.Position.Confirmation,API.Error> in
                 stored.reference = reference

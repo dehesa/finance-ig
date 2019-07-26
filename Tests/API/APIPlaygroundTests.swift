@@ -251,7 +251,7 @@ final class APIPlaygroundTests: XCTestCase {
 //    let epic: String
 //    let name: String
 //    let type: API.Instrument
-//    let expiry: API.Expiry
+//    let expiry: API.Instrument.Expiry
 //    let isAvailableByStreaming: Bool
 //    let status: API.Market.Status
 //

@@ -73,7 +73,7 @@ extension API {
         /// Level (instrument price) at which the position was openend.
         public let level: Double
         /// Deal direction.
-        public let direction: Self.Direction
+        public let direction: API.Deal.Direction
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
         public let limit: Double?
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
@@ -96,7 +96,7 @@ extension API {
             self.size = try nestedContainer.decode(Double.self, forKey: .size)
             
             self.level = try nestedContainer.decode(Double.self, forKey: .level)
-            self.direction = try nestedContainer.decode(Self.Direction.self, forKey: .direction)
+            self.direction = try nestedContainer.decode(API.Deal.Direction.self, forKey: .direction)
             self.limit = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitLevel)
             
             guard let stopLevel = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopLevel) else {
