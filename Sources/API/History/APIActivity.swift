@@ -150,7 +150,7 @@ extension API {
         /// Instrument epic identifier.
         public let epic: Epic
         /// The period of the activity item.
-        public let expiry: API.Expiry
+        public let expiry: API.Instrument.Expiry
         /// Activity description.
         public let title: String
         /// Activity details.
@@ -170,7 +170,7 @@ extension API {
             self.channel = try container.decode(Self.Channel.self, forKey: .channel)
             self.title = try container.decode(String.self, forKey: .title)
             self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expiry) ?? .none
+            self.expiry = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .expiry) ?? .none
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
@@ -232,7 +232,7 @@ extension API.Activity {
         /// The currency denomination (e.g. `GBP`).
         public let currency: IG.Currency
         /// Deal direction.
-        public let direction: API.Position.Direction
+        public let direction: API.Deal.Direction
         /// Deal size.
         public let size: Double
         /// Good till date.
@@ -250,7 +250,7 @@ extension API.Activity {
             self.actions = try container.decode([Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
             self.currency = try container.decode(IG.Currency.self, forKey: .currency)
-            self.direction = try container.decode(API.Position.Direction.self, forKey: .direction)
+            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Double.self, forKey: .size)
             
             if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {

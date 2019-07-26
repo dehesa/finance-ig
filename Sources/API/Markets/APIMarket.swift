@@ -263,7 +263,7 @@ extension API.Market.Instrument {
     /// Expiration date details.
     public struct Expiration: Decodable {
         /// Expiration date. The date (and sometimes time) at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire, and have an expiry of '-'. eg DEC-14, or DFB for daily funded bets.
-        public let expiry: API.Expiry
+        public let expiry: API.Instrument.Expiry
         /// The last dealing date.
         public let lastDealingDate: Date?
         /// Settlement information.
@@ -272,7 +272,7 @@ extension API.Market.Instrument {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
 
-            self.expiry = try container.decodeIfPresent(API.Expiry.self, forKey: .expirationDate) ?? .none
+            self.expiry = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
                 self.settlementInfo = nil
                 self.lastDealingDate = nil; return

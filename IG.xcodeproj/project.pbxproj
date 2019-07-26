@@ -17,6 +17,7 @@
 		8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262222E9F66E0080D3C1 /* APIInternals.swift */; };
 		8D3C262522E9FA020080D3C1 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Array.swift */; };
 		8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */; };
+		8D3C262822EA2E660080D3C1 /* APIWorkingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */; };
 		8D432A3F22E6C79E007DC814 /* APITransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9B2149A6CE00344CBF /* APITransactionTests.swift */; };
 		8D432A4022E6CCCD007DC814 /* APIPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9C2149A6CE00344CBF /* APIPriceTests.swift */; };
 		8D432A4122E6D2B1007DC814 /* APINodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA992149A6CE00344CBF /* APINodeTests.swift */; };
@@ -783,6 +784,7 @@
 				8DF93B9522E74BE0001B9412 /* APIWatchlistTests.swift in Sources */,
 				8D7678D322E7A651003E4EC1 /* APIPositionTests.swift in Sources */,
 				8D0DA40222ACD69D00636806 /* APIPlaygroundTests.swift in Sources */,
+				8D3C262822EA2E660080D3C1 /* APIWorkingOrderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
