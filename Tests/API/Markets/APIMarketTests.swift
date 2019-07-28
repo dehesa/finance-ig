@@ -9,6 +9,12 @@ final class APIMarketTests: APITestCase {
         
         let endpoint = self.api.markets.get(epics: epics).on(value: {
             XCTAssertEqual($0.count, epics.count)
+            for market in $0 {
+                print()
+                print(market.instrument.margin.factor)
+                print(market.instrument.margin.depositBands)
+                print()
+            }
         })
         
         self.test("Market epic search", endpoint, signingProcess: .oauth, timeout: 1)

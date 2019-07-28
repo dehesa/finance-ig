@@ -12,8 +12,8 @@ extension API.Request.Session {
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` indicating whether the endpoint was successful.
-    public func login(type: Self.Kind, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Void,API.Error> {
-        var result: SignalProducer<API.Credentials,API.Error>
+    public func login(type: Self.Kind, apiKey: String, user: API.User) -> SignalProducer<Void,API.Error> {
+        let result: SignalProducer<API.Credentials,API.Error>
         
         switch type {
         case .certificate:
@@ -200,7 +200,7 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currency: IG.Currency
+        public let currency: Currency.Code
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -214,7 +214,7 @@ extension API {
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
+            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
         }
         
         private enum CodingKeys: String, CodingKey {

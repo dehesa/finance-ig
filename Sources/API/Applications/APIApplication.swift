@@ -20,12 +20,9 @@ extension API.Request.Applications {
     /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(apiKey: String? = nil, status: API.Application.Status, accountAllowance: (overall: Int, trading: Int)) -> SignalProducer<API.Application,API.Error> {
+    public func update(apiKey: String? = nil, status: API.Application.Status, accountAllowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
         return SignalProducer(api: self.api) { (api) -> Self.PayloadUpdate in
-                guard let apiKey = api.session.credentials?.apiKey else {
-                    throw API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
-                }
-            
+                let apiKey = try api.session.credentials?.apiKey ?! API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
                 return .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
                 let data = try JSONEncoder().encode(payload)
@@ -62,9 +59,9 @@ extension API.Request.Applications {
         /// Desired application status.
         let status: API.Application.Status
         /// Per account request per minute allowance.
-        let overallAccountAllowance: Int
+        let overallAccountAllowance: UInt
         /// Per account trading request per minute allowance.
-        let tradingAccountAllowance: Int
+        let tradingAccountAllowance: UInt
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: Self.CodingKeys.self)
@@ -156,22 +153,16 @@ extension API.Application {
 }
 
 extension API.Application.Allowance {
-    /// Limits and allowances for lightstreamer connections.
-    public struct LightStreamer: Decodable {
-        /// Concurrent subscriptioon limit per lightstreamer connection.
-        public let concurrentSubscriptionsLimit: Int
-    }
-    
     /// The requests (per minute) that the application or account can perform.
     public struct Requests: Decodable {
         /// Overal application request per minute allowance.
-        public let application: Int
+        public let application: UInt
         /// Account related requests per minute allowance.
         public let account: Self.Account
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.application = try container.decode(Int.self, forKey: .application)
+            self.application = try container.decode(UInt.self, forKey: .application)
             self.account = try Account(from: decoder)
         }
         
@@ -185,16 +176,24 @@ extension API.Application.Allowance.Requests {
     // Limit and allowances for the targeted account.
     public struct Account: Decodable {
         /// Per account request per minute allowance.
-        public let overall: Int
+        public let overall: UInt
         /// Per account trading request per minute allowance.
-        public let trading: Int
+        public let trading: UInt
         /// Historical price data data points per minute allowance.
-        public let historicalData: Int
+        public let historicalData: UInt
         
         private enum CodingKeys: String, CodingKey {
             case overall = "allowanceAccountOverall"
             case trading = "allowanceAccountTrading"
             case historicalData = "allowanceAccountHistoricalData"
         }
+    }
+}
+
+extension API.Application.Allowance {
+    /// Limits and allowances for lightstreamer connections.
+    public struct LightStreamer: Decodable {
+        /// Concurrent subscriptioon limit per lightstreamer connection.
+        public let concurrentSubscriptionsLimit: UInt
     }
 }

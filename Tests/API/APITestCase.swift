@@ -7,12 +7,12 @@ class APITestCase: XCTestCase {
     /// API instance handling the HTTP calls (whether real or mocked).
     var api: API!
     /// The account where the test will be run over.
-    private(set) var account: Account!
+    private(set) var account: TestAccount!
     
     override func setUp() {
         super.setUp()
         // Fetch the account JSON file location set on the environment key...
-        self.account = Account.make(from: "io.dehesa.money.ig.tests.account")
+        self.account = TestAccount.make(from: "io.dehesa.money.ig.tests.account")
         self.api = APITestCase.makeAPI(url: self.account.api.url)
     }
     
@@ -29,7 +29,7 @@ extension APITestCase {
     /// - parameter url: URL location of the endpoint servers.
     /// - returns: API instance/session that can be file-based or ULR-based depending on the testing environment variables specified in `account`.
     static func makeAPI(url: URL) -> API {
-        switch Account.SupportedScheme(url: url)! {
+        switch TestAccount.SupportedScheme(url: url)! {
         case .file:  return API(rootURL: url, channel: APIFileSession())
         case .https: return API(rootURL: url, channel: URLSession(configuration: API.defaultSessionConfigurations))
         }
@@ -58,7 +58,7 @@ extension APITestCase {
         let disposable: Disposable
         
         if let signingProcess = signingProcess {
-            let user = (self.account.api.username, self.account.api.password)
+            let user = self.account.api.user
             // If signing is requred, then +1.5 seconds are added to the timeout.
             wait += timeoutAddition
             

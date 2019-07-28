@@ -21,7 +21,7 @@ extension API.Request.Positions {
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market. This variable will be set to `true` if the limit and/or the stop are set.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade).
-    public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: IG.Currency, direction: API.Deal.Direction,
+    public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: Currency.Code, direction: API.Deal.Direction,
                        order: API.Position.Order, strategy: API.Position.Order.Strategy,
                        size: Double, limit: API.Deal.Limit?, stop: Self.Stop?,
                        forceOpen: Bool = true, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
@@ -96,7 +96,7 @@ extension API.Request.Positions {
     private struct PayloadCreation: Encodable {
         let epic: Epic
         let expiry: API.Instrument.Expiry
-        let currency: IG.Currency
+        let currency: Currency.Code
         let direction: API.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy

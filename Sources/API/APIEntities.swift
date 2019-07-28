@@ -11,7 +11,7 @@ extension API {
 
 extension API.Deal {
     /// Position's permanent identifier.
-    public struct Identifier: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+    public struct Identifier: RawRepresentable, ExpressibleByStringLiteral, Codable, CustomStringConvertible, Hashable {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
@@ -50,17 +50,8 @@ extension API.Deal {
     }
     
     /// Transient deal identifier (for an unconfirmed trade).
-    public struct Reference: RawRepresentable, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+    public struct Reference: RawRepresentable, ExpressibleByStringLiteral, Codable, CustomStringConvertible, Hashable {
         public let rawValue: String
-        /// The allowed character set used on validation.
-        private static let allowedSet: CharacterSet = {
-            var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
-            result.formUnion(CharacterSet.IG.lowercaseANSI)
-            result.formUnion(CharacterSet.IG.uppercaseANSI)
-            result.formUnion(CharacterSet.decimalDigits)
-            return result
-        }()
-        
         public init(stringLiteral value: String) {
             guard Self.validate(value) else { fatalError("The deal reference couldn't be identified or is not in the correct format.") }
             self.rawValue = value
@@ -89,6 +80,15 @@ extension API.Deal {
             try container.encode(self.rawValue)
         }
         
+        /// The allowed character set used on validation.
+        private static let allowedSet: CharacterSet = {
+            var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
+            result.formUnion(CharacterSet.IG.lowercaseANSI)
+            result.formUnion(CharacterSet.IG.uppercaseANSI)
+            result.formUnion(CharacterSet.decimalDigits)
+            return result
+        }()
+        
         /// Tests the given argument/rawValue for a matching instance.
         /// - parameter value: The future raw value of this instance.
         private static func validate(_ value: String) -> Bool {
@@ -111,7 +111,7 @@ extension API.Deal {
             }
         }
     }
-    
+    #warning("Change this to Decimal and add ExpressibleBy initializers.")
     /// The type of limit for the hosting deal.
     public enum Limit {
         /// The limit is given explicitly (as a value).
@@ -123,11 +123,11 @@ extension API.Deal {
     /// Profit value and currency.
     public struct ProfitLoss: CustomStringConvertible {
         /// The actual profit value (it can be negative).
-        public let value: Double
+        public let value: Decimal
         /// The profit currency.
-        public let currency: IG.Currency
+        public let currency: Currency.Code
         
-        internal init(value: Double, currency: IG.Currency) {
+        internal init(value: Decimal, currency: Currency.Code) {
             self.value = value
             self.currency = currency
         }
@@ -168,7 +168,7 @@ extension API.Instrument {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
-    public enum Expiry: Codable, ExpressibleByNilLiteral, Equatable {
+    public enum Expiry: ExpressibleByNilLiteral, Codable, Equatable {
         /// DFBs (i.e. "Daily Funded Bets") run for as long as you choose to keep them open, with a default expiry some way off in the future.
         ///
         /// The cost of maintaining your DFB position is levied on your account each day: hence daily funded bet. You would generally use a daily funded bet to speculate on short-term market movements.
@@ -245,37 +245,33 @@ extension API.Market {
     /// Market's price at a snapshot's time.
     public struct Price: Decodable {
         /// The price being offered (to buy an asset).
-        public let bid: Double?
+        public let bid: Decimal?
         /// The price being asked (to sell an asset).
-        public let offer: Double?
+        public let ask: Decimal?
         /// Lowest price of the day.
-        public let lowest: Double
+        public let lowest: Decimal
         /// Highest price of the day.
-        public let highest: Double
-        /// Net change price on that day.
-        public let changeNet: Double
-        /// Percentage change price on that day.
-        public let changePercentage: Double
+        public let highest: Decimal
+        /// Net and percentage change price on that day.
+        public let change: (net: Decimal, percentage: Decimal)
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            self.bid = try container.decodeIfPresent(Decimal.self, forKey: .bid)
+            self.ask = try container.decodeIfPresent(Decimal.self, forKey: .ask)
+            self.lowest = try container.decode(Decimal.self, forKey: .lowest)
+            self.highest = try container.decode(Decimal.self, forKey: .highest)
+            self.change = (
+                try container.decode(Decimal.self, forKey: .netChange),
+                try container.decode(Decimal.self, forKey: .percentageChange)
+            )
+        }
         
         private enum CodingKeys: String, CodingKey {
-            case bid, offer
+            case bid, ask = "offer"
             case lowest = "low"
             case highest = "high"
-            case changeNet = "netChange"
-            case changePercentage = "percentageChange"
-        }
-    }
-    
-    /// Distance/Size preference.
-    public struct Distance: Decodable {
-        /// The distance value.
-        public let value: Double
-        /// The unit at which the `value` is measured against.
-        public let unit: Unit
-        
-        public enum Unit: String, Decodable {
-            case points = "POINTS"
-            case percentage = "PERCENTAGE"
+            case netChange, percentageChange
         }
     }
 }
@@ -347,37 +343,34 @@ extension API.Node.Market {
         /// - attention: Although a full date is given, only the hours:minutes:seconds are meaningful.
         public let date: Date
         /// Pirce delay marked in minutes.
-        public let delay: Double
+        public let delay: TimeInterval
         /// Describes the current status of a given market
         public let status: API.Market.Status
         /// The state of the market price at the time of the snapshot.
         public let price: API.Market.Price
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-        public let scalingFactor: Double
+        public let scalingFactor: Decimal
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.TimeFormatter.time)
-            
-            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
-                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
-            }
+            let update = try responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) ?!
+                DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
             
             if update > responseDate {
-                guard let newDate = UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
-                    throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
-                }
+                let newDate = try UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) ?!
+                    DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
                 self.date = newDate
             } else {
                 self.date = update
             }
             
-            self.delay = try container.decode(Double.self, forKey: .delay)
+            self.delay = try container.decode(TimeInterval.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
             self.price = try .init(from: decoder)
-            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
+            self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -451,7 +444,7 @@ extension API.Position {
             case fillOrKill = "FILL_OR_KILL"
         }
     }
-    
+    #warning("Change to Decimal")
     /// The level/price at which the user doesn't want to incur more lose.
     public enum Stop {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).

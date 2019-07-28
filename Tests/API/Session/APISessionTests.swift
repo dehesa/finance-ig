@@ -6,9 +6,9 @@ import ReactiveSwift
 final class APISessionTests: APITestCase {
     /// Tests the Session information retrieval mechanisms.
     func testSession() {
-        let info: (accountId: String, apiKey: String, username: String, password: String) = (self.account.accountId, self.account.api.key, self.account.api.username, self.account.api.password)
+        let info: (accountId: String, apiKey: String) = (self.account.identifier, self.account.api.key)
         
-        let endpoints = self.api.session.login(type: .oauth, apiKey: info.apiKey, user: (info.username, info.password))
+        let endpoints = self.api.session.login(type: .oauth, apiKey: info.apiKey, user: self.account.api.user)
             .call(on: self.api) { (api, credentials) -> SignalProducer<API.Session,API.Error> in
                 return api.session.get()
             }.on(value: { (response) in

@@ -12,10 +12,7 @@ extension API.Request.Markets {
         let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezoneSeconds.deepCopy
         
         return SignalProducer(api: self.api) { (api) in
-                guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
-                }
-                
+                let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
                 dateFormatter.timeZone = timezone
             }.request(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
             .send(expecting: .json)
@@ -44,10 +41,7 @@ extension API.Request.Markets {
                 throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.")
             }
             
-            guard let timezone = api.session.credentials?.timezone else {
-                throw API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
-            }
-            
+            let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
             dateFormatter.timeZone = timezone
         }.request(.get, "markets", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
             [URLQueryItem(name: "filter", value: "ALL"),
@@ -154,12 +148,12 @@ extension API.Market {
         /// Meaning and value of the Price Interest Point (a.k.a. PIP).
         public let pip: Self.Pip?
         /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
-        public let lotSize: Double
+        public let lotSize: Decimal
         /// Contract size.
         ///
         /// - For CFDs, this is the number of contracts you wish to trade or of open positions.
         /// - For spread bets this is the amount of profit or loss per point movement in the market
-        public let contractSize: Double?
+        public let contractSize: Decimal?
         /// Boolean indicating whether "force open" is allowed.
         public let isForceOpenAllowed: Bool
         /// Boolean indicating whether stops and limits are allowed.
@@ -198,11 +192,8 @@ extension API.Market {
             self.currencies = try container.decodeIfPresent(Array<Self.Currency>.self, forKey: .currencies) ?? []
             
             if let wrapper = try container.decodeIfPresent([String:Array<Self.HourRange>].self, forKey: .openingTime) {
-                guard let times = wrapper[Self.CodingKeys.openingMarketTimes.rawValue] else {
-                    let debugLine = "Openning times wrapper key \"\(Self.CodingKeys.openingMarketTimes.rawValue)\" was not found."
-                    throw DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: debugLine)
-                }
-                self.openingTime = times
+                self.openingTime = try wrapper[Self.CodingKeys.openingMarketTimes.rawValue]
+                    ?! DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(Self.CodingKeys.openingMarketTimes.rawValue)\" was not found.")
             } else {
                 self.openingTime = nil
             }
@@ -219,9 +210,10 @@ extension API.Market {
                 throw DecodingError.dataCorruptedError(forKey: .pipMeaning, in: container, debugDescription: "The pip definition is inconsistent.")
             }
             
-            self.lotSize = try container.decode(Double.self, forKey: .lotSize)
+            self.lotSize = try container.decode(Decimal.self, forKey: .lotSize)
             if let contractString = try container.decodeIfPresent(String.self, forKey: .contractSize) {
-                self.contractSize = try Double(contractString) ?! DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number.")
+                self.contractSize = try Decimal(string: contractString)
+                    ?! DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number.")
             } else {
                 self.contractSize = nil
             }
@@ -281,10 +273,8 @@ extension API.Market.Instrument {
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .expirationDetails)
             self.settlementInfo = try nestedContainer.decodeIfPresent(String.self, forKey: .settlementInfo)
             
-            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
-                throw DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
-            }
-            
+            let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+                ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.lastDealingDate = try nestedContainer.decodeIfPresent(Date.self, forKey: .lastDealingDate, with: formatter)
         }
 
@@ -304,14 +294,13 @@ extension API.Market.Instrument {
         /// Symbol for display purposes.
         public let symbol: String
         /// Code to be used when placing orders.
-        public let code: IG.Currency
+        public let code: IG.Currency.Code
         /// Base exchange rate.
-        public let baseExchangeRate: Double
+        public let baseExchangeRate: Decimal
         /// Exchange rate.
-        public let exchangeRate: Double
+        public let exchangeRate: Decimal
         /// Is it the default currency?
         public let isDefault: Bool
-        
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
     }
@@ -320,7 +309,6 @@ extension API.Market.Instrument {
     public struct HourRange: Decodable {
         public let open: String
         public let close: String
-        
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
         
@@ -350,33 +338,25 @@ extension API.Market.Instrument {
         /// The dimension for a dealing rule value.
         public let unit: API.Market.Distance.Unit
         /// Margin requirement factor.
-        public let factor: Double
+        public let factor: Decimal
         /// Deposit bands.
         public let depositBands: [Self.Band]
 
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.unit = try container.decode(API.Market.Distance.Unit.self, forKey: .marginUnit)
-            self.factor = try container.decode(Double.self, forKey: .marginFactor)
-            self.depositBands = try container.decode(Array<Self.Band>.self, forKey: .marginBands)
-        }
-
         private enum CodingKeys: String, CodingKey {
-            case marginUnit = "marginFactorUnit"
-            case marginFactor
-            case marginBands = "marginDepositBands"
+            case unit = "marginFactorUnit"
+            case factor = "marginFactor"
+            case depositBands = "marginDepositBands"
         }
 
         public struct Band: Decodable {
             /// The currency for this currency band factor calculation.
-            public let currency: IG.Currency
+            public let currency: IG.Currency.Code
             /// Margin percentage.
-            public let margin: Double
+            public let margin: Decimal
             /// Band minimum.
-            public let min: Double
+            public let min: Decimal
             /// Band maximum.
-            public let max: Double?
-
+            public let max: Decimal?
             /// Do not call! The only way to initialize is through `Decodable`.
             private init?() { fatalError("Unaccessible initializer") }
         }
@@ -385,10 +365,10 @@ extension API.Market.Instrument {
     /// Distance/Size preference.
     public struct SlippageFactor: Decodable {
         public let unit: String
-        public let value: Double
+        public let value: Decimal
     }
 
-    /// Instrument rollover details
+    /// Instrument rollover details.
     public struct Rollover: Decodable {
         public let lastDate: Date
         public let info: String
@@ -470,7 +450,7 @@ extension API.Market {
             case unavailable
             /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
             /// The user has also decided whether that should be the default.
-            case available(default: Bool)
+            case available(isDefault: Bool)
             
             public init(from decoder: Decoder) throws {
                 let container = try decoder.singleValueContainer()
@@ -478,8 +458,8 @@ extension API.Market {
                 
                 switch preference {
                 case "NOT_AVAILABLE": self = .unavailable
-                case "AVAILABLE_DEFAULT_ON": self = .available(default: true)
-                case "AVAILABLE_DEFAULT_OFF": self = .available(default: false)
+                case "AVAILABLE_DEFAULT_ON": self = .available(isDefault: true)
+                case "AVAILABLE_DEFAULT_OFF": self = .available(isDefault: false)
                 default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market order preference \"\(preference)\" not recognized.")
                 }
             }
@@ -564,13 +544,13 @@ extension API.Market {
         /// The state of the market price at the time of the snapshot.
         public let price: API.Market.Price
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-        public let scalingFactor: Double
+        public let scalingFactor: Decimal
         /// Number of decimal positions for market levels.
         public let decimalPlacesFactor: Int
         /// The number of points to add on each side of the market as an additional spread when placing a guaranteed stop trade.
-        public let extraSpreadForControlledRisk: Double
+        public let extraSpreadForControlledRisk: Decimal
         /// Binary odds.
-        public let binaryOdds: Double?
+        public let binaryOdds: Decimal?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -594,10 +574,10 @@ extension API.Market {
             self.delay = try container.decode(Double.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
             self.price = try .init(from: decoder)
-            self.scalingFactor = try container.decode(Double.self, forKey: .scalingFactor)
+            self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
             self.decimalPlacesFactor = try container.decode(Int.self, forKey: .decimalPlacesFactor)
-            self.extraSpreadForControlledRisk = try container.decode(Double.self, forKey: .extraSpreadForControlledRisk)
-            self.binaryOdds = try container.decodeIfPresent(Double.self, forKey: .binaryOdds)
+            self.extraSpreadForControlledRisk = try container.decode(Decimal.self, forKey: .extraSpreadForControlledRisk)
+            self.binaryOdds = try container.decodeIfPresent(Decimal.self, forKey: .binaryOdds)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -610,6 +590,21 @@ extension API.Market {
             case binaryOdds
             case bid, offer
             case high, low, netChange, percentageChange
+        }
+    }
+}
+
+extension API.Market {
+    /// Distance/Size preference.
+    public struct Distance: Decodable {
+        /// The distance value.
+        public let value: Decimal
+        /// The unit at which the `value` is measured against.
+        public let unit: Unit
+        
+        public enum Unit: String, Decodable {
+            case points = "POINTS"
+            case percentage = "PERCENTAGE"
         }
     }
 }

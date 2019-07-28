@@ -77,17 +77,3 @@ extension DateFormatter {
         return self.copy() as! DateFormatter
     }
 }
-
-
-// MARK: - Number Formatters
-
-extension API {
-    /// Reusable number formatter utility instances.
-    internal enum DigitFormatter {
-        /// Default number formatter for profit & loss values (without the currency initial).
-        static let profitLoss = NumberFormatter().set {
-            $0.locale = .init(identifier: "en_US")
-            $0.numberStyle = .decimal
-        }
-    }
-}

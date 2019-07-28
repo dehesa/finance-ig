@@ -14,22 +14,14 @@ extension API.Request.Session {
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func loginCertificate(apiKey: String, user: (name: String, password: String), encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadCertificate in
+    internal func loginCertificate(apiKey: String, user: API.User, encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
+        return SignalProducer(api: self.api) { (_) in
                 let apiKeyLength: Int = 40
                 guard apiKey.utf8.count == apiKeyLength else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
                 }
-            
-                guard !user.name.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Client's username is invalid.")
-                }
-                guard !user.password.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Client's password is invalid.")
-                }
-            
-                return .init(identifier: user.name, password: user.password, encryptedPassword: false)
-            }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_, payload) in
+            }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_,_) in
+                let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
@@ -76,9 +68,19 @@ extension API.Request.Session {
 extension API.Request.Session {
     /// Log-in through certificate required payload.
     private struct PayloadCertificate: Encodable {
-        let identifier: String
-        let password: String
+        let user: API.User
         let encryptedPassword: Bool
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            try container.encode(self.user.name, forKey: .identifier)
+            try container.encode(self.user.password, forKey: .password)
+            try container.encode(self.encryptedPassword, forKey: .encryptedPassword)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case identifier, password, encryptedPassword
+        }
     }
 }
 
