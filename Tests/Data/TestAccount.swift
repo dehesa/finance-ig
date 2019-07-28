@@ -2,21 +2,21 @@ import Foundation
 @testable import IG
 
 /// Structure containing the loging information for the testing environment.
-struct Account: Decodable {
+struct TestAccount: Decodable {
     /// The target account identifier.
-    var accountId: String
+    var identifier: String
     /// List of variables required to connect to the API.
-    var api: Account.API
+    var api: Self.APIData
     /// List of variables required to connect to the Streamer.
     ///
     /// If `nil`, the credentials are queried to the API (whether mocked or real).
-    var streamer: Account.Streamer
+    var streamer: Self.StreamerData
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.accountId = try container.decode(String.self, forKey: .accountId)
-        self.api = try container.decode(Account.API.self, forKey: .api)
-        self.streamer = try container.decodeIfPresent(Account.Streamer.self, forKey: .streamer) ?? Account.Streamer()
+        self.identifier = try container.decode(String.self, forKey: .accountId)
+        self.api = try container.decode(Self.APIData.self, forKey: .api)
+        self.streamer = try container.decodeIfPresent(Self.StreamerData.self, forKey: .streamer) ?? TestAccount.StreamerData()
     }
     
     private enum CodingKeys: String, CodingKey {
@@ -24,9 +24,9 @@ struct Account: Decodable {
     }
 }
 
-extension Account {
+extension TestAccount {
     /// Account test environment API information.
-    struct API: Decodable {
+    struct APIData: Decodable {
         /// The root URL from where to call the endpoints.
         ///
         /// If this references a folder in the bundles file system, it shall be of type:
@@ -36,19 +36,18 @@ extension Account {
         var url: URL
         /// The API API key used to identify the developer.
         var key: String
-        /// The username identifying the user.
-        var username: String
-        /// The password allowing access to user data.
-        var password: String
+        /// The user name and password used on the API endpoint calls.
+        var user: IG.API.User
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             let url = try container.decodeIfPresent(String.self, forKey: .url)
-            self.url = try Account.parse(path: url)
+            self.url = try TestAccount.parse(path: url)
             self.key = try container.decode(String.self, forKey: .key)
-            self.username = try container.decode(String.self, forKey: .username)
-            self.password = try container.decode(String.self, forKey: .password)
+            let username = try container.decode(IG.API.User.Name.self, forKey: .username)
+            let password = try container.decode(IG.API.User.Password.self, forKey: .password)
+            self.user = .init(username, password)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -57,9 +56,9 @@ extension Account {
     }
 }
 
-extension Account {
+extension TestAccount {
     /// Account test environment Streamer information.
-    struct Streamer: Decodable {
+    struct StreamerData: Decodable {
         /// The root URL from where to get the streaming messages.
         ///
         /// It can be one of the followings:
@@ -86,7 +85,7 @@ extension Account {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             if let url = try container.decodeIfPresent(String.self, forKey: .url) {
-                self.url = try Account.parse(path: url)
+                self.url = try TestAccount.parse(path: url)
             } else {
                 self.url = nil
             }
@@ -116,7 +115,7 @@ extension Account {
     }
 }
 
-extension Account {
+extension TestAccount {
     /// Supported URL schemes for the rootURL
     enum SupportedScheme: String {
         case file
@@ -150,7 +149,7 @@ extension Account {
             case .environmentVariableNotFound(let key):
                 result.addTitle("The variable with name \"\(key)\" hasn't been found in the test environment.")
                 result.addDetail("Please set a test environment variable with name \"\(key)\" and value \"file://myrelative/path/from/bundle/resource/folder/myfile.json\".")
-                result.addDetail("The JSON file specifies the account used for testing (for more information, check \"\(Account.self).swift\".")
+                result.addDetail("The JSON file specifies the account used for testing (for more information, check \"\(TestAccount.self).swift\".")
             case .invalidURL(let path):
                 result.addTitle("A URL couldn't be formed from: \"\(path ?? "nil")\".")
             case .bundleResourcesNotFound:
@@ -159,7 +158,7 @@ extension Account {
                 result.addTitle("The file with URL \"\(url.absoluteString)\" couldn't be load.")
                 result.addDetail("Underlying error: \(underlyingError)")
             case .accountParsingFailed(let url, let underlyingError):
-                result.addTitle("The file with URL \"\(url.absoluteString)\" couldn't be parsed as \"\(Account.self)\" type.")
+                result.addTitle("The file with URL \"\(url.absoluteString)\" couldn't be parsed as \"\(TestAccount.self)\" type.")
                 result.addDetail("Underlying error: \(underlyingError)")
             }
             
@@ -169,19 +168,19 @@ extension Account {
     }
 }
 
-extension Account {
+extension TestAccount {
     /// Load data to use as testing account/environment.
     /// - parameter environmentKey: Build variable key, which value gives the location of the account swift file.
     /// - returns: Representation of the account file.
-    static func make(from environmentKey: String) -> Account {
+    static func make(from environmentKey: String) -> TestAccount {
         guard let accountPath = ProcessInfo.processInfo.environment[environmentKey] else {
             fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
         }
         
         let accountFileURL: URL
         do {
-            accountFileURL = try Account.parse(path: accountPath)
-        } catch let error as Account.Error {
+            accountFileURL = try TestAccount.parse(path: accountPath)
+        } catch let error as TestAccount.Error {
             fatalError(error.debugDescription)
         } catch {
             fatalError("Error couldn't be identified.")
@@ -195,7 +194,7 @@ extension Account {
         }
         
         do {
-            return try JSONDecoder().decode(Account.self, from: data)
+            return try JSONDecoder().decode(TestAccount.self, from: data)
         } catch let error {
             fatalError(Error.accountParsingFailed(url: accountFileURL, underlyingError: error).debugDescription)
         }
@@ -214,20 +213,20 @@ extension Account {
     fileprivate static func parse(path: String?) throws -> URL {
         // If no parameter has been provided.
         guard let string = path else {
-            throw Account.Error.invalidURL(path)
+            throw TestAccount.Error.invalidURL(path)
         }
         
         // Retrieve the schema (e.g. "file://") and see whether the path type is supported.
         guard let url = URL(string: string),
               let schemeString = url.scheme,
               let scheme = SupportedScheme(rawValue: schemeString) else {
-                throw Account.Error.invalidURL(string)
+                throw TestAccount.Error.invalidURL(string)
         }
         
         // Check that the url is bigger than just the scheme.
         let substring = string.dropFirst("\(scheme.rawValue)://".count)
         guard let first = substring.first else {
-            throw Account.Error.invalidURL(string)
+            throw TestAccount.Error.invalidURL(string)
         }
         
         // If the scheme is a web URL or a local path pointing to the root folder (i.e. "/"), return the URL without further modifications.
@@ -242,7 +241,7 @@ extension Account {
     /// Returns the URL for the test bundle resource.
     private static func bundleResourceURL() throws -> URL {
         let bundle = Bundle(for: UselessClass.self)
-        guard let url = bundle.resourceURL else { throw Account.Error.bundleResourcesNotFound }
+        guard let url = bundle.resourceURL else { throw TestAccount.Error.bundleResourcesNotFound }
         return url
     }
     

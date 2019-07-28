@@ -74,9 +74,9 @@ extension API.Market {
         /// This identifier is primarily used in the our market research services, such as client sentiment, and may be found on the /market/{epic} service
         let marketIdentifier: String
         /// Percentage long positions (over 100%).
-        let longs: Double
+        let longs: Decimal
         /// Percentage short positions (over 100%).
-        let shorts: Double
+        let shorts: Decimal
         
         private enum CodingKeys: String, CodingKey {
             case marketIdentifier = "marketId"

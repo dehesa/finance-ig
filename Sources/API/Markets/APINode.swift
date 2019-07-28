@@ -195,17 +195,17 @@ extension API.Request.Nodes {
 
 // MARK: Response Entities
 
+extension API.Request.Nodes {
+    private struct WrapperSearch: Decodable {
+        let markets: [API.Node.Market]
+    }
+}
+
 extension API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node identifier will be stored.
     fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "nodeId")!
     /// Key for JSON decoders under which a node name will be stored.
     fileprivate static let nodeName = CodingUserInfoKey(rawValue: "nodeName")!
-}
-
-extension API.Request.Nodes {
-    private struct WrapperSearch: Decodable {
-        let markets: [API.Node.Market]
-    }
 }
 
 extension API {
@@ -216,9 +216,19 @@ extension API {
         public let identifier: String?
         /// Node name.
         public var name: String?
-        /// The children nodes (subnodes) of `self`.
+        /// The children nodes (subnodes) of `self`
+        ///
+        /// There can be three possible options:
+        /// - `nil`if there hasn't be a query to ask for this node's subnodes.
+        /// - Empty array if this node doesn't have any subnode.
+        /// - Filled array if the node has children.
         public internal(set) var subnodes: [Self]?
         /// The markets organized under `self`
+        ///
+        /// There can be three possible options:
+        /// - `nil`if there hasn't be a query to ask for this node's markets..
+        /// - Empty array if this node doesn't have any market..
+        /// - Filled array if the node has markets..
         public internal(set) var markets: [Self.Market]?
         
         fileprivate init(identifier: String?, name: String?) {

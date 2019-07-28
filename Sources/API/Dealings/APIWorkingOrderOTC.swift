@@ -19,7 +19,7 @@ extension API.Request.WorkingOrders {
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: IG.Currency, direction: API.Deal.Direction,
+    public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: Currency.Code, direction: API.Deal.Direction,
                        type: API.WorkingOrder.Kind, size: Double, level: Double, limit: API.Deal.Limit?, stop: Self.Stop?, forceOpen: Bool = true,
                        expiration: API.WorkingOrder.Expiration, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)
@@ -86,7 +86,7 @@ extension API.Request.WorkingOrders {
     private struct PayloadCreation: Encodable {
         let epic: Epic
         let expiry: API.Instrument.Expiry
-        let currency: IG.Currency
+        let currency: Currency.Code
         let direction: API.Deal.Direction
         let type: API.WorkingOrder.Kind
         let level: Double

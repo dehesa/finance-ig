@@ -145,8 +145,8 @@ extension API.Position.Confirmation {
                 throw DecodingError.dataCorruptedError(forKey: .stopDistance, in: container, debugDescription: "In testing \"\(Self.CodingKeys.stopDistance.rawValue)\" has never been set. Here, however, seems to have a value of \"\(stopDistance)\". Please report this deal/confirmation to the maintainer.")
             }
             
-            let profitValue = try container.decodeIfPresent(Double.self, forKey: .profitValue)
-            let profitCurrency = try container.decodeIfPresent(Currency.self, forKey: .profitCurrency)
+            let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
+            let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)
             switch (profitValue, profitCurrency) {
             case (let value?, let currency?):
                 self.profit = .init(value: value, currency: currency)

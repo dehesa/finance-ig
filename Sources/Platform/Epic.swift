@@ -3,16 +3,6 @@ import Foundation
 /// An epic represents a unique tradeable market.
 public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
     public let rawValue: String
-    /// The allowed character set for epics.
-    ///
-    /// It is used on validation.
-    private static let allowedSet: CharacterSet = {
-        var result = CharacterSet(arrayLiteral: ".", "_")
-        result.formUnion(CharacterSet.IG.lowercaseANSI)
-        result.formUnion(CharacterSet.IG.uppercaseANSI)
-        result.formUnion(CharacterSet.decimalDigits)
-        return result
-    }()
     
     public init(stringLiteral value: String) {
         guard Self.validate(value) else { fatalError("The epic couldn't be identified or is not in the correct format.") }
@@ -20,7 +10,7 @@ public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hasha
     }
     
     public init?(rawValue: String) {
-        guard Epic.validate(rawValue) else { return nil }
+        guard Self.validate(rawValue) else { return nil }
         self.rawValue = rawValue
     }
     
@@ -46,4 +36,15 @@ public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hasha
         let allowedRange = 6...30
         return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
     }
+    
+    /// The allowed character set for epics.
+    ///
+    /// It is used on validation.
+    private static let allowedSet: CharacterSet = {
+        var result = CharacterSet(arrayLiteral: ".", "_")
+        result.formUnion(CharacterSet.IG.lowercaseANSI)
+        result.formUnion(CharacterSet.IG.uppercaseANSI)
+        result.formUnion(CharacterSet.decimalDigits)
+        return result
+    }()
 }

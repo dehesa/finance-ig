@@ -7,7 +7,7 @@ import Foundation
 final class APIAccountTests: APITestCase {
     /// Tests Account information retrieval.
     func testAccounts() {
-        let accountId = self.account.accountId
+        let accountId = self.account.identifier
         
         let endpoint = self.api.accounts.getAll().on(value: {
             guard let account = $0.first else {
@@ -37,5 +37,11 @@ final class APIAccountTests: APITestCase {
         }
 
         self.test("Account Preferences", endpoint, signingProcess: .oauth, timeout: 2)
+    }
+    
+    func testPremise() {
+        let code: Currency.Code = "EUR"
+        let string = "150 \(code)"
+        print(string)
     }
 }

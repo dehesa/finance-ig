@@ -18,8 +18,7 @@ extension API.Request.Price {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
             
-                let formatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
-                formatter.timeZone = timezone
+                let formatter = API.TimeFormatter.iso8601NoTimezone.deepCopy.set { $0.timeZone = timezone }
             
                 guard let page = page else {
                     return (0, 1, formatter)
@@ -54,9 +53,9 @@ extension API.Request.Price {
                             throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
                         }
                         
-                        let decoder = JSONDecoder()
-                        decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
-                        return decoder
+                        return JSONDecoder().set {
+                            $0.userInfo[API.JSON.DecoderKey.responseDate] = date
+                        }
                     }.map { (response: Self.PagedPrices) in
                         let result = (response.prices, allowance: response.metadata.allowance)
                         return (response.metadata.page, result)
@@ -210,21 +209,18 @@ extension API.Price {
     /// Price Snap.
     public struct Point: Decodable {
         /// Bid price (i.e. the price being offered  to buy an asset).
-        public let bid: Double
+        public let bid: Decimal
         /// Ask price (i.e. the price being asked to sell an asset).
-        public let ask: Double
+        public let ask: Decimal
         /// Last traded price.
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
-        public let lastTraded: Double?
+        public let lastTraded: Decimal?
         
         /// The middle price between the *bid* and the *ask* price.
-        public var mid: Double {
-            return bid + 0.5 * (ask - bid)
+        public var mid: Decimal {
+            return self.bid + 0.5 * (self.ask - self.bid)
         }
-        
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
     }
 }
 
@@ -234,9 +230,9 @@ extension API.Price {
         /// The date in which the current allowance period will end and the remaining allowance field is reset.
         public let resetDate: Date
         /// The number of data points still available to fetch within the current allowance period.
-        public let remaining: Int
+        public let remaining: UInt
         /// The number of data points the API key and account combination is allowed to fetch in any given allowance period.
-        public let total: Int
+        public let total: UInt
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -247,8 +243,8 @@ extension API.Price {
             }
             self.resetDate = date.addingTimeInterval(numSeconds)
             
-            self.remaining = try container.decode(Int.self, forKey: .remainingDataPoints)
-            self.total = try container.decode(Int.self, forKey: .totalDataPoints)
+            self.remaining = try container.decode(UInt.self, forKey: .remainingDataPoints)
+            self.total = try container.decode(UInt.self, forKey: .totalDataPoints)
         }
         
         private enum CodingKeys: String, CodingKey {

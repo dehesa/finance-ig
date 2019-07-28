@@ -33,7 +33,7 @@ final class APIApplicationTests: APITestCase {
     /// Tests the application configuration capabilities.
     func testApplicationSettings() {
         let apiKey = self.account.api.key
-        let input: (status: API.Application.Status, overall: Int, trading: Int) = (.enabled, 30, 100)
+        let input: (status: API.Application.Status, overall: UInt, trading: UInt) = (.enabled, 30, 100)
 
         let endpoint = self.api.applications.update(apiKey: apiKey, status: input.status, accountAllowance: (input.overall, input.trading)).on(value: {
             XCTAssertEqual($0.apiKey, apiKey)

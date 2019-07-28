@@ -19,10 +19,7 @@ extension API.Request.Activity {
         let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
         
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
-                }
-            
+                let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
                 dateFormatter.timeZone = timezone
                 return dateFormatter
             }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in
@@ -57,9 +54,7 @@ extension API.Request.Activity {
                     return nil
                 }
                 
-                guard let queries = URLComponents(string: next)?.queryItems else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activities couldn't be processed because there were no \"next\" queries.")
-                }
+                let queries = try URLComponents(string: next)?.queryItems ?! API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activities couldn't be processed because there were no \"next\" queries.")
                 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
@@ -158,11 +153,8 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            
-            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
-                throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
-            }
-            
+            let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+                ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.dealIdentifier = try container.decode(API.Deal.Identifier.self, forKey: .dealId)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
@@ -230,15 +222,16 @@ extension API.Activity {
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination (e.g. `GBP`).
-        public let currency: IG.Currency
+        public let currency: Currency.Code
         /// Deal direction.
         public let direction: API.Deal.Direction
         /// Deal size.
-        public let size: Double
+        public let size: Decimal
         /// Good till date.
         public let goodTillDate: Date?
         /// Instrument price at which the activity has been "commited"
-        public let level: Double?
+        public let level: Decimal?
+        #warning("LimitLevel & LimitDistance (same things with stop), related to working orders.")
         /// Limit level (from deal price).
         public let limit: Double?
         /// Stop for the targeted deal
@@ -249,9 +242,9 @@ extension API.Activity {
             self.dealReference = try container.decodeIfPresent(API.Deal.Reference.self, forKey: .dealReference)
             self.actions = try container.decode([Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
-            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
+            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
-            self.size = try container.decode(Double.self, forKey: .size)
+            self.size = try container.decode(Decimal.self, forKey: .size)
             
             if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {
                 guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
@@ -262,7 +255,8 @@ extension API.Activity {
                 self.goodTillDate = nil
             }
             
-            self.level = try container.decodeIfPresent(Double.self, forKey: .level)
+//            self.level = try container.decodeIfPresent(Decimal.self, forKey: .level)
+            self.level = try container.decodeIfPresent(Decimal.self, forKey: .level)
             
             // "limitDistance" is being ignored, since it can be calculated at any point.
             self.limit = try container.decodeIfPresent(Double.self, forKey: .limitLevel)

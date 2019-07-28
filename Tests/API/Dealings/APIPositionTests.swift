@@ -19,7 +19,7 @@ final class APIPositionTests: APITestCase {
     func testPositionLifecycle() {
         let epic: Epic = "CS.D.EURUSD.MINI.IP"
         let expiry: API.Instrument.Expiry = nil
-        let currency: Currency = "USD"
+        let currency: Currency.Code = "USD"
         let direction: API.Deal.Direction = .sell
         let order: API.Position.Order = .market
         let strategy: API.Position.Order.Strategy = .execute

@@ -7,9 +7,9 @@ final class APICertificateTests: APITestCase {
     /// Tests the CST lifecycle: session creation, refresh, and disconnection.
     func testCertificateLogInOut() {
         /// The info needed to request CST credentials.
-        let info: (accountId: String, apiKey: String, username: String, password: String) = (self.account.accountId, self.account.api.key, self.account.api.username, self.account.api.password)
+        let info: (accountId: String, apiKey: String) = (self.account.identifier, self.account.api.key)
         
-        let endpoints = self.api.session.loginCertificate(apiKey: info.apiKey, user: (info.username, info.password)).on(value: {
+        let endpoints = self.api.session.loginCertificate(apiKey: info.apiKey, user: self.account.api.user).on(value: {
             XCTAssertGreaterThan($0.clientId, 0)
             XCTAssertEqual($0.apiKey, info.apiKey)
             XCTAssertEqual($0.accountId, info.accountId)

@@ -65,7 +65,7 @@ extension API {
         public let date: Date
         
         /// Position currency ISO code.
-        public let currency: IG.Currency
+        public let currency: Currency.Code
         /// Size of the contract.
         public let contractSize: Double
         /// Deal size.
@@ -91,7 +91,7 @@ extension API {
             self.reference = try nestedContainer.decode(API.Deal.Reference.self, forKey: .reference)
             self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
             
-            self.currency = try nestedContainer.decode(IG.Currency.self, forKey: .currency)
+            self.currency = try nestedContainer.decode(Currency.Code.self, forKey: .currency)
             self.contractSize = try nestedContainer.decode(Double.self, forKey: .contractSize)
             self.size = try nestedContainer.decode(Double.self, forKey: .size)
             

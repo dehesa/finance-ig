@@ -6,8 +6,8 @@ infix operator ?!
 /// - parameter lhs: Optional value to check for existance.
 /// - parameter rhs: Swift error to throw in case of no value.
 /// - returns: The value (non-optional) passed as parameter.
-/// - throws: The Swift error passed as parameter.
-internal func ?!<T>(lhs: T?, rhs: Swift.Error) throws -> T {
-    guard let result = lhs else { throw rhs }
+/// - throws: The Swift error returned on the right hand-side autoclosure.
+internal func ?!<T>(lhs: T?, rhs: @autoclosure ()->Swift.Error) throws -> T {
+    guard let result = lhs else { throw rhs() }
     return result
 }

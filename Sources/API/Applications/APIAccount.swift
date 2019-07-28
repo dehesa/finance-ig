@@ -87,10 +87,10 @@ extension API {
         public let type: Self.Kind
         /// Account status
         public let status: Self.Status
-        /// Default login account.
-        public let preferred: Bool
+        /// Default/Preferred login account.
+        public let isDefault: Bool
         /// Account currency.
-        public let currency: IG.Currency
+        public let currency: Currency.Code
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
@@ -102,11 +102,12 @@ extension API {
             self.name = try container.decode(String.self, forKey: .name)
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
-            self.preferred = try container.decode(Bool.self, forKey: .preferred)
-            self.currency = try container.decode(IG.Currency.self, forKey: .currency)
-            let transferIn = try container.decode(Bool.self, forKey: .transfersIn)
-            let transferOut = try container.decode(Bool.self, forKey: .transfersOut)
-            self.transfersAllowed = (transferIn, transferOut)
+            self.isDefault = try container.decode(Bool.self, forKey: .preferred)
+            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+            self.transfersAllowed = (
+                try container.decode(Bool.self, forKey: .transfersIn),
+                try container.decode(Bool.self, forKey: .transfersOut)
+            )
             self.type = try container.decode(Kind.self, forKey: .type)
             self.balance = try container.decode(Balance.self, forKey: .balance)
         }
@@ -145,16 +146,13 @@ extension API.Account {
     /// Account balances.
     public struct Balance: Decodable {
         /// Balance of funds in the account.
-        public let value: Double
+        public let value: Decimal
         /// Minimum deposit amount required for margins.
-        public let deposit: Double
+        public let deposit: Decimal
         /// Profit & Loss amount.
-        public let profitLoss: Double
+        public let profitLoss: Decimal
         /// Amount available for trading.
-        public let available: Double
-        
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        public let available: Decimal
         
         private enum CodingKeys: String, CodingKey {
             case value = "balance"
