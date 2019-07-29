@@ -400,9 +400,9 @@
 		8DC4CA642149A6CE00344CBF /* Dealings */ = {
 			isa = PBXGroup;
 			children = (
+				8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */,
 				8DC4CA692149A6CE00344CBF /* APIPosition.swift */,
 				8DC4CA672149A6CE00344CBF /* APIPositionOTC.swift */,
-				8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */,
 				8DC4CA682149A6CE00344CBF /* APIWorkingOrder.swift */,
 				8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */,
 			);

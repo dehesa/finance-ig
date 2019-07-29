@@ -23,11 +23,11 @@ extension API.Request.Positions {
     /// - returns: The transient deal reference (for an unconfirmed trade).
     public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: Currency.Code, direction: API.Deal.Direction,
                        order: API.Position.Order, strategy: API.Position.Order.Strategy,
-                       size: Double, limit: API.Deal.Limit?, stop: Self.Stop?,
+                       size: Decimal, limit: API.Deal.Limit?, stop: Self.Stop?,
                        forceOpen: Bool = true, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.post, "positions/otc", version: 2, credentials: true, body: { (_,_) in
-                let payload = Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
+        return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
+                return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
+            }.request(.post, "positions/otc", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
@@ -42,21 +42,12 @@ extension API.Request.Positions {
     ///
     /// This endpoint modifies an openned position. The returned refence is not considered as taken into effect until the server confirms the "transient" position reference and give the user a deal identifier.
     /// - parameter identifier: A permanent deal reference for a confirmed trade.
-    /// - parameter limit: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
+    /// - parameter limitLevel: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: API.Deal.Identifier, limit: Double?, stop: API.Position.Stop?) -> SignalProducer<API.Deal.Reference,API.Error> {
+    public func update(identifier: API.Deal.Identifier, limitLevel: Decimal?, stop: API.Position.Stop?) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api)  { (_) -> Self.PayloadUpdate in
-                if let stop = stop {
-                    if case .position(_, let risk) = stop, case .limited(_) = risk {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's limit will automatically make it \"risk exposed\"")
-                    } else if case .trailing(_, nil) = stop {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's trailng stop requires the trailing tail (i.e. distance and increment.")
-                    }
-                } else if case .none = limit {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! You need to provide a limit or stop.")
-                }
-                return .init(limit: limit, stop: stop)
+                return try .init(limit: limitLevel, stop: stop)
             }.request(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -100,11 +91,41 @@ extension API.Request.Positions {
         let direction: API.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
-        let size: Double
+        let size: Decimal
         let limit: API.Deal.Limit?
         let stop: API.Request.Positions.Stop?
         let forceOpen: Bool
         let reference: API.Deal.Reference?
+        
+        init(epic: Epic, expiry: API.Instrument.Expiry, currency: Currency.Code, direction: API.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal, limit: API.Deal.Limit?, stop: API.Request.Positions.Stop?, forceOpen: Bool, reference: API.Deal.Reference?) throws {
+            self.epic = epic
+            self.expiry = expiry
+            self.currency = currency
+            self.direction = direction
+            self.order = order
+            self.strategy = strategy
+            
+            guard case .plus = size.sign, size.isNormal else {
+                throw API.Error.invalidRequest(underlyingError: nil, message: "Position creation failed! The size value \"\(size)\" must be a valid number and greater than zero.")
+            }
+            self.size = size
+            
+            if let limit = limit {
+                guard forceOpen else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Position creation failed! A position must be marked as \"force open\" if a limit is set.")
+                }
+                
+                if let orderLevel = self.order.level {
+                    guard limit.isValid(forDealLevel: orderLevel, direction: self.direction) else {
+                        throw API.Error.invalidRequest(underlyingError: nil, message: "The limit provided \"\(limit)\" is invalid since it is set on the opposite direction of the deal level \"\(orderLevel)\".")
+                    }
+                }
+            }
+            self.limit = limit
+            self.stop = stop
+            self.forceOpen = forceOpen
+            self.reference = reference
+        }
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: Self.CodingKeys.self)
@@ -112,13 +133,11 @@ extension API.Request.Positions {
             try container.encode(self.expiry, forKey: .expiry)
             try container.encode(self.currency, forKey: .currency)
             try container.encode(self.direction, forKey: .direction)
-            
             try container.encode(self.order.rawValue, forKey: .order)
             switch order {
+            case .market: break
             case .limit(level: let level):
                 try container.encode(level, forKey: .level)
-            case .market:
-                break
             case .quote(id: let quoteId, level: let level):
                 try container.encode(quoteId, forKey: .quoteId)
                 try container.encode(level, forKey: .level)
@@ -131,9 +150,13 @@ extension API.Request.Positions {
             if let limit = self.limit {
                 forceOpen = true
                 
-                switch limit {
-                case .position(let level): try container.encode(level, forKey: .limitLevel)
-                case .distance(let distance): try container.encode(distance, forKey: .limitDistance)
+                switch limit.type {
+                case .absolute(let level):
+                    try container.encode(level, forKey: .limitLevel)
+                case .incomplete(let distance):
+                    try container.encode(distance, forKey: .limitDistance)
+                case .relative:
+                    try container.encode(limit.level, forKey: .limitLevel)
                 }
             }
             
@@ -175,10 +198,27 @@ extension API.Request.Positions {
             case reference = "dealReference"
         }
     }
-    
+}
+
+extension API.Request.Positions {
     private struct PayloadUpdate: Encodable {
-        let limit: Double?
+        let limit: Decimal?
         let stop: API.Position.Stop?
+        
+        init(limit: Decimal?, stop: API.Position.Stop?) throws {
+            self.limit = limit
+            self.stop = stop
+            #warning("Position: update")
+//            if let stop = stop {
+//                if case .position(_, let risk) = stop, case .limited(_) = risk {
+//                    throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's limit will automatically make it \"risk exposed\"")
+//                } else if case .trailing(_, nil) = stop {
+//                    throw API.Error.invalidRequest(underlyingError: nil, message: "Setting a position's trailng stop requires the trailing tail (i.e. distance and increment.")
+//                }
+//            } else if case .none = limit {
+//                throw API.Error.invalidRequest(underlyingError: nil, message: "Position update failed! You need to provide a limit or stop.")
+//            }
+        }
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: Self.CodingKeys.self)
@@ -221,7 +261,9 @@ extension API.Request.Positions {
             case trailingStopIncrement
         }
     }
-    
+}
+
+extension API.Request.Positions {
     private struct PayloadDeletion: Encodable {
         let identification: API.Request.Positions.Identification
         let direction: API.Deal.Direction

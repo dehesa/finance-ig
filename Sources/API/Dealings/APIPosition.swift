@@ -66,16 +66,17 @@ extension API {
         
         /// Position currency ISO code.
         public let currency: Currency.Code
-        /// Size of the contract.
-        public let contractSize: Double
-        /// Deal size.
-        public let size: Double
-        /// Level (instrument price) at which the position was openend.
-        public let level: Double
         /// Deal direction.
         public let direction: API.Deal.Direction
+        /// Size of the contract.
+        public let contractSize: Decimal
+        /// Deal size.
+        public let size: Decimal
+        /// Level (instrument price) at which the position was openend.
+        public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: Double?
+        public let limit: API.Deal.Limit?
+        #warning("Position: stop")
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
         public let stop: Self.Stop?
         
@@ -92,12 +93,16 @@ extension API {
             self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
             
             self.currency = try nestedContainer.decode(Currency.Code.self, forKey: .currency)
-            self.contractSize = try nestedContainer.decode(Double.self, forKey: .contractSize)
-            self.size = try nestedContainer.decode(Double.self, forKey: .size)
-            
-            self.level = try nestedContainer.decode(Double.self, forKey: .level)
             self.direction = try nestedContainer.decode(API.Deal.Direction.self, forKey: .direction)
-            self.limit = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitLevel)
+            self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)
+            self.size = try nestedContainer.decode(Decimal.self, forKey: .size)
+            
+            self.level = try nestedContainer.decode(Decimal.self, forKey: .level)
+            if let limitLevel = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitLevel) {
+                self.limit = .position(level: limitLevel)
+            } else {
+                self.limit = nil
+            }
             
             guard let stopLevel = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopLevel) else {
                 self.stop = nil

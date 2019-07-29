@@ -230,10 +230,10 @@ extension API.Activity {
         /// Good till date.
         public let goodTillDate: Date?
         /// Instrument price at which the activity has been "commited"
-        public let level: Decimal?
-        #warning("LimitLevel & LimitDistance (same things with stop), related to working orders.")
-        /// Limit level (from deal price).
-        public let limit: Double?
+        public let level: Decimal
+        /// Level at which the user is happy to take profit.
+        public let limit: API.Deal.Limit?
+        #warning("Activities: stop")
         /// Stop for the targeted deal
         public let stop: API.Position.Stop?
         
@@ -255,11 +255,14 @@ extension API.Activity {
                 self.goodTillDate = nil
             }
             
-//            self.level = try container.decodeIfPresent(Decimal.self, forKey: .level)
-            self.level = try container.decodeIfPresent(Decimal.self, forKey: .level)
-            
-            // "limitDistance" is being ignored, since it can be calculated at any point.
-            self.limit = try container.decodeIfPresent(Double.self, forKey: .limitLevel)
+            self.level = try container.decode(Decimal.self, forKey: .level)
+            let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
+            let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
+            switch (limitLevel, limitDistance) {
+            case (.none, .none): self.limit = nil
+            case (.none, let distance?): self.limit = .position(distance: distance, from: self.level, direction: self.direction)
+            case (let level?,_): self.limit = .position(level: level)
+            }
             
             // "stopDistance" is being ignored, since it can be calculated at any point.
             guard let stopLevel = try container.decodeIfPresent(Double.self, forKey: .stopLevel) else {

@@ -102,9 +102,10 @@ extension API.Position.Confirmation {
         /// The deal size
         public let size: Double
         /// Instrument price.
-        public let level: Double
+        public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: Double?
+        public let limit: API.Deal.Limit?
+        #warning("Confirmation: stop")
         /// The level at which the user doesn't want to incur more losses.
         public let stop: API.Position.Stop?
         /// Profit (value and currency).
@@ -117,11 +118,16 @@ extension API.Position.Confirmation {
             
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Double.self, forKey: .size)
-            self.level = try container.decode(Double.self, forKey: .level)
+            self.level = try container.decode(Decimal.self, forKey: .level)
             
-            self.limit = try container.decodeIfPresent(Double.self, forKey: .limitLevel)
-            if let limitDistance = try container.decodeIfPresent(Double.self, forKey: .limitDistance) {
-                throw DecodingError.dataCorruptedError(forKey: .limitDistance, in: container, debugDescription: "In testing \"\(Self.CodingKeys.limitDistance.rawValue)\" has never been set. Here, however, seems to have a value of \"\(limitDistance)\". Please report this deal/confirmation to the maintainer.")
+            let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
+            let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
+            switch (limitLevel, limitDistance) {
+            case (.none, .none): self.limit = nil
+            case (let level?, .none): self.limit = .position(level: level)
+            case (.none, let distance?): self.limit = .position(distance: distance, from: self.level, direction: self.direction)
+            case (.some(_), .some(_)):
+                throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Limit level and distance are both set on a deal confirmation. This is not suppose to happen!")
             }
             
             if let stopLevel = try container.decodeIfPresent(Double.self, forKey: .stopLevel) {
@@ -140,7 +146,6 @@ extension API.Position.Confirmation {
                 self.stop = nil
             }
             
-            #warning("Working orders only work with distances.")
             if let stopDistance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
                 throw DecodingError.dataCorruptedError(forKey: .stopDistance, in: container, debugDescription: "In testing \"\(Self.CodingKeys.stopDistance.rawValue)\" has never been set. Here, however, seems to have a value of \"\(stopDistance)\". Please report this deal/confirmation to the maintainer.")
             }

@@ -111,13 +111,84 @@ extension API.Deal {
             }
         }
     }
-    #warning("Change this to Decimal and add ExpressibleBy initializers.")
-    /// The type of limit for the hosting deal.
-    public enum Limit {
-        /// The limit is given explicitly (as a value).
-        case position(level: Double)
-        /// The limit is measured as the distance from a given level (or in its absence, the market level).
-        case distance(Double)
+    
+    /// The limit at which the user is taking profit.
+    public struct Limit {
+        /// The internal type of limit.
+        public let type: Self.Kind
+        
+        private init(_ type: Self.Kind) {
+            self.type = type
+        }
+        
+        /// Returns the absolute level at which the limit will be set.
+        ///
+        /// If the limit has been relatively specified, it returns `nil`
+        public var level: Decimal? {
+            switch self.type {
+            case .absolute(let level):
+                return level
+            case .relative(let distance, let base, let direction):
+                switch direction {
+                case .buy:  return base + distance
+                case .sell: return base - distance
+                }
+            case .incomplete:
+                return nil
+            }
+        }
+
+        /// Specifies the limit as a given absolute level.
+        /// - parameter level: The absolute level where the limit will be set.
+        /// - returns: An initialized limit.
+        public static func position(level: Decimal) -> Self {
+            return Self.init(.absolute(level: level))
+        }
+        
+        /// Specifies the limit as the distance from a reference base level in a given direction.
+        /// - parameter distance: A non-zero positive number specifying the distance from the reference "base" level.
+        /// - parameter base: The reference level.
+        /// - parameter direction: The deal direction from which to mark the distance. `.buy` deals will have the limits higher than the reference levels, while `.sell` deals will have then lower.
+        internal static func position(distance: Decimal, from base: Decimal, direction: API.Deal.Direction) -> Self {
+            return Self.init(.relative(distance: distance, base: base, direction: direction))
+        }
+        
+        /// Relative limit over an undisclosed reference level
+        public static func distance(_ distance: Decimal) -> Self {
+            return Self.init(.incomplete(distance: distance))
+        }
+        
+        ///
+        internal func isValid(forDealLevel base: Decimal, direction: API.Deal.Direction) -> Bool {
+            let limitLevel: Decimal
+            
+            switch self.type {
+            case .absolute(let level):
+                limitLevel = level
+            case .relative(let distance, let base, let direction):
+                switch direction {
+                case .buy:  limitLevel = base + distance
+                case .sell: limitLevel = base - distance
+                }
+            case .incomplete(let distance):
+                switch direction {
+                case .buy:  limitLevel = base + distance
+                case .sell: limitLevel = base - distance
+                }
+            }
+            
+            switch direction {
+            case .buy:  return limitLevel > base
+            case .sell: return limitLevel < base
+            }
+        }
+        
+        ///
+        public enum Kind {
+            case absolute(level: Decimal)
+            case relative(distance: Decimal, base: Decimal, direction: API.Deal.Direction)
+            case incomplete(distance: Decimal)
+        }
     }
     
     /// Profit value and currency.
@@ -427,14 +498,23 @@ extension API.Position {
         /// The entire order will be rejected if:
         /// - The market price is outside your specified limit (higher for buy orders, lower for sell orders).
         /// - There is insufficient volume available to satisfy the full order size.
-        case limit(level: Double)
+        case limit(level: Decimal)
         /// Quote orders get executed at the specified level.
         ///
         /// The level has to be accompanied by a valid quote id (i.e. Lightstreamer price quote identifier).
         ///
         /// A quoteID is the two-way market price that we are making for a given instrument. Because it is two-way, you can 'buy' or 'sell', according to whether you think the price will rise or fall
         /// - note: This type is only available subject to agreement with IG.
-        case quote(id: String, level: Double)
+        case quote(id: String, level: Decimal)
+        
+        /// Returns the level for the order if it is known.
+        var level: Decimal? {
+            switch self {
+            case .market: return nil
+            case .limit(let level): return level
+            case .quote(_, let level): return level
+            }
+        }
         
         /// The order fill strategy.
         public enum Strategy: String, Encodable {
@@ -444,7 +524,7 @@ extension API.Position {
             case fillOrKill = "FILL_OR_KILL"
         }
     }
-    #warning("Change to Decimal")
+    #warning("API.Position.Stop: Change this")
     /// The level/price at which the user doesn't want to incur more lose.
     public enum Stop {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
