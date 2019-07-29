@@ -58,11 +58,12 @@ extension API {
         /// The working order type.
         public let type: Self.Kind
         /// Deal size.
-        public let size: Double
+        public let size: Decimal
         /// Price at which to execute the trade.
-        public let level: Double
-        /// The distance from `level` at which the limit will be set once the order is fulfilled.
-        public let limitDistance: Double?
+        public let level: Decimal
+        /// The level/distance at which the user is happy to take profit.
+        public let limit: API.Deal.Limit?
+        #warning("Order: stop!")
         /// The distance from `level` at which the stop will be set once the order is fulfilled.
         public let stop: (distance: Double, risk: API.Position.Stop.Risk)?
         /// A way of directly interacting with the order book of an exchange.
@@ -82,9 +83,15 @@ extension API {
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
-            self.size = try container.decode(Double.self, forKey: .size)
-            self.level = try container.decode(Double.self, forKey: .level)
-            self.limitDistance = try container.decodeIfPresent(Double.self, forKey: .limitDistance)
+            self.size = try container.decode(Decimal.self, forKey: .size)
+            self.level = try container.decode(Decimal.self, forKey: .level)
+            if let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance) {
+                self.limit = .position(distance: limitDistance, from: self.level, direction: self.direction)
+            } else {
+                self.limit = nil
+            }
+            
+            
             if let stopDistance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
                 if try container.decode(Bool.self, forKey: .isStopGuaranteed) {
                     let premium = try container.decodeIfPresent(Double.self, forKey: .stopRiskPremium)
