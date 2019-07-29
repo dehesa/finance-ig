@@ -25,6 +25,7 @@
 		8D432A4122E6D2B1007DC814 /* APINodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA992149A6CE00344CBF /* APINodeTests.swift */; };
 		8D432A4222E6FF70007DC814 /* APIMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA972149A6CE00344CBF /* APIMarketTests.swift */; };
 		8D5F347222E60F3900D2B44A /* APIActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA9D2149A6CE00344CBF /* APIActivityTests.swift */; };
+		8D6BD9FE22EF447700156512 /* APIDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6BD9FD22EF447600156512 /* APIDeal.swift */; };
 		8D74741322E8375C00B0BA41 /* Epic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA462149A6CE00344CBF /* Epic.swift */; };
 		8D74741522E8439B00B0BA41 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D74741422E8439B00B0BA41 /* Currency.swift */; };
 		8D74741722E8442F00B0BA41 /* CharacterSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D74741622E8442E00B0BA41 /* CharacterSet.swift */; };
@@ -113,6 +114,7 @@
 		8D3C262422E9FA020080D3C1 /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
 		8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerInternals.swift; sourceTree = "<group>"; };
 		8D3C262B22EB18A50080D3C1 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
+		8D6BD9FD22EF447600156512 /* APIDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDeal.swift; sourceTree = "<group>"; };
 		8D74741422E8439B00B0BA41 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		8D74741622E8442E00B0BA41 /* CharacterSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterSet.swift; sourceTree = "<group>"; };
 		8D845A6F229C7AA800A0049A /* APIEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEntities.swift; sourceTree = "<group>"; };
@@ -387,6 +389,7 @@
 				8D1CC97C229B0706009AB4D3 /* APIProducers.swift */,
 				8DC4CA632149A6CE00344CBF /* APIError.swift */,
 				8D845A6F229C7AA800A0049A /* APIEntities.swift */,
+				8D6BD9FD22EF447600156512 /* APIDeal.swift */,
 				8DC4CA7D2149A6CE00344CBF /* Session */,
 				8DC4CA792149A6CE00344CBF /* Applications */,
 				8DC4CA752149A6CE00344CBF /* History */,
@@ -740,6 +743,7 @@
 				8D3C262C22EB18A50080D3C1 /* Money.swift in Sources */,
 				8DC4CC242149B3C500344CBF /* APIFormatters.swift in Sources */,
 				8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */,
+				8D6BD9FE22EF447700156512 /* APIDeal.swift in Sources */,
 				8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */,
 				8DC4CC0D2149B2C300344CBF /* API.swift in Sources */,
 				8DC4CC0E2149B2DF00344CBF /* APIError.swift in Sources */,

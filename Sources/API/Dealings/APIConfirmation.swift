@@ -100,14 +100,13 @@ extension API.Position.Confirmation {
         /// Deal direction.
         public let direction: API.Deal.Direction
         /// The deal size
-        public let size: Double
+        public let size: Decimal
         /// Instrument price.
         public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
         public let limit: API.Deal.Limit?
-        #warning("Confirmation: stop")
         /// The level at which the user doesn't want to incur more losses.
-        public let stop: API.Position.Stop?
+        public let stop: API.Deal.Stop?
         /// Profit (value and currency).
         public let profit: API.Deal.ProfitLoss?
         
@@ -115,41 +114,47 @@ extension API.Position.Confirmation {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.status = try container.decode(API.Position.Status.self, forKey: .status)
             self.affectedDeals = try container.decode([API.Position.Confirmation.Deal].self, forKey: .affectedDeals)
-            
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
-            self.size = try container.decode(Double.self, forKey: .size)
+            self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            
+            // Figure out limit.
             let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
             let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
             switch (limitLevel, limitDistance) {
-            case (.none, .none): self.limit = nil
-            case (let level?, .none): self.limit = .position(level: level)
-            case (.none, let distance?): self.limit = .position(distance: distance, from: self.level, direction: self.direction)
-            case (.some(_), .some(_)):
+            case (.none, .none):
+                self.limit = nil
+            case (.none, let distance?):
+                self.limit = .distance(distance)
+            case (let level?, .none):
+                self.limit = .position(level: level)
+            case (.some, .some):
                 throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Limit level and distance are both set on a deal confirmation. This is not suppose to happen!")
             }
-            
-            if let stopLevel = try container.decodeIfPresent(Double.self, forKey: .stopLevel) {
-                let isGuaranteed = try container.decode(Bool.self, forKey: .guaranteedStop)
-                let isTrailing = try container.decode(Bool.self, forKey: .trailingStop)
-                switch (isGuaranteed, isTrailing) {
-                case (let isGuaranteed, false):
-                    let risk: API.Position.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
-                    self.stop = .position(level: stopLevel, risk: risk)
-                case (false, true):
-                    self.stop = .trailing(level: stopLevel, tail: nil)
-                case (true, true):
-                    throw DecodingError.dataCorruptedError(forKey: .trailingStop, in: container, debugDescription: "A guaranteed stop cannot be a trailing stop.")
-                }
+            // Figure out stop.
+            let stop: API.Deal.Stop.Kind?
+            let stopLevel = try container.decodeIfPresent(Decimal.self, forKey: .stopLevel)
+            let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance)
+            switch (stopLevel, stopDistance) {
+            case (.none, .none):
+                stop = nil
+            case (.none, let distance?):
+                stop = .distance(distance)
+            case (let level?, .none):
+                stop = .position(level: level)
+            case (.some, .some):
+                throw DecodingError.dataCorruptedError(forKey: .stopLevel, in: container, debugDescription: "Stop level and distance are both set on a deal confirmation. This is not suppose to happen!")
+            }
+            if let stop = stop {
+                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
+                let isTrailing = try container.decode(Bool.self, forKey: .isTrailingStop)
+                
+                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
+                let trailing: API.Deal.Stop.Trailing = (isTrailing) ? .dynamic(nil) : .static
+                self.stop = .init(stop, risk: risk, trailing: trailing)
             } else {
                 self.stop = nil
             }
-            
-            if let stopDistance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
-                throw DecodingError.dataCorruptedError(forKey: .stopDistance, in: container, debugDescription: "In testing \"\(Self.CodingKeys.stopDistance.rawValue)\" has never been set. Here, however, seems to have a value of \"\(stopDistance)\". Please report this deal/confirmation to the maintainer.")
-            }
-            
+            // Figure out P&L.
             let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
             let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)
             switch (profitValue, profitCurrency) {
@@ -167,7 +172,9 @@ extension API.Position.Confirmation {
             case status, affectedDeals
             case direction, size, level
             case limitLevel, limitDistance
-            case stopLevel, stopDistance, guaranteedStop, trailingStop
+            case stopLevel, stopDistance
+            case isStopGuaranteed = "guaranteedStop"
+            case isTrailingStop = "trailingStop"
             case profitValue = "profit"
             case profitCurrency = "profitCurrency"
         }

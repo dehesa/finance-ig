@@ -157,7 +157,7 @@ extension API.Session.OAuth {
             self.type = try container.decode(String.self, forKey: .type)
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
-            let seconds = try Double(secondsString)
+            let seconds = try TimeInterval(secondsString)
                 ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
             
             if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,

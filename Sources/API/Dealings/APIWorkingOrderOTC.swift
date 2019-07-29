@@ -20,7 +20,7 @@ extension API.Request.WorkingOrders {
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func create(epic: Epic, expiry: API.Instrument.Expiry = .none, currency: Currency.Code, direction: API.Deal.Direction,
-                       type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: API.Deal.Limit?, stop: Self.Stop?, forceOpen: Bool = true,
+                       type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: API.Deal.Limit?, stop: (type: API.Deal.Stop.Kind, risk: API.Deal.Stop.Risk)?, forceOpen: Bool = true,
                        expiration: API.WorkingOrder.Expiration, reference: API.Deal.Reference? = nil) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
                 return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
@@ -43,9 +43,9 @@ extension API.Request.WorkingOrders {
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: API.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal, limitDistance: API.Deal.Limit?, stop: Self.Stop?, expiration: API.WorkingOrder.Expiration) -> SignalProducer<API.Deal.Reference,API.Error> {
+    public func update(identifier: API.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal, limit: API.Deal.Limit?, stop: API.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) -> SignalProducer<API.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadUpdate in
-                return try .init(type: type, level: level, limit: limitDistance, stop: stop, expiration: expiration)
+                return try .init(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.request(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -73,19 +73,6 @@ extension API.Request.WorkingOrders {
 // MARK: - Supporting Entities
 
 extension API.Request.WorkingOrders {
-    /// The level/price at which the user doesn't want to incur more lose.
-    public enum Stop {
-        /// Absolute level where to place the stop loss.
-        /// - parameter level: The absolute stop level (e.g. 1.653 USD/EUR).
-        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
-        case position(level: Double)
-        /// Distance from the buy/sell level where the stop will be placed.
-        /// - parameter isGuaranteed: Boolean indicating if a guaranteed stop is required. A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
-        case distance(Double, isGuaranteed: Bool)
-    }
-}
-
-extension API.Request.WorkingOrders {
     private struct PayloadCreation: Encodable {
         let epic: Epic
         let expiry: API.Instrument.Expiry
@@ -95,38 +82,48 @@ extension API.Request.WorkingOrders {
         let level: Decimal
         let size: Decimal
         let limit: API.Deal.Limit?
-        let stop: API.Request.WorkingOrders.Stop?
+        let stop: (type: API.Deal.Stop.Kind, risk: API.Deal.Stop.Risk)?
         let forceOpen: Bool
         let expiration: API.WorkingOrder.Expiration
         let reference: API.Deal.Reference?
         
-        init(epic: Epic, expiry: API.Instrument.Expiry, currency: Currency.Code, direction: API.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: API.Deal.Limit?, stop: API.Request.WorkingOrders.Stop?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: API.Deal.Reference?) throws {
+        init(epic: Epic, expiry: API.Instrument.Expiry, currency: Currency.Code, direction: API.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: API.Deal.Limit?, stop: (type: API.Deal.Stop.Kind, risk: API.Deal.Stop.Risk)?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: API.Deal.Reference?) throws {
             self.epic = epic
             self.expiry = expiry
             self.currency = currency
             self.direction = direction
             self.type = type
-            
-            guard case .plus = size.sign, size.isNormal else {
+            // Check the size for negative numbers or zero.
+            guard size.isNormal, case .plus = size.sign else {
                 throw API.Error.invalidRequest(underlyingError: nil, message: "Working order creation failed! The size value \"\(size)\" must be a valid number and greater than zero.")
             }
-            self.size = size
-            self.level = level
-            
+            // Check the limit for level/distance validity.
             if let limit = limit {
-                guard limit.isValid(forDealLevel: self.level, direction: self.direction) else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The limit provided \"\(limit)\" is invalid since it is set on the opposite direction of the working order level \"\(self.level)\".")
+                guard limit.isValid(forBase: level, direction: direction) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The limit provided \"\(limit)\" is invalid since it is set on the opposite direction of the working order level \"\(level)\".")
                 }
             }
-            self.limit = limit
-            self.stop = stop
-            self.forceOpen = forceOpen
-            
+            // Check the stop for level/distance validity and to verify that only the distance type allow limited risk.
+            if let stop = stop {
+                guard API.Deal.Stop(stop.type, risk: stop.risk, trailing: .static).isValid(forBase: level, direction: direction) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The stop provided \"\(stop)\" is invalid since it is set on the opposite direction of the working order level \"\(level)\".")
+                }
+                
+                if case .limited = stop.risk, case .position = stop.type {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "Only stop distances may be \"guaranteed stops\" (or limited risk).")
+                }
+            }
+            // Check that the expiration date is at least one second later than now.
             if case .tillDate(let date) = expiration {
                 guard date > Date(timeIntervalSinceNow: 1) else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The expiration date provided must be later than now + 1 sec.")
                 }
             }
+            self.size = size
+            self.level = level
+            self.limit = limit
+            self.stop = stop
+            self.forceOpen = forceOpen
             self.expiration = expiration
             self.reference = reference
         }
@@ -141,34 +138,33 @@ extension API.Request.WorkingOrders {
             try container.encode(self.size, forKey: .size)
             try container.encode(self.level, forKey: .level)
             
-            if let limit = self.limit {
-                switch limit.type {
-                case .absolute(let level):
-                    try container.encode(level, forKey: .limitLevel)
-                case .incomplete(let distance):
-                    try container.encode(distance, forKey: .limitDistance)
-                case .relative:
-                    try container.encode(limit.level, forKey: .limitLevel)
-                }
+            switch self.limit {
+            case .none: break
+            case .position(let level): try container.encode(level, forKey: .limitLevel)
+            case .distance(let dista): try container.encode(dista, forKey: .limitDistance)
             }
             
-            switch self.stop {
-            case .none:
+            if let stop = self.stop {
+                switch stop.type {
+                case .position(let level): try container.encode(level, forKey: .stopLevel)
+                case .distance(let dista): try container.encode(dista, forKey: .stopDistance)
+                }
+                
+                switch stop.risk {
+                case .exposed: try container.encode(false, forKey: .isStopGuaranteed)
+                case .limited: try container.encode(true,  forKey: .isStopGuaranteed)
+                }
+            } else {
                 try container.encode(false, forKey: .isStopGuaranteed)
-            case .position(let level): try container.encode(level, forKey: .stopLevel)
-            case .distance(let distance, let isGuaranteed):
-                try container.encode(distance, forKey: .stopDistance)
-                try container.encode(isGuaranteed, forKey: .isStopGuaranteed)
             }
             
             try container.encode(self.forceOpen, forKey: .forceOpen)
             
-            typealias ExpirationKeys = API.WorkingOrder.Expiration.CodingKeys
             switch self.expiration {
             case .tillCancelled:
-                try container.encode(ExpirationKeys.tillCancelled.rawValue, forKey: .expiration)
+                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
-                try container.encode(ExpirationKeys.tillDate.rawValue, forKey: .expiration)
+                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
                 try container.encode(date, forKey: .expirationDate, with: API.TimeFormatter.humanReadable)
             }
             try container.encodeIfPresent(self.reference, forKey: .reference)
@@ -193,22 +189,28 @@ extension API.Request.WorkingOrders {
         let type: API.WorkingOrder.Kind
         let level: Decimal
         let limit: API.Deal.Limit?
-        let stop: API.Request.WorkingOrders.Stop?
+        let stop: API.Deal.Stop.Kind?
         let expiration: API.WorkingOrder.Expiration
         
-        init(type: API.WorkingOrder.Kind, level: Decimal, limit: API.Deal.Limit?, stop: API.Request.WorkingOrders.Stop?, expiration: API.WorkingOrder.Expiration) throws {
-            if case .incomplete(let distance) = limit?.type {
-                guard case .plus = distance.sign, distance.isNormal else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "Working order update failed! The limit distance \"\(distance)\" must be a valid number and greater than zero.")
+        init(type: API.WorkingOrder.Kind, level: Decimal, limit: API.Deal.Limit?, stop: API.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) throws {
+            // Check that the limit distance is a positive number (if it is set).
+            if case .distance(let distance) = limit {
+                guard distance.isNormal, case .plus = distance.sign else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The limit distance \"\(distance)\" must be a valid number and greater than zero.")
                 }
             }
-            
+            // Check that the stop distance is a positive number (if it is set).
+            if case .distance(let distance) = stop {
+                guard distance.isNormal, case .plus = distance.sign else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The stop distance \"\(distance)\" must be a valid number and greater than zero.")
+                }
+            }
+            // Check that the expiration date is at least one second later than now.
             if case .tillDate(let date) = expiration {
                 guard date > Date(timeIntervalSinceNow: 1) else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The expiration date provided must be later than now + 1 sec.")
                 }
             }
-            
             self.type = type
             self.level = level
             self.limit = limit
@@ -221,38 +223,23 @@ extension API.Request.WorkingOrders {
             try container.encode(self.type, forKey: .type)
             try container.encode(self.level, forKey: .level)
             
-            switch self.limit?.type {
-            case .none:
-                try container.encodeNil(forKey: .limitLevel)
-                try container.encodeNil(forKey: .limitDistance)
-            case .absolute(let level):
-                try container.encode(level, forKey: .limitLevel)
-            case .incomplete(let distance):
-                try container.encode(distance, forKey: .limitDistance)
-            case .relative:
-                try container.encode(self.limit!.level, forKey: .limitLevel)
+            switch self.limit {
+            case .none: break
+            case .position(let level): try container.encode(level, forKey: .limitLevel)
+            case .distance(let dista): try container.encode(dista, forKey: .limitDistance)
             }
             
-            switch self.stop {
-            case .none:
-                try container.encodeNil(forKey: .stopLevel)
-                try container.encodeNil(forKey: .stopDistance)
-            case .position(let level):
-                try container.encode(level, forKey: .stopLevel)
-            case .distance(let distance, let isGuaranteed):
-                guard !isGuaranteed else {
-                    let ctx = EncodingError.Context(codingPath: container.codingPath, debugDescription: "Updating a stop working order will always make the stop exposed to risk.")
-                    throw EncodingError.invalidValue(self.stop!, ctx)
-                }
-                try container.encode(distance, forKey: .stopDistance)
+            switch stop {
+            case .none: break
+            case .position(let level): try container.encode(level, forKey: .stopLevel)
+            case .distance(let dista): try container.encode(dista, forKey: .stopDistance)
             }
             
-            typealias ExpirationKeys = API.WorkingOrder.Expiration.CodingKeys
             switch self.expiration {
             case .tillCancelled:
-                try container.encode(ExpirationKeys.tillCancelled.rawValue, forKey: .expiration)
+                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
-                try container.encode(ExpirationKeys.tillDate.rawValue, forKey: .expiration)
+                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
                 try container.encode(date, forKey: .expirationDate, with: API.TimeFormatter.humanReadable)
             }
         }

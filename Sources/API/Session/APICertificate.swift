@@ -169,7 +169,7 @@ extension API.Session {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
-            let epoch = try container.decode(Double.self, forKey: .timeStamp)
+            let epoch = try container.decode(TimeInterval.self, forKey: .timeStamp)
             self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
         }
         
