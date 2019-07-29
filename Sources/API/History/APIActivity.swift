@@ -227,15 +227,16 @@ extension API.Activity {
         public let direction: API.Deal.Direction
         /// Deal size.
         public let size: Decimal
-        /// Good till date.
-        public let goodTillDate: Date?
         /// Instrument price at which the activity has been "commited"
         public let level: Decimal
         /// Level at which the user is happy to take profit.
         public let limit: API.Deal.Limit?
-        #warning("Activities: stop")
         /// Stop for the targeted deal
-        public let stop: API.Position.Stop?
+        public let stop: API.Deal.Stop?
+        /// Working order expiration.
+        ///
+        /// If the activity doesn't reference a working order, this property will be `nil`.
+        public let expiration: API.WorkingOrder.Expiration?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -245,61 +246,71 @@ extension API.Activity {
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
-            
-            if let dateString = try container.decodeIfPresent(String.self, forKey: .goodTillDate), dateString != "GTC" {
-                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
-                    throw DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
-                }
-                self.goodTillDate = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .goodTillDate, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
-            } else {
-                self.goodTillDate = nil
-            }
-            
             self.level = try container.decode(Decimal.self, forKey: .level)
+            // Figure out limit.
             let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
             let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
             switch (limitLevel, limitDistance) {
-            case (.none, .none): self.limit = nil
-            case (.none, let distance?): self.limit = .position(distance: distance, from: self.level, direction: self.direction)
-            case (let level?,_): self.limit = .position(level: level)
+            case (.none, .none):
+                self.limit = nil
+            case (.none, let distance?):
+                self.limit = .distance(distance)
+            case (let level?,_):
+                self.limit = .position(level: level)
             }
-            
-            // "stopDistance" is being ignored, since it can be calculated at any point.
-            guard let stopLevel = try container.decodeIfPresent(Double.self, forKey: .stopLevel) else {
-                self.stop = nil
-                return
+            // Figure out stop.
+            let stop: API.Deal.Stop.Kind?
+            let stopLevel = try container.decodeIfPresent(Decimal.self, forKey: .stopLevel)
+            let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance)
+            switch (stopLevel, stopDistance) {
+            case (.none, .none): stop = nil
+            case (.none, let distance?): stop = .distance(distance)
+            case (let level?, _): stop = .position(level: level)
             }
-            
-            let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
-            let trailingDistance = try container.decodeIfPresent(Double.self, forKey: .stopTrailingDistance)
-            let trailingIncrement = try container.decodeIfPresent(Double.self, forKey: .stopTrailingIncrement)
-            let isTrailing = trailingDistance != nil || trailingIncrement != nil
-            
-            switch (isGuaranteed, isTrailing) {
-            case (false, false):
-                self.stop = .position(level: stopLevel, risk: .exposed)
-            case (true, false):
-                self.stop = .position(level: stopLevel, risk: .limited(premium: nil))
-            case (false, true):
-                guard let distance = trailingDistance else {
-                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: container, debugDescription: "The distance for trailing stops cannot be found.")
-                }
-                guard let increment = trailingIncrement else {
-                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingIncrement, in: container, debugDescription: "The increment for trailing stops cannot be found.")
-                }
+            if let stop = stop {
+                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
+                let trailingDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopTrailingDistance)
+                let trailingIncrement = try container.decodeIfPresent(Decimal.self, forKey: .stopTrailingIncrement)
                 
-                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: increment))
-            case (true, true):
-                throw DecodingError.dataCorruptedError(forKey: .isStopGuaranteed, in: container, debugDescription: "A guaranteed stop cannot be a trailing stop.")
+                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
+                let trailing: API.Deal.Stop.Trailing
+                switch (trailingDistance, trailingIncrement) {
+                case (.none, .none):
+                    trailing = .static
+                case (let distance?, let increment?):
+                    trailing = .dynamic(.init(distance: distance, increment: increment))
+                case (.some, .none):
+                    throw DecodingError.keyNotFound(Self.CodingKeys.stopTrailingDistance,  .init(codingPath: container.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
+                case (.none, .some):
+                    throw DecodingError.keyNotFound(Self.CodingKeys.stopTrailingIncrement, .init(codingPath: container.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
+                }
+                self.stop = .init(stop, risk: risk, trailing: trailing)
+            } else {
+                self.stop = nil
+            }
+            // Figure out working order expiration.
+            if let expirationString = try container.decodeIfPresent(String.self, forKey: .expiration) {
+                if expirationString == "GTC" {
+                    self.expiration = .tillCancelled
+                } else {
+                    guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
+                        throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                    }
+                    let date = try formatter.date(from: expirationString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: expirationString))
+                    self.expiration = .tillDate(date)
+                }
+            } else {
+                self.expiration = nil
             }
         }
         
         private enum CodingKeys: String, CodingKey {
-            case dealReference, actions, currency, direction, goodTillDate
+            case dealReference, actions, currency, direction
             case marketName, size
             case level, limitLevel, limitDistance
             case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
             case stopTrailingDistance = "trailingStopDistance", stopTrailingIncrement = "trailingStep"
+            case expiration = "goodTillDate"
         }
     }
 }

@@ -63,9 +63,8 @@ extension API {
         public let level: Decimal
         /// The level/distance at which the user is happy to take profit.
         public let limit: API.Deal.Limit?
-        #warning("Order: stop!")
         /// The distance from `level` at which the stop will be set once the order is fulfilled.
-        public let stop: (distance: Double, risk: API.Position.Stop.Risk)?
+        public let stop: API.Deal.Stop?
         /// A way of directly interacting with the order book of an exchange.
         public let isDirectlyAccessingMarket: Bool
         /// Indicates when the working order expires if its triggers hasn't been met.
@@ -75,6 +74,7 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let topContainer = try decoder.container(keyedBy: Self.CodingKeys.self)
+            self.market = try topContainer.decode(API.Node.Market.self, forKey: .market)
             
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
@@ -85,20 +85,13 @@ extension API {
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            if let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance) {
-                self.limit = .position(distance: limitDistance, from: self.level, direction: self.direction)
-            } else {
-                self.limit = nil
-            }
-            
-            
-            if let stopDistance = try container.decodeIfPresent(Double.self, forKey: .stopDistance) {
-                if try container.decode(Bool.self, forKey: .isStopGuaranteed) {
-                    let premium = try container.decodeIfPresent(Double.self, forKey: .stopRiskPremium)
-                    self.stop = (distance: stopDistance, risk: .limited(premium: premium))
-                } else {
-                    self.stop = (distance: stopDistance, risk: .exposed)
-                }
+            self.limit = (try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)).map { .distance($0) }
+            // Figure out stop.
+            if let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance) {
+                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
+                let premium = try container.decodeIfPresent(Decimal.self, forKey: .stopRiskPremium)
+                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: premium) : .exposed
+                self.stop = .init(.distance(stopDistance), risk: risk, trailing: .static)
             } else {
                 self.stop = nil
             }
@@ -114,8 +107,6 @@ extension API {
             default:
                 throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\(expirationType)\" couldn't be processed.")
             }
-            
-            self.market = try topContainer.decode(API.Node.Market.self, forKey: .market)
         }
         
         private enum CodingKeys: String, CodingKey {

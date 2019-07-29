@@ -538,7 +538,7 @@ extension API.Market {
         /// - attention: Although a full date is given, only the hours:minutes:seconds are meaningful.
         public let date: Date
         /// Pirce delay marked in minutes.
-        public let delay: Double
+        public let delay: TimeInterval
         /// The current status of a given market
         public let status: API.Market.Status
         /// The state of the market price at the time of the snapshot.
@@ -571,7 +571,7 @@ extension API.Market {
                 self.date = update
             }
             
-            self.delay = try container.decode(Double.self, forKey: .delay)
+            self.delay = try container.decode(TimeInterval.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
             self.price = try .init(from: decoder)
             self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)

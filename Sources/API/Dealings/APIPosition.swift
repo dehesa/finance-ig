@@ -63,7 +63,6 @@ extension API {
         public let reference: API.Deal.Reference
         /// Date the position was created.
         public let date: Date
-        
         /// Position currency ISO code.
         public let currency: Currency.Code
         /// Deal direction.
@@ -76,9 +75,8 @@ extension API {
         public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
         public let limit: API.Deal.Limit?
-        #warning("Position: stop")
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
-        public let stop: Self.Stop?
+        public let stop: API.Deal.Stop?
         
         /// The market basic information and current state (i.e. snapshot).
         public let market: API.Node.Market
@@ -91,46 +89,36 @@ extension API {
             self.identifier = try nestedContainer.decode(API.Deal.Identifier.self, forKey: .identifier)
             self.reference = try nestedContainer.decode(API.Deal.Reference.self, forKey: .reference)
             self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
-            
             self.currency = try nestedContainer.decode(Currency.Code.self, forKey: .currency)
             self.direction = try nestedContainer.decode(API.Deal.Direction.self, forKey: .direction)
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)
             self.size = try nestedContainer.decode(Decimal.self, forKey: .size)
-            
             self.level = try nestedContainer.decode(Decimal.self, forKey: .level)
-            if let limitLevel = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitLevel) {
-                self.limit = .position(level: limitLevel)
-            } else {
-                self.limit = nil
-            }
-            
-            guard let stopLevel = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopLevel) else {
-                self.stop = nil
-                return
-            }
-            
-            let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isStopGuaranteed)
-            let trailingDistance = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingDistance)
-            let trailingIncrement = try nestedContainer.decodeIfPresent(Double.self, forKey: .stopTrailingIncrement)
-            let isTrailing = trailingDistance != nil || trailingIncrement != nil
-            
-            switch (isGuaranteed, isTrailing) {
-            case (false, false):
-                self.stop = .position(level: stopLevel, risk: .exposed)
-            case (true, false):
-                let premium = try nestedContainer.decodeIfPresent(Double.self, forKey: .limitedRiskPremium)
-                self.stop = .position(level: stopLevel, risk: .limited(premium: premium))
-            case (false, true):
-                guard let distance = trailingDistance else {
-                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: nestedContainer, debugDescription: "The distance for trailing stops cannot be found.")
-                }
-                guard let increment = trailingIncrement else {
-                    throw DecodingError.dataCorruptedError(forKey: .stopTrailingIncrement, in: nestedContainer, debugDescription: "The increment for trailing stops cannot be found.")
+            self.limit = (try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitLevel)).map { .position(level: $0) }
+            // Figure out stop.
+            if let stopLevel = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopLevel) {
+                let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isStopGuaranteed)
+                let premium = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitedRiskPremium)
+                let trailingDistance = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingDistance)
+                let trailingIncrement = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingIncrement)
+                
+                let trailing: API.Deal.Stop.Trailing
+                switch (trailingDistance, trailingIncrement) {
+                case (.none, .none):
+                    trailing = .static
+                case (let distance?, let increment?):
+                    trailing = .dynamic(.init(distance: distance, increment: increment))
+                case (.some, .none):
+                    throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingDistance,  .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
+                case (.none, .some):
+                    throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingIncrement, .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
                 }
                 
-                self.stop = .trailing(level: stopLevel, tail: .init(distance: distance, increment: increment))
-            case (true, true):
-                throw DecodingError.dataCorruptedError(forKey: .isStopGuaranteed, in: nestedContainer, debugDescription: "A guaranteed stop cannot be a trailing stop.")
+                let type: API.Deal.Stop.Kind = .position(level: stopLevel)
+                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: premium) : .exposed
+                self.stop = .init(type, risk: risk, trailing: trailing)
+            } else {
+                self.stop = nil
             }
         }
         
