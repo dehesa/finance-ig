@@ -21,7 +21,7 @@ public final class Services {
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(rootURL: URL = API.rootURL, apiKey: String, user: (name: String, password: String)) -> SignalProducer<Services,Services.Error> {
+    public static func make(rootURL: URL = API.rootURL, apiKey: String, user: API.User) -> SignalProducer<Services,Services.Error> {
         let api = API(rootURL: rootURL, credentials: nil)
         
         return api.session.login(type: .certificate, apiKey: apiKey, user: user)
@@ -48,6 +48,7 @@ public final class Services {
     /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL hit IG's production environment.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
+    /// - todo: Even OAuth can access certificate credentials. Implement it here at some point.
     public static func make(rootURL: URL = API.rootURL, apiKey: String, token: API.Credentials.Token) -> SignalProducer<Services,Services.Error> {
         guard case .certificate = token.value else {
             return SignalProducer(error: .api(error: .invalidCredentials(nil, message: "Only certificate credentials are allowed to create a streamer instance")))

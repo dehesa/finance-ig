@@ -15,30 +15,32 @@ extension Streamer {
         case invalidResponse(item: String?, fields: [AnyHashable:Any], message: String)
         
         public var debugDescription: String {
-            var result = "\n\n"
-            result.append("[Streamer Error]")
+            var result = ErrorPrint(domain: "Streamer Error")
             
             switch self {
             case .sessionExpired:
-                result.addTitle("The session has expired.")
-                result.addDetail("The underlying Lightstream session or the \(Streamer.self) instance cannot be found. You can probably solve this by creating a strong reference to the \(Streamer.self) instance.")
+                result.title = "Session expired."
+                result.append(details: "The underlying Lightstream session or the \(Streamer.self) instance cannot be found. You can probably solve this by creating a strong reference to the \(Streamer.self) instance.")
             case .invalidCredentials(let credentials, let message):
-                result.addTitle(message)
-                result.addDetail(credentials) { "credentials: \($0)" }
+                result.title = "Invalid credentials."
+                result.append(details: message)
+                result.append(involved: credentials)
             case .invalidRequest(let message):
-                result.addTitle(message)
+                result.title = "Invalid request."
+                result.append(details: message)
             case .subscriptionFailed(let item, let fields, let error):
-                result.addTitle("Subscription to \"\(item)\" failed or was interrupted.")
-                result.addDetail("Fields: \(fields.joined(separator: ", "))")
-                result.addDetail(error) { "Error: \($0)" }
+                result.title = "Subscription failed."
+                result.append(details: "Subscription to: \(item)")
+                result.append(details: "Subscriotion fields: \(fields.joined(separator: ", "))")
+                result.append(error: error)
             case .invalidResponse(let item, let fields, let message):
-                result.addTitle(message)
-                result.addDetail(item) { "Item name: \($0)" }
-                result.addDetail("Content: \(fields)")
+                result.title = "Invalid response"
+                result.append(details: message)
+                result.append(involved: item)
+                result.append(involved: fields)
             }
             
-            result.append("\n\n")
-            return result
+            return result.debugDescription
         }
     }
 }

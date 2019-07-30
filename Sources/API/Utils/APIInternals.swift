@@ -1,6 +1,15 @@
 import Foundation
 import ReactiveSwift
 
+extension API {
+    /// Domain namespace retaining anything related to API requests.
+    public enum Request {}
+    /// Domain namespace retaining anything related to API responses.
+    public enum Response {}
+    /// Namespace for commonly used value/class types related to deals.
+    public enum Deal {}
+}
+
 // MARK: - Request types
 
 extension API.Request {

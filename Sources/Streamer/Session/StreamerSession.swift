@@ -1,12 +1,42 @@
+import ReactiveSwift
 import Foundation
 
+extension Streamer.Request.Session {
+    /// Returns the current streamer status.
+    public var status: Property<Streamer.Session.Status> {
+        return self.streamer.channel.status
+    }
+}
+
+// MARK: - Supporting Entities
+
+extension Streamer.Request {
+    ///
+    public struct Session {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        fileprivate unowned let streamer: Streamer
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoints.
+        init(streamer: Streamer) {
+            self.streamer = streamer
+        }
+    }
+}
+
+// MARK: Response Entities
+
 extension Streamer {
+    public enum Session {}
+}
+
+extension Streamer.Session {
     /// The status at which the streamer can find itself at.
-    public enum Status: RawRepresentable, Equatable, CustomDebugStringConvertible {
+    public enum Status: RawRepresentable, Equatable {
         /// A connection has been attempted. The client is waiting for a server answer.
         case connecting
         /// The client and server are connected.
-        case connected(Connection)
+        case connected(Self.Connection)
         /// A streaming session has been silent for a while.
         case stalled
         /// The client and server are disconnected.
@@ -41,32 +71,6 @@ extension Streamer {
             }
         }
         
-        public var debugDescription: String {
-            switch self {
-            case .connecting: return "Connecting..."
-            case .connected(let connection):
-                var result = "Connected"
-                switch connection {
-                case .sensing:
-                    result.append(" (sensing medium...)")
-                case .websocket(let isPolling):
-                    result.append(" (WebSocket")
-                    if (isPolling) { result.append(" polling)") }
-                    else { result.append(" stream)") }
-                case .http(let isPolling):
-                    result.append(" (HTTP")
-                    if (isPolling) { result.append(" polling)") }
-                    else { result.append(" stream)") }
-                }
-                return result
-            case .stalled:    return "Stalled!"
-            case .disconnected(let isRetrying):
-                var result = "Disconnected"
-                if (isRetrying) { result.append(" (retrying...)") }
-                return result
-            }
-        }
-        
         /// State representation as the Lightstreamer needs it.
         private enum Key: String {
             case connecting = "CONNECTING"
@@ -82,39 +86,57 @@ extension Streamer {
     }
 }
 
-extension Streamer.Status {
+extension Streamer.Session.Status {
     /// The type of connection established between the client and server.
     public enum Connection: Equatable {
-        /// Connection over WebSocket.
-        case websocket(isPolling: Bool)
-        /// Connection over HTTP.
-        case http(isPolling: Bool)
-        /// The client has received a first response from the server and is not evaluating if a streaming connection is fully functional.
+        /// The client has received a first response from the server and is evaluating if a streaming connection can be established.
         case sensing
+        /// Connection over HTTP.
+        ///
+        /// When `isPolling` is set to `false`, a streaming connection is in place. On the other hand, a *polling* connection is established.
+        case http(isPolling: Bool)
+        /// Connection over WebSocket.
+        ///
+        /// When `isPolling` is set to `false`, a streaming connection is in place. On the other hand, a *polling* connection is established.
+        case websocket(isPolling: Bool)
         
         /// Boolean indicating whether the connection is polling the server (undesirable) or streaming.
         ///
         /// Streaming connections are better and more responsive than polling connection.
         public var isPolling: Bool {
             switch self {
-            case .websocket(let isPolling): return isPolling
-            case .http(let isPolling): return isPolling
             case .sensing: return false
+            case .http(let isPolling): return isPolling
+            case .websocket(let isPolling): return isPolling
             }
         }
     }
 }
 
-extension Streamer {
-    /// Possible Lightstreamer modes.
-    internal enum Mode: String {
-        /// Lightstreamer MERGE mode.
-        case merge = "MERGE"
-        /// Lightstreamer DISTINCT mode.
-        case distinct = "DISTINCT"
-        /// Lightstreamer RAW mode.
-        case raw = "RAW"
-        /// Lightstreamer COMMAND mode.
-        case command = "COMMAND"
+extension Streamer.Session.Status: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        switch self {
+        case .connecting: return "Connecting..."
+        case .connected(let connection):
+            var result = "Connected"
+            switch connection {
+            case .sensing:
+                result.append(" (sensing medium...)")
+            case .websocket(let isPolling):
+                result.append(" (WebSocket")
+                if (isPolling) { result.append(" polling)") }
+                else { result.append(" stream)") }
+            case .http(let isPolling):
+                result.append(" (HTTP")
+                if (isPolling) { result.append(" polling)") }
+                else { result.append(" stream)") }
+            }
+            return result
+        case .stalled:    return "Stalled!"
+        case .disconnected(let isRetrying):
+            var result = "Disconnected"
+            if (isRetrying) { result.append(" (retrying...)") }
+            return result
+        }
     }
 }

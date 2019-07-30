@@ -9,7 +9,7 @@ public final class API {
     /// URL root address.
     public let rootURL: URL
     /// The URL Session instance for performing HTTPS requests.
-    internal let channel: URLMockableSession
+    internal let channel: APIMockableChannel
     
     /// It holds data and functionality related to the user's session.
     public internal(set) var session: API.Request.Session
@@ -49,7 +49,7 @@ public final class API {
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter channel: URL session used to perform all HTTP requests.
     /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time.
-    internal init(rootURL: URL, channel: URLMockableSession, credentials: API.Credentials? = nil) {
+    internal init(rootURL: URL, channel: APIMockableChannel, credentials: API.Credentials? = nil) {
         self.rootURL = rootURL
         self.channel = channel
         self.session = .init(credentials: credentials)

@@ -142,28 +142,28 @@ extension TestAccount {
         case accountParsingFailed(url: URL, underlyingError: Swift.Error)
         
         var debugDescription: String {
-            var result = "\n\n"
-            result.append("[Test Error]")
+            var result = IG.ErrorPrint(domain: "Test Error")
             
             switch self {
             case .environmentVariableNotFound(let key):
-                result.addTitle("The variable with name \"\(key)\" hasn't been found in the test environment.")
-                result.addDetail("Please set a test environment variable with name \"\(key)\" and value \"file://myrelative/path/from/bundle/resource/folder/myfile.json\".")
-                result.addDetail("The JSON file specifies the account used for testing (for more information, check \"\(TestAccount.self).swift\".")
+                result.title = "Environment variable key not found."
+                result.append(details: "Key: \(key)")
             case .invalidURL(let path):
-                result.addTitle("A URL couldn't be formed from: \"\(path ?? "nil")\".")
+                result.title = "Invald URL."
+                result.append(details: "Path: \"\(path ?? "nil")\"")
             case .bundleResourcesNotFound:
-                result.addTitle("The test framework resource folder couldn't be found.")
+                result.title = "Bundle resources not found."
             case .dataLoadFailed(let url, let underlyingError):
-                result.addTitle("The file with URL \"\(url.absoluteString)\" couldn't be load.")
-                result.addDetail("Underlying error: \(underlyingError)")
+                result.title = "Data load failed."
+                result.append(details: "File URL: \(url.absoluteString)")
+                result.append(error: underlyingError)
             case .accountParsingFailed(let url, let underlyingError):
-                result.addTitle("The file with URL \"\(url.absoluteString)\" couldn't be parsed as \"\(TestAccount.self)\" type.")
-                result.addDetail("Underlying error: \(underlyingError)")
+                result.title = "Account parsing failed."
+                result.append(details: "File URL: \(url.absoluteString)")
+                result.append(error: underlyingError)
             }
             
-            result.append("\n\n")
-            return result
+            return result.debugDescription
         }
     }
 }
