@@ -388,8 +388,6 @@
 				8DC4CA7C2149A6CE00344CBF /* API.swift */,
 				8D1CC97C229B0706009AB4D3 /* APIProducers.swift */,
 				8DC4CA632149A6CE00344CBF /* APIError.swift */,
-				8D845A6F229C7AA800A0049A /* APIEntities.swift */,
-				8D6BD9FD22EF447600156512 /* APIDeal.swift */,
 				8DC4CA7D2149A6CE00344CBF /* Session */,
 				8DC4CA792149A6CE00344CBF /* Applications */,
 				8DC4CA752149A6CE00344CBF /* History */,
@@ -415,7 +413,11 @@
 		8DC4CA6B2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8D845A6F229C7AA800A0049A /* APIEntities.swift */,
 				8D3C262222E9F66E0080D3C1 /* APIInternals.swift */,
+				8D0A232B22EB9600001853E7 /* APIUser.swift */,
+				8DC4CA812149A6CE00344CBF /* APICredentials.swift */,
+				8D6BD9FD22EF447600156512 /* APIDeal.swift */,
 				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
 				8DC4CA6E2149A6CE00344CBF /* URLSession.swift */,
 				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
@@ -459,8 +461,6 @@
 				8DC4CA7F2149A6CE00344CBF /* APISession.swift */,
 				8DC4CA7E2149A6CE00344CBF /* APICertificate.swift */,
 				8DC4CA802149A6CE00344CBF /* APIOAuth.swift */,
-				8DC4CA812149A6CE00344CBF /* APICredentials.swift */,
-				8D0A232B22EB9600001853E7 /* APIUser.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";

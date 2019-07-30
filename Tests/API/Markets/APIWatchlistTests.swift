@@ -60,6 +60,6 @@ final class APIWatchlistTests: APITestCase {
             api.watchlists.delete(identifier: watchlistId!)
         }
 
-        self.test("Watchlist lifecycle", endpoints, signingProcess: .oauth, timeout: 8)
+        self.test("Watchlist lifecycle", endpoints, signingProcess: .oauth, timeout: 7)
     }
 }

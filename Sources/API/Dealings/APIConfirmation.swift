@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Positions {
+extension API {
     
     // MARK: - GET /confirms/{dealReference}
     
@@ -12,8 +12,8 @@ extension API.Request.Positions {
     /// - **Confirmation**. A deal identifier is received by subscribing to the `TRADES:CONFIRMS` streaming messages (recommended), or by polling this endpoint (`confirmTransientPositions`).
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay. Also not the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: API.Deal.Reference) -> SignalProducer<API.Position.Confirmation,API.Error> {
-        return SignalProducer(api: self.api)
+    public func confirm(reference: API.Deal.Reference) -> SignalProducer<API.Confirmation,API.Error> {
+        return SignalProducer(api: self)
             .request(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
@@ -25,7 +25,7 @@ extension API.Request.Positions {
 
 // MARK: Response Entities
 
-extension API.Position {
+extension API {
     /// Confirmation data returned just after opening a position or a working order.
     public struct Confirmation: Decodable {
         /// Permanent deal reference for a confirmed trade.
@@ -84,19 +84,19 @@ extension API.Position {
         /// The operation confirmation status.
         public enum Status {
             /// The operation has been confirmed successfully.
-            case accepted(details: API.Position.Confirmation.Details)
+            case accepted(details: API.Confirmation.Details)
             /// The operation has been rejected due to the reason given as an associated value.
-            case rejected(reason: API.Position.Confirmation.RejectionReason)
+            case rejected(reason: API.Confirmation.RejectionReason)
         }
     }
 }
 
-extension API.Position.Confirmation {
+extension API.Confirmation {
     public struct Details: Decodable {
         /// Position status.
-        public let status: API.Position.Status
+        public let status: API.Deal.Status
         /// Affected deals.
-        public let affectedDeals: [API.Position.Confirmation.Deal]
+        public let affectedDeals: [API.Confirmation.Deal]
         /// Deal direction.
         public let direction: API.Deal.Direction
         /// The deal size
@@ -112,8 +112,8 @@ extension API.Position.Confirmation {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.status = try container.decode(API.Position.Status.self, forKey: .status)
-            self.affectedDeals = try container.decode([API.Position.Confirmation.Deal].self, forKey: .affectedDeals)
+            self.status = try container.decode(API.Deal.Status.self, forKey: .status)
+            self.affectedDeals = try container.decode([API.Confirmation.Deal].self, forKey: .affectedDeals)
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
@@ -121,33 +121,24 @@ extension API.Position.Confirmation {
             let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
             let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
             switch (limitLevel, limitDistance) {
-            case (.none, .none):
-                self.limit = nil
-            case (.none, let distance?):
-                self.limit = .distance(distance)
-            case (let level?, .none):
-                self.limit = .position(level: level)
-            case (.some, .some):
-                throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Limit level and distance are both set on a deal confirmation. This is not suppose to happen!")
+            case (.none, .none):      self.limit = nil
+            case (.none, let dista?): self.limit = .distance(dista)
+            case (let level?, .none): self.limit = .position(level: level)
+            case (.some, .some): throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Limit level and distance are both set on a deal confirmation. This is not suppose to happen!")
             }
             // Figure out stop.
             let stop: API.Deal.Stop.Kind?
             let stopLevel = try container.decodeIfPresent(Decimal.self, forKey: .stopLevel)
             let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance)
             switch (stopLevel, stopDistance) {
-            case (.none, .none):
-                stop = nil
-            case (.none, let distance?):
-                stop = .distance(distance)
-            case (let level?, .none):
-                stop = .position(level: level)
-            case (.some, .some):
-                throw DecodingError.dataCorruptedError(forKey: .stopLevel, in: container, debugDescription: "Stop level and distance are both set on a deal confirmation. This is not suppose to happen!")
+            case (.none, .none):      stop = nil
+            case (.none, let dista?): stop = .distance(dista)
+            case (let level?, .none): stop = .position(level: level)
+            case (.some, .some): throw DecodingError.dataCorruptedError(forKey: .stopLevel, in: container, debugDescription: "Stop level and distance are both set on a deal confirmation. This is not suppose to happen!")
             }
             if let stop = stop {
                 let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
-                let isTrailing = try container.decode(Bool.self, forKey: .isTrailingStop)
-                
+                let isTrailing = try container.decode(Bool.self, forKey: .isStopTrailing)
                 let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
                 let trailing: API.Deal.Stop.Trailing = (isTrailing) ? .dynamic(nil) : .static
                 self.stop = .init(stop, risk: risk, trailing: trailing)
@@ -158,11 +149,9 @@ extension API.Position.Confirmation {
             let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
             let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)
             switch (profitValue, profitCurrency) {
-            case (let value?, let currency?):
-                self.profit = .init(value: value, currency: currency)
-            case (.none, .none):
-                self.profit = nil
-            default:
+            case (let v?, let c?): self.profit = .init(value: v, currency: c)
+            case (.none, .none):   self.profit = nil
+            case (.none, .some), (.some, .none):
                 let description = "Both \"\(Self.CodingKeys.profitValue.rawValue)\" and \"\(Self.CodingKeys.profitCurrency.rawValue)\" must be set or be `nil` at the same time."
                 throw DecodingError.dataCorruptedError(forKey: .profitValue, in: container, debugDescription: description)
             }
@@ -174,7 +163,7 @@ extension API.Position.Confirmation {
             case limitLevel, limitDistance
             case stopLevel, stopDistance
             case isStopGuaranteed = "guaranteedStop"
-            case isTrailingStop = "trailingStop"
+            case isStopTrailing = "trailingStop"
             case profitValue = "profit"
             case profitCurrency = "profitCurrency"
         }
@@ -185,7 +174,7 @@ extension API.Position.Confirmation {
         /// Deal identifier.
         public let identifier: String
         /// Deal current status.
-        public let status: API.Position.Status
+        public let status: API.Deal.Status
         
         private enum CodingKeys: String, CodingKey {
             case identifier = "dealId"

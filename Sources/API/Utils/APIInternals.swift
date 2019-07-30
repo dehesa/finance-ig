@@ -1,4 +1,5 @@
 import Foundation
+import ReactiveSwift
 
 // MARK: - Request types
 
@@ -7,7 +8,9 @@ extension API.Request {
     /// - returns: A `URLRequest` and an `API` instance.
     internal typealias Wrapper = (api: API, request: URLRequest)
     /// Request values that have been verified/validated.
-    internal typealias Values<T> = (api: API, values: T)
+    internal typealias WrapperValid<T> = (api: API, values: T)
+    /// Wrapper around the request for a paginated endpoint.
+    internal typealias WrapperPage<M> = (request: URLRequest, meta: M)
     
     /// List of typealias representing closures which generate a specific data type.
     internal enum Generator {
@@ -16,12 +19,17 @@ extension API.Request {
         /// - returns: The validated values.
         typealias Validation<T> = (_ api: API) throws -> T
         /// Closure which returns a newly created `URLRequest` and provides with it an API instance.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
+        /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: A newly created `URLRequest`.
         typealias Request<T> = (_ api: API, _ values: T) throws -> URLRequest
+        /// Closure executed before each page to determine if the request must be performed and if so, which shape does it take.
+        /// - parameter api: The API instance from where credentials and other temporal priviled information is being retrieved.
+        /// - parameter initialRequest: The base request for all pages.
+        /// - parameter previous: The request and (typically) metadata for the previous page.
+        typealias RequestPage<M> = (_ api: API, _ initialRequest: URLRequest, _ previous: API.Request.WrapperPage<M>?) throws -> URLRequest?
         /// Closure which returns a bunch of query items to be used in a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
+        /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: Array of `URLQueryItem`s to be added to a `URLRequest`.
         typealias Query<T> = (_ api: API, _ values: T) throws -> [URLQueryItem]
@@ -40,6 +48,10 @@ extension API.Request {
         /// - parameter response: The HTTP response received from the execution of `request`.
         /// - returns: A JSON decoder (to typically decode the response's payload).
         typealias Decoder = (_ request: URLRequest, _ response: HTTPURLResponse) throws -> JSONDecoder
+        /// Closure which receives a `SignalProducer` with an already formatted page request and it is suppose to send it and decode the data into a value `V` (which will be pass along) and a metadata `M` (which will be retrofeed into the following page request generation.
+        /// - parameter requestSignal: The signal to be send and value decoded.
+        /// - returns: The signal returing the response value and metadata.
+        typealias SignalPage<M,V> = (_ requestSignal: SignalProducer<API.Request.Wrapper,API.Error>) -> SignalProducer<(M,V),API.Error>
     }
 }
 
@@ -49,7 +61,7 @@ extension API.Response {
     /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
     internal typealias Wrapper = (request: URLRequest, header: HTTPURLResponse, data: Data?)
     /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and a data payload.
-    internal typealias DataWrapper = (request: URLRequest, header: HTTPURLResponse, data: Data)
+    internal typealias WrapperData = (request: URLRequest, header: HTTPURLResponse, data: Data)
 }
 
 // MARK: - Internal Types
