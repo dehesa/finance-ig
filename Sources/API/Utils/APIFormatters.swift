@@ -73,7 +73,7 @@ extension API {
 extension DateFormatter {
     /// Makes a deep copy of the passed `DateFormatter`.
     /// - todo: Check whether it works in non Darwin systems.
-    var deepCopy: DateFormatter {
+    internal var deepCopy: DateFormatter {
         return self.copy() as! DateFormatter
     }
 }

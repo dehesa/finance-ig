@@ -77,7 +77,6 @@ extension API {
         public let limit: API.Deal.Limit?
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
         public let stop: API.Deal.Stop?
-        
         /// The market basic information and current state (i.e. snapshot).
         public let market: API.Node.Market
         
@@ -98,20 +97,16 @@ extension API {
             // Figure out stop.
             if let stopLevel = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopLevel) {
                 let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isStopGuaranteed)
-                let premium = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitedRiskPremium)
+                let premium = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopRiskPremium)
                 let trailingDistance = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingDistance)
                 let trailingIncrement = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingIncrement)
                 
                 let trailing: API.Deal.Stop.Trailing
                 switch (trailingDistance, trailingIncrement) {
-                case (.none, .none):
-                    trailing = .static
-                case (let distance?, let increment?):
-                    trailing = .dynamic(.init(distance: distance, increment: increment))
-                case (.some, .none):
-                    throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingDistance,  .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
-                case (.none, .some):
-                    throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingIncrement, .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
+                case (.none, .none):   trailing = .static
+                case (let d?, let i?): trailing = .dynamic(.init(distance: d, increment: i))
+                case (.some, .none): throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingDistance,  .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
+                case (.none, .some): throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingIncrement, .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
                 }
                 
                 let type: API.Deal.Stop.Kind = .position(level: stopLevel)
@@ -131,10 +126,10 @@ extension API {
                 case reference = "dealReference"
                 case date = "createdDateUTC"
                 case currency, contractSize, size
-                case level, direction
+                case direction, level
                 case limitLevel, stopLevel
                 case isStopGuaranteed = "controlledRisk"
-                case limitedRiskPremium
+                case stopRiskPremium = "limitedRiskPremium"
                 case stopTrailingDistance = "trailingStopDistance"
                 case stopTrailingIncrement = "trailingStep"
             }

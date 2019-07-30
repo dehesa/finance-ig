@@ -120,14 +120,8 @@ extension API.Request.Positions {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "A position must set \"force open\" to true if a limit is set.")
                 }
                 
-                if let orderLevel = order.level {
-                    guard limit.isValid(forBase: orderLevel, direction: direction) else {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "The limit provided \"\(limit)\" is invalid since it is set on the opposite direction of the position level \"\(orderLevel)\".")
-                    }
-                } else if case .distance(let distance) = limit {
-                    guard distance.isNormal, case .plus = distance.sign else {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "The limit disance provided must be a positive number and greater than zero.")
-                    }
+                guard limit.isValid(with: order.level.map { ($0, direction) }) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The given limit is invalid. Limit: \(limit)")
                 }
             }
             // Check the stop for forceOpen agreement, for level/distance validity, and for trailing behavior.
@@ -136,18 +130,12 @@ extension API.Request.Positions {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "A position must set \"force open\" to true if a stop is set.")
                 }
                 
-                if let orderLevel = self.order.level {
-                    guard stop.isValid(forBase: orderLevel, direction: self.direction) else {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "The stop provided \"\(stop)\" is invalid since it is set on the opposite direction of the position level \"\(orderLevel)\".")
-                    }
-                } else if case .distance(let distance) = limit {
-                    guard distance.isNormal, case .plus = distance.sign else {
-                        throw API.Error.invalidRequest(underlyingError: nil, message: "The stop disance provided must be a positive number and greater than zero.")
-                    }
+                guard stop.isValid(with: order.level.map { ($0, direction) }) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The given stop is invalid. Stop: \(stop)")
                 }
                 
-                if case .dynamic(let behavior) = stop.trailing {
-                    guard case .some(let behavior) = behavior else {
+                if case .dynamic(let settings) = stop.trailing {
+                    guard case .some(let trailing) = settings else {
                         throw API.Error.invalidRequest(underlyingError: nil, message: "If a trailing stop is chosen, the trailing distance and increment must be specified.")
                     }
                     
@@ -155,11 +143,11 @@ extension API.Request.Positions {
                         throw API.Error.invalidRequest(underlyingError: nil, message: "If a trailing stop is chosen, only the type \".distance\" is allowed as a stop level.")
                     }
                     
-                    guard behavior.distance.isEqual(to: stopDistance) else {
+                    guard trailing.distance.isEqual(to: stopDistance) else {
                         throw API.Error.invalidRequest(underlyingError: nil, message: "If a trailing stop is chosen, the stop distance and the trailing distance must match on position creation time.")
                     }
                     
-                    guard behavior.increment.isNormal, case .plus = behavior.increment.sign else {
+                    guard trailing.increment.isNormal, case .plus = trailing.increment.sign else {
                         throw API.Error.invalidRequest(underlyingError: nil, message: "The trailing increment provided must be a positive number and greater than zero.")
                     }
                 }
@@ -207,15 +195,15 @@ extension API.Request.Positions {
                 }
                 
                 switch stop.trailing {
-                case .static:                try container.encode(false, forKey: .isTrailingStop)
-                case .dynamic(let behavior): try container.encode(true,  forKey: .isTrailingStop)
+                case .static:                try container.encode(false, forKey: .isStopTrailing)
+                case .dynamic(let behavior): try container.encode(true,  forKey: .isStopTrailing)
                     guard let behavior = behavior else {
                         var codingPaths = container.codingPath
-                        codingPaths.append(Self.CodingKeys.isTrailingStop)
+                        codingPaths.append(Self.CodingKeys.isStopTrailing)
                         throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found."))
                     }
                     //try container.encode(behavior.distance, forKey: .stopDistance)
-                    try container.encode(behavior.increment, forKey: .trailingStopIncrement)
+                    try container.encode(behavior.increment, forKey: .stopTrailingDistance)
                 }
             } else {
                 try container.encode(false, forKey: .isStopGuaranteed)
@@ -233,8 +221,10 @@ extension API.Request.Positions {
             case fillStrategy = "timeInForce"
             case size
             case limitLevel, limitDistance
-            case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
-            case isTrailingStop = "trailingStop", trailingStopIncrement
+            case stopLevel, stopDistance
+            case isStopGuaranteed = "guaranteedStop"
+            case isStopTrailing = "trailingStop"
+            case stopTrailingDistance = "trailingStopIncrement"
             case forceOpen
             case reference = "dealReference"
         }
@@ -279,8 +269,8 @@ extension API.Request.Positions {
                 switch stop.trailing {
                 case .static:
                     try container.encode(false, forKey: .isTrailingStop)
-                    try container.encodeNil(forKey: .trailingStopDistance)
-                    try container.encodeNil(forKey: .trailingStopIncrement)
+                    try container.encodeNil(forKey: .stopTrailingDistance)
+                    try container.encodeNil(forKey: .stopTrailingIncrement)
                 case .dynamic(let behavior):
                     guard let behavior = behavior else {
                         var codingPaths = container.codingPath
@@ -288,22 +278,22 @@ extension API.Request.Positions {
                         throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found."))
                     }
                     try container.encode(true, forKey: .isTrailingStop)
-                    try container.encode(behavior.distance, forKey: .trailingStopDistance)
-                    try container.encode(behavior.increment, forKey: .trailingStopIncrement)
+                    try container.encode(behavior.distance, forKey: .stopTrailingDistance)
+                    try container.encode(behavior.increment, forKey: .stopTrailingIncrement)
                 }
             } else {
                 try container.encodeNil(forKey: .stopLevel)
                 try container.encode(false, forKey: .isTrailingStop)
-                try container.encodeNil(forKey: .trailingStopDistance)
-                try container.encodeNil(forKey: .trailingStopIncrement)
+                try container.encodeNil(forKey: .stopTrailingDistance)
+                try container.encodeNil(forKey: .stopTrailingIncrement)
             }
         }
         
         private enum CodingKeys: String, CodingKey {
             case limitLevel, stopLevel
             case isTrailingStop = "trailingStop"
-            case trailingStopDistance
-            case trailingStopIncrement
+            case stopTrailingDistance = "trailingStopDistance"
+            case stopTrailingIncrement = "trailingStopIncrement"
         }
     }
 }

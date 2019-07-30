@@ -38,10 +38,4 @@ final class APIAccountTests: APITestCase {
 
         self.test("Account Preferences", endpoint, signingProcess: .oauth, timeout: 2)
     }
-    
-    func testPremise() {
-        let code: Currency.Code = "EUR"
-        let string = "150 \(code)"
-        print(string)
-    }
 }

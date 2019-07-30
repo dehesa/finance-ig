@@ -254,36 +254,6 @@ extension API.Node.Market {
 }
 
 extension API.Position {
-    /// Position status.
-    public enum Status: Decodable {
-        case open
-        case amended
-        case partiallyClosed
-        case closed
-        case deleted
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            switch value {
-            case Self.CodingKeys.openA.rawValue, Self.CodingKeys.openB.rawValue: self = .open
-            case Self.CodingKeys.amended.rawValue: self = .amended
-            case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
-            case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
-            case Self.CodingKeys.deleted.rawValue: self = .deleted
-            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value \"\(value)\" couldn't be parsed.")
-            }
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case openA = "OPEN", openB = "OPENED"
-            case amended = "AMENDED"
-            case partiallyClosed = "PARTIALLY_CLOSED"
-            case closedA = "FULLY_CLOSED", closedB = "CLOSED"
-            case deleted = "DELETED"
-        }
-    }
-    
     /// Describes how the user's order must be executed.
     public enum Order {
         /// A market order is an instruction to buy or sell at the best available price for the size of your order.

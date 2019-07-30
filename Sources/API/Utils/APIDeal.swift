@@ -106,6 +106,36 @@ extension API.Deal {
             }
         }
     }
+    
+    /// Position status.
+    public enum Status: Decodable {
+        case open
+        case amended
+        case partiallyClosed
+        case closed
+        case deleted
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            switch value {
+            case Self.CodingKeys.openA.rawValue, Self.CodingKeys.openB.rawValue: self = .open
+            case Self.CodingKeys.amended.rawValue: self = .amended
+            case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
+            case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
+            case Self.CodingKeys.deleted.rawValue: self = .deleted
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value \"\(value)\" couldn't be parsed.")
+            }
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case openA = "OPEN", openB = "OPENED"
+            case amended = "AMENDED"
+            case partiallyClosed = "PARTIALLY_CLOSED"
+            case closedA = "FULLY_CLOSED", closedB = "CLOSED"
+            case deleted = "DELETED"
+        }
+    }
 }
 
 extension API.Deal {
@@ -118,8 +148,8 @@ extension API.Deal {
         case distance(Decimal)
         
         /// Returns the absolute limit level.
-        /// - parameter base: The deal  level.
-        /// - parameter direction: The deal direction from which to mark the distance. `.buy` deals will have the limits higher than the reference levels, while `.sell` deals will have then lower.
+        /// - parameter reference: The reference level and deal direction. `.buy` deals will have the limits higher than the reference levels, while `.sell` deals will have then lower.
+        /// - returns: The level value. It may only be `nil` when the receiving limit is a `.distance` and no reference level and direction has been given.
         public func level(from reference: (base: Decimal, direction: API.Deal.Direction)? = nil) -> Decimal? {
             switch self {
             case .position(let level):
@@ -135,8 +165,8 @@ extension API.Deal {
         }
         
         /// Returns the distance from the base to the limit level.
-        /// - parameter base: The deal  level.
-        /// - parameter direction: The deal direction from which to mark the distance. `.buy` deals will have the limits higher than the reference levels, while `.sell` deals will have then lower.
+        /// - parameter reference: The reference level and deal direction. `.buy` deals will have the limits higher than the reference levels, while `.sell` deals will have then lower.
+        /// - returns: The distance between the reference level and the receiving level. It may only be `nil` when the receiving limit is a `.position` and no reference level and direction has been given.
         public func distance(from reference: (base: Decimal, direction: API.Deal.Direction)? = nil) -> Decimal? {
             switch self {
             case .distance(let distance):
@@ -152,15 +182,20 @@ extension API.Deal {
         }
         
         /// Check whether the receiving limit is valid in reference to the given base level and direction.
-        public func isValid(forBase base: Decimal, direction: API.Deal.Direction) -> Bool {
+        /// - parameter reference. The reference level and deal direction.
+        /// - returns: Boolean indicating whether the limit is in the right side of the deal and the number is valid.
+        public func isValid(with reference: (base: Decimal, direction: API.Deal.Direction)? = nil) -> Bool {
             switch self {
-            case .position(let level):
-                switch direction {
-                case .buy:  return level > base
-                case .sell: return level < base
-                }
             case .distance(let distance):
-                return distance.isNormal && (distance.sign == .plus)
+                guard distance.isNormal, case .plus = distance.sign else { return false }
+                return true
+            case .position(let level):
+                guard let reference = reference else { return true }
+                
+                switch reference.direction {
+                case .buy:  return level > reference.base
+                case .sell: return level < reference.base
+                }
             }
         }
     }
@@ -177,13 +212,16 @@ extension API.Deal {
         public let trailing: Self.Trailing
         
         /// Designated initializer.
+        /// - parameter type: The type of stop (whether an absolute stop level or relative stop distance).
         /// - parameter risk: The risk exposed when exercising the stop loss.
+        /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
         internal init(_ type: Self.Kind, risk: Self.Risk, trailing: Self.Trailing) {
             self.type = type
             self.risk = risk
             self.trailing = trailing
         }
         
+        /// Boolean indicating whether the stop will trail (be dynamic) or not (be static).
         public var isTrailing: Bool {
             switch self.trailing {
             case .static:  return false
@@ -192,21 +230,42 @@ extension API.Deal {
         }
         
         /// Check whether the receiving stop is valid in reference to the given base level and direction.
-        public func isValid(forBase base: Decimal, direction: API.Deal.Direction) -> Bool {
+        /// - parameter reference. The reference level and deal direction.
+        /// - returns: Boolean indicating whether the stop is in the right side of the deal and the number is valid.
+        public func isValid(with reference: (base: Decimal, direction: API.Deal.Direction)? = nil) -> Bool {
             switch self.type {
-            case .position(let level):
-                switch direction {
-                case .buy:  return level < base
-                case .sell: return level > base
-                }
             case .distance(let distance):
-                return distance.isNormal && (distance.sign == .plus)
+                guard distance.isNormal, case .plus = distance.sign else { return false }
+                return true
+            case .position(let level):
+                guard let reference = reference else { return true }
+                
+                switch reference.direction {
+                case .buy:  return level < reference.base
+                case .sell: return level > reference.base
+                }
             }
+        }
+        
+        ///
+        public static func position(level: Decimal, isStopGuaranteed: Bool = false) -> Self {
+            return self.init(.position(level: level), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
+        }
+        
+        ///
+        public static func distance(_ distance: Decimal, isStopGuaranteed: Bool = false) -> Self {
+            return self.init(.distance(distance), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
+        }
+        
+        ///
+        public static func trailing(_ distance: Decimal, increment: Decimal) -> Self {
+            return self.init(.distance(distance), risk: .exposed, trailing: .dynamic(.init(distance: distance, increment: increment)))
         }
     }
 }
 
 extension API.Deal.Stop {
+    /// Available types of stops.
     public enum Kind {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
         /// - parameter level: The stop absolute level.
@@ -220,6 +279,7 @@ extension API.Deal.Stop {
         /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
         /// - parameter premium: The number of pips that are being charged for your limited risk (i.e. guaranteed stop).
         case limited(premium: Decimal? = nil)
+        /// An exposed (or non-guaranteed) stop may expose the trade to slippage when exiting it.
         case exposed
         
         public init(nilLiteral: ()) {
@@ -233,8 +293,10 @@ extension API.Deal.Stop {
     
     /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
     public enum Trailing: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral {
+        /// A static (non-movable) stop.
         case `static`
-        case `dynamic`(Self.Behavior? = nil)
+        /// A dynamic (trailing) stop.
+        case `dynamic`(Self.Settings? = nil)
         
         public init(nilLiteral: ()) {
             self = .static
@@ -244,12 +306,13 @@ extension API.Deal.Stop {
             self = (value) ? .dynamic(nil) : .static
         }
         
-        public struct Behavior: Equatable {
+        /// The trailing settings (i.e. trailing distance and trailing increment/step).
+        public struct Settings: Equatable {
             /// The distance from the  market price.
             public let distance: Decimal
             /// The stop level increment step in pips.
             public let increment: Decimal
-            
+            /// Designated initializer.
             internal init(distance: Decimal, increment: Decimal) {
                 self.distance = distance
                 self.increment = increment
@@ -265,7 +328,7 @@ extension API.Deal {
         public let value: Decimal
         /// The profit currency.
         public let currency: Currency.Code
-        
+        /// Designated initializer
         internal init(value: Decimal, currency: Currency.Code) {
             self.value = value
             self.currency = currency

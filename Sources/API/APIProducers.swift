@@ -1,7 +1,7 @@
 import Foundation
 import ReactiveSwift
 
-extension SignalProducer where Value==API.Request.Values<Void>, Error==API.Error {
+extension SignalProducer where Value==API.Request.WrapperValid<Void>, Error==API.Error {
     /// Initializes a `SignalProducer` that checks (when started) whether the passed API session has expired.
     /// - attention: This initializer creates a weak bond with the  API instance passed as argument. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
@@ -22,7 +22,7 @@ extension SignalProducer where Error==API.Error {
     /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
     /// - parameter validating: Closure validating some values that will pass with the signal event to the following step.
-    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where SignalProducer.Value==API.Request.Values<T> {
+    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where SignalProducer.Value==API.Request.WrapperValid<T> {
         self.init { [weak api] (input, _) in
             guard let api = api else {
                 return input.send(error: .sessionExpired)
@@ -46,7 +46,7 @@ extension SignalProducer where Error==API.Error {
     /// - parameter requestGenerator: The callback actually creating the `URLRequest`.
     /// - returns: New `SignalProducer` returning the request and the API instance.
     /// - seealso: URLRequest
-    internal func request<T>(_ requestGenerator: @escaping API.Request.Generator.Request<T>) -> SignalProducer<API.Request.Wrapper,API.Error> where Value==API.Request.Values<T> {
+    internal func request<T>(_ requestGenerator: @escaping API.Request.Generator.Request<T>) -> SignalProducer<API.Request.Wrapper,API.Error> where Value==API.Request.WrapperValid<T> {
         return self.attemptMap { (validated) -> Result<API.Request.Wrapper,API.Error> in
             let request: URLRequest
             do {
@@ -74,7 +74,7 @@ extension SignalProducer where Error==API.Error {
     internal func request<T>(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool,
                              queries queryGenerator: API.Request.Generator.Query<T>? = nil,
                              headers headerGenerator: API.Request.Generator.Header<T>? = nil,
-                             body bodyGenerator: API.Request.Generator.Body<T>? = nil) -> SignalProducer<API.Request.Wrapper,API.Error>  where Value==API.Request.Values<T> {
+                             body bodyGenerator: API.Request.Generator.Body<T>? = nil) -> SignalProducer<API.Request.Wrapper,API.Error>  where Value==API.Request.WrapperValid<T> {
         return self.attemptMap { (validated) -> Result<API.Request.Wrapper,API.Error> in
             // Generate the absolute URL.
             var url = validated.api.rootURL.appendingPathComponent(relativeURL)
@@ -176,21 +176,17 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
         }
     }
     
-    internal typealias PreviousEndpoint<M> = (request: URLRequest, meta: M)
-    
     /// Similar than `send(expecting:)`, this method executes one (or many) requests on the passed API instance.
     ///
     /// The initial request is received as a value and is evaluated on the `intermediateRequest` closure. If the closure returns a `URLRequest`, that endpoint will be performed. If the closure returns `nil`, the signal producer will complete.
     /// - parameter intermediateRequest: All data needed to compile a request for the next page. If `nil` is returned, the request won't be performed and the signal will complete. On the other hand, if an error is thrown (which will be forced cast to `API.Error`), it will be forwarded as a failure event.
     /// - parameter endpoint: A paginated request response. The values/errors will be forwarded to the returned producer.
     /// - returns: A `SignalProducer` returning the values from `endpoint` as soon as they arrive. Only when `nil` is returned on the `request` closure, will the returned producer complete.
-    internal func paginate<M,R>(request intermediateRequest: @escaping (_ api: API, _ initialRequest: URLRequest, _ previous: PreviousEndpoint<M>?) throws -> URLRequest?,
-                                endpoint: @escaping (_ requestSignal: SignalProducer<Value,Error>) -> SignalProducer<(M,R),API.Error>
-                               ) -> SignalProducer<R,Error> {
+    internal func paginate<M,R>(request intermediateRequest: @escaping API.Request.Generator.RequestPage<M>, endpoint: @escaping API.Request.Generator.SignalPage<M,R>) -> SignalProducer<R,Error> {
         return self.flatMap(.merge) { (api, initialRequest) in
             return SignalProducer<R,Error> { (generator, lifetime) in
                 /// Recursive closure fed with the latest endpoint call (or `nil`) at the very beginning.
-                var iterator: ( (_ previous: PreviousEndpoint<M>?) -> Void )! = nil
+                var iterator: ( (_ previous: API.Request.WrapperPage<M>?) -> Void )! = nil
                 /// Disposable used to detached the current page download task from the resulting signal's lifetime.
                 var detacher: Disposable? = nil
                 
@@ -254,8 +250,8 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
     
     /// Checks that the returned response has a non-empty data body. Optionally, it can check for status codes (similarly to `validate(statusCodes:)`.
     /// - parameter statusCode: If not `nil`, the array indicates all *viable*/supported status codes.
-    internal func validateLadenData<S>(statusCodes: S? = nil) -> SignalProducer<API.Response.DataWrapper,Error> where S: Sequence, S.Element==Int {
-        return self.attemptMap { (request, header, data) -> Result<API.Response.DataWrapper,API.Error> in
+    internal func validateLadenData<S>(statusCodes: S? = nil) -> SignalProducer<API.Response.WrapperData,Error> where S: Sequence, S.Element==Int {
+        return self.attemptMap { (request, header, data) -> Result<API.Response.WrapperData,API.Error> in
             if let codes = statusCodes, !codes.contains(header.statusCode) {
                 let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: nil, message: "Status code validation failed.\n\tExpected: \(codes).\n\tReceived: \(header.statusCode).")
                 return .failure(error)
@@ -272,12 +268,12 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
     
     /// Checks that the returned response has a non-empty data body. Optionally, it can check for status codes (similarly to `validate(statusCodes:)`.
     /// - parameter statusCode: If not `nil`, the array indicates all *viable*/supported status codes.
-    internal func validateLadenData(statusCodes: Int...) -> SignalProducer<API.Response.DataWrapper,Error> {
+    internal func validateLadenData(statusCodes: Int...) -> SignalProducer<API.Response.WrapperData,Error> {
         return self.validateLadenData(statusCodes: statusCodes)
     }
 }
 
-extension SignalProducer where Value==API.Response.DataWrapper, Error==API.Error {
+extension SignalProducer where Value==API.Response.WrapperData, Error==API.Error {
     /// Decodes the JSON payload with a given `JSONDecoder`.
     /// - parameter decoderGenerator: Callback receiving the url request and HTTP header. It must return the JSON decoder to actually decode the data.
     internal func decodeJSON<T:Decodable>(with decoderGenerator: API.Request.Generator.Decoder? = nil) -> SignalProducer<T,API.Error> {

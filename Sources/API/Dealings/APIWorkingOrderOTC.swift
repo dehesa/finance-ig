@@ -99,14 +99,14 @@ extension API.Request.WorkingOrders {
             }
             // Check the limit for level/distance validity.
             if let limit = limit {
-                guard limit.isValid(forBase: level, direction: direction) else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The limit provided \"\(limit)\" is invalid since it is set on the opposite direction of the working order level \"\(level)\".")
+                guard limit.isValid(with: (level, direction)) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The given limit is invalid. Limit: \(limit)")
                 }
             }
             // Check the stop for level/distance validity and to verify that only the distance type allow limited risk.
             if let stop = stop {
-                guard API.Deal.Stop(stop.type, risk: stop.risk, trailing: .static).isValid(forBase: level, direction: direction) else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The stop provided \"\(stop)\" is invalid since it is set on the opposite direction of the working order level \"\(level)\".")
+                guard API.Deal.Stop(stop.type, risk: stop.risk, trailing: .static).isValid(with: (level, direction)) else {
+                    throw API.Error.invalidRequest(underlyingError: nil, message: "The given stop is invalid. Stop: \(stop)")
                 }
                 
                 if case .limited = stop.risk, case .position = stop.type {
@@ -261,43 +261,3 @@ extension API.Request.WorkingOrders {
         let dealReference: API.Deal.Reference
     }
 }
-
-//        func encode(to encoder: Encoder) throws {
-//            var container = encoder.container(keyedBy: CodingKeys.self)
-//            try container.encodeIfPresent(self.type, forKey: .type)
-//            try container.encodeIfPresent(self.level, forKey: .level)
-//            
-//            if let limit = self.limit {
-//                switch limit {
-//                case .position(let level): try container.encode(level, forKey: .limitLevel)
-//                case .distance(let dista): try container.encode(dista, forKey: .limitDistance)
-//                }
-//            }
-//            
-//            if let stop = self.stop {
-//                switch stop {
-//                case .position(let level): try container.encode(level, forKey: .stopLevel)
-//                case .distance(let dista): try container.encode(dista, forKey: .stopDistance)
-//                }
-//            }
-//            
-//            if let expiration = self.expiration {
-//                try container.encode(expiration.rawValue, forKey: .expiration)
-//                if case .tillDate(let date) = expiration {
-//                    try container.encode(date, forKey: .expirationDate, with: API.DateFormatter.humanReadable)
-//                }
-//            }
-//        }
-//        
-//        private enum CodingKeys: String, CodingKey {
-//            case type
-//            case level
-//            case limitLevel = "limitLevel"
-//            case limitDistance = "limitDistance"
-//            case stopDistance = "stopDistance"
-//            case stopLevel = "stopLevel"
-//            case expiration = "timeInForce"
-//            case expirationDate = "goodTillDate"
-//        }
-//    }
-//}
