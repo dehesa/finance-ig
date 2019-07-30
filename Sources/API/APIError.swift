@@ -18,114 +18,35 @@ extension API {
 
 extension API.Error: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result = "\n\n"
-        result.append("[API Error]")
+        var result = ErrorPrint(domain: "API Error")
         
         switch self {
         case .sessionExpired:
-            result.addTitle("The session has expired.")
-            result.addDetail("The underlying URL session or the \(API.self) instance cannot be found. You can probably solve this problem by creating a strong reference to the \(API.self) instance.")
+            result.title = "Session expired."
+            result.append(details: "The underlying URL session or the \(API.self) instance cannot be found. You can probably solve this problem by creating a strong reference to the \(API.self) instance.")
         case .invalidCredentials(let credentials, let message):
-            result.addTitle(message)
-            result.addDetail(credentials) { "Please check the following credentials carefully:\n\($0)" }
+            result.title = "Invalid credentals."
+            result.append(details: message)
+            result.append(involved: credentials)
         case .invalidRequest(let error, let message):
-            result.addTitle(message)
-            result.addDetail(error) { "error:\n\($0)" }
+            result.title = "Invalid request."
+            result.append(details: message)
+            result.append(error: error)
         case .callFailed(let request, let response, let error, let message):
-            result.addTitle(message)
-            result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
-            result.addDetail(response) {"response: \($0.representation)"}
-            result.addDetail(error) { "error:\n\($0)" }
+            result.title = "Call failed"
+            result.append(details: message)
+            result.append(error: error)
+            result.append(involved: request)
+            result.append(involved: response)
         case .invalidResponse(let response, let request, let data, let error, let message):
-            result.addTitle(message)
-            result.addDetail("request: \(request.httpMethod?.uppercased() ?? "???") \(request)")
-            result.addDetail("response: \(response.representation)")
-            if let data = data {
-                result.addDetail("data [\(data)]")
-                if let representation = String(data: data, encoding: .utf8) {
-                    result.append(": \(representation)")
-                }
-            }
-            result.addDetail(error) { "error:\n\($0)"}
+            result.title = "Invalid response"
+            result.append(details: message)
+            result.append(error: error)
+            result.append(involved: request)
+            result.append(involved: response)
+            result.append(involved: data)
         }
         
-        result.append("\n\n")
-        return result
-    }
-}
-
-extension DecodingError: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        var result = "[Decoding Error]"
-        let context: DecodingError.Context
-
-        switch self {
-        case .keyNotFound(let key, let ctx):
-            result.addTitle("The key \"\(key.representation)\" was not found at path: \(ctx.codingPath.representation)")
-            context = ctx
-        case .valueNotFound(let type, let ctx):
-            result.addTitle("A value of type \"\(type)\" was not found at path: \(ctx.codingPath.representation)")
-            context = ctx
-        case .dataCorrupted(let ctx):
-            result.addTitle("Data being decoded is invalid at path: \(ctx.codingPath.representation)")
-            context = ctx
-        case .typeMismatch(let type, let ctx):
-            result.addTitle("Value found is not of type \"\(type)\" at path: \(ctx.codingPath.representation)")
-            context = ctx
-        @unknown default:
-            result.addTitle("Non-identified error. " + String(describing: self))
-            return result
-        }
-        
-        result.addDetail("message: \(context.debugDescription)")
-        result.addDetail(context.underlyingError) { "error: \n\($0)" }
-        return result
-    }
-}
-
-private extension URLResponse {
-    @objc var representation: String {
-        return self.debugDescription
-    }
-}
-
-private extension HTTPURLResponse {
-    override var representation: String {
-        let keys = self.allHeaderFields.keys.map { $0 as? String ?? "\($0)" }.joined(separator: ", ")
-        return "\(self.statusCode) header keys [\(keys)]"
-    }
-}
-
-private extension CodingKey {
-    var representation: String {
-        if let number = self.intValue {
-            return String(number)
-        } else {
-            return self.stringValue
-        }
-    }
-}
-
-private extension Array where Array.Element == CodingKey {
-    var representation: String {
-        return self.map { $0.representation }.joined(separator: "/")
-    }
-}
-
-internal extension String {
-    /// Adds a title line to the error debug string.
-    mutating func addTitle(_ message: String) {
-        self.append(" " + message)
-    }
-    
-    /// Adds a detail line to the error debug string.
-    mutating func addDetail(_ message: String) {
-        self.append("\n\t" + message)
-    }
-    
-    /// Adds a detail line to the error debug string if the argument exists.
-    mutating func addDetail<T>(_ instance: T?, _ messageGenerator: (T) -> String) {
-        guard let instance = instance else { return }
-        self.addDetail(messageGenerator(instance))
+        return result.debugDescription
     }
 }

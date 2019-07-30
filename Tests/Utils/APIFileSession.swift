@@ -1,19 +1,19 @@
 @testable import IG
 
 /// Mocked URL Session that will pick responses from the bundle's file system.
-final class APIFileSession: URLMockableSession {
-    func dataTask(with request: URLRequest, completionHandler: @escaping DataTaskResult) -> URLMockableSessionDataTask {
+final class APIFileSession: APIMockableChannel {
+    func dataTask(with request: URLRequest, completionHandler: @escaping API.Response.DataTaskResult) -> APIMockableChannelDataTask {
         return APIFileSessionDataTask(with: request, completionHandler: completionHandler)
     }
     
     func invalidateAndCancel() {}
 }
 
-final class APIFileSessionDataTask: URLMockableSessionDataTask {
+final class APIFileSessionDataTask: APIMockableChannelDataTask {
     let request: URLRequest
-    fileprivate(set) var completionHandler: DataTaskResult?
+    fileprivate(set) var completionHandler: API.Response.DataTaskResult?
     
-    fileprivate init(with request: URLRequest, completionHandler: @escaping DataTaskResult) {
+    fileprivate init(with request: URLRequest, completionHandler: @escaping API.Response.DataTaskResult) {
         self.request = request
         self.completionHandler = completionHandler
     }

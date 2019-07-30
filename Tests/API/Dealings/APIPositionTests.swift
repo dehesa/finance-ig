@@ -26,7 +26,7 @@ final class APIPositionTests: APITestCase {
         let size: Decimal = 1
         let limit: API.Deal.Limit = .distance(10)
         let stop: API.Deal.Stop = .trailing(20, increment: 5)
-        let scalingFactor: Double = 10000
+//        let scalingFactor: Double = 10000
         
         var stored: (reference: API.Deal.Reference?, identifier: API.Deal.Identifier?) = (nil, nil)
         let endpoints = self.api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop)
