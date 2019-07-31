@@ -6,6 +6,8 @@ extension API.Request.Transactions {
     // MARK: GET /history/transactions
     
     /// Returns the transaction history. By default returns the minue prices within the last 10 minutes.
+    ///
+    /// **This is a paginated-request**, which means that the `SignalProducer` will return several value events with an array of transactions (as indicated by the `page.size`).
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.

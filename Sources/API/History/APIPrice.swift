@@ -6,6 +6,8 @@ extension API.Request.Price {
     // MARK: GET /prices/{epic}
     
     /// Returns historical prices for a particular instrument.
+    ///
+    /// **This is a paginated-request**, which means that the `SignalProducer` will return several value events with an array of prices (as indicated by the `page.size`).
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.

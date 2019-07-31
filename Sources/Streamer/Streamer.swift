@@ -7,7 +7,6 @@ public final class Streamer {
     internal let lifetime: Lifetime
     /// The lifetime token that will dispose of all the state of the receiving `Streamer` instance.
     private let token: Lifetime.Token
-    
     /// URL root address.
     public let rootURL: URL
     /// The session (whether real or mocked) managing the streaming connections.

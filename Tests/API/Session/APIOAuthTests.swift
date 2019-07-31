@@ -3,65 +3,46 @@ import ReactiveSwift
 @testable import IG
 
 /// Tests for the API OAuth endpoints.
-final class APIOAuthTests: APITestCase {
+final class APIOAuthTests: XCTestCase {
     /// Test the OAuth lifecycle: session creation, refresh, and disconnection.
     func testOAuth() {
+        let api = Test.makeAPI(credentials: nil)
+        
         // The info needed to request OAuth credentials.
-        let info: (accountId: String, apiKey: String) = (self.account.identifier, self.account.api.key)
+        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
         
-        let endpoints = self.api.session.loginOAuth(apiKey: info.apiKey, user: self.account.api.user).on(value: {
-            XCTAssertGreaterThan($0.clientId, 0)
-            XCTAssertEqual($0.apiKey, info.apiKey)
-            XCTAssertEqual($0.accountId, info.accountId)
-            XCTAssertGreaterThan($0.token.expirationDate, Date())
-            
-            guard case .oauth(let access, let refresh, let scope, let type) = $0.token.value else {
-                return XCTFail("Credentials were expected to be OAuth. Credentials received: \($0)")
-            }
-            
-            XCTAssertFalse(access.isEmpty)
-            XCTAssertFalse(refresh.isEmpty)
-            XCTAssertFalse(scope.isEmpty)
-            XCTAssertFalse(type.isEmpty)
-            
-            let headers = $0.requestHeaders
-            XCTAssertEqual(headers[.authorization], "\(type) \(access)")
-            XCTAssertEqual(headers[.account], info.accountId)
-        }).call(on: self.api) { (api, credentials) -> SignalProducer<(API.Credentials,API.Credentials.Token),API.Error> in
-            guard case .oauth(_,let refresh,_,_) = credentials.token.value else {
-                XCTFail("The refresh token couldn't be acccessed.")
-                return .init(error: .invalidCredentials(credentials, message: "The refresh token couldn't be accessed."))
-            }
+        let credentials = try! api.session.loginOAuth(apiKey: info.apiKey, user: user).single()!.get()
+        XCTAssertGreaterThan(credentials.clientId, 0)
+        XCTAssertEqual(credentials.apiKey, info.apiKey)
+        XCTAssertEqual(credentials.accountId, info.accountId)
+        XCTAssertGreaterThan(credentials.token.expirationDate, Date())
+        guard case .oauth(let access, let refresh, let scope, let type) = credentials.token.value else {
+            return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
+        }
+        XCTAssertFalse(access.isEmpty)
+        XCTAssertFalse(refresh.isEmpty)
+        XCTAssertFalse(scope.isEmpty)
+        XCTAssertFalse(type.isEmpty)
+        let headers = credentials.requestHeaders
+        XCTAssertEqual(headers[.authorization], "\(type) \(access)")
+        XCTAssertEqual(headers[.account], info.accountId)
 
-            return api.session.refreshOAuth(token: refresh, apiKey: info.apiKey).map { (credentials, $0) }
-        }.on(value: { (oldCredentials, newToken) in
-            XCTAssertGreaterThan(newToken.expirationDate, Date())
+        let token = try! api.session.refreshOAuth(token: refresh, apiKey: info.apiKey).single()!.get()
+        XCTAssertGreaterThan(token.expirationDate, Date())
+        guard case .oauth(let newAccess, let newRefresh, let newScope, let newType) = token.value else {
+            fatalError()
+        }
+        XCTAssertNotEqual(access, newAccess)
+        XCTAssertNotEqual(refresh, newRefresh)
+        XCTAssertEqual(scope, newScope)
+        XCTAssertEqual(type, newType)
 
-            guard case .oauth(let oldAccess, let oldRefresh, let oldScope, let oldType) = oldCredentials.token.value else {
-                fatalError()
-            }
-            
-            guard case .oauth(let newAccess, let newRefresh, let newScope, let newType) = newToken.value else {
-                return XCTFail("Token was expected to be OAuth. Token received after OAuth refresh: \(newToken)")
-            }
-            
-            XCTAssertNotEqual(oldAccess, newAccess)
-            XCTAssertNotEqual(oldRefresh, newRefresh)
-            XCTAssertEqual(oldScope, newScope)
-            XCTAssertEqual(oldType, newType)
-
-            var newCredentials = oldCredentials
-            newCredentials.token = newToken
-            
-            let headers = newCredentials.requestHeaders
-            XCTAssertEqual(headers[.authorization], "\(newType) \(newAccess)")
-            XCTAssertEqual(headers[.account], info.accountId)
-        }).call(on: self.api) { (api, _) in
-            return api.session.logout()
-        }.on(value: {
-            XCTAssertNil(self.api.session.credentials)
-        })
+        var newCredentials = credentials
+        newCredentials.token = token
+        api.session.credentials = newCredentials
         
-        self.test("OAuth Login Procedure", endpoints, signingProcess: nil, timeout: 2)
+        try! api.session.logout().single()!.get()
+        XCTAssertNil(api.session.credentials)
     }
 }

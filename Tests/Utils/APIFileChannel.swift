@@ -1,15 +1,15 @@
 @testable import IG
 
 /// Mocked URL Session that will pick responses from the bundle's file system.
-final class APIFileSession: APIMockableChannel {
+final class APIFileChannel: APIMockableChannel {
     func dataTask(with request: URLRequest, completionHandler: @escaping API.Response.DataTaskResult) -> APIMockableChannelDataTask {
-        return APIFileSessionDataTask(with: request, completionHandler: completionHandler)
+        return APIFileChannelDataTask(with: request, completionHandler: completionHandler)
     }
     
     func invalidateAndCancel() {}
 }
 
-final class APIFileSessionDataTask: APIMockableChannelDataTask {
+final class APIFileChannelDataTask: APIMockableChannelDataTask {
     let request: URLRequest
     fileprivate(set) var completionHandler: API.Response.DataTaskResult?
     
@@ -37,7 +37,7 @@ final class APIFileSessionDataTask: APIMockableChannelDataTask {
     func cancel() {}
 }
 
-extension APIFileSessionDataTask {
+extension APIFileChannelDataTask {
     /// Sends the given parameter as it was an URLSession.
     fileprivate func send(data: Data? = nil, response: URLResponse? = nil, error: Swift.Error? = nil) {
         guard let handler = completionHandler else { return }

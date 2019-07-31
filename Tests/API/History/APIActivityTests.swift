@@ -3,24 +3,19 @@ import ReactiveSwift
 @testable import IG
 
 /// Tests API history activity related enpoints
-final class APIActivityTests: APITestCase {
+final class APIActivityTests: XCTestCase {
     /// Tests paginated activity retrieval.
     func testActivities() {
-        let components = DateComponents().set {
+        let api = Test.makeAPI(credentials: Test.credentials.api)
+        
+        let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
             $0.timeZone = TimeZone.current
             ($0.year, $0.month, $0.day) = (2019, 7, 1)
             ($0.hour, $0.minute) = (0, 0)
-        }
+        })!
         
-        let date = Calendar(identifier: .gregorian).date(from: components)!
-        
-        var counter = 0
-        let endpoint = self.api.activity.get(from: date, detailed: true).on(completed: {
-            XCTAssertGreaterThan(counter, 0)
-        }, value: { (activities) in
-            counter += activities.count
-        })
-        
-        self.test("Activities (history)", endpoint, signingProcess: .oauth, timeout: 3)
+        let activities = (try! api.activity.get(from: date, detailed: true).collect().single()!.get()).flatMap { $0 }
+        XCTAssertFalse(activities.isEmpty)
+        XCTAssertNil(activities.first(where: { $0.title.isEmpty || $0.details == nil }))
     }
 }

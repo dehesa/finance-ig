@@ -6,7 +6,7 @@ extension Streamer {
         /// The Streaming session expired.
         case sessionExpired
         /// The passed credentials are not of the expected form.
-        case invalidCredentials(API.Credentials?, message: String)
+        case invalidCredentials(Streamer.Credentials?, message: String)
         /// The request parameters are invalid.
         case invalidRequest(message: String)
         /// The subscription failed to established or it was abrouptly disconnected.

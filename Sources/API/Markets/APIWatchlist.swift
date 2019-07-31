@@ -41,7 +41,7 @@ extension API.Request.Watchlists {
     
     /// Returns the targeted watchlist.
     /// - parameter id: The identifier for the watchlist being targeted.
-    public func get(identifier: String) -> SignalProducer<[API.Node.Market],API.Error> {
+    public func getMarkets(from identifier: String) -> SignalProducer<[API.Node.Market],API.Error> {
         return SignalProducer(api: self.api) { (_) -> Void in
                 guard !identifier.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "Watchlist retrieval failed! The watchlist identifier cannot be empty.")

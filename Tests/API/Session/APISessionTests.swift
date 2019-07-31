@@ -3,23 +3,20 @@ import ReactiveSwift
 @testable import IG
 
 /// Tests API Session related endpoints.
-final class APISessionTests: APITestCase {
+final class APISessionTests: XCTestCase {
     /// Tests the Session information retrieval mechanisms.
     func testSession() {
-        let info: (accountId: String, apiKey: String) = (self.account.identifier, self.account.api.key)
+        let api = Test.makeAPI(credentials: nil)
         
-        let endpoints = self.api.session.login(type: .oauth, apiKey: info.apiKey, user: self.account.api.user)
-            .call(on: self.api) { (api, credentials) -> SignalProducer<API.Session,API.Error> in
-                return api.session.get()
-            }.on(value: { (response) in
-                XCTAssertGreaterThan(response.clientId, 0)
-                XCTAssertEqual(response.accountId, info.accountId)
-                XCTAssertNotNil(response.streamerURL.scheme)
-                XCTAssertEqual(response.streamerURL.scheme!, "https")
-            }).call(on: self.api) { (api, _) in
-                api.session.logout()
-            }
+        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
         
-        self.test("Session lifecycle", endpoints, signingProcess: nil, timeout: 2)
+        try! api.session.login(type: .oauth, apiKey: info.apiKey, user: user).single()!.get()
+        let session = try! api.session.get().single()!.get()
+        XCTAssertGreaterThan(session.clientId, 0)
+        XCTAssertEqual(session.accountId, info.accountId)
+        XCTAssertNotNil(session.streamerURL.scheme)
+        XCTAssertEqual(session.streamerURL.scheme!, "https")
+        try! api.session.logout().single()!.get()
     }
 }
