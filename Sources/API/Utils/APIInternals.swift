@@ -1,15 +1,6 @@
 import Foundation
 import ReactiveSwift
 
-extension API {
-    /// Domain namespace retaining anything related to API requests.
-    public enum Request {}
-    /// Domain namespace retaining anything related to API responses.
-    public enum Response {}
-    /// Namespace for commonly used value/class types related to deals.
-    public enum Deal {}
-}
-
 // MARK: - Request types
 
 extension API.Request {
@@ -73,7 +64,7 @@ extension API.Response {
     internal typealias WrapperData = (request: URLRequest, header: HTTPURLResponse, data: Data)
 }
 
-// MARK: - Internal Types
+// MARK: - Constant Types
 
 extension API {
     /// Namespace for all JSON related constants (pertaining the API).

@@ -26,14 +26,63 @@ extension API.Request.Session {
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON(with: { (request, responseHeader) -> JSONDecoder in
+            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
                 let decoder = JSONDecoder()
                 decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
                 return decoder
-            })
-            .map { (r: API.Session.Certificate) in
+            }).map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+            }
+    }
+    
+    // MARK: GET /session?fetchSessionTokens=true
+    
+    /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
+    /// - returns: `API.Credentials.Token` always returning a `.certificate`.
+    internal func refreshCertificate() -> SignalProducer<API.Credentials.Token,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "session", version: 1, credentials: true, queries: { (_,_) in
+                [URLQueryItem(name: "fetchSessionTokens", value: "true")]
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
+                let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                return decoder
+            }).map { (r: API.Session.WrapperCertificate) in
+                .init(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
+            }
+    }
+    
+    /// Returns the user's session details for the credentials given as arguments and regenerates the certificate tokens.
+    /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter token: The credentials for the user session to query.
+    /// - returns: The session data and `API.Credentials.Token` always set up to `.certificate`.
+    internal func refreshCertificate(apiKey: String, token: API.Credentials.Token) -> SignalProducer<(API.Session,API.Credentials.Token),API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "session", version: 1, credentials: false, queries: { (_,_) in
+                [URLQueryItem(name: "fetchSessionTokens", value: "true")]
+            }, headers: { (_,_) in
+                var result = [API.HTTP.Header.Key.apiKey: apiKey]
+                switch token.value {
+                case .certificate(let access, let security):
+                    result[.clientSessionToken] = access
+                    result[.securityToken] = security
+                case .oauth(let access, _, _, let type):
+                    result[.authorization] = "\(type) \(access)"
+                }
+                return result
+            }).send(expecting: .json)
+            .validateLadenData(statusCodes: 200)
+            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
+                let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
+                return decoder
+            }).map { (r: API.Session.WrapperCertificate) in
+                let token = API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
+                return (r.session, token)
             }
     }
     
@@ -114,7 +163,7 @@ extension API.Session {
             
             guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
-                  let tokens = Token(headerFields: headerFields) else {
+                  let tokens = Self.Token(headerFields: headerFields) else {
                 let errorContext = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
                 throw DecodingError.dataCorrupted(errorContext)
             }
@@ -175,6 +224,26 @@ extension API.Session {
         
         private enum CodingKeys: String, CodingKey {
             case encryptionKey, timeStamp
+        }
+    }
+}
+
+extension API.Session {
+    /// Wrapper for the session data and certificate token.
+    fileprivate struct WrapperCertificate: Decodable {
+        let session: API.Session
+        let token: API.Session.Certificate.Token
+        
+        init(from decoder: Decoder) throws {
+            self.session = try .init(from: decoder)
+            
+            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
+                  let headerFields = response.allHeaderFields as? [String:Any],
+                  let token = API.Session.Certificate.Token(headerFields: headerFields) else {
+                let errorContext = DecodingError.Context(codingPath: [], debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                throw DecodingError.dataCorrupted(errorContext)
+            }
+            self.token = token
         }
     }
 }

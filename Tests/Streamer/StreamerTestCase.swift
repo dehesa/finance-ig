@@ -73,34 +73,6 @@ extension StreamerTestCase {
 }
 
 extension StreamerTestCase {
-    /// Semaphore controling the single request of URL Streamer credentials.
-    private static let semaphore = DispatchSemaphore(value: 1)
-    /// Streamer credentials used around a "testing wave".
-    private static var loginData: LoginData? = nil
-    
-    /// Creates a streamer given the details in the account.
-    /// - parameter account: Account data to be use for the following barrage of tests.
-    fileprivate static func makeStreamer(timeout: DispatchTime = .now() + .seconds(5)) -> Streamer {
-        // Take the semaphore so only one test at a time can access the loginData.
-        guard case .success = self.semaphore.wait(timeout: timeout) else {
-            fatalError("Streamer credentials request failed after timeout completed without response.")
-        }
-        
-        let loginData: LoginData = self.loginData ?? {
-            self.loginData = self.extractLoginData(from: Account.make())
-            return self.loginData!
-        }()
-        self.semaphore.signal()
-
-        switch loginData {
-        case .file(let rootURL):
-            let session = StreamerFileSession(serverAddress: rootURL.absoluteString, adapterSet: nil)
-            return Streamer(rootURL: rootURL, session: session, autoconnect: false)
-        case .https(let rootURL, let credentials):
-            return Streamer(rootURL: rootURL, credentials: credentials, autoconnect: false)
-        }
-    }
-    
     /// Temporary enum conveying whether the streamer is supposed to the file-based or url-based.
     private enum LoginData {
         case file(rootURL: URL)
@@ -128,6 +100,40 @@ extension StreamerTestCase {
             return result
         }
     }
+}
+
+extension StreamerTestCase {
+    /// Semaphore controling the single request of URL Streamer credentials.
+    private static let semaphore = DispatchSemaphore(value: 1)
+    /// Streamer credentials used around a "testing wave".
+    private static var loginData: LoginData? = nil
+    
+    /// Creates a streamer given the details in the account.
+    /// - parameter account: Account data to be use for the following barrage of tests.
+    fileprivate static func makeStreamer(timeout: DispatchTime = .now() + .seconds(5)) -> Streamer {
+        // Take the semaphore so only one test at a time can access the loginData.
+        guard case .success = self.semaphore.wait(timeout: timeout) else {
+            fatalError("Streamer credentials request failed after timeout completed without response.")
+        }
+        
+        let loginData: LoginData = self.loginData ?? {
+            self.loginData = self.extractLoginData(from: Account.make(from: "io.dehesa.money.ig.tests.account"))
+            return self.loginData!
+        }()
+        self.semaphore.signal()
+
+        switch loginData {
+        case .file(let rootURL):
+            let session = StreamerFileSession(serverAddress: rootURL.absoluteString, adapterSet: nil)
+            return Streamer(rootURL: rootURL, session: session, autoconnect: false)
+        case .https(let rootURL, let credentials):
+            return Streamer(rootURL: rootURL, credentials: credentials, autoconnect: false)
+        }
+    }
+    
+    
+    
+    
 
     /// Synchronously (blocks the thread) request the streamer credentials.
     /// - parameter url: The root URL for the API servers. It can be file based.

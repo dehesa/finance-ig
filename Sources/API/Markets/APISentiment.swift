@@ -41,7 +41,7 @@ extension API.Request.Markets {
     
     /// Returns a list of markets (and its sentiments) that are being traded the most and are related to the gven market.
     /// - parameter marketIdentifier: The platform's market being targeted (don't confuse it with `epic` identifiers).
-    public func getRelated(to marketIdentifier: String) -> SignalProducer<[API.Market.Sentiment],API.Error> {
+    public func getSentimentRelated(to marketIdentifier: String) -> SignalProducer<[API.Market.Sentiment],API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !marketIdentifier.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "An empty market identifier is not supported.")

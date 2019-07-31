@@ -3,33 +3,53 @@ import ReactiveSwift
 @testable import IG
 
 /// Tests for the API CST endpoints.
-final class APICertificateTests: APITestCase {
+final class APICertificateTests: XCTestCase {
     /// Tests the CST lifecycle: session creation, refresh, and disconnection.
     func testCertificateLogInOut() {
-        /// The info needed to request CST credentials.
-        let info: (accountId: String, apiKey: String) = (self.account.identifier, self.account.api.key)
+        let api = Test.makeAPI(credentials: nil)
         
-        let endpoints = self.api.session.loginCertificate(apiKey: info.apiKey, user: self.account.api.user).on(value: {
-            XCTAssertGreaterThan($0.clientId, 0)
-            XCTAssertEqual($0.apiKey, info.apiKey)
-            XCTAssertEqual($0.accountId, info.accountId)
-            XCTAssertGreaterThan($0.token.expirationDate, Date())
-            
-            guard case .certificate(let access, let security) = $0.token.value else {
-                return XCTFail("Credentials were expected to be CST. Credentials received: \($0)")
-            }
-            XCTAssertFalse(access.isEmpty)
-            XCTAssertFalse(security.isEmpty)
-            
-            let headers = $0.requestHeaders
-            XCTAssertEqual(headers[.clientSessionToken], access)
-            XCTAssertEqual(headers[.securityToken], security)
-        }).call(on: self.api) { (api, credentials) in
-            return api.session.logout()
-        }.on(value: {
-            XCTAssertNil(self.api.session.credentials)
-        })
+        /// The info needed to request CST credentials.
+        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
+        
+        let credentials = try! api.session.loginCertificate(apiKey: info.apiKey, user: user).single()!.get()
+        XCTAssertGreaterThan(credentials.clientId, 0)
+        XCTAssertEqual(credentials.apiKey, info.apiKey)
+        XCTAssertEqual(credentials.accountId, info.accountId)
+        XCTAssertGreaterThan(credentials.token.expirationDate, Date())
+        guard case .certificate(let access, let security) = credentials.token.value else {
+            return XCTFail("Credentials were expected to be CST. Credentials received: \(credentials)")
+        }
+        XCTAssertFalse(access.isEmpty)
+        XCTAssertFalse(security.isEmpty)
 
-        self.test("Certificate Login procedure", endpoints, signingProcess: nil, timeout: 2)
+        let headers = credentials.requestHeaders
+        XCTAssertEqual(headers[.clientSessionToken], access)
+        XCTAssertEqual(headers[.securityToken], security)
+
+        try! api.session.logout().single()!.get()
+        XCTAssertNil(api.session.credentials)
+    }
+    
+    /// Tests the refresh functionality.
+    func testRefreshCertificates() {
+        let api = Test.makeAPI(credentials: nil)
+        
+        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
+        
+        let credentials = try! api.session.loginOAuth(apiKey: info.apiKey, user: user).single()!.get()
+        api.session.credentials = credentials
+        XCTAssertGreaterThan(credentials.clientId, 0)
+        XCTAssertEqual(credentials.apiKey, info.apiKey)
+        XCTAssertEqual(credentials.accountId, info.accountId)
+        XCTAssertGreaterThan(credentials.token.expirationDate, Date())
+        guard case .oauth = credentials.token.value else { return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)") }
+        
+        let token = try! api.session.refreshCertificate().single()!.get()
+        XCTAssertGreaterThan(token.expirationDate, Date())
+        guard case .certificate(let access, let security) = token.value else { return XCTFail("A certificate token hasn't been regenerated.") }
+        XCTAssertFalse(access.isEmpty)
+        XCTAssertFalse(security.isEmpty)
     }
 }

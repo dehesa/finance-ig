@@ -42,6 +42,7 @@ extension API.Request.Session {
     
     /// Returns the user's session details for the given credentials.
     /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
+    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints. 
     /// - parameter token: The credentials for the user session to query.
     /// - returns: `SignalProducer` returning information about the current user's session.
     public func get(apiKey: String, token: API.Credentials.Token) -> SignalProducer<API.Session,API.Error> {

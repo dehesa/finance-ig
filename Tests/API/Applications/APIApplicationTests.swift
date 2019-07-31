@@ -3,45 +3,37 @@ import ReactiveSwift
 @testable import IG
 
 /// Tests API Application related endpoints.
-final class APIApplicationTests: APITestCase {
+final class APIApplicationTests: XCTestCase {
     /// Tests the retrieval of all applications accessible by the given user.
     func testApplications() {
-        let apiKey = self.account.api.key
+        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let applications = try! api.applications.getAll().single()!.get()
         
-        let endpoint = self.api.applications.getAll().on(value: {
-            guard let app = $0.first else {
-                return XCTFail("No applications were found.")
-            }
-            
-            XCTAssertFalse(app.name.isEmpty)
-            XCTAssertEqual(app.apiKey, apiKey)
-            XCTAssertEqual(app.status, .enabled)
-            XCTAssertLessThan(app.creationDate, Date())
-            
-            let allow = app.allowance
-            XCTAssertGreaterThan(allow.requests.application, 0)
-            XCTAssertGreaterThan(allow.requests.account.overall, 0)
-            XCTAssertGreaterThan(allow.requests.account.trading, 0)
-            XCTAssertGreaterThan(allow.requests.account.historicalData, 0)
-            XCTAssertGreaterThan(allow.lightStreamer.concurrentSubscriptionsLimit, 0)
-            XCTAssertLessThan(app.creationDate, Date())
-        })
-        
-        self.test("Applications", endpoint, signingProcess: .oauth, timeout: 1)
+        guard let app = applications.first else { return XCTFail("No applications were found.") }
+        XCTAssertFalse(app.name.isEmpty)
+        XCTAssertEqual(app.apiKey, api.session.credentials!.apiKey)
+        XCTAssertEqual(app.status, .enabled)
+        XCTAssertLessThan(app.creationDate, Date())
+        XCTAssertGreaterThan(app.allowance.requests.application, 0)
+        XCTAssertGreaterThan(app.allowance.requests.account.overall, 0)
+        XCTAssertGreaterThan(app.allowance.requests.account.trading, 0)
+        XCTAssertGreaterThan(app.allowance.requests.account.historicalData, 0)
+        XCTAssertGreaterThan(app.allowance.lightStreamer.concurrentSubscriptionsLimit, 0)
+        XCTAssertLessThan(app.creationDate, Date())
     }
     
     /// Tests the application configuration capabilities.
     func testApplicationSettings() {
-        let apiKey = self.account.api.key
-        let input: (status: API.Application.Status, overall: UInt, trading: UInt) = (.enabled, 30, 100)
-
-        let endpoint = self.api.applications.update(apiKey: apiKey, status: input.status, accountAllowance: (input.overall, input.trading)).on(value: {
-            XCTAssertEqual($0.apiKey, apiKey)
-            XCTAssertEqual($0.status, input.status)
-            XCTAssertEqual($0.allowance.requests.account.overall, input.overall)
-            XCTAssertEqual($0.allowance.requests.account.trading, input.trading)
-        })
-
-        self.test("Application settings", endpoint, signingProcess: .oauth, timeout: 1)
+        let api = Test.makeAPI(credentials: Test.credentials.api)
+        
+        let apiKey = Test.account.api.key
+        let status: API.Application.Status = .enabled
+        let allowance: (overall: UInt, trading: UInt) = (30, 100)
+        
+        let app = try! api.applications.update(apiKey: apiKey, status: status, accountAllowance: allowance).single()!.get()
+        XCTAssertEqual(app.apiKey, apiKey)
+        XCTAssertEqual(app.status, status)
+        XCTAssertEqual(app.allowance.requests.account.overall, allowance.overall)
+        XCTAssertEqual(app.allowance.requests.account.trading, allowance.trading)
     }
 }

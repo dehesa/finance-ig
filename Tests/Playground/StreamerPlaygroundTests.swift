@@ -10,8 +10,8 @@ final class StreamerPlaygroundTests: XCTestCase {
         let security = ""
         return (user, "CST-\(cst)|XST-\(security)")
     }()
-    private let epic = "CS.D.EURUSD.MINI.IP"
-    private let fields: [Streamer.Request.Market] = Streamer.Request.Market.allCases
+//    private let epic = "CS.D.EURUSD.MINI.IP"
+//    private let fields: [Streamer.Request.Market] = Streamer.Request.Market.allCases
         // Streamer.Request.Market.allCases.map { $0.rawValue }
         // ["MARKET_STATE", "UPDATE_TIME", "OFFER", "BID", "MARKET_DELAY", "LOW", "MID_OPEN", "HIGH"]
 
@@ -36,16 +36,16 @@ final class StreamerPlaygroundTests: XCTestCase {
     fileprivate var subscriptionExpectation: XCTestExpectation!
     
     func testExample() {
-        let subscription = LSSubscription(subscriptionMode: "MERGE", item: "MARKET:\(self.epic)", fields: self.fields.map { $0.rawValue })
-        subscription.addDelegate(self)
-        
-        self.client.subscribe(subscription)
+//        let subscription = LSSubscription(subscriptionMode: "MERGE", item: "MARKET:\(self.epic)", fields: self.fields.map { $0.rawValue })
+//        subscription.addDelegate(self)
+//
+//        self.client.subscribe(subscription)
         self.client.connect()
-        
+//
         self.subscriptionExpectation = self.expectation(description: "Subscription delay.")
-        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(4)) {
-            self.client.unsubscribe(subscription)
-        }
+//        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(4)) {
+//            self.client.unsubscribe(subscription)
+//        }
         
         self.waitForExpectations(timeout: 6)
     }
@@ -68,7 +68,7 @@ extension StreamerPlaygroundTests: LSSubscriptionDelegate {
     
     func subscriptionDidUnsubscribe(_ subscription: LSSubscription) {
         print("[Subscription] didUnsubscribe")
-        subscriptionExpectation.fulfill()
+//        subscriptionExpectation.fulfill()
     }
     
     func subscription(_ subscription: LSSubscription, didUpdateItem itemUpdate: LSItemUpdate) {

@@ -7,7 +7,7 @@ extension API.Request.Activity {
     
     /// Returns the account's activity history.
     ///
-    /// This is a paged-request, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
+    /// **This is a paginated-request**, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
     /// - attention: The results are returned from newest to oldest.
     /// - parameter from: The start date.
     /// - parameter to: The end date (if `nil` means the end of `from` date).

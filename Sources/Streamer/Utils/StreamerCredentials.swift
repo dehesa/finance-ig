@@ -2,7 +2,7 @@ import Foundation
 
 extension Streamer {
     /// Data needed to access the Streaming service.
-    public struct Credentials: CustomDebugStringConvertible {
+    public struct Credentials {
         /// Active IG account identifier.
         public let identifier: String
         /// Lightstreamer temporal password.
@@ -35,15 +35,17 @@ extension Streamer {
             
             return (password.isEmpty) ? nil : password
         }
-        
-        public var debugDescription: String {
-            return """
-            Streamer credentials {
-                Identifier: \(self.identifier)
-                Password:   \(self.password)
-            }
-            """
+    }
+}
+
+extension Streamer.Credentials: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        return """
+        Streamer credentials {
+            Identifier: \(self.identifier)
+            Password:   \(self.password)
         }
+        """
     }
 }
 
@@ -51,7 +53,7 @@ extension API.Credentials {
     /// Convenience initializer to create the credentials for the Streamer.
     ///
     /// - throws: API.Error.invalidCredentials if the receiving credentials is not of certificate type.
-    public func streamer() throws -> Streamer.Credentials {
+    public func streamerCredentials() throws -> Streamer.Credentials {
         guard case .certificate(let access, let security) = self.token.value else {
             throw API.Error.invalidCredentials(self, message: "Streamer credentials initialization failed! The passed API credentials are not of \"certificate\" type.")
         }
