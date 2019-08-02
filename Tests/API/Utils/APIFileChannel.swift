@@ -33,7 +33,6 @@ final class APIFileChannelDataTask: APIMockableChannelDataTask {
     }
     
     func suspend() {}
-    
     func cancel() {}
 }
 

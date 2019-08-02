@@ -1,7 +1,7 @@
-//import ReactiveSwift
-//import Foundation
-//
-//extension Streamer {
+import ReactiveSwift
+import Foundation
+
+extension Streamer {
 //    /// Subscribes to the given account and receives updates on positions, working orders, and trade confirmations.
 //    ///
 //    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
@@ -81,8 +81,13 @@
 //            }
 //        }
 //    }
-//}
-//
+}
+
+
+// MARK: - Supporting Entities
+
+// MARK: Request Entities
+
 //extension Streamer.Request {
 //    /// Possible fields to subscribe to when querying Trade data.
 //    public enum Trade: String, StreamerFieldKeyable, CaseIterable, StreamerRequestItemNamePrefixable {

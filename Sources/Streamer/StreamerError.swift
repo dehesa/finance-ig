@@ -10,9 +10,9 @@ extension Streamer {
         /// The request parameters are invalid.
         case invalidRequest(message: String)
         /// The subscription failed to established or it was abrouptly disconnected.
-        case subscriptionFailed(to: String, fields: [String], error: Swift.Error?)
+        case subscriptionFailed(item: String, fields: [String], error: (Swift.Error & CustomDebugStringConvertible)?)
         /// A streaming response was invalid or couldn't be parsed.
-        case invalidResponse(item: String?, fields: [AnyHashable:Any], message: String)
+        case invalidResponse(item: String, fields: [AnyHashable:Any], message: String)
         
         public var debugDescription: String {
             var result = ErrorPrint(domain: "Streamer Error")
@@ -34,10 +34,9 @@ extension Streamer {
                 result.append(details: "Subscriotion fields: \(fields.joined(separator: ", "))")
                 result.append(error: error)
             case .invalidResponse(let item, let fields, let message):
-                result.title = "Invalid response"
+                let keys = (fields as? [String:Any])?.keys.joined(separator: ",") ?? String(describing: fields.keys)
+                result.title = "Invalid response on item \"\(item)\" for fields: \"\(keys)\""
                 result.append(details: message)
-                result.append(involved: item)
-                result.append(involved: fields)
             }
             
             return result.debugDescription

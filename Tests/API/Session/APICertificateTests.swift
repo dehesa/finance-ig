@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 /// Tests for the API CST endpoints.
 final class APICertificateTests: XCTestCase {

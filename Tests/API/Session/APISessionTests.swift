@@ -1,11 +1,11 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 /// Tests API Session related endpoints.
 final class APISessionTests: XCTestCase {
     /// Tests the Session information retrieval mechanisms.
-    func testSession() {
+    func testAPISession() {
         let api = Test.makeAPI(credentials: nil)
         
         let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)

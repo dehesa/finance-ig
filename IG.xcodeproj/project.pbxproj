@@ -13,9 +13,14 @@
 		8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */; };
 		8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */; };
 		8D1CC97D229B0706009AB4D3 /* APIProducers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1CC97C229B0706009AB4D3 /* APIProducers.swift */; };
+		8D222CD522F557C600AF98E0 /* StreamerAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA602149A6CE00344CBF /* StreamerAccount.swift */; };
+		8D222CD622F55FFC00AF98E0 /* StreamerChartScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5A2149A6CE00344CBF /* StreamerChartScale.swift */; };
+		8D222CD822F5600700AF98E0 /* StreamerChartTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA582149A6CE00344CBF /* StreamerChartTick.swift */; };
+		8D222CD922F5601200AF98E0 /* StreamerTrade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA612149A6CE00344CBF /* StreamerTrade.swift */; };
 		8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8D23A90622C1E41E00518EC9 /* ReactiveSwift */; };
+		8D299E4922F4C09A007FC5F8 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D299E4822F4C09A007FC5F8 /* String.swift */; };
 		8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262222E9F66E0080D3C1 /* APIInternals.swift */; };
-		8D3C262522E9FA020080D3C1 /* Array.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Array.swift */; };
+		8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Collections.swift */; };
 		8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */; };
 		8D3C262C22EB18A50080D3C1 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262B22EB18A50080D3C1 /* Money.swift */; };
 		8D4B971522F1C995002B267F /* TestAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B971422F1C995002B267F /* TestAccount.swift */; };
@@ -35,19 +40,26 @@
 		8D4B972322F21939002B267F /* APIWorkingOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */; };
 		8D4B972422F21BED002B267F /* APIPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */; };
 		8D6BD9FE22EF447700156512 /* APIDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6BD9FD22EF447600156512 /* APIDeal.swift */; };
+		8D6D958C22F3239A00BD42C2 /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
+		8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
+		8D6D959122F4073B00BD42C2 /* StreamerSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */; };
+		8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */; };
 		8D74741322E8375C00B0BA41 /* Epic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA462149A6CE00344CBF /* Epic.swift */; };
 		8D74741522E8439B00B0BA41 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D74741422E8439B00B0BA41 /* Currency.swift */; };
 		8D74741722E8442F00B0BA41 /* CharacterSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D74741622E8442E00B0BA41 /* CharacterSet.swift */; };
+		8D819E0F22F2B1380031A9D5 /* TestStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8B2149A6CE00344CBF /* TestStreamer.swift */; };
+		8D819E1222F2B3F00031A9D5 /* StreamerFileChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */; };
+		8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */; };
+		8D819E1822F2E3420031A9D5 /* ReactiveSwift+Timeout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */; };
 		8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D845A6F229C7AA800A0049A /* APIEntities.swift */; };
 		8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */; };
 		8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D911F6422ECF4CA0038E899 /* Decimal.swift */; };
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
+		8DBB682922F30E7F00D04867 /* Reactive+Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB682822F30E7F00D04867 /* Reactive+Error.swift */; };
 		8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */; };
 		8DC158A322F08A8100012A19 /* Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5C2149A6CE00344CBF /* Streamer.swift */; };
 		8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */; };
 		8DC158A622F08AC800012A19 /* StreamerChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */; };
-		8DC158A722F08ACC00012A19 /* LightstreamerSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */; };
-		8DC158A822F08ACF00012A19 /* LightstreamerExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */; };
@@ -119,19 +131,25 @@
 		8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyEncodable.swift; sourceTree = "<group>"; };
 		8D1CC97C229B0706009AB4D3 /* APIProducers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIProducers.swift; sourceTree = "<group>"; };
+		8D299E4822F4C09A007FC5F8 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		8D3C262222E9F66E0080D3C1 /* APIInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIInternals.swift; sourceTree = "<group>"; };
-		8D3C262422E9FA020080D3C1 /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
+		8D3C262422E9FA020080D3C1 /* Collections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collections.swift; sourceTree = "<group>"; };
 		8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerInternals.swift; sourceTree = "<group>"; };
 		8D3C262B22EB18A50080D3C1 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
 		8D4B971422F1C995002B267F /* TestAccount.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestAccount.swift; sourceTree = "<group>"; };
 		8D6BD9FD22EF447600156512 /* APIDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDeal.swift; sourceTree = "<group>"; };
+		8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSubscription.swift; sourceTree = "<group>"; };
+		8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerEvent.swift; sourceTree = "<group>"; };
 		8D74741422E8439B00B0BA41 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		8D74741622E8442E00B0BA41 /* CharacterSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterSet.swift; sourceTree = "<group>"; };
+		8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSessionTests.swift; sourceTree = "<group>"; };
+		8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReactiveSwift+Timeout.swift"; sourceTree = "<group>"; };
 		8D845A6F229C7AA800A0049A /* APIEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEntities.swift; sourceTree = "<group>"; };
 		8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSession.swift; sourceTree = "<group>"; };
 		8D8B3AB92299E91800611153 /* General.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = General.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		8D911F6422ECF4CA0038E899 /* Decimal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decimal.swift; sourceTree = "<group>"; };
 		8DB560F7214A6F6200DA980E /* SetUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetUp.swift; sourceTree = "<group>"; };
+		8DBB682822F30E7F00D04867 /* Reactive+Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Error.swift"; sourceTree = "<group>"; };
 		8DC4CA3C2149A68200344CBF /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS_tests.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3E2149A68200344CBF /* macOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = macOS_tests.plist; sourceTree = "<group>"; };
@@ -142,13 +160,7 @@
 		8DC4CA462149A6CE00344CBF /* Epic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Epic.swift; sourceTree = "<group>"; };
 		8DC4CA492149A6CE00344CBF /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		8DC4CA4B2149A6CE00344CBF /* Operators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Operators.swift; sourceTree = "<group>"; };
-		8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightstreamerExtension.swift; sourceTree = "<group>"; };
 		8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChannel.swift; sourceTree = "<group>"; };
-		8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightstreamerSupport.swift; sourceTree = "<group>"; };
-		8DC4CA532149A6CE00344CBF /* StreamerSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSubscription.swift; sourceTree = "<group>"; };
-		8DC4CA542149A6CE00344CBF /* StreamerResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerResponse.swift; sourceTree = "<group>"; };
-		8DC4CA552149A6CE00344CBF /* StreamerRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerRequest.swift; sourceTree = "<group>"; };
-		8DC4CA562149A6CE00344CBF /* StreamerSubscriptionProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSubscriptionProtocols.swift; sourceTree = "<group>"; };
 		8DC4CA582149A6CE00344CBF /* StreamerChartTick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTick.swift; sourceTree = "<group>"; };
 		8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMarket.swift; sourceTree = "<group>"; };
 		8DC4CA5A2149A6CE00344CBF /* StreamerChartScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartScale.swift; sourceTree = "<group>"; };
@@ -180,12 +192,12 @@
 		8DC4CA802149A6CE00344CBF /* APIOAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIOAuth.swift; sourceTree = "<group>"; };
 		8DC4CA812149A6CE00344CBF /* APICredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICredentials.swift; sourceTree = "<group>"; };
 		8DC4CA842149A6CE00344CBF /* APIFileChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIFileChannel.swift; sourceTree = "<group>"; };
-		8DC4CA852149A6CE00344CBF /* StreamerFileSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileSession.swift; sourceTree = "<group>"; };
+		8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileChannel.swift; sourceTree = "<group>"; };
 		8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileSubscription.swift; sourceTree = "<group>"; };
 		8DC4CA872149A6CE00344CBF /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileUpdate.swift; sourceTree = "<group>"; };
 		8DC4CA8A2149A6CE00344CBF /* StreamerPlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerPlaygroundTests.swift; sourceTree = "<group>"; };
-		8DC4CA8B2149A6CE00344CBF /* StreamerTestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerTestCase.swift; sourceTree = "<group>"; };
+		8DC4CA8B2149A6CE00344CBF /* TestStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestStreamer.swift; sourceTree = "<group>"; };
 		8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMarketTests.swift; sourceTree = "<group>"; };
 		8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTests.swift; sourceTree = "<group>"; };
 		8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerTradeTests.swift; sourceTree = "<group>"; };
@@ -258,6 +270,35 @@
 			children = (
 				8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */,
 				8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */,
+				8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */,
+				8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+		8D819E1022F2B3570031A9D5 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				8DC4CA842149A6CE00344CBF /* APIFileChannel.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		8D819E1122F2B3AB0031A9D5 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */,
+				8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */,
+				8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */,
+				8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		8D819E1322F2BAB40031A9D5 /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
@@ -339,13 +380,14 @@
 			isa = PBXGroup;
 			children = (
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
-				8D3C262422E9FA020080D3C1 /* Array.swift */,
+				8D3C262422E9FA020080D3C1 /* Collections.swift */,
 				8DF85B1922F0431100F1C525 /* Codable.swift */,
 				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8DC4CA492149A6CE00344CBF /* Date.swift */,
 				8D74741622E8442E00B0BA41 /* CharacterSet.swift */,
 				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
 				8DB560F7214A6F6200DA980E /* SetUp.swift */,
+				8DBB682822F30E7F00D04867 /* Reactive+Error.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -356,7 +398,6 @@
 				8DC4CA5C2149A6CE00344CBF /* Streamer.swift */,
 				8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */,
 				8D80F45622F0C59800DE1E5B /* Session */,
-				8DC4CA522149A6CE00344CBF /* Subscription */,
 				8DC4CA572149A6CE00344CBF /* Markets */,
 				8DC4CA5F2149A6CE00344CBF /* Account */,
 				8DC4CA4D2149A6CE00344CBF /* Utils */,
@@ -369,21 +410,9 @@
 			children = (
 				8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */,
 				8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */,
-				8DC4CA512149A6CE00344CBF /* LightstreamerSupport.swift */,
-				8DC4CA4E2149A6CE00344CBF /* LightstreamerExtension.swift */,
+				8D299E4822F4C09A007FC5F8 /* String.swift */,
 			);
 			path = Utils;
-			sourceTree = "<group>";
-		};
-		8DC4CA522149A6CE00344CBF /* Subscription */ = {
-			isa = PBXGroup;
-			children = (
-				8DC4CA562149A6CE00344CBF /* StreamerSubscriptionProtocols.swift */,
-				8DC4CA532149A6CE00344CBF /* StreamerSubscription.swift */,
-				8DC4CA552149A6CE00344CBF /* StreamerRequest.swift */,
-				8DC4CA542149A6CE00344CBF /* StreamerResponse.swift */,
-			);
-			path = Subscription;
 			sourceTree = "<group>";
 		};
 		8DC4CA572149A6CE00344CBF /* Markets */ = {
@@ -507,10 +536,6 @@
 			children = (
 				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
-				8DC4CA842149A6CE00344CBF /* APIFileChannel.swift */,
-				8DC4CA852149A6CE00344CBF /* StreamerFileSession.swift */,
-				8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */,
-				8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -518,9 +543,11 @@
 		8DC4CA892149A6CE00344CBF /* Streamer */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA8B2149A6CE00344CBF /* StreamerTestCase.swift */,
+				8DC4CA8B2149A6CE00344CBF /* TestStreamer.swift */,
+				8D819E1322F2BAB40031A9D5 /* Session */,
 				8DC4CA8C2149A6CE00344CBF /* Markets */,
 				8DC4CA8F2149A6CE00344CBF /* Account */,
+				8D819E1122F2B3AB0031A9D5 /* Utils */,
 			);
 			path = Streamer;
 			sourceTree = "<group>";
@@ -551,6 +578,7 @@
 				8DC4CA9A2149A6CE00344CBF /* History */,
 				8DC4CA962149A6CE00344CBF /* Markets */,
 				8DC4CA922149A6CE00344CBF /* Dealings */,
+				8D819E1022F2B3570031A9D5 /* Utils */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -754,20 +782,22 @@
 			files = (
 				8DC4CC0A2149B11100344CBF /* Operators.swift in Sources */,
 				8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */,
-				8D3C262522E9FA020080D3C1 /* Array.swift in Sources */,
-				8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */,
-				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
-				8D74741722E8442F00B0BA41 /* CharacterSet.swift in Sources */,
+				8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */,
+				8D299E4922F4C09A007FC5F8 /* String.swift in Sources */,
 				8DF85B1C22F046FA00F1C525 /* Error.swift in Sources */,
-				8DF85B1A22F0431100F1C525 /* Codable.swift in Sources */,
+				8D74741722E8442F00B0BA41 /* CharacterSet.swift in Sources */,
 				8DC4CC272149B3C500344CBF /* URLRequest.swift in Sources */,
-				8DC4CC232149B3C500344CBF /* APIMockableChannel.swift in Sources */,
+				8DF85B1A22F0431100F1C525 /* Codable.swift in Sources */,
+				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
+				8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */,
+				8DBB682922F30E7F00D04867 /* Reactive+Error.swift in Sources */,
 				8D74741322E8375C00B0BA41 /* Epic.swift in Sources */,
 				8D74741522E8439B00B0BA41 /* Currency.swift in Sources */,
 				8D3C262C22EB18A50080D3C1 /* Money.swift in Sources */,
 				8DC4CC242149B3C500344CBF /* APIFormatters.swift in Sources */,
 				8D0A232C22EB9600001853E7 /* APIUser.swift in Sources */,
 				8DC4CC112149B2FC00344CBF /* APICredentials.swift in Sources */,
+				8DC4CC232149B3C500344CBF /* APIMockableChannel.swift in Sources */,
 				8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */,
 				8D6BD9FE22EF447700156512 /* APIDeal.swift in Sources */,
 				8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */,
@@ -795,10 +825,15 @@
 				8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */,
 				8DC158A322F08A8100012A19 /* Streamer.swift in Sources */,
 				8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */,
+				8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */,
+				8D6D959122F4073B00BD42C2 /* StreamerSubscription.swift in Sources */,
 				8DC158A622F08AC800012A19 /* StreamerChannel.swift in Sources */,
 				8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */,
-				8DC158A722F08ACC00012A19 /* LightstreamerSupport.swift in Sources */,
-				8DC158A822F08ACF00012A19 /* LightstreamerExtension.swift in Sources */,
+				8D6D958C22F3239A00BD42C2 /* StreamerMarket.swift in Sources */,
+				8D222CD522F557C600AF98E0 /* StreamerAccount.swift in Sources */,
+				8D222CD622F55FFC00AF98E0 /* StreamerChartScale.swift in Sources */,
+				8D222CD822F5600700AF98E0 /* StreamerChartTick.swift in Sources */,
+				8D222CD922F5601200AF98E0 /* StreamerTrade.swift in Sources */,
 				8D0D48A022F09CB7000579CF /* Services.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -808,12 +843,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */,
+				8D819E1822F2E3420031A9D5 /* ReactiveSwift+Timeout.swift in Sources */,
 				8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */,
 				8D1CC9792299EE80009AB4D3 /* AnyDecodable.swift in Sources */,
 				8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */,
 				8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */,
 				8DE1B2C2214A647F00C1FF13 /* APIFileChannel.swift in Sources */,
 				8D4B971722F1E48E002B267F /* StreamerMockedJSON.swift in Sources */,
+				8D819E1222F2B3F00031A9D5 /* StreamerFileChannel.swift in Sources */,
 				8D4B971522F1C995002B267F /* TestAccount.swift in Sources */,
 				8DD468D522F1C73100134B67 /* Test.swift in Sources */,
 				8DE1B2C7214A64C700C1FF13 /* TestAPI.swift in Sources */,
@@ -831,6 +868,9 @@
 				8D4B971F22F20DCE002B267F /* APISentimentTests.swift in Sources */,
 				8D4B972422F21BED002B267F /* APIPositionTests.swift in Sources */,
 				8D4B972322F21939002B267F /* APIWorkingOrderTests.swift in Sources */,
+				8D819E0F22F2B1380031A9D5 /* TestStreamer.swift in Sources */,
+				8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */,
+				8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

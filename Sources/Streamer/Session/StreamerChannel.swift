@@ -11,7 +11,16 @@ internal protocol StreamerMockableChannel {
     var status: Property<Streamer.Session.Status> { get }
     /// Requests to open the session against the Lightstreamer server.
     func connect()
+    /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
+    /// - parameter mode: The streamer subscription mode.
+    /// - parameter item: The item identfier (e.g. "MARKET", "ACCOUNT", etc).
+    /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
+    /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
+    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String],Streamer.Error>
+    /// Unsubscribe to all subscriptions sending a complete event on all signals.
+    func unsubscribeAll()
     /// Requests to close the Session opened against the configured Lightstreamer Server (if any).
+    /// - note: Active sbuscription instances, associated with this LightstreamerClient instance, are preserved to be re-subscribed to on future Sessions.
     func disconnect()
 }
 
@@ -23,11 +32,12 @@ extension Streamer {
         /// The central queue handling all events within the Streamer flow.
         @nonobjc private let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.
+        /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let client: LSLightstreamerClient
-        
-        @nonobjc var status: Property<Streamer.Session.Status> { return self.mutableStatus.skipRepeats() }
         /// Returns the current streamer status.
         @nonobjc private let mutableStatus: MutableProperty<Streamer.Session.Status>
+        /// All ongoing subscriptions.
+        @nonobjc private var subscriptions: Set<Streamer.Subscription> = .init()
         
         @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
             self.credentials = credentials
@@ -40,23 +50,87 @@ extension Streamer {
             self.client.connectionDetails.setPassword(credentials.password)
             self.mutableStatus = MutableProperty<Streamer.Session.Status>(.disconnected(isRetrying: false))
             super.init()
+            
             // The client stores the delegate weakly, therefore there is no reference cycle.
             self.client.addDelegate(self)
         }
         
         deinit {
+            self.unsubscribeAll()
+            self.client.disconnect()
             self.client.removeDelegate(self)
         }
     }
 }
 
 extension Streamer.Channel: StreamerMockableChannel {
+    @nonobjc var status: Property<Streamer.Session.Status> {
+        self.mutableStatus.skipRepeats()
+    }
+    
     @nonobjc func connect() {
         self.client.connect()
     }
     
     @nonobjc func disconnect() {
         self.client.disconnect()
+    }
+    
+    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String],Streamer.Error> {
+        return .init { [weak self] (generator, lifetime) in
+            guard let self = self else { return generator.send(error: .sessionExpired) }
+            
+            let (subscription, signal) = Streamer.Subscription.make(mode: mode, item: item, fields: fields, snapshot: snapshot, queue: self.queue)
+            // When the user finishes the producer, the low-level instance is unsubscribed.
+            lifetime.observeEnded { [weak self, weak subscription] in
+                guard let self = self,
+                      let sub = subscription,
+                      sub.lowlevel.isActive else { return }
+                self.client.unsubscribe(sub.lowlevel)
+            }
+            // When the user finishes the producer, the bond to the signal is severed.
+            lifetime += signal.observe {
+                guard case .value(let subscriptionEvent) = $0 else {
+                    return generator.sendCompleted()
+                }
+                
+                switch subscriptionEvent {
+                case .updateReceived(let update):
+                    #warning("Maybe set the dictionary as [String:Any] or an optional as value. There are crashes; e.g. with ODDS in sprint markets.")
+                    if let values = update.fields as? [String:String] {
+                        generator.send(value: values)
+                    } else {
+                        generator.send(error: .invalidResponse(item: item, fields: update.fields, message: "The update values couldn't be turned into a [String:String] dictionary."))
+                    }
+                case .updateLost(let count, _):
+                    var error = ErrorPrint(domain: "Streamer Channel")
+                    error.title = "\(item) with fields: \(fields.joined(separator: ","))"
+                    error.append(details: "\(count) updates were lost before the next one arrived.")
+                    print(error.debugDescription)
+                case .subscriptionSucceeded: return
+                    // return print("\nSubscribed!!\n")
+                case .unsubscribed: return
+                    // return print("\nSuccessfully unsubscribed.\n")
+                case .subscriptionFailed(let error):
+                    generator.send(error: .subscriptionFailed(item: item, fields: fields, error: error))
+                }
+            }
+            
+            self.subscriptions.insert(subscription)
+            self.client.subscribe(subscription.lowlevel)
+        }
+    }
+    
+    func unsubscribeAll() {
+        let subscriptions = self.subscriptions
+        self.subscriptions.removeAll()
+        
+        for subscription in subscriptions {
+            if subscription.lowlevel.isActive {
+                self.client.unsubscribe(subscription.lowlevel)
+            }
+            subscription.generator.sendCompleted()
+        }
     }
 }
 
@@ -78,57 +152,3 @@ extension Streamer.Channel: LSClientDelegate {
         }
     }
 }
-
-//internal protocol StreamerSession: class {
-//    /// Operation method that requests to close the Session opened against the configured Lightstreamer Server (if any).
-//    ///
-//    /// When `disconnect()` is called, the "Stream-Sense" mechanism is stopped.
-//    ///
-//    /// When the request to disconnect is finally being executed, if the status of the client is `DISCONNECTED`, then nothing will be done.
-//    /// - note: Active `LSSubscription` instances, associated with this LightstreamerClient instance, are preserved to be re-subscribed to on future Sessions.
-//    /// -note: The request to disconnect is accomplished by the client in a separate thread; this means that an invocation of `status` right after `disconnect()` might not reflect the change yet.
-//    func disconnect()
-//
-//    /// Creates a temporary subscription session managing the input/output for a subscription.
-//    /// - parameter mode: The type of subscription.
-//    /// - parameter items: The names of the items to be subscribed.
-//    /// - parameter fields: The fields to be subscribed to.
-//    func makeSubscriptionSession<F:StreamerField>(mode: Streamer.Mode, items: Set<String>, fields: Set<F>) -> StreamerSubscriptionSession
-//
-//    /// List containing all the `LSSubscription` instances that are currently "active" on this LightstreamerClient.
-//    ///
-//    /// Internal second-level `LSSubscription` are not included.
-//    /// - returns: A list, containing all the LSSubscription currently "active" on this LSLightstreamerClient. The list can be empty.
-//    var subscriptions: [Any] { get }
-//
-//    /// Operation method that adds a subscription to the list of "active" subscriptions.
-//    ///
-//    /// The subscription cannot already be in the "active" state. Active subscriptions are subscribed to through the server as soon as possible (i.e. as soon as there is a session available). Active subscription are automatically persisted across different sessions as long as a related unsubscribe call is not issued. Subscriptions can be given to the `StreamerSession` at any time. Once done the subscription immediately enters the "active" state.
-//    ///
-//    /// Once "active", a subscription cannot be provided again to a `StreamerSession` unless it is first removed from the "active" state through a call to `unsubscribe(to:)`.
-//    ///
-//    /// A successful subscription to the server will be notified through a `StreamerSubscriptionDelegate`'s `subscribed(to:)` function.
-//    /// - note: forwarding of the subscription to the server is made in a separate thread.
-//    /// - parameter subscription: A subscription object, carrying all the information needed to process its pushed values.
-//    func subscribe(to subscription: StreamerSubscriptionSession)
-//
-//
-//    /// Operation method that removes a subscription that is currently in the "active" state.
-//    ///
-//    /// By bringing back a subscription to the "inactive" state, the unsubscription from all its items is requested to Lightstreamer Server. Subscription can be unsubscribed from at any time. Once done the subscription immediately exits the "active" state.
-//    ///
-//    /// The unsubscription will be notified through the `StreamerSubscriptionDelegate`'s `unsubscribed(to:)` function.
-//    /// - note: Forwarding of the unsubscription to the server is made in a separate thread.
-//    /// - parameter subscription: An "active" subscription object that was activated by this `StreamerSession` instance.
-//    func unsubscribe(from subscription: StreamerSubscriptionSession)
-//}
-//
-//extension StreamerSession {
-//    /// Unsubscribes all active subscriptions.
-//    func unsubscribeAll() {
-//        for subscription in self.subscriptions as! [StreamerSubscriptionSession] {
-//            guard subscription.isActive else { continue }
-//            self.unsubscribe(from: subscription)
-//        }
-//    }
-//}

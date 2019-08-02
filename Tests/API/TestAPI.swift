@@ -9,7 +9,7 @@ extension Test {
                         credentials: API.Credentials?) -> IG.API {
         switch scheme {
         case .https:
-            return .init(rootURL: rootURL, channel: URLSession(configuration: IG.API.defaultSessionConfigurations), credentials: credentials)
+            return .init(rootURL: rootURL, credentials: credentials)
         case .file:
             return .init(rootURL: rootURL, channel: APIFileChannel(), credentials: credentials)
         }

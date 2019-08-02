@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 final class APISentimentTests: XCTestCase {
     /// Tests the platform's sentiment list call.

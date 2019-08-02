@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 /// Tests API transaction retrieval
 final class APITransactionTests: XCTestCase {
