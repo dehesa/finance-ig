@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 final class APIMarketTests: XCTestCase {
     /// Tests market search through epic strings.

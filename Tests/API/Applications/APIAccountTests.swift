@@ -1,7 +1,6 @@
-import XCTest
-import ReactiveSwift
-import Foundation
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 /// Tests API Account related endpoints.
 final class APIAccountTests: XCTestCase {

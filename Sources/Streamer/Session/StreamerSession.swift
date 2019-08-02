@@ -6,18 +6,72 @@ extension Streamer.Request.Session {
     public var status: Property<Streamer.Session.Status> {
         return self.streamer.channel.status
     }
+    
+    /// Connects to the Lightstreamer server specified in the `Streamer` properties.
+    ///
+    /// If the `Streamer` is already connected, the returning signal will complete immediately.
+    /// - returns: Forwards all statuss till it reliably connects to the server (in which case that status is sent and then the signal completes). If it figures out that the connection is impossible, an error is thrown.
+    @discardableResult public func connect() -> Signal<Streamer.Session.Status,Streamer.Error> {
+        let statusGenerator = self.streamer.channel.status
+        guard !statusGenerator.value.isReady else { return .empty }
+        
+        //let result = self.streamer.channel.status.signal.take(while: { !$0.isReady || $0 == .disconnected(isRetrying: false) })
+        defer { self.streamer.channel.connect() }
+        
+        return  .init { [signal = statusGenerator.signal] (generator, lifetime) in
+            lifetime += signal.observe {
+                guard case .value(let status) = $0 else { return generator.send($0.promoteError(Streamer.Error.self)) }
+                switch status {
+                case .connecting, .connected(.sensing), .disconnected(isRetrying: true):
+                    generator.send(value: status)
+                case .connected(.http), .connected(.websocket):
+                    generator.send(value: status)
+                    generator.sendCompleted()
+                case .disconnected(isRetrying: false), .stalled:
+                    generator.send(error: .invalidRequest(message: "A connection to the server couldn't be established. Status: \(status)"))
+                }
+            }
+        }
+    }
+    
+    /// Disconnects to the Lightstreamer server.
+    ///
+    /// If the `Streamer` is already disconnected, the returning signal will complete immediately.
+    /// - returns: Forwards all statuses till it reliably disconnects from the server.
+    @discardableResult public func disconnect() -> Signal<Streamer.Session.Status,Streamer.Error> {
+        let statusGenerator = self.streamer.channel.status
+        if case .disconnected(isRetrying: false) = statusGenerator.value { return .empty }
+        
+        //let result = self.streamer.channel.status.signal.take(while: { $0 != .disconnected(isRetrying: false) })
+        defer { self.streamer.channel.disconnect() }
+        
+        return .init { [signal = statusGenerator.signal] (generator, lifetime) in
+            lifetime += signal.observe {
+                guard case .value(let status) = $0 else { return generator.send($0.promoteError(Streamer.Error.self)) }
+                
+                generator.send(value: status)
+                guard case .disconnected(isRetrying: false) = status else { return }
+                generator.sendCompleted()
+            }
+        }
+    }
+    
+    ///
+    public func unsubscribeAll() {
+        self.streamer.channel.unsubscribeAll()
+    }
 }
 
 // MARK: - Supporting Entities
 
 extension Streamer.Request {
-    ///
+    /// Contains all functionality related to the Streamer session.
     public struct Session {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
+        /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
         fileprivate unowned let streamer: Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
+        /// - parameter streamer: The instance calling the actual subscriptions.
         init(streamer: Streamer) {
             self.streamer = streamer
         }
@@ -71,6 +125,23 @@ extension Streamer.Session {
             }
         }
         
+        /// Boolean indicating a ready-to-receive-data status.
+        /// - returns: `true` only when a connection is fully established (i.e. connection sensing is NOT considered "fully connected").
+        public var isReady: Bool {
+            switch self {
+            case .connected(.http), .connected(.websocket): return true
+            default: return false
+            }
+        }
+        
+        /// Boolean indicating a `.connecting` and `.connected(.sensing)` statuses.
+        public var isConnecting: Bool {
+            switch self {
+            case .connecting, .connected(.sensing): return true
+            default: return false
+            }
+        }
+        
         /// State representation as the Lightstreamer needs it.
         private enum Key: String {
             case connecting = "CONNECTING"
@@ -121,7 +192,7 @@ extension Streamer.Session.Status: CustomDebugStringConvertible {
             var result = "Connected"
             switch connection {
             case .sensing:
-                result.append(" (sensing medium...)")
+                result.append(" but sensing medium...")
             case .websocket(let isPolling):
                 result.append(" (WebSocket")
                 if (isPolling) { result.append(" polling)") }
@@ -135,7 +206,7 @@ extension Streamer.Session.Status: CustomDebugStringConvertible {
         case .stalled:    return "Stalled!"
         case .disconnected(let isRetrying):
             var result = "Disconnected"
-            if (isRetrying) { result.append(" (retrying...)") }
+            if (isRetrying) { result.append(" but retrying...") }
             return result
         }
     }

@@ -160,7 +160,7 @@ extension Test.Account {
         case file
         case https
         
-        fileprivate init?(url: URL) {
+        init?(url: URL) {
             guard let urlScheme = url.scheme,
                   let result = Self.init(rawValue: urlScheme) else { return nil }
             self = result
@@ -181,7 +181,7 @@ extension Test.Account {
         case accountParsingFailed(url: URL, underlyingError: Swift.Error)
         
         var debugDescription: String {
-            var result = IG.ErrorPrint(domain: "Test Error")
+            var result = IG.ErrorPrint(domain: "Test Account Error")
             
             switch self {
             case .environmentVariableNotFound(let key):

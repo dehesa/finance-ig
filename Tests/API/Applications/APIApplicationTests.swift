@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 /// Tests API Application related endpoints.
 final class APIApplicationTests: XCTestCase {

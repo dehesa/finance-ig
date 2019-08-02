@@ -1,6 +1,6 @@
-import XCTest
-import ReactiveSwift
 @testable import IG
+import ReactiveSwift
+import XCTest
 
 final class APIPositionTests: XCTestCase {
     /// Tests the position creation, confirmation, retrieval, and deletion.

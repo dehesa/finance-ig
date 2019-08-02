@@ -1,235 +1,242 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer {
+extension Streamer.Request.Markets {
+    
+    // MARK: MARKET:EPIC
+    
     /// Subscribes to the given market and returns in the response the specified attributes/fields.
     ///
     /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
-    /// - parameter autoconnect: Boolean indicating whether the streamer connects automatically or whether it should wait for the user to explicitly call `connect()`.
-    /// - returns: Signal producer that can be started at any time; when which a subscription to the server will be executed.
-    public func subscribe(market epic: Epic, fields: Set<Request.Market>, autoconnect: Bool = true) -> SignalProducer<Streamer.Response.Market,Streamer.Error> {
-        return self.subscriptionProducer({ (streamer) -> (String, StreamerSubscriptionSession) in
-            let label = streamer.queue.label + ".market." + epic.identifier
-            
-            let itemName = Request.Market.itemName(identifier: epic.identifier)
-            let subscriptionSession = streamer.session.makeSubscriptionSession(mode: .merge, items: [itemName], fields: fields)
-            
-            return (label, subscriptionSession)
-        }, autoconnect: autoconnect) { (input, event) in
-            switch event {
-            case .updateReceived(let update):
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+    public func subscribe(to epic: Epic, _ fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
+        let item = "MARKET:\(epic.rawValue)"
+        let properties = fields.map { $0.rawValue }
+        let timeFormatter = Streamer.Formatter.time
+        
+        return self.streamer.channel
+            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .attemptMap { (update) in
                 do {
-                    let response = try Response.Market(update: update)
-                    input.send(value: response)
+                    let market = try Streamer.Market(epic: epic, item: item, update: update, timeFormatter: timeFormatter)
+                    return .success(market)
+                } catch let error as Streamer.Error {
+                    return .failure(error)
                 } catch let error {
-                    input.send(error: error as! Streamer.Error)
+                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market update.\nError: \(error)"))
                 }
-            case .unsubscribed:
-                input.sendCompleted()
-            case .subscriptionFailed(let underlyingError):
-                let itemName = Request.Market.itemName(identifier: epic.identifier)
-                let fields = fields.map { $0.rawValue }
-                input.send(error: .subscriptionFailed(to: itemName, fields: fields, error: underlyingError))
-            case .subscriptionSucceeded, .updateLost(_,_):
-                break
             }
-        }
     }
     
-    /// Subscribes to the given markets and returns in the response the specified attributes/fields.
-    /// - parameter epics: The epics identifying the targeted markets.
-    /// - parameter fields: The market properties/fields bieng targeted.
-    /// - parameter autoconnect: Boolean indicating whether the streamer connects automatically or whether it should wait for the user to explicitly call `connect()`.
-    /// - returns: Signal producer that can be started at any time; when which a subscription to the server will be executed.
-    public func subscribe(markets epics: [Epic], fields: Set<Request.Market>, autoconnect: Bool = true) -> SignalProducer<(Epic,Response.Market),Streamer.Error> {
-        return self.subscriptionProducer({ (streamer) -> (String, StreamerSubscriptionSession) in
-            guard epics.isUniquelyLaden else {
-                throw Streamer.Error.invalidRequest(message: "You need to subscribe to at least one market.")
-            }
-            
-            let suffix = epics.map { $0.identifier }.joined(separator: "|")
-            let label = streamer.queue.label + ".markets." + suffix
+//    /// Subscribes to the given sprint market and returns in the response the specified attributes/fields.
+//    ///
+//    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
+//    /// - parameter epic: The epic identifying the targeted market.
+//    /// - parameter fields: The market properties/fields bieng targeted.
+//    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+//    public func subscribeSprint(to epic: Epic, _ fields: Set<Streamer.SprintMarket.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.SprintMarket,Streamer.Error> {
+//        let item = "MARKET:\(epic.rawValue)"
+//        let properties = fields.map { $0.rawValue }
+//        
+//        return self.streamer.channel
+//            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+//            .attemptMap { (update) in
+//                do {
+//                    let market = try Streamer.SprintMarket(epic: epic, item: item, update: update)
+//                    return .success(market)
+//                } catch let error as Streamer.Error {
+//                    return .failure(error)
+//                } catch let error {
+//                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market update.\nError: \(error)"))
+//                }
+//        }
+//    }
+}
 
-            let itemNames = epics.map { Request.Market.itemName(identifier: $0.identifier) }
-            let subscriptionSession = streamer.session.makeSubscriptionSession(mode: .merge, items: Set(itemNames), fields: fields)
+// MARK: - Supporting Entities
 
-            return (label, subscriptionSession)
-        }, autoconnect: autoconnect) { (input, event) in
-            switch event {
-            case .updateReceived(let update):
-                do {
-                    guard let epic = Request.Market.epic(itemName: update.item, requestedEpics: epics) else {
-                        throw Streamer.Error.invalidResponse(item: update.item, fields: update.all, message: "The item name couldn't be identified.")
-                    }
-                    let response = try Response.Market(update: update)
-                    input.send(value: (epic, response))
-                } catch let error {
-                    input.send(error: error as! Streamer.Error)
-                }
-            case .unsubscribed:
-                input.sendCompleted()
-            case .subscriptionFailed(let underlyingError):
-                let items = epics.map { Request.Market.itemName(identifier: $0.identifier) }.joined(separator: ", ")
-                let error: Streamer.Error = .subscriptionFailed(to: items, fields: fields.map { $0.rawValue }, error: underlyingError)
-                input.send(error: error)
-            case .subscriptionSucceeded, .updateLost(_, _):
-                break
-            }
+extension Streamer.Request {
+    /// Contains all functionality related to Streamer markets.
+    public struct Markets {
+        /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
+        internal unowned let streamer: Streamer
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter streamer: The instance calling the actual subscriptions.
+        init(streamer: Streamer) {
+            self.streamer = streamer
         }
     }
 }
 
-extension Streamer.Request {
-    /// Possible fields to subscribe to when querying market data.
-    public enum Market: String, StreamerFieldKeyable, CaseIterable, StreamerRequestItemNamePrefixable, StreamerRequestItemNameEpicable {
-        /// Market status.
+// MARK: Request Entities
+
+extension Streamer.Market {
+    /// All available fields/properties to query data from a given market.
+    public enum Field: String, CaseIterable {
+        /// The current market status.
         case status = "MARKET_STATE"
-        /// Publish time of last price update (UK local time, i.e. GMT or BST)
+        /// Publis time of last price update.
         case date = "UPDATE_TIME"
-        /// Offer price
-        case offer = "OFFER"
-        /// Bid price
-        case bid = "BID"
-        /// Strike price
-        case strike = "STRIKE_PRICE"
-        /// Delayed price (0=false, 1=true)
+        /// Boolean indicating whether prices are delayed.
         case isDelayed = "MARKET_DELAY"
-        /// Intraday low price
-        case low = "LOW"
-        /// Opening mid price.
-        case midOpen = "MID_OPEN"
+        
+        /// The bid price.
+        case bid = "BID"
+        /// The offer price.
+        case ask = "OFFER"
+        
         /// Intraday high price.
         case high = "HIGH"
+        /// Opening mid price.
+        case mid = "MID_OPEN"
+        /// Intraday low price.
+        case low = "LOW"
         /// Price change compared with open value.
         case changeNet = "CHANGE"
         /// Price percent change compared with open value.
         case changePercentage = "CHANGE_PCT"
+    }
+}
+
+//extension Streamer.SprintMarket {
+//    /// All available fields/properties to query data from a given sprint market.
+//    public enum Field: String, CaseIterable {
+//        case status = "MARKET_STATE"
+//        case strikePrice = "STRIKE_PRICE"
+//        case odds = "ODDS"
+//    }
+//}
+
+// MARK: Response Entities
+
+extension Streamer {
+    /// Displays the latests information from a given market.
+    public struct Market {
+        /// The market epic identifier.
+        public let epic: Epic
+        /// The current market status.
+        public let status: Self.Status?
         
-        internal static var prefix: String {
-            return "MARKET:"
-        }
-
-        public var keyPath: PartialKeyPath<Streamer.Response.Market> {
-            switch self {
-            case .status:    return \Response.status
-            case .date:      return \Response.date
-            case .offer:     return \Response.price.offer
-            case .bid:       return \Response.price.bid
-            case .strike:    return \Response.price.strike
-            case .isDelayed: return \Response.price.isDelayed
-            case .low:       return \Response.range.low
-            case .midOpen:   return \Response.range.midOpen
-            case .high:      return \Response.range.high
-            case .changeNet: return \Response.change.net
-            case .changePercentage: return \Response.change.percentage
-            }
-        }
-    }
-}
-
-extension Streamer.Response {
-    /// Response for a Market stream package.
-    public struct Market: StreamerResponse, StreamerUpdatable {
-        public typealias Field = Streamer.Request.Market
-        public let fields: Market.Update
-        /// The current status of the market.
-        public let status: Status?
-        /// Publish time of last price update (UK local time, i.e. GMT or BST).
+        /// Publis time of last price update.
         public let date: Date?
-        /// Offer (buy) and bid (sell) price.
-        public let price: Price
-        /// Highest and lowest price of the day.
-        public let range: Range
-        /// Price change net and percentage change on that day.
-        public let change: Change
-
-        internal init(update: StreamerSubscriptionUpdate) throws {
-            let (values, fields) = try Update.make(update)
-            self.fields = fields
-
-            self.status = values[.status].flatMap { Status(rawValue: $0) }
-            self.date = try values[.date].flatMap {
-                let formatter = Streamer.DateFormatter.time
-                guard let parsedDate = formatter.date(from: $0) else {
-                    throw Streamer.Error.invalidResponse(item: update.item, fields: values, message: "The Market \"\(Field.date.rawValue)\" couldn't be parsed.")
-                }
-
-                let now = Date()
-                let result = try parsedDate.mixComponents([.hour, .minute, .second], withDate: now, [.year, .month, .day], calendar: formatter.calendar, timezone: formatter.timeZone)
-                    ?! Streamer.Error.invalidResponse(item: update.item, fields: values, message: "The Market \"\(Field.date.rawValue)\" was parsed \"\($0)\", but it couldn't be transformed into a date.")
-
-                // For the general cases the `guard` statement won't be fulfilled.
-                guard result > now else { return result }
-                // The following transformation take care of the edge cases for dates close to midnight.
-                return try formatter.calendar.date(byAdding: .day, value: -1, to: result)
-                    ?! Streamer.Error.invalidResponse(item: update.item, fields: values, message: "The Market \"\(Field.date.rawValue)\" was parsed \"\($0)\", but operations couldn't be performed on it.")
+        /// Boolean indicating whether prices are delayed.
+        public let isDelayed: Bool?
+        
+        /// The bid price.
+        public let bid: Decimal?
+        /// The offer price.
+        public let ask: Decimal?
+        
+        /// Intraday high price.
+        public let high: Decimal?
+        /// Opening mid price.
+        public let mid: Decimal?
+        /// Intraday low price.
+        public let low: Decimal?
+        /// Price change compared with open value.
+        public let changeNet: Decimal?
+        /// Price percent change compared with open value.
+        public let changePercentage: Decimal?
+        
+        /// Designated initializer for a `Streamer` market update.
+        fileprivate init(epic: Epic, item: String, update: [String:String], timeFormatter: DateFormatter) throws {
+            typealias F = Self.Field
+            typealias U = Streamer.Formatter.Update
+            
+            self.epic = epic
+            
+            do {
+                self.status = try update[F.status.rawValue].map(U.toRawType)
+                self.date = try update[F.date.rawValue].map { try U.toTime($0, timeFormatter: timeFormatter) }
+                self.isDelayed = try update[F.isDelayed.rawValue].map(U.toBoolean)
+                
+                self.bid = try update[F.bid.rawValue].map(U.toDecimal)
+                self.ask = try update[F.ask.rawValue].map(U.toDecimal)
+                
+                self.high = try update[F.high.rawValue].map(U.toDecimal)
+                self.mid = try update[F.mid.rawValue].map(U.toDecimal)
+                self.low = try update[F.low.rawValue].map(U.toDecimal)
+                self.changeNet = try update[F.changeNet.rawValue].map(U.toDecimal)
+                self.changePercentage = try update[F.changePercentage.rawValue].map(U.toDecimal)
+            } catch let error as U.Error {
+                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
+            } catch let error {
+                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
             }
-            self.price = Price(received: values)
-            self.range = Range(received: values)
-            self.change = Change(received: values)
         }
     }
 }
 
-extension Streamer.Response.Market {
-    /// The state of the market.
-    public enum Status: String {
+extension Streamer.Market: CustomDebugStringConvertible {
+    /// The current status of the market.
+    public enum Status: String, Codable {
+        /// The market is open for trading.
+        case tradeable = "TRADEABLE"
+        /// The market is closed for the moment. Look at the market's opening hours for further information.
         case closed = "CLOSED"
-        case offline = "OFFLINE"
-        case tradable = "TRADEABLE"
         case editsOnly = "EDIT"
         case onAuction = "AUCTION"
-        case onAcutionNoEdits = "AUCTION_NO_EDIT"
+        case onAuctionNoEdits = "AUCTION_NO_EDIT"
+        case offline = "OFFLINE"
+        /// The market is suspended for trading temporarily.
         case suspended = "SUSPENDED"
     }
 
-    /// Buy/Sell prices at a point in time.
-    public struct Price {
-        /// Buy price.
-        public let offer: Double?
-        /// Sell price.
-        public let bid: Double?
-        /// Strike price.
-        public let strike: Double?
-        /// Whether the price is delayed with the market.
-        public let isDelayed: Bool?
-
-        fileprivate init(received: [Field:String]) {
-            self.offer = received[.offer].flatMap { Double($0) }
-            self.bid = received[.bid].flatMap { Double($0) }
-            self.strike = received[.bid].flatMap { Double($0) }
-            self.isDelayed = received[.isDelayed].flatMap { Int($0) }.map { $0 != 0 }
-        }
-    }
-
-    /// The price range (low, mid, high).
-    public struct Range {
-        /// Intraday low price
-        public let low: Double?
-        /// Opening mid price.
-        public let midOpen: Double?
-        /// Intraday high price.
-        public let high: Double?
-
-        fileprivate init(received: [Field:String]) {
-            self.low = received[.low].flatMap { Double($0) }
-            self.midOpen = received[.midOpen].flatMap { Double($0) }
-            self.high = received[.high].flatMap { Double($0) }
-        }
-    }
-
-    /// The change in price compared to open value.
-    public struct Change {
-        /// Price change compared with open value
-        public let net: Double?
-        /// Price percent change compared with open value
-        public let percentage: Double?
-
-        fileprivate init(received: [Field:String]) {
-            self.net = received[.changeNet].flatMap { Double($0) }
-            self.percentage = received[.changePercentage].flatMap { Double($0) }
-        }
+    public var debugDescription: String {
+        var result: String = self.epic.rawValue
+        result.append(prefix: "\n\t", name: "Status", ": ", value: self.status)
+        result.append(prefix: "\n\t", name: "Date", ": ", value: self.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t", name: "Are prices delayed?", " ", value: self.isDelayed)
+        result.append(prefix: "\n\t", name: "Price (bid)", ": ", value: self.bid)
+        result.append(prefix: "\n\t", name: "Price (ask)", ": ", value: self.ask)
+        result.append(prefix: "\n\t", name: "Range (high)", ": ", value: self.high)
+        result.append(prefix: "\n\t", name: "Range (mid)", ": ", value: self.mid)
+        result.append(prefix: "\n\t", name: "Range (low)", ": ", value: self.low)
+        result.append(prefix: "\n\t", name: "Change (net)", ": ", value: self.changeNet)
+        result.append(prefix: "\n\t", name: "Change (%)", ": ", value: self.changePercentage)
+        return result
     }
 }
+
+//extension Streamer {
+//    /// Displays the latests information from a given market.
+//    public struct SprintMarket: CustomDebugStringConvertible {
+//        /// The market epic identifier.
+//        public let epic: Epic
+//        /// The current market status.
+//        public let status: Streamer.Market.Status?
+//        /// (Sprint markets) Strike price.
+//        public let strikePrice: Decimal?
+//        /// (Sprint markets) Trade odds.
+//        public let odds: String?
+//
+//        /// Designated initializer for a `Streamer` market update.
+//        fileprivate init(epic: Epic, item: String, update: [String:String]) throws {
+//            typealias F = Self.Field
+//            typealias U = Streamer.Formatter.Update
+//
+//            self.epic = epic
+//            self.odds = update[F.odds.rawValue]
+//
+//            do {
+//                self.status = try update[F.status.rawValue].map(U.toRawType)
+//                self.strikePrice = try update[F.strikePrice.rawValue].map(U.toDecimal)
+//            } catch let error as U.Error {
+//                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
+//            } catch let error {
+//                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
+//            }
+//        }
+//
+//        public var debugDescription: String {
+//            var result: String = self.epic.rawValue
+//            result.append(prefix: "\n\t", name: "Status", ": ", value: self.status)
+//            result.append(prefix: "\n\t", name: "Sprint markets (strike)", ": ", value: self.strikePrice)
+//            result.append(prefix: "\n\t", name: "Sprint markets (odds)", ": ", value: self.odds)
+//            return result
+//        }
+//    }
+//}
