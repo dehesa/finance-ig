@@ -100,7 +100,7 @@ extension API {
             self.name = try container.decode(String.self, forKey: .name)
             self.apiKey = try container.decode(String.self, forKey: .apiKey)
             self.status = try container.decode(API.Application.Status.self, forKey: .status)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.TimeFormatter.yearMonthDay)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.Formatter.yearMonthDay)
             self.allowance = try Allowance(from: decoder)
         }
         

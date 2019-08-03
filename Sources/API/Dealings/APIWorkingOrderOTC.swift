@@ -165,7 +165,7 @@ extension API.Request.WorkingOrders {
                 try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
                 try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: API.TimeFormatter.humanReadable)
+                try container.encode(date, forKey: .expirationDate, with: API.Formatter.humanReadable)
             }
             try container.encodeIfPresent(self.reference, forKey: .reference)
         }
@@ -240,7 +240,7 @@ extension API.Request.WorkingOrders {
                 try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
                 try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: API.TimeFormatter.humanReadable)
+                try container.encode(date, forKey: .expirationDate, with: API.Formatter.humanReadable)
             }
         }
         

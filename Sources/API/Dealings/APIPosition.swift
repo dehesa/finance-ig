@@ -87,7 +87,7 @@ extension API {
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
             self.identifier = try nestedContainer.decode(API.Deal.Identifier.self, forKey: .identifier)
             self.reference = try nestedContainer.decode(API.Deal.Reference.self, forKey: .reference)
-            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
+            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
             self.currency = try nestedContainer.decode(Currency.Code.self, forKey: .currency)
             self.direction = try nestedContainer.decode(API.Deal.Direction.self, forKey: .direction)
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)

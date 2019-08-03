@@ -5,7 +5,9 @@ extension Streamer.Request.Markets {
     
     // MARK: CHART:EPIC:SCALE
     
-    /// Subscribes to a given market and returns aggreagated chart data.
+    /// Subscribes to a given market and returns aggreagated chart data for a specific time interval.
+    ///
+    /// For example, if subscribed to EUR/USD on the 5-minute interval; the data received will be the one of the last 5-minute candle and some statistics of the day.
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter interval: The aggregation interval for the candle.
     /// - parameter fields: The chart properties/fields bieng targeted.
@@ -49,27 +51,29 @@ extension Streamer.Chart.Aggregated {
     public enum Field: String, CaseIterable {
         /// Update time.
         case date = "UTM"
+        
+        /// Candle bid open price.
+        case openBid = "BID_OPEN"
+        /// Candle offer open price.
+        case openAsk = "OFR_OPEN"
+        /// Candle bid close price.
+        case closeBid = "BID_CLOSE"
+        /// Candle offer close price.
+        case closeAsk = "OFR_CLOSE"
+        /// Candle bid low price.
+        case lowestBid = "BID_LOW"
+        /// Candle offer low price.
+        case lowestAsk = "OFR_LOW"
+        /// Candle bid high price.
+        case highestBid = "BID_HIGH"
+        /// Candle offer high price.
+        case highestAsk = "OFR_HIGH"
         /// Whether the candle has ended (1 ends, 0 continues).
         case isFinished = "CONS_END"
         /// Number of ticks in candle.
         case numTicks = "CONS_TICK_COUNT"
-        
-        /// Candle bid open price.
-        case bidOpen = "BID_OPEN"
-        /// Candle bid low price.
-        case bidLow = "BID_LOW"
-        /// Candle bid high price.
-        case bidHigh = "BID_HIGH"
-        /// Candle bid close price.
-        case bidClose = "BID_CLOSE"
-        /// Candle offer open price.
-        case askOpen = "OFR_OPEN"
-        /// Candle offer low price.
-        case askLow = "OFR_LOW"
-        /// Candle offer high price.
-        case askHigh = "OFR_HIGH"
-        /// Candle offer close price.
-        case askClose = "OFR_CLOSE"
+        /// Last traded volume.
+        case lastTradedVolume = "LTV"
         // /// Candle open price (Last Traded Price)
         // case lastTradedPriceOpen = "LTP_OPEN"
         // /// Candle low price (Last Traded Price)
@@ -78,20 +82,31 @@ extension Streamer.Chart.Aggregated {
         // case lastTradedPriceHigh = "LTP_HIGH"
         // /// Candle close price (Last Traded Price)
         // case lastTradedPriceClose = "LTP_CLOSE"
-        /// Last traded volume.
-        case lastTradedVolume = "LTV"
         // /// Incremental trading volume.
         // case incrementalTradingVolume = "TTV"
         /// Daily low price.
-        case low = "DAY_LOW"
+        case dayLowest = "DAY_LOW"
         /// Mid open price for the day.
-        case midOpen = "DAY_OPEN_MID"
+        case dayMid = "DAY_OPEN_MID"
         /// Daily high price.
-        case high = "DAY_HIGH"
+        case dayHighest = "DAY_HIGH"
         /// Change from open price to current.
-        case changeNet = "DAY_NET_CHG_MID"
+        case dayChangeNet = "DAY_NET_CHG_MID"
         /// Daily percentage change.
-        case changePercentage = "DAY_PERC_CHG_MID"
+        case dayChangePercentage = "DAY_PERC_CHG_MID"
+    }
+}
+
+extension Set where Element == Streamer.Chart.Aggregated.Field {
+    /// Returns a set with all the candle related fields.
+    public static var candle: Self {
+        return Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
+                          .lowestBid, .lowestAsk, .highestBid, .highestAsk,
+                          .isFinished, .numTicks, .lastTradedVolume])
+    }
+    /// Returns a set with all the dayly related fields.
+    public static var day: Self {
+        return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
 }
 
@@ -109,20 +124,10 @@ extension Streamer.Chart {
         public let epic: Epic
         /// The aggregation interval chosen on subscription.
         public let interval: Self.Interval
-        
-        /// The date of the information.
-        public let date: Date?
-        /// Boolean indicating whether no further values will be added to this candle.
-        public let isFinished: Bool?
-        /// Number of ticks in the candle.
-        public let numTicks: Int?
-        
-        /// Price related information (e.g. buy, sell price, etc.)
-        public let price: Self.Price
-        /// Traded volume information.
-        public let volume: Self.Volume
-        /// Highest and lowest price of the day.
-        public let intraday: Self.Intraday
+        /// The candle for the ongoing time interval.
+        public let candle: Self.Candle
+        /// Aggregate data for the current day.
+        public let day: Self.Day
         
         internal init(epic: Epic, interval: Self.Interval, item: String, update: [String:String]) throws {
             typealias F = Self.Field
@@ -132,12 +137,8 @@ extension Streamer.Chart {
             self.interval = interval
             
             do {
-                self.date = try update[F.date.rawValue].map(U.toEpochDate)
-                self.isFinished = try update[F.isFinished.rawValue].map(U.toBoolean)
-                self.numTicks = try update[F.numTicks.rawValue].map(U.toInt)
-                self.price = try .init(update: update)
-                self.volume = try .init(update: update)
-                self.intraday = try .init(update: update)
+                self.candle = try .init(update: update)
+                self.day = try .init(update: update)
             } catch let error as Streamer.Formatter.Update.Error {
                 throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
             } catch let error {
@@ -147,110 +148,86 @@ extension Streamer.Chart {
     }
 }
 
-//        internal init(update: StreamerSubscriptionUpdate) throws {
-//            self.date = values[.date].flatMap {
-//                guard let milliseconds = TimeInterval($0) else { return nil }
-//                return Date(timeIntervalSince1970: milliseconds / 1000)
-//            }
-//            self.isFinished = values[.isFinished].flatMap {
-//                guard let number = Int($0) else { return nil }
-//                return number != 0
-//            }
-//            self.numTicks = values[.numTicks].flatMap { Int($0) }
-//            self.price = Price(received: values)
-//            self.volume = Volume(received: values)
-//            self.intraday = Intraday(received: values)
-//        }
-
 extension Streamer.Chart.Aggregated {
     /// Buy/Sell prices at a point in time.
-    public struct Price {
-//        /// Buy price.
-//        public let offer: Range
-//        /// Sell price.
-//        public let bid: Range
-        // /// Last traded price.
-        // public let lastTraded: Properties
+    public struct Candle {
+        /// The date of the information.
+        public let date: Date?
+        /// Number of ticks in the candle.
+        public let numTicks: Int?
+        /// Boolean indicating whether no further values will be added to this candle.
+        public let isFinished: Bool?
+        /// The open bid/ask price for the receiving candle.
+        public let open: Self.Point
+        /// The close bid/ask price for the receiving candle.
+        public let close: Self.Point
+        /// The lowest bid/ask price for the receiving candle.
+        public let lowest: Self.Point
+        /// The highest bid/ask price for the receiving candle.
+        public let highest: Self.Point
 
         fileprivate init(update: [String:String]) throws {
-//            typealias F = Self.Field
-//            typealias U = Streamer.Formatter.Update
-//
-//            self.offer = Range(received: received, fields: (.offerOpen, .offerClose, .offerLow, .offerHigh))
-//            self.bid = Range(received: received, fields: (.bidOpen, .bidClose, .bidLow, .bidHigh))
-//            // self.lastTraded = Properties(received: received, fields: (.lastTradedPriceOpen, .lastTradedPriceClose, .lastTradedPriceLow, .lastTradedPriceHigh))
+            typealias F = Streamer.Chart.Aggregated.Field
+            typealias U = Streamer.Formatter.Update
+            
+            self.date = try update[F.date.rawValue].map(U.toEpochDate)
+            self.numTicks = try update[F.numTicks.rawValue].map(U.toInt)
+            self.isFinished = try update[F.isFinished.rawValue].map(U.toBoolean)
+            
+            let openBid = try update[F.openBid.rawValue].map(U.toDecimal)
+            let openAsk = try update[F.openAsk.rawValue].map(U.toDecimal)
+            self.open = .init(bid: openBid, ask: openAsk)
+            
+            let closeBid = try update[F.closeBid.rawValue].map(U.toDecimal)
+            let closeAsk = try update[F.closeAsk.rawValue].map(U.toDecimal)
+            self.close = .init(bid: closeBid, ask: closeAsk)
+            
+            let lowestBid = try update[F.lowestBid.rawValue].map(U.toDecimal)
+            let lowestAsk = try update[F.lowestAsk.rawValue].map(U.toDecimal)
+            self.lowest = .init(bid: lowestBid, ask: lowestAsk)
+            
+            let highestBid = try update[F.highestBid.rawValue].map(U.toDecimal)
+            let highestAsk = try update[F.highestAsk.rawValue].map(U.toDecimal)
+            self.highest = .init(bid: highestBid, ask: highestAsk)
+        }
+        
+        /// The representation of a price point.
+        public struct Point {
+            /// The bid price.
+            public let bid: Decimal?
+            /// The ask/offer price.
+            public let ask: Decimal?
+            
+            /// Hidden designated initializer.
+            fileprivate init(bid: Decimal?, ask: Decimal?) {
+                self.bid = bid
+                self.ask = ask
+            }
         }
     }
 
     /// Trading volume related information.
-    public struct Volume {
-//        /// Last traded volume.
-//        public let lastTraded: Double?
-//        // /// Incremental trading volume.
-//        // public let incremental: Double?
+    public struct Day {
+        /// The lowest price of the day.
+        public let lowest: Decimal?
+        /// The mid price of the day.
+        public let mid: Decimal?
+        /// The highest price of the day
+        public let highest: Decimal?
+        /// Net change from open price to current.
+        public let changeNet: Decimal?
+        /// Daily percentage change.
+        public let changePercentage: Decimal?
 
         fileprivate init(update: [String:String]) throws {
-//            typealias F = Self.Field
-//            typealias U = Streamer.Formatter.Update
-//
-//            self.lastTraded = received[.lastTradedVolume].flatMap { Double($0) }
-//            // self.incremental = received[.incrementalTradingVolume].flatMap { Double($0) }
-        }
-    }
+            typealias F = Streamer.Chart.Aggregated.Field
+            typealias U = Streamer.Formatter.Update
 
-    /// The price range.
-    public struct Intraday {
-//        /// Intraday lowest price.
-//        public let low: Double?
-//        /// Opening mid price.
-//        public let midOpen: Double?
-//        /// Intraday highest price.
-//        public let high: Double?
-//        /// Price change net and percentage change on that day.
-//        public let change: Change
-
-        fileprivate init(update: [String:String]) throws {
-//            typealias F = Self.Field
-//            typealias U = Streamer.Formatter.Update
-//
-//            self.low = received[.low].flatMap { Double($0) }
-//            self.midOpen = received[.midOpen].flatMap { Double($0) }
-//            self.high = received[.high].flatMap { Double($0) }
-//            self.change = Change(received: received)
+            self.lowest = try update[F.dayLowest.rawValue].map(U.toDecimal)
+            self.mid = try update[F.dayMid.rawValue].map(U.toDecimal)
+            self.highest = try update[F.dayHighest.rawValue].map(U.toDecimal)
+            self.changeNet = try update[F.dayChangeNet.rawValue].map(U.toDecimal)
+            self.changePercentage = try update[F.dayChangePercentage.rawValue].map(U.toDecimal)
         }
     }
 }
-
-//extension Streamer.Response.Chart.Candle {
-//    /// Price candle properties.
-//    public struct Range {
-//        /// The open price for a given candle.
-//        public let open: Double?
-//        /// The close price for a given candle.
-//        public let close: Double?
-//        /// The lowest price reached on a candle.
-//        public let low: Double?
-//        /// The highest price reached on a candle.
-//        public let high: Double?
-//
-//        fileprivate init(received: [Field:String], fields: (open: Field, close: Field, low: Field, high: Field)) {
-//            self.open = received[fields.open].flatMap { Double($0) }
-//            self.close = received[fields.close].flatMap { Double($0) }
-//            self.low = received[fields.low].flatMap { Double($0) }
-//            self.high = received[fields.high].flatMap { Double($0) }
-//        }
-//    }
-//
-//    /// The change in price.
-//    public struct Change {
-//        /// Change from open price to current.
-//        public let net: Double?
-//        /// Daily percentage change.
-//        public let percentage: Double?
-//
-//        fileprivate init(received: [Field:String]) {
-//            self.net = received[.changeNet].flatMap { Double($0) }
-//            self.percentage = received[.changePercentage].flatMap { Double($0) }
-//        }
-//    }
-//}

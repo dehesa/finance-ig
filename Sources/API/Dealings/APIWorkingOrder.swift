@@ -78,7 +78,7 @@ extension API {
             
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
+            self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
             self.epic = try container.decode(Epic.self, forKey: .epic)
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
@@ -102,7 +102,7 @@ extension API {
             case Self.Expiration.CodingKeys.tillCancelled.rawValue:
                 self.expiration = .tillCancelled
             case Self.Expiration.CodingKeys.tillDate.rawValue:
-                let date = try container.decode(Date.self, forKey: .expirationDate, with: API.TimeFormatter.iso8601NoTimezoneSeconds)
+                let date = try container.decode(Date.self, forKey: .expirationDate, with: API.Formatter.iso8601noSeconds)
                 self.expiration = .tillDate(date)
             default:
                 throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\(expirationType)\" couldn't be processed.")

@@ -34,8 +34,7 @@ extension Streamer.Subscription {
         }
         
         var debugDescription: String {
-            var result = ErrorPrint(domain: "Streamer Subscription Error")
-            result.title = "Code \(self.code) - \(self.kind.debugDescription)"
+            var result = ErrorPrint(domain: "Streamer Subscription Error", title: "Code \(self.code) - \(self.kind.debugDescription)")
             result.append(details: self.message)
             return result.debugDescription
         }

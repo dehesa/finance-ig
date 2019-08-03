@@ -14,20 +14,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D04725E919E49ED7006002AA"
-               BuildableName = "ReactiveSwift.framework"
-               BlueprintName = "ReactiveSwift-macOS"
-               ReferencedContainer = "container:Dependencies/ReactiveSwift/ReactiveSwift.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
                BuildableName = "IG.framework"
                BlueprintName = "IG [macOS]"

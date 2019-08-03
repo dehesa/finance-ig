@@ -45,7 +45,7 @@ extension API {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
             self.reference = try container.decode(API.Deal.Reference.self, forKey: .reference)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601Miliseconds)
+            self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601miliseconds)
             
             self.epic = try container.decode(Epic.self, forKey: .epic)
             self.expiry = try container.decode(API.Instrument.Expiry.self, forKey: .expiry)

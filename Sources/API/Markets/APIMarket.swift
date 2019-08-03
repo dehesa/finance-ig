@@ -9,7 +9,7 @@ extension API.Request.Markets {
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
     public func get(epic: Epic) -> SignalProducer<API.Market,API.Error> {
-        let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezoneSeconds.deepCopy
+        let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds.deepCopy
         
         return SignalProducer(api: self.api) { (api) in
                 let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
@@ -30,7 +30,7 @@ extension API.Request.Markets {
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
     public func get(epics: Set<Epic>) -> SignalProducer<[API.Market],API.Error> {
-        let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezoneSeconds
+        let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds
         
         return SignalProducer(api: self.api) { (api) in
             let errorBlurb = "Search for market epics failed!"
@@ -404,8 +404,8 @@ extension API.Market.Instrument {
             guard hasMin == hasMax else { throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range.") }
             guard hasMin == false else { return nil }
 
-            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: API.TimeFormatter.monthYear)
-            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: API.TimeFormatter.monthYear)
+            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: API.Formatter.monthYear)
+            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: API.Formatter.monthYear)
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -556,7 +556,7 @@ extension API.Market {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.TimeFormatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.Formatter.time)
             
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
                 throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")

@@ -2,21 +2,6 @@ import Foundation
 
 // MARK: - Decoder
 
-extension Decimal {
-    /// Creates a decimal value depending on the appropriate double value.
-    fileprivate init(_ double: Double, onError: (_ message: String) -> DecodingError) throws {
-        guard !double.isNaN && double.isFinite else {
-            self.init(double); return
-        }
-        
-        guard let result = Decimal(string: String(double)) else {
-            throw onError("The double value \"\(double)\" couldn't be transformed into a Decimal.")
-        }
-        
-        self = result
-    }
-}
-
 extension SingleValueDecodingContainer {
     /// Decodes a single value of the given type.
     /// - parameter type: The type to be decode as.
@@ -62,5 +47,26 @@ extension KeyedDecodingContainer {
     internal func decodeIfPresent(_ type: Decimal.Type, forKey key: KeyedDecodingContainer<K>.Key) throws -> Decimal? {
         guard let double = try self.decodeIfPresent(Double.self, forKey: key) else { return nil }
         return try Decimal(double) { .dataCorruptedError(forKey: key, in: self, debugDescription: $0) }
+    }
+}
+
+// MARK: Supporting Functionality
+
+extension Decimal {
+    /// Creates a decimal value depending on the appropriate double value.
+    ///
+    /// This initializer is created to fight `JSONDecoder` mistake of transforming a number to double first and then to decimal.
+    /// - parameter double: The number to transform to a `Decimal`.
+    /// - parameter onError: The decoding error to generate in case the double was not able to be transformed.
+    fileprivate init(_ double: Double, onError: (_ message: String) -> DecodingError) throws {
+        guard !double.isNaN && double.isFinite else {
+            self.init(double); return
+        }
+        
+        guard let result = Decimal(string: String(double)) else {
+            throw onError("The double value \"\(double)\" couldn't be transformed into a Decimal.")
+        }
+        
+        self = result
     }
 }

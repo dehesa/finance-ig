@@ -31,17 +31,17 @@ extension API.Error: CustomDebugStringConvertible {
         case .invalidRequest(let error, let message):
             result.title = "Invalid request."
             result.append(details: message)
-            result.append(error: error)
+            result.append(underlyingError: error)
         case .callFailed(let request, let response, let error, let message):
             result.title = "Call failed"
             result.append(details: message)
-            result.append(error: error)
+            result.append(underlyingError: error)
             result.append(involved: request)
             result.append(involved: response)
         case .invalidResponse(let response, let request, let data, let error, let message):
             result.title = "Invalid response"
             result.append(details: message)
-            result.append(error: error)
+            result.append(underlyingError: error)
             result.append(involved: request)
             result.append(involved: response)
             result.append(involved: data)

@@ -1,3 +1,4 @@
+import ReactiveSwift
 import Foundation
 
 /// The API instance is the bridge to the HTTP endpoints provided by the platform.
@@ -10,6 +11,10 @@ public final class API {
     public let rootURL: URL
     /// The URL Session instance for performing HTTPS requests.
     internal let channel: APIMockableChannel
+    /// Represents this instances lifetime. It will be triggered when the instance is deallocated.
+    internal let lifetime: Lifetime
+    /// The token that when triggered, will trigger all `Lifetime` observers. It is triggered (automatically) when the instance is deallocated.
+    private let lifetimeToken: Lifetime.Token
     
     /// It holds data and functionality related to the user's session.
     public internal(set) var session: API.Request.Session
@@ -51,6 +56,7 @@ public final class API {
     /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time.
     internal init<A:APIMockableChannel>(rootURL: URL, channel: A, credentials: API.Credentials? = nil) {
         self.rootURL = rootURL
+        (self.lifetime, self.lifetimeToken) = Lifetime.make()
         self.channel = channel
         self.session = .init(credentials: credentials)
         self.session.api = self

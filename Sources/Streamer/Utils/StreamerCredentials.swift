@@ -62,6 +62,6 @@ extension API.Credentials {
             throw API.Error.invalidCredentials(self, message: "The Streamer password couldn't be formed with the given credentials.")
         }
         
-        return Streamer.Credentials(identifier: self.accountId, password: password)
+        return Streamer.Credentials(identifier: self.accountIdentifier, password: password)
     }
 }

@@ -16,7 +16,7 @@ extension API.Request.Activity {
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
     public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
-        let dateFormatter: DateFormatter = API.TimeFormatter.iso8601NoTimezone.deepCopy
+        let dateFormatter: DateFormatter = API.Formatter.iso8601.deepCopy
         
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")

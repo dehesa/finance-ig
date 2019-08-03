@@ -52,7 +52,7 @@ extension Test {
                 } else { fatalError() }
                 
                 result = api.session.get(apiKey: testApiKey, token: token).map({ (s) -> API.Credentials in
-                    .init(clientId: s.clientId, accountId: s.accountId, apiKey: testApiKey, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
+                    .init(clientId: s.clientIdentifier, accountId: s.accountId, apiKey: testApiKey, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
                 }).single()
             }
 
