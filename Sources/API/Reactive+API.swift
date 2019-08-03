@@ -5,6 +5,7 @@ extension SignalProducer where Value==API.Request.WrapperValid<Void>, Error==API
     /// Initializes a `SignalProducer` that checks (when started) whether the passed API session has expired.
     /// - attention: This initializer creates a weak bond with the  API instance passed as argument. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
+    /// - Returns: The API instance and completes inmediately.
     internal init(api: API) {
         self.init { [weak api] (input, _) in
             guard let api = api else {
@@ -145,17 +146,14 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
         return self.flatMap(.merge) { (api, urlRequest) -> SignalProducer<API.Response.Wrapper,Error> in
             return SignalProducer<API.Response.Wrapper,API.Error> { (generator, lifetime) in
                 var request = urlRequest
+                var detacher: CompositeDisposable? = nil
+                
                 if let contentType = type {
                     request.addHeaders([.responseType: contentType.rawValue])
                 }
-                
-                /// Disposable used to detach the actual download task from the resulting signal's lifetime.
-                ///
-                /// When `dispose()` is called here the strong cycle to the download task will be removed.
-                /// - note: The task WON'T be cancelled by calling `dispose()`
-                var detacher: Disposable?
 
-                let task = api.channel.dataTask(with: request) { [request, generator] (data, response, error) in
+                let task = api.channel.dataTask(with: request) { (data, response, error) in
+                    // Triggering `detacher` removes the observers from the API instance and signal lifetimes.
                     detacher?.dispose()
                     
                     if let error = error {
@@ -169,8 +167,17 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                     generator.send(value: (request,header,data))
                     generator.sendCompleted()
                 }
-
-                detacher = lifetime.observeEnded { task.cancel() }
+                
+                // The `detacher` holds the `Disposable`s to eliminate the lifetimes observation.
+                // When `detacher` is triggered/disposed, the observers are removed from the lifetimes.
+                detacher = .init([api.lifetime, lifetime].compactMap {
+                    // The API and signal lifetimes are observed and in case of death, the download task is cancelled and an interruption is sent.
+                    $0.observeEnded {
+                        generator.sendInterrupted()
+                        task.cancel()
+                    }
+                })
+                
                 task.resume()
             }
         }

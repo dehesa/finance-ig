@@ -66,14 +66,14 @@ extension API.Instrument {
             case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
                 self = .dailyFunded
             default:
-                if let date = API.TimeFormatter.dayMonthYear.date(from: string) {
+                if let date = API.Formatter.dayMonthYear.date(from: string) {
                     self = .forward(date)
-                } else if let date = API.TimeFormatter.monthYear.date(from: string) {
+                } else if let date = API.Formatter.monthYear.date(from: string) {
                     self = .forward(date.lastDayOfMonth)
-                } else if let date = API.TimeFormatter.iso8601NoTimezone.date(from: string) {
+                } else if let date = API.Formatter.iso8601.date(from: string) {
                     self = .forward(date)
                 } else {
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: API.TimeFormatter.dayMonthYear.parseErrorLine(date: string))
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: API.Formatter.dayMonthYear.parseErrorLine(date: string))
                 }
             }
         }
@@ -86,7 +86,7 @@ extension API.Instrument {
             case .dailyFunded:
                 try container.encode(Self.CodingKeys.dfb.rawValue)
             case .forward(let date):
-                let formatter = (date.isLastDayOfMonth) ? API.TimeFormatter.monthYear : API.TimeFormatter.dayMonthYear
+                let formatter = (date.isLastDayOfMonth) ? API.Formatter.monthYear : API.Formatter.dayMonthYear
                 try container.encode(formatter.string(from: date))
             }
         }
@@ -226,7 +226,7 @@ extension API.Node.Market {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.TimeFormatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.Formatter.time)
             let update = try responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) ?!
                 DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
             

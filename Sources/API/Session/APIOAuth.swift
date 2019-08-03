@@ -162,7 +162,7 @@ extension API.Session.OAuth {
             
             if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = API.TimeFormatter.humanReadableLong.date(from: dateString) {
+               let date = API.Formatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(seconds)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: seconds)

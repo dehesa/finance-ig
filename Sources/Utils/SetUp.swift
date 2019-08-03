@@ -24,3 +24,4 @@ extension JSONDecoder: SetUp {}
 extension NumberFormatter: SetUp {}
 extension DateFormatter: SetUp {}
 extension DateComponents: SetUp {}
+extension Calendar: SetUp {}

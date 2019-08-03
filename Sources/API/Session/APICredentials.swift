@@ -4,9 +4,9 @@ extension API {
     /// Credentials used within the API session.
     public struct Credentials {
         /// Client identifier.
-        public let clientId: Int
+        public let clientIdentifier: Int
         /// Active account identifier.
-        public internal(set) var accountId: String
+        public internal(set) var accountIdentifier: String
         /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
         /// Timezone of the active account.
@@ -18,8 +18,8 @@ extension API {
         
         /// Creates a credentials structure from hardcoded data.
         public init(clientId: Int, accountId: String, apiKey: String, token: Self.Token, streamerURL: URL, timezone: TimeZone) {
-            self.clientId = clientId
-            self.accountId = accountId
+            self.clientIdentifier = clientId
+            self.accountIdentifier = accountId
             self.streamerURL = streamerURL
             self.timezone = timezone
             self.apiKey = apiKey
@@ -35,7 +35,7 @@ extension API {
                 result[.clientSessionToken] = access
                 result[.securityToken] = security
             case .oauth(let access, _, _, let type):
-                result[.account] = self.accountId
+                result[.account] = self.accountIdentifier
                 result[.authorization] = "\(type) \(access)"
             }
             return result
@@ -85,8 +85,8 @@ extension API.Credentials: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = """
         API credentials {
-            Client ID:       \(self.clientId)
-            Account ID:      \(self.accountId)
+            Client ID:       \(self.clientIdentifier)
+            Account ID:      \(self.accountIdentifier)
             API key:         \(self.apiKey)
             Streamer URL:    \(self.streamerURL)
             Timezone:        \(self.timezone)

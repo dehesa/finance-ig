@@ -68,15 +68,15 @@ extension API.Request.Session {
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
     /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
-    /// - parameter accountId: The identifier for the account that the user want to switch to.
+    /// - parameter accountIdentifier: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func `switch`(to accountId: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
+    public func `switch`(to accountIdentifier: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
         return SignalProducer(api: self.api) { (api) -> Self.PayloadSwitch in
-                guard !accountId.isEmpty else {
+                guard !accountIdentifier.isEmpty else {
                     throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
                 }
-                return .init(accountId: accountId, defaultAccount: makingDefault)
+                return .init(accountId: accountIdentifier, defaultAccount: makingDefault)
             }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -92,7 +92,7 @@ extension API.Request.Session {
                     return .failure(.invalidCredentials(nil, message: "The API instance doesn't have any credentials."))
                 }
                 
-                credentials.accountId = accountId
+                credentials.accountIdentifier = accountIdentifier
                 api.session.credentials = credentials
                 return .success(sessionSwitch)
             }
@@ -151,7 +151,7 @@ extension API.Request {
         var credentials: API.Credentials?
         
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        /// - attention: Before using the getter, be sure to have set this property or the application will crash.
+        /// - important: Before using the getter, be sure to have set this property or the application will crash.
         var api: API {
             get { return pointer!.takeUnretainedValue() }
             set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
@@ -191,9 +191,9 @@ extension API {
     /// Representation of a dealing session.
     public struct Session: Decodable {
         /// Client identifier.
-        public let clientId: Int
+        public let clientIdentifier: Int
         /// Active account identifier.
-        public let accountId: String
+        public let accountIdentifier: String
         /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
         /// Timezone of the active account.
@@ -206,10 +206,10 @@ extension API {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            let clientString = try container.decode(String.self, forKey: .clientId)
-            self.clientId = try Int(clientString)
+            let clientString = try container.decode(String.self, forKey: .clientIdentifier)
+            self.clientIdentifier = try Int(clientString)
                 ?! DecodingError.typeMismatch(Int.self, .init(codingPath: container.codingPath, debugDescription: "The clientId \"\(clientString)\" couldn't be parsed to a number."))
-            self.accountId = try container.decode(String.self, forKey: .accountId)
+            self.accountIdentifier = try container.decode(String.self, forKey: .accountIdentifier)
             let offset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
@@ -219,8 +219,10 @@ extension API {
         }
         
         private enum CodingKeys: String, CodingKey {
-            case clientId, accountId, timezoneOffset
-            case locale, currency, streamerURL = "lightstreamerEndpoint"
+            case clientIdentifier = "clientId"
+            case accountIdentifier = "accountId"
+            case timezoneOffset, locale, currency
+            case streamerURL = "lightstreamerEndpoint"
         }
     }
 }

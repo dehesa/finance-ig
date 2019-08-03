@@ -195,11 +195,11 @@ extension Test.Account {
             case .dataLoadFailed(let url, let underlyingError):
                 result.title = "Data load failed."
                 result.append(details: "File URL: \(url.absoluteString)")
-                result.append(error: underlyingError)
+                result.append(underlyingError: underlyingError)
             case .accountParsingFailed(let url, let underlyingError):
                 result.title = "Account parsing failed."
                 result.append(details: "File URL: \(url.absoluteString)")
-                result.append(error: underlyingError)
+                result.append(underlyingError: underlyingError)
             }
             
             return result.debugDescription

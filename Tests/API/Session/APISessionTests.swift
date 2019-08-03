@@ -13,8 +13,8 @@ final class APISessionTests: XCTestCase {
         
         try! api.session.login(type: .oauth, apiKey: info.apiKey, user: user).single()!.get()
         let session = try! api.session.get().single()!.get()
-        XCTAssertGreaterThan(session.clientId, 0)
-        XCTAssertEqual(session.accountId, info.accountId)
+        XCTAssertGreaterThan(session.clientIdentifier, 0)
+        XCTAssertEqual(session.accountIdentifier, info.accountId)
         XCTAssertNotNil(session.streamerURL.scheme)
         XCTAssertEqual(session.streamerURL.scheme!, "https")
         try! api.session.logout().single()!.get()

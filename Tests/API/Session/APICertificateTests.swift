@@ -13,9 +13,9 @@ final class APICertificateTests: XCTestCase {
         guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
         
         let credentials = try! api.session.loginCertificate(apiKey: info.apiKey, user: user).single()!.get()
-        XCTAssertGreaterThan(credentials.clientId, 0)
+        XCTAssertGreaterThan(credentials.clientIdentifier, 0)
         XCTAssertEqual(credentials.apiKey, info.apiKey)
-        XCTAssertEqual(credentials.accountId, info.accountId)
+        XCTAssertEqual(credentials.accountIdentifier, info.accountId)
         XCTAssertGreaterThan(credentials.token.expirationDate, Date())
         guard case .certificate(let access, let security) = credentials.token.value else {
             return XCTFail("Credentials were expected to be CST. Credentials received: \(credentials)")
@@ -40,9 +40,9 @@ final class APICertificateTests: XCTestCase {
         
         let credentials = try! api.session.loginOAuth(apiKey: info.apiKey, user: user).single()!.get()
         api.session.credentials = credentials
-        XCTAssertGreaterThan(credentials.clientId, 0)
+        XCTAssertGreaterThan(credentials.clientIdentifier, 0)
         XCTAssertEqual(credentials.apiKey, info.apiKey)
-        XCTAssertEqual(credentials.accountId, info.accountId)
+        XCTAssertEqual(credentials.accountIdentifier, info.accountId)
         XCTAssertGreaterThan(credentials.token.expirationDate, Date())
         guard case .oauth = credentials.token.value else { return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)") }
         

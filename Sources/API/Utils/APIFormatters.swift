@@ -4,64 +4,87 @@ import Foundation
 
 extension API {
     /// Reusable date formatter utility instances.
-    internal enum TimeFormatter {
-        /// ISO 8601 (without timezone).
-        static let iso8601Miliseconds = DateFormatter().set {
+    internal enum Formatter {
+        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd'T'HH:mm:ss.SSS`
+        /// - Example: `2019-11-25T22:33:11.100`
+        static let iso8601miliseconds = DateFormatter().set {
             $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
             $0.calendar = UTC.calendar
             $0.timeZone = UTC.timezone
-
         }
-        /// ISO 8601 (without timezone).
-        static let iso8601NoTimezone = DateFormatter().set {
+        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd'T'HH:mm:ss`
+        /// - Example: `2019-11-25T22:33:11`
+        static let iso8601 = DateFormatter().set {
             $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
             $0.calendar = UTC.calendar
             $0.timeZone = UTC.timezone
         }
         
-        /// ISO 8601 (without timezone).
-        static let iso8601NoTimezoneSeconds = DateFormatter().set {
+        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd'T'HH:mm`
+        /// - Example: `2019-11-25T22:33`
+        static let iso8601noSeconds = DateFormatter().set {
             $0.dateFormat = "yyyy-MM-dd'T'HH:mm"
             $0.calendar = UTC.calendar
             $0.timeZone = UTC.timezone
         }
         
-        /// Month/Year formatter (e.g. SEP-18).
-        static let monthYear = DateFormatter().set {
-            $0.dateFormat = "MMM-yy"
-            $0.calendar = UTC.calendar
-            $0.timeZone = UTC.timezone
+        /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd`
+        /// - Example: `2019-11-25`
+        static var yearMonthDay: DateFormatter {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.calendar = UTC.calendar
+            formatter.timeZone = UTC.timezone
+            return formatter
         }
         
-        /// Standard human readable format (e.g. 2018/06/16).
-        static let yearMonthDay = DateFormatter().set {
-            $0.dateFormat = "yyyy-MM-dd"
-            $0.calendar = UTC.calendar
-            $0.timeZone = UTC.timezone
-        }
-        
-        /// Month/Day formatter (e.g. DEC29).
-        static let dayMonthYear = DateFormatter().set {
-            $0.dateFormat = "dd-MMM-yy"
-            $0.calendar = UTC.calendar
-            $0.timeZone = UTC.timezone
-        }
-        
-        /// Time formatter (e.g. 17:30:29).
+        /// Time formatter using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `HH:mm:ss`
+        /// - Example: `18:30:02`
         static let time = DateFormatter().set {
             $0.dateFormat = "HH:mm:ss"
             $0.calendar = UTC.calendar
             $0.timeZone = UTC.timezone
         }
         
-        /// Standard human readable format (e.g. 2018/06/16 16:24:03).
+        /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `MMM-yy`
+        /// - Example: `DEC-19`
+        static var monthYear: DateFormatter {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM-yy"
+            formatter.calendar = UTC.calendar
+            formatter.timeZone = UTC.timezone
+            return formatter
+        }
+        
+        /// Month/Day formatter using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `dd-MMM-yy`
+        /// - Example: `22-DEC-19`
+        static var dayMonthYear: DateFormatter {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd-MMM-yy"
+            formatter.calendar = UTC.calendar
+            formatter.timeZone = UTC.timezone
+            return formatter
+        }
+        
+        /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy/MM/dd HH:mm:ss`
+        /// - Example: `2019/11/25 22:33:11`
         static let humanReadable = DateFormatter().set {
             $0.dateFormat = "yyyy/MM/dd HH:mm:ss"
             $0.calendar = UTC.calendar
             $0.timeZone = UTC.timezone
         }
         
-        /// Default date formatter for the date provided in one HTTP header key/value.
+        /// Default date formatter for the date provided in one HTTP header key/value using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `E, d MMM yyyy HH:mm:ss zzz`
+        /// - Example: `Sat, 29 Aug 2019 07:06:30 GMT`
         static let humanReadableLong = DateFormatter().set {
             $0.dateFormat = "E, d MMM yyyy HH:mm:ss zzz"
             $0.calendar = UTC.calendar
@@ -72,7 +95,7 @@ extension API {
 
 extension DateFormatter {
     /// Makes a deep copy of the passed `DateFormatter`.
-    /// - todo: Check whether it works in non Darwin systems.
+    /// - requires: `NSCopying` inheritance to work.
     internal var deepCopy: DateFormatter {
         return self.copy() as! DateFormatter
     }

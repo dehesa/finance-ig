@@ -10,24 +10,24 @@ extension DecodingError: CustomDebugStringConvertible {
             result.append(details: "Key: \(key.representation)")
             result.append(details: "Coding path: \(ctx.codingPath.representation)")
             result.append(involved: ctx)
-            result.append(error: ctx.underlyingError)
+            result.append(underlyingError: ctx.underlyingError)
         case .valueNotFound(let type, let ctx):
             result.title = "Value not found."
             result.append(details: "A value of type \"\(type)\" was not found.")
             result.append(details: "Codng path: \(ctx.codingPath.representation)")
             result.append(involved: ctx)
-            result.append(error: ctx.underlyingError)
+            result.append(underlyingError: ctx.underlyingError)
         case .dataCorrupted(let ctx):
             result.title = "Data corrupted."
             result.append(details: "Coding path: \(ctx.codingPath.representation)")
             result.append(involved: ctx)
-            result.append(error: ctx.underlyingError)
+            result.append(underlyingError: ctx.underlyingError)
         case .typeMismatch(let type, let ctx):
             result.title = "Type mismatch."
             result.append(details: "Value found is not of type \"\(type)\".")
             result.append(details: "Coding path: \(ctx.codingPath.representation)")
             result.append(involved: ctx)
-            result.append(error: ctx.underlyingError)
+            result.append(underlyingError: ctx.underlyingError)
         @unknown default:
             result.title = "Non-identified error."
             result.append(involved: self)
@@ -47,7 +47,7 @@ extension EncodingError: CustomDebugStringConvertible {
             result.append(details: "Coding path: \(ctx.codingPath.representation)")
             result.append(involved: value)
             result.append(involved: ctx)
-            result.append(error: ctx.underlyingError)
+            result.append(underlyingError: ctx.underlyingError)
         @unknown default:
             result.title = "Non-identified error."
             result.append(involved: self)        

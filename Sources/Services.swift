@@ -40,7 +40,7 @@ public final class Services {
             return api.session.get(apiKey: apiKey, token: token)
                 .mapError(Self.Error.api)
                 .flatMap(.merge) { (session) -> SignalProducer<Services,Services.Error> in
-                    let credentials = API.Credentials(clientId: session.clientId, accountId: session.accountId, apiKey: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
+                    let credentials = API.Credentials(clientId: session.clientIdentifier, accountId: session.accountIdentifier, apiKey: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
                     api.session.credentials = credentials
                     return Self.make(with: api)
             }
@@ -79,7 +79,7 @@ public final class Services {
                 .map {
                     guard case .certificate(let access, let security) = $0.value else { fatalError("The token was not of certificate type.") }
                     guard let password = Streamer.Credentials.password(fromCST: access, security: security) else { fatalError("The CST and/or security tokens were empty.") }
-                    let secret = Streamer.Credentials(identifier: apiCredentials.accountId, password: password)
+                    let secret = Streamer.Credentials(identifier: apiCredentials.accountIdentifier, password: password)
                     let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret)
                     return .init(api: api, streamer: streamer)
                 }

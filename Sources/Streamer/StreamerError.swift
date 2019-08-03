@@ -32,7 +32,7 @@ extension Streamer {
                 result.title = "Subscription failed."
                 result.append(details: "Subscription to: \(item)")
                 result.append(details: "Subscriotion fields: \(fields.joined(separator: ", "))")
-                result.append(error: error)
+                result.append(underlyingError: error)
             case .invalidResponse(let item, let fields, let message):
                 let keys = (fields as? [String:Any])?.keys.joined(separator: ",") ?? String(describing: fields.keys)
                 result.title = "Invalid response on item \"\(item)\" for fields: \"\(keys)\""

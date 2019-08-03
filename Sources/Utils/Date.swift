@@ -3,11 +3,10 @@ import Foundation
 /// UTC related variables.
 internal enum UTC {
     /// The default calendar to be used in the API date formatters.
-    static let calendar: Calendar = {
-        var calendar = Calendar(identifier: .iso8601)
-        calendar.timeZone = UTC.timezone
-        return calendar
-    }()
+    static let calendar = Calendar(identifier: .iso8601).set {
+        $0.timeZone = UTC.timezone
+        // The locale is not added here on purpose.
+    }
     /// The default timezone to be used in the API date formatters.
     static let timezone = TimeZone(abbreviation: "UTC")!
     /// The default date formatter locale for UTC dates.

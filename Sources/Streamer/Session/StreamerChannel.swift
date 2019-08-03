@@ -103,8 +103,7 @@ extension Streamer.Channel: StreamerMockableChannel {
                         generator.send(error: .invalidResponse(item: item, fields: update.fields, message: "The update values couldn't be turned into a [String:String] dictionary."))
                     }
                 case .updateLost(let count, _):
-                    var error = ErrorPrint(domain: "Streamer Channel")
-                    error.title = "\(item) with fields: \(fields.joined(separator: ","))"
+                    var error = ErrorPrint(domain: "Streamer Channel", title: "\(item) with fields: \(fields.joined(separator: ","))")
                     error.append(details: "\(count) updates were lost before the next one arrived.")
                     print(error.debugDescription)
                 case .subscriptionSucceeded: return

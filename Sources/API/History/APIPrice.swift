@@ -20,7 +20,7 @@ extension API.Request.Price {
                     throw API.Error.invalidCredentials(nil, message: "No credentials found")
                 }
             
-                let formatter = API.TimeFormatter.iso8601NoTimezone.deepCopy.set { $0.timeZone = timezone }
+                let formatter = API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
             
                 guard let page = page else {
                     return (0, 1, formatter)
@@ -51,7 +51,7 @@ extension API.Request.Price {
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON { (request, response) -> JSONDecoder in
                         guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                              let date = API.TimeFormatter.humanReadableLong.date(from: dateString) else {
+                              let date = API.Formatter.humanReadableLong.date(from: dateString) else {
                             throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
                         }
                         
@@ -188,7 +188,7 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.TimeFormatter.iso8601NoTimezone)
+            self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)

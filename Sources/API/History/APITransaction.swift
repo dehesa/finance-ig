@@ -15,7 +15,7 @@ extension API.Request.Transactions {
     public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials found")
-                return API.TimeFormatter.iso8601NoTimezone.deepCopy.set { $0.timeZone = timezone }
+                return API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
             }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
@@ -176,7 +176,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string \"\(sizeString)\" couldn't be parsed into a number")
             }
             
-            let openDate = try container.decode(Date.self, forKey: .openDate, with: API.TimeFormatter.iso8601NoTimezone)
+            let openDate = try container.decode(Date.self, forKey: .openDate, with: API.Formatter.iso8601)
             let openString = try container.decode(String.self, forKey: .openLevel)
             if openString == "-" {
                 self.open = (openDate, nil)
@@ -186,7 +186,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level \"\(openString)\" couldn't be parsed into a number.")
             }
             
-            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: API.TimeFormatter.iso8601NoTimezone)
+            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: API.Formatter.iso8601)
             let closeString = try container.decode(String.self, forKey: .closeLevel)
             if let closeLevel = Decimal(string: closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
