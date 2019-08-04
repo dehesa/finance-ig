@@ -3,10 +3,14 @@ import Foundation
 
 /// The Streamer instance is the bridge to the Streaming service provided by IG.
 public final class Streamer {
-    /// The session (whether real or mocked) managing the streaming connections.
-    internal let channel: StreamerMockableChannel
     /// URL root address.
     public let rootURL: URL
+    /// Represents this instances lifetime. It will be triggered when the instance is deallocated.
+    internal let lifetime: Lifetime
+    /// The token that when triggered, will trigger all `Lifetime` observers. It is triggered (automatically) when the instance is deallocated.
+    private let lifetimeToken: Lifetime.Token
+    /// The session (whether real or mocked) managing the streaming connections.
+    internal let channel: StreamerMockableChannel
     
     /// Holds functionality related to the current streamer session.
     public var session: Streamer.Request.Session { return .init(streamer: self) }
@@ -23,16 +27,18 @@ public final class Streamer {
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
     public convenience init(rootURL: URL, credentials: Streamer.Credentials, autoconnect: Bool = true) {
-        let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
-        self.init(rootURL: rootURL, channel: channel, autoconnect: autoconnect)
+        let existencial = Lifetime.make()
+        let channel = Self.Channel(rootURL: rootURL, credentials: credentials, lifetime: existencial.lifetime)
+        self.init(rootURL: rootURL, existencial: existencial, channel: channel, autoconnect: autoconnect)
     }
     
     /// Initializer for a Streamer instance.
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter session: Real or mocked session managing the streaming connections.
     /// - parameter autoconnect: Booleain indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
-    internal init<S:StreamerMockableChannel>(rootURL: URL, channel: S, autoconnect: Bool) {
+    internal init<S:StreamerMockableChannel>(rootURL: URL, existencial: (lifetime: Lifetime, token: Lifetime.Token), channel: S, autoconnect: Bool) {
         self.rootURL = rootURL
+        (self.lifetime, self.lifetimeToken) = existencial
         self.channel = channel
         
         guard autoconnect else { return }

@@ -542,7 +542,7 @@ extension API.Market {
         /// The current status of a given market
         public let status: API.Market.Status
         /// The state of the market price at the time of the snapshot.
-        public let price: API.Market.Price
+        public let price: API.Market.Price?
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
         public let scalingFactor: Decimal
         /// Number of decimal positions for market levels.
@@ -573,7 +573,7 @@ extension API.Market {
             
             self.delay = try container.decode(TimeInterval.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
-            self.price = try .init(from: decoder)
+            self.price = try API.Market.Price(from: decoder)
             self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
             self.decimalPlacesFactor = try container.decode(Int.self, forKey: .decimalPlacesFactor)
             self.extraSpreadForControlledRisk = try container.decode(Decimal.self, forKey: .extraSpreadForControlledRisk)

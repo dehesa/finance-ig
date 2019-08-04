@@ -11,3 +11,19 @@ internal func ?!<T>(lhs: T?, rhs: @autoclosure ()->Swift.Error) throws -> T {
     guard let result = lhs else { throw rhs() }
     return result
 }
+
+// MARK: - Sets
+
+infix operator ∩ : ComparisonPrecedence
+
+/// Performs an intersection between the `lhs` and the `rhs` sets.
+public func ∩ <T>(lhs: Set<T>, rhs: Set<T>) -> Set<T> {
+    return lhs.intersection(rhs)
+}
+
+infix operator ∪ : ComparisonPrecedence
+
+/// Performs a union between the `lhs` and the `rhs` sets.
+public func ∪ <T>(lhs: Set<T>, rhs: Set<T>) -> Set<T> {
+    return lhs.union(rhs)
+}

@@ -12,37 +12,34 @@ final class StreamerMarketTests: XCTestCase {
         var disposable: Disposable? = nil
         var countDown: Int = 3
         
-        disposable = streamer.markets.subscribe(to: epic, [.status, .isDelayed, .date, .bid, .ask]).start {
+        disposable = streamer.markets.subscribe(to: epic, Set(Streamer.Market.Field.allCases)).start {
             switch $0 {
             case .value(let market):
                 XCTAssertEqual(market.epic, epic)
                 XCTAssertNotNil(market.status)
-                XCTAssertNotNil(market.isDelayed)
                 XCTAssertNotNil(market.date)
+                XCTAssertNotNil(market.isDelayed)
                 XCTAssertNotNil(market.bid)
                 XCTAssertNotNil(market.ask)
                 
-                countDown -= 1
-                print("\nValues received: \(countDown)")
+                print(market)
                 
+                countDown -= 1
                 if (countDown <= 0) {
                     disposable?.dispose()
                     disposable = nil
                 }
             case .completed:
-                print("\nSignal completed\n")
-                expectation.fulfill()
+                XCTFail("The signal should have interrupted since the disposable was used.")
             case .interrupted:
-                print("\nSignal got interrupted\n")
                 expectation.fulfill()
             case .failed(let error):
-                print("\nSignal failed\n")
                 XCTFail(error.debugDescription)
             }
         }
         
         self.wait(for: [expectation], timeout: 8)
-        
+
         streamer.session.unsubscribeAll()
         XCTAssertNoThrow(try SignalProducer.empty(after: 2, on: QueueScheduler(suffix: ".streamer.market.test")).wait().get())
     }
@@ -51,7 +48,7 @@ final class StreamerMarketTests: XCTestCase {
 //        let streamer = Test.makeStreamer(autoconnect: true)
 //
 //        let expectation = self.expectation(description: "Subscription signal")
-//        let epic: Epic = "CS.D.EURGBP.MINI.IP"
+//        let epic: Epic = "CS.D.NZDEUR.CFD.IP"
 //
 //        streamer.markets.subscribeSprint(to: epic, [.status, .strikePrice, .odds]).start { (event) in
 //            print(event)

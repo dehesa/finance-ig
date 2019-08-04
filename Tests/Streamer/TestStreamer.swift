@@ -18,8 +18,9 @@ extension Test {
         case .https:
             streamer = .init(rootURL: rootURL, credentials: credentials, autoconnect: false)
         case .file:
-            let channel = StreamerFileChannel(rootURL: rootURL, credentials: credentials)
-            streamer = .init(rootURL: rootURL, channel: channel, autoconnect: false)
+            let existencial = Lifetime.make()
+            let channel = StreamerFileChannel(rootURL: rootURL, credentials: credentials, lifetime: existencial.lifetime)
+            streamer = .init(rootURL: rootURL, existencial: existencial, channel: channel, autoconnect: false)
         }
         
         if (autoconnect) {

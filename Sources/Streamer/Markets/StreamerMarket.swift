@@ -39,7 +39,7 @@ extension Streamer.Request.Markets {
 //    public func subscribeSprint(to epic: Epic, _ fields: Set<Streamer.SprintMarket.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.SprintMarket,Streamer.Error> {
 //        let item = "MARKET:\(epic.rawValue)"
 //        let properties = fields.map { $0.rawValue }
-//        
+//
 //        return self.streamer.channel
 //            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
 //            .attemptMap { (update) in
@@ -89,15 +89,27 @@ extension Streamer.Market {
         case ask = "OFFER"
         
         /// Intraday high price.
-        case high = "HIGH"
+        case dayHighest = "HIGH"
         /// Opening mid price.
-        case mid = "MID_OPEN"
+        case dayMid = "MID_OPEN"
         /// Intraday low price.
-        case low = "LOW"
+        case dayLowest = "LOW"
         /// Price change compared with open value.
-        case changeNet = "CHANGE"
+        case dayChangeNet = "CHANGE"
         /// Price percent change compared with open value.
-        case changePercentage = "CHANGE_PCT"
+        case dayChangePercentage = "CHANGE_PCT"
+    }
+}
+
+extension Set where Element == Streamer.Market.Field {
+    /// Returns a set with all the dayly related fields.
+    public static var day: Self {
+        return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+    }
+    
+    /// Returns all queryable fields.
+    public static var all: Self {
+        return .init(Element.allCases)
     }
 }
 
@@ -130,16 +142,8 @@ extension Streamer {
         /// The offer price.
         public let ask: Decimal?
         
-        /// Intraday high price.
-        public let high: Decimal?
-        /// Opening mid price.
-        public let mid: Decimal?
-        /// Intraday low price.
-        public let low: Decimal?
-        /// Price change compared with open value.
-        public let changeNet: Decimal?
-        /// Price percent change compared with open value.
-        public let changePercentage: Decimal?
+        /// Aggregate data for the current day.
+        public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
         fileprivate init(epic: Epic, item: String, update: [String:String], timeFormatter: DateFormatter) throws {
@@ -156,11 +160,7 @@ extension Streamer {
                 self.bid = try update[F.bid.rawValue].map(U.toDecimal)
                 self.ask = try update[F.ask.rawValue].map(U.toDecimal)
                 
-                self.high = try update[F.high.rawValue].map(U.toDecimal)
-                self.mid = try update[F.mid.rawValue].map(U.toDecimal)
-                self.low = try update[F.low.rawValue].map(U.toDecimal)
-                self.changeNet = try update[F.changeNet.rawValue].map(U.toDecimal)
-                self.changePercentage = try update[F.changePercentage.rawValue].map(U.toDecimal)
+                self.day = try .init(update: update)
             } catch let error as U.Error {
                 throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
             } catch let error {
@@ -184,6 +184,31 @@ extension Streamer.Market: CustomDebugStringConvertible {
         /// The market is suspended for trading temporarily.
         case suspended = "SUSPENDED"
     }
+    
+    /// Dayly statistics.
+    public struct Day {
+        /// The lowest price of the day.
+        public let lowest: Decimal?
+        /// The mid price of the day.
+        public let mid: Decimal?
+        /// The highest price of the day
+        public let highest: Decimal?
+        /// Net change from open price to current.
+        public let changeNet: Decimal?
+        /// Daily percentage change.
+        public let changePercentage: Decimal?
+        
+        fileprivate init(update: [String:String]) throws {
+            typealias F = Streamer.Chart.Aggregated.Field
+            typealias U = Streamer.Formatter.Update
+            
+            self.lowest = try update[F.dayLowest.rawValue].map(U.toDecimal)
+            self.mid = try update[F.dayMid.rawValue].map(U.toDecimal)
+            self.highest = try update[F.dayHighest.rawValue].map(U.toDecimal)
+            self.changeNet = try update[F.dayChangeNet.rawValue].map(U.toDecimal)
+            self.changePercentage = try update[F.dayChangePercentage.rawValue].map(U.toDecimal)
+        }
+    }
 
     public var debugDescription: String {
         var result: String = self.epic.rawValue
@@ -192,11 +217,11 @@ extension Streamer.Market: CustomDebugStringConvertible {
         result.append(prefix: "\n\t", name: "Are prices delayed?", " ", value: self.isDelayed)
         result.append(prefix: "\n\t", name: "Price (bid)", ": ", value: self.bid)
         result.append(prefix: "\n\t", name: "Price (ask)", ": ", value: self.ask)
-        result.append(prefix: "\n\t", name: "Range (high)", ": ", value: self.high)
-        result.append(prefix: "\n\t", name: "Range (mid)", ": ", value: self.mid)
-        result.append(prefix: "\n\t", name: "Range (low)", ": ", value: self.low)
-        result.append(prefix: "\n\t", name: "Change (net)", ": ", value: self.changeNet)
-        result.append(prefix: "\n\t", name: "Change (%)", ": ", value: self.changePercentage)
+        result.append(prefix: "\n\t", name: "Range (high)", ": ", value: self.day.highest)
+        result.append(prefix: "\n\t", name: "Range (mid)", ": ", value: self.day.mid)
+        result.append(prefix: "\n\t", name: "Range (low)", ": ", value: self.day.lowest)
+        result.append(prefix: "\n\t", name: "Change (net)", ": ", value: self.day.changeNet)
+        result.append(prefix: "\n\t", name: "Change (%)", ": ", value: self.day.changePercentage)
         return result
     }
 }

@@ -104,9 +104,15 @@ extension Set where Element == Streamer.Chart.Aggregated.Field {
                           .lowestBid, .lowestAsk, .highestBid, .highestAsk,
                           .isFinished, .numTicks, .lastTradedVolume])
     }
+    
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
         return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+    }
+    
+    /// Returns all queryable fields.
+    public static var all: Self {
+        return .init(Element.allCases)
     }
 }
 
@@ -206,7 +212,7 @@ extension Streamer.Chart.Aggregated {
         }
     }
 
-    /// Trading volume related information.
+    /// Dayly statistics.
     public struct Day {
         /// The lowest price of the day.
         public let lowest: Decimal?

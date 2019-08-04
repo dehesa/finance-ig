@@ -9,12 +9,12 @@ import Foundation
 public final class API {
     /// URL root address.
     public let rootURL: URL
-    /// The URL Session instance for performing HTTPS requests.
-    internal let channel: APIMockableChannel
     /// Represents this instances lifetime. It will be triggered when the instance is deallocated.
     internal let lifetime: Lifetime
     /// The token that when triggered, will trigger all `Lifetime` observers. It is triggered (automatically) when the instance is deallocated.
     private let lifetimeToken: Lifetime.Token
+    /// The URL Session instance for performing HTTPS requests.
+    internal let channel: APIMockableChannel
     
     /// It holds data and functionality related to the user's session.
     public internal(set) var session: API.Request.Session

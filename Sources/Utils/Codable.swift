@@ -14,7 +14,7 @@ extension DecodingError: CustomDebugStringConvertible {
         case .valueNotFound(let type, let ctx):
             result.title = "Value not found."
             result.append(details: "A value of type \"\(type)\" was not found.")
-            result.append(details: "Codng path: \(ctx.codingPath.representation)")
+            result.append(details: "Coding path: \(ctx.codingPath.representation)")
             result.append(involved: ctx)
             result.append(underlyingError: ctx.underlyingError)
         case .dataCorrupted(let ctx):

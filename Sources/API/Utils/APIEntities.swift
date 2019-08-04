@@ -114,7 +114,7 @@ extension API.Market {
     }
     
     /// Market's price at a snapshot's time.
-    public struct Price: Decodable {
+    public struct Price {
         /// The price being offered (to buy an asset).
         public let bid: Decimal?
         /// The price being asked (to sell an asset).
@@ -126,12 +126,19 @@ extension API.Market {
         /// Net and percentage change price on that day.
         public let change: (net: Decimal, percentage: Decimal)
         
-        public init(from decoder: Decoder) throws {
+        public init?(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.bid = try container.decodeIfPresent(Decimal.self, forKey: .bid)
             self.ask = try container.decodeIfPresent(Decimal.self, forKey: .ask)
-            self.lowest = try container.decode(Decimal.self, forKey: .lowest)
-            self.highest = try container.decode(Decimal.self, forKey: .highest)
+            let lowest = try container.decodeIfPresent(Decimal.self, forKey: .lowest)
+            let highest = try container.decodeIfPresent(Decimal.self, forKey: .highest)
+            guard case .some = self.bid, case .some = self.ask,
+                  case .some(let low) = lowest, case .some(let high) = highest else {
+                return nil
+            }
+            self.lowest = low
+            self.highest = high
+            
             self.change = (
                 try container.decode(Decimal.self, forKey: .netChange),
                 try container.decode(Decimal.self, forKey: .percentageChange)
@@ -218,7 +225,7 @@ extension API.Node.Market {
         /// Describes the current status of a given market
         public let status: API.Market.Status
         /// The state of the market price at the time of the snapshot.
-        public let price: API.Market.Price
+        public let price: API.Market.Price?
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
         public let scalingFactor: Decimal
         
@@ -240,7 +247,7 @@ extension API.Node.Market {
             
             self.delay = try container.decode(TimeInterval.self, forKey: .delay)
             self.status = try container.decode(API.Market.Status.self, forKey: .status)
-            self.price = try .init(from: decoder)
+            self.price = try API.Market.Price(from: decoder)
             self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
         }
         

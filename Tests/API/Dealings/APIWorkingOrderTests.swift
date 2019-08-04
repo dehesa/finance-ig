@@ -14,7 +14,7 @@ final class APIWorkingOrderTests: XCTestCase {
         let direction: API.Deal.Direction = .buy
         let type: API.WorkingOrder.Kind = .limit
         let size: Decimal = 1
-        let level = market.snapshot.price.lowest - (0.0001 * 30)
+        let level = market.snapshot.price!.lowest - (0.0001 * 30)
         let limitDistance: Decimal = 10
         let stopDistance: Decimal = 20
         let forceOpen: Bool = true
