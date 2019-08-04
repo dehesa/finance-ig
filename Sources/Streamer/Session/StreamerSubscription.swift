@@ -9,19 +9,27 @@ extension Streamer {
         typealias EventSignal = Signal<Streamer.Subscription.Event,Never>
         
         /// The underlying Lightstreamer instance.
-        let lowlevel: LSSubscription
+        @nonobjc let lowlevel: LSSubscription
         /// The dispatch queue processing the events and data.
-        private let queue: DispatchQueue
+        @nonobjc private let queue: DispatchQueue
         /// The signal input sending/generatign all events.
-        internal let generator: EventSignal.Observer
+        @nonobjc internal let generator: EventSignal.Observer
+        /// Disposable detaching the observation of the streamer instance *lifetime*.
+        @nonobjc internal let detacher: Disposable?
         
         /// Designated initializer passing all needed instances and setting the delegate on the underlying Lightstreamer instance.
-        private init(lowlevel: LSSubscription, queue: DispatchQueue, generator: EventSignal.Observer) {
+        /// - parameter lowlevel: The underlying objc Lightstreamer subscription.
+        /// - parameter queue: The parent/channel dispatch queue.
+        /// - parameter generator: The Reactive observer input to the subscription event signal.
+        /// - parameter streamerLifetime: *Life-time* representation of the centralized streamer instance.
+        @nonobjc private init(lowlevel: LSSubscription, queue: DispatchQueue, generator: EventSignal.Observer, streamerLifetime: Lifetime) {
             self.lowlevel = lowlevel
             self.queue = queue
             self.generator = generator
+            self.detacher = streamerLifetime.observeEnded { [unowned generator] in
+                generator.sendInterrupted()
+            }
             super.init()
-            
             self.lowlevel.addDelegate(self)
         }
         
@@ -31,8 +39,9 @@ extension Streamer {
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        /// - returns: The signal will complete when the subscription instance is deinitialize.
-        static func make(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool, queue: DispatchQueue) -> (subscription: Streamer.Subscription, signal: EventSignal) {
+        /// - parameter streamerLifetime: *Life-time* representation of the centralized streamer instance.
+        /// - returns: The returning signal will complete when the subscription instance is deinitialize, or it will interrupt if the streamer instance is deinitialized.
+        @nonobjc static func make(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool, queue: DispatchQueue, streamerLifetime: Lifetime) -> (subscription: Streamer.Subscription, signal: EventSignal) {
             let childLabel = queue.label + "." + mode.rawValue.lowercased()
             let childQueue = DispatchQueue(label: childLabel, qos: .realTimeMessaging, attributes: [], autoreleaseFrequency: .inherit, target: queue)
             
@@ -40,11 +49,13 @@ extension Streamer {
             lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
             
             let (signal, generator) = EventSignal.pipe()
-            let subscription = Self.init(lowlevel: lowlevel, queue: childQueue, generator: generator)
+            let subscription = Self.init(lowlevel: lowlevel, queue: childQueue, generator: generator, streamerLifetime: streamerLifetime)
             return (subscription, signal)
         }
         
         deinit {
+            self.detacher?.dispose()
+            self.lowlevel.removeDelegate(self)
             self.generator.sendCompleted()
         }
     }

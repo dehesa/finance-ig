@@ -6,7 +6,8 @@ internal protocol StreamerMockableChannel {
     /// Initializes the session setting up all parameters to be ready to connect.
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
-    init(rootURL: URL, credentials: Streamer.Credentials)
+    /// - parameter lifetime: The streamer instance *lifetime* representation.
+    init(rootURL: URL, credentials: Streamer.Credentials, lifetime: Lifetime)
     /// Returns the current streamer status.
     var status: Property<Streamer.Session.Status> { get }
     /// Requests to open the session against the Lightstreamer server.
@@ -29,6 +30,8 @@ extension Streamer {
     internal final class Channel: NSObject {
         /// Streamer credentials used to access the trading platform.
         @nonobjc private let credentials: Streamer.Credentials
+        /// The hosting streamer instance *lifetime* representation.
+        @nonobjc private unowned let lifetime: Lifetime
         /// The central queue handling all events within the Streamer flow.
         @nonobjc private let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.
@@ -39,8 +42,9 @@ extension Streamer {
         /// All ongoing subscriptions.
         @nonobjc private var subscriptions: Set<Streamer.Subscription> = .init()
         
-        @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
+        @nonobjc init(rootURL: URL, credentials: Streamer.Credentials, lifetime: Lifetime) {
             self.credentials = credentials
+            self.lifetime = lifetime
             
             let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
             self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
@@ -48,7 +52,7 @@ extension Streamer {
             self.client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
             self.client.connectionDetails.user = credentials.identifier
             self.client.connectionDetails.setPassword(credentials.password)
-            self.mutableStatus = MutableProperty<Streamer.Session.Status>(.disconnected(isRetrying: false))
+            self.mutableStatus = .init(.disconnected(isRetrying: false))
             super.init()
             
             // The client stores the delegate weakly, therefore there is no reference cycle.
@@ -77,41 +81,47 @@ extension Streamer.Channel: StreamerMockableChannel {
     }
     
     func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String],Streamer.Error> {
-        return .init { [weak self] (generator, lifetime) in
-            guard let self = self else { return generator.send(error: .sessionExpired) }
+        return .init { [weak self] (resultGenerator, resultLifetime) in
+            guard let self = self else { return resultGenerator.send(error: .sessionExpired) }
             
-            let (subscription, signal) = Streamer.Subscription.make(mode: mode, item: item, fields: fields, snapshot: snapshot, queue: self.queue)
-            // When the user finishes the producer, the low-level instance is unsubscribed.
-            lifetime.observeEnded { [weak self, weak subscription] in
-                guard let self = self,
-                      let sub = subscription,
-                      sub.lowlevel.isActive else { return }
-                self.client.unsubscribe(sub.lowlevel)
+            let (subscription, underlyingSignal) = Streamer.Subscription.make(mode: mode, item: item, fields: fields, snapshot: snapshot, queue: self.queue, streamerLifetime: self.lifetime)
+            
+            // When the user is done with the producer, the low-level instance is unsubscribed.
+            resultLifetime.observeEnded { [weak self, weak subscription] in
+                guard let self = self, let subscription = subscription else { return }
+                self.subscriptions.remove(subscription)
+                
+                guard subscription.lowlevel.isActive else { return }
+                self.client.unsubscribe(subscription.lowlevel)
             }
-            // When the user finishes the producer, the bond to the signal is severed.
-            lifetime += signal.observe {
-                guard case .value(let subscriptionEvent) = $0 else {
-                    return generator.sendCompleted()
+            // When the user is done with the producer, the underlying subscription signal is not observe anymore.
+            resultLifetime += underlyingSignal.observe {
+                let event: Streamer.Subscription.Event
+                switch $0 {
+                case .value(let underlyingEvent):
+                    event = underlyingEvent
+                case .completed: // This triggers `resultLifetime.observeEnded`
+                    return resultGenerator.sendCompleted()
+                case .interrupted: // This triggers `resultLifetime.observeEnded`
+                    return resultGenerator.sendInterrupted()
+                case .failed(_):
+                    fatalError("A signal subscription failed event should never happen.")
                 }
                 
-                switch subscriptionEvent {
+                switch event {
                 case .updateReceived(let update):
-                    #warning("Maybe set the dictionary as [String:Any] or an optional as value. There are crashes; e.g. with ODDS in sprint markets.")
                     if let values = update.fields as? [String:String] {
-                        generator.send(value: values)
+                        resultGenerator.send(value: values)
                     } else {
-                        generator.send(error: .invalidResponse(item: item, fields: update.fields, message: "The update values couldn't be turned into a [String:String] dictionary."))
+                        resultGenerator.send(error: .invalidResponse(item: item, fields: update.fields, message: "The update values couldn't be turned into a [String:String] dictionary."))
                     }
                 case .updateLost(let count, _):
                     var error = ErrorPrint(domain: "Streamer Channel", title: "\(item) with fields: \(fields.joined(separator: ","))")
                     error.append(details: "\(count) updates were lost before the next one arrived.")
                     print(error.debugDescription)
-                case .subscriptionSucceeded: return
-                    // return print("\nSubscribed!!\n")
-                case .unsubscribed: return
-                    // return print("\nSuccessfully unsubscribed.\n")
                 case .subscriptionFailed(let error):
-                    generator.send(error: .subscriptionFailed(item: item, fields: fields, error: error))
+                    resultGenerator.send(error: .subscriptionFailed(item: item, fields: fields, error: error))
+                case .subscriptionSucceeded, .unsubscribed: return
                 }
             }
             

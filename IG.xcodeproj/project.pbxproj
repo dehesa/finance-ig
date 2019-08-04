@@ -49,12 +49,12 @@
 		8D819E0F22F2B1380031A9D5 /* TestStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8B2149A6CE00344CBF /* TestStreamer.swift */; };
 		8D819E1222F2B3F00031A9D5 /* StreamerFileChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */; };
 		8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */; };
-		8D819E1822F2E3420031A9D5 /* ReactiveSwift+Timeout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */; };
+		8D819E1822F2E3420031A9D5 /* Reactive+Timeout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1622F2E3100031A9D5 /* Reactive+Timeout.swift */; };
 		8D845A70229C7AA800A0049A /* APIEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D845A6F229C7AA800A0049A /* APIEntities.swift */; };
 		8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */; };
 		8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D911F6422ECF4CA0038E899 /* Decimal.swift */; };
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
-		8DBB682922F30E7F00D04867 /* Reactive+Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB682822F30E7F00D04867 /* Reactive+Error.swift */; };
+		8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB682822F30E7F00D04867 /* Reactive+Map.swift */; };
 		8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */; };
 		8DC158A322F08A8100012A19 /* Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5C2149A6CE00344CBF /* Streamer.swift */; };
 		8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */; };
@@ -141,13 +141,13 @@
 		8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerEvent.swift; sourceTree = "<group>"; };
 		8D74741422E8439B00B0BA41 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSessionTests.swift; sourceTree = "<group>"; };
-		8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReactiveSwift+Timeout.swift"; sourceTree = "<group>"; };
+		8D819E1622F2E3100031A9D5 /* Reactive+Timeout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Timeout.swift"; sourceTree = "<group>"; };
 		8D845A6F229C7AA800A0049A /* APIEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEntities.swift; sourceTree = "<group>"; };
 		8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSession.swift; sourceTree = "<group>"; };
 		8D8B3AB92299E91800611153 /* General.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = General.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		8D911F6422ECF4CA0038E899 /* Decimal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decimal.swift; sourceTree = "<group>"; };
 		8DB560F7214A6F6200DA980E /* SetUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetUp.swift; sourceTree = "<group>"; };
-		8DBB682822F30E7F00D04867 /* Reactive+Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Error.swift"; sourceTree = "<group>"; };
+		8DBB682822F30E7F00D04867 /* Reactive+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Map.swift"; sourceTree = "<group>"; };
 		8DC4CA3C2149A68200344CBF /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS_tests.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3E2149A68200344CBF /* macOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = macOS_tests.plist; sourceTree = "<group>"; };
@@ -266,8 +266,8 @@
 		8D80F45622F0C59800DE1E5B /* Session */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */,
 				8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */,
+				8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */,
 				8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */,
 				8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */,
 			);
@@ -288,7 +288,6 @@
 				8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */,
 				8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */,
 				8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */,
-				8D819E1622F2E3100031A9D5 /* ReactiveSwift+Timeout.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -377,10 +376,10 @@
 		8DC4CA482149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8DBB682822F30E7F00D04867 /* Reactive+Map.swift */,
 				8DB560F7214A6F6200DA980E /* SetUp.swift */,
 				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
-				8DBB682822F30E7F00D04867 /* Reactive+Error.swift */,
 				8D3C262422E9FA020080D3C1 /* Collections.swift */,
 				8DF85B1922F0431100F1C525 /* Codable.swift */,
 				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
@@ -436,7 +435,6 @@
 			children = (
 				8DC4CA7C2149A6CE00344CBF /* API.swift */,
 				8DC4CA632149A6CE00344CBF /* APIError.swift */,
-				8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */,
 				8DC4CA7D2149A6CE00344CBF /* Session */,
 				8DC4CA792149A6CE00344CBF /* Applications */,
 				8DC4CA752149A6CE00344CBF /* History */,
@@ -462,9 +460,10 @@
 		8DC4CA6B2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */,
+				8D3C262222E9F66E0080D3C1 /* APIInternals.swift */,
 				8D0A232B22EB9600001853E7 /* APIUser.swift */,
 				8D845A6F229C7AA800A0049A /* APIEntities.swift */,
-				8D3C262222E9F66E0080D3C1 /* APIInternals.swift */,
 				8D6BD9FD22EF447600156512 /* APIDeal.swift */,
 				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
 				8DC4CA6E2149A6CE00344CBF /* APIMockableChannel.swift */,
@@ -532,6 +531,7 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA872149A6CE00344CBF /* String.swift */,
+				8D819E1622F2E3100031A9D5 /* Reactive+Timeout.swift */,
 				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
 			);
 			path = Utils;
@@ -786,7 +786,7 @@
 				8DF85B1A22F0431100F1C525 /* Codable.swift in Sources */,
 				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
 				8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */,
-				8DBB682922F30E7F00D04867 /* Reactive+Error.swift in Sources */,
+				8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */,
 				8D74741322E8375C00B0BA41 /* Epic.swift in Sources */,
 				8D74741522E8439B00B0BA41 /* Currency.swift in Sources */,
 				8D3C262C22EB18A50080D3C1 /* Money.swift in Sources */,
@@ -839,7 +839,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */,
-				8D819E1822F2E3420031A9D5 /* ReactiveSwift+Timeout.swift in Sources */,
+				8D819E1822F2E3420031A9D5 /* Reactive+Timeout.swift in Sources */,
 				8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */,
 				8D1CC9792299EE80009AB4D3 /* AnyDecodable.swift in Sources */,
 				8D1CC97A2299EE84009AB4D3 /* AnyCodable.swift in Sources */,

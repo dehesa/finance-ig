@@ -6,15 +6,17 @@ import XCTest
 final class StreamerFileChannel: StreamerMockableChannel {
     /// The central queue handling all events within the Streamer flow.
     private let queue: DispatchQueue
+    /// The hosting streamer instance *lifetime* representation.
+    private unowned let lifetime: Lifetime
     
     let status: Property<Streamer.Session.Status>
     /// Returns the current streamer status.
     private let mutableStatus: MutableProperty<Streamer.Session.Status>
     
-    init(rootURL: URL, credentials: Streamer.Credentials) {
+    init(rootURL: URL, credentials: Streamer.Credentials, lifetime: Lifetime) {
         let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
         self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
-        
+        self.lifetime = lifetime
         self.mutableStatus = .init(.disconnected(isRetrying: false))
         self.status = self.mutableStatus.skipRepeats()
     }

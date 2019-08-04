@@ -143,43 +143,41 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
     /// - parameter type: The HTTP content type expected as a result.
     /// - returns: A new `SignalProducer` with the response of the executed enpoint.
     internal func send(expecting type: API.HTTP.Header.Value.ContentType? = nil) -> SignalProducer<API.Response.Wrapper,API.Error> {
-        return self.flatMap(.merge) { (api, urlRequest) -> SignalProducer<API.Response.Wrapper,Error> in
-            return SignalProducer<API.Response.Wrapper,API.Error> { (generator, lifetime) in
-                var request = urlRequest
-                var detacher: CompositeDisposable? = nil
-                
-                if let contentType = type {
-                    request.addHeaders([.responseType: contentType.rawValue])
-                }
-
-                let task = api.channel.dataTask(with: request) { (data, response, error) in
-                    // Triggering `detacher` removes the observers from the API instance and signal lifetimes.
-                    detacher?.dispose()
-                    
-                    if let error = error {
-                        return generator.send(error: .callFailed(request: request, response: response, underlyingError: error, message: "The HTTP request failed."))
-                    }
-
-                    guard let header = response as? HTTPURLResponse else {
-                        return generator.send(error: .callFailed(request: request, response: response, underlyingError: nil, message: "The URL response couldn't be parsed to a HTTP URL Response."))
-                    }
-
-                    generator.send(value: (request,header,data))
-                    generator.sendCompleted()
-                }
-                
-                // The `detacher` holds the `Disposable`s to eliminate the lifetimes observation.
-                // When `detacher` is triggered/disposed, the observers are removed from the lifetimes.
-                detacher = .init([api.lifetime, lifetime].compactMap {
-                    // The API and signal lifetimes are observed and in case of death, the download task is cancelled and an interruption is sent.
-                    $0.observeEnded {
-                        generator.sendInterrupted()
-                        task.cancel()
-                    }
-                })
-                
-                task.resume()
+        return self.remake { (value, generator, lifetime) in
+            var request = value.request
+            var detacher: CompositeDisposable? = nil
+            
+            if let contentType = type {
+                request.addHeaders([.responseType: contentType.rawValue])
             }
+            
+            let task = value.api.channel.dataTask(with: request) { (data, response, error) in
+                // Triggering `detacher` removes the observers from the API instance and signal lifetimes.
+                detacher?.dispose()
+                
+                if let error = error {
+                    return generator.send(error: .callFailed(request: request, response: response, underlyingError: error, message: "The HTTP request failed."))
+                }
+                
+                guard let header = response as? HTTPURLResponse else {
+                    return generator.send(error: .callFailed(request: request, response: response, underlyingError: nil, message: "The URL response couldn't be parsed to a HTTP URL Response."))
+                }
+                
+                generator.send(value: (request,header,data))
+                generator.sendCompleted()
+            }
+            
+            // The `detacher` holds the `Disposable`s to eliminate the lifetimes observation.
+            // When `detacher` is triggered/disposed, the observers are removed from the lifetimes.
+            detacher = .init([value.api.lifetime, lifetime].compactMap {
+                // The API and signal lifetimes are observed and in case of death, the download task is cancelled and an interruption is sent.
+                $0.observeEnded {
+                    generator.sendInterrupted()
+                    task.cancel()
+                }
+            })
+            
+            task.resume()
         }
     }
     
@@ -190,47 +188,48 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
     /// - parameter endpoint: A paginated request response. The values/errors will be forwarded to the returned producer.
     /// - returns: A `SignalProducer` returning the values from `endpoint` as soon as they arrive. Only when `nil` is returned on the `request` closure, will the returned producer complete.
     internal func paginate<M,R>(request intermediateRequest: @escaping API.Request.Generator.RequestPage<M>, endpoint: @escaping API.Request.Generator.SignalPage<M,R>) -> SignalProducer<R,Error> {
-        return self.flatMap(.merge) { (api, initialRequest) in
-            return SignalProducer<R,Error> { (generator, lifetime) in
-                /// Recursive closure fed with the latest endpoint call (or `nil`) at the very beginning.
-                var iterator: ( (_ previous: API.Request.WrapperPage<M>?) -> Void )! = nil
-                /// Disposable used to detached the current page download task from the resulting signal's lifetime.
-                var detacher: Disposable? = nil
+        return self.remake { (value, generator, lifetime) in
+            /// Recursive closure fed with the latest endpoint call (or `nil`) at the very beginning.
+            var iterator: ( (_ previous: API.Request.WrapperPage<M>?) -> Void )! = nil
+            /// Disposable used to detached the current page download task from the resulting signal's lifetime.
+            var detacher: Disposable? = nil
+            
+            iterator = { [weak api = value.api, initialRequest = value.request] (previousRequest) in
+                detacher?.dispose()
                 
-                iterator = { (previous) in
-                    detacher?.dispose()
-                    
-                    let paginatedRequest: URLRequest?
-                    do {
-                        paginatedRequest = try intermediateRequest(api, initialRequest, previous)
-                    } catch let error as API.Error {
-                        return generator.send(error: error)
-                    } catch let error {
-                        return generator.send(error: .invalidRequest(underlyingError: error, message: "The paginated request couldn't be formed."))
-                    }
-                    
-                    guard let request = paginatedRequest else {
-                        return generator.sendCompleted()
-                    }
-                    
-                    let producer = SignalProducer<Value,Error>(value: (api, request))
-                    detacher = lifetime += endpoint(producer).start { (event) in
-                        switch event {
-                        case .value((let meta, let value)):
-                            generator.send(value: value)
-                            return iterator((request, meta))
-                        case .completed:
-                            return
-                        case .failed(let error):
-                            return generator.send(error: error)
-                        case .interrupted:
-                            return generator.sendInterrupted()
-                        }
-                    }
+                guard let api = api else {
+                    return generator.send(error: .sessionExpired)
                 }
                 
-                iterator(nil)
+                let paginatedRequest: URLRequest?
+                do {
+                    paginatedRequest = try intermediateRequest(api, initialRequest, previousRequest)
+                } catch let error as API.Error {
+                    return generator.send(error: error)
+                } catch let error {
+                    return generator.send(error: .invalidRequest(underlyingError: error, message: "The paginated request couldn't be formed."))
+                }
+                
+                guard let nextRequest = paginatedRequest else {
+                    return generator.sendCompleted()
+                }
+                
+                detacher = lifetime += endpoint(.init(value: (api, nextRequest))).start {
+                    switch $0 {
+                    case .value((let meta, let value)):
+                        generator.send(value: value)
+                        return iterator((nextRequest, meta))
+                    case .completed:
+                        return
+                    case .failed(let error):
+                        return generator.send(error: error)
+                    case .interrupted:
+                        return generator.sendInterrupted()
+                    }
+                }
             }
+            
+            iterator(nil)
         }
     }
 }

@@ -23,7 +23,8 @@ final class APINavigationNodeTests: XCTestCase {
     func testMarketTermSearch() {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         
-        let markets = try! api.nodes.getMarkets(matching: "EURUSD").single()!.get()
+        let markets = try! api.nodes.getMarkets(matching: "NZD").single()!.get()
+//        print(markets.map { $0.instrument.epic.rawValue + "\t->\t" + $0.instrument.name }.joined(separator: "\n"))
         XCTAssertNil(markets.first(where: { $0.instrument.isOTCTradeable != nil || $0.instrument.lotSize != nil || $0.instrument.exchangeIdentifier != nil }))
     }
 }
