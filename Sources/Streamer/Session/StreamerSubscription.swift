@@ -5,96 +5,86 @@ import Foundation
 extension Streamer {
     /// Holds information about an ongoing subscription.
     internal final class Subscription: NSObject {
-        /// The signal sending events through the lifetime of the subscription instance.
-        typealias EventSignal = Signal<Streamer.Subscription.Event,Never>
-        
+        /// The item being subscribed to.
+        @nonobjc let item: String
+        /// The fields being subscribed to.
+        @nonobjc let fields: [String]
         /// The underlying Lightstreamer instance.
         @nonobjc let lowlevel: LSSubscription
         /// The dispatch queue processing the events and data.
         @nonobjc private let queue: DispatchQueue
-        /// The signal input sending/generatign all events.
-        @nonobjc internal let generator: EventSignal.Observer
-        /// Disposable detaching the observation of the streamer instance *lifetime*.
-        @nonobjc internal let detacher: Disposable?
+        /// It forwards the lowlevel lightstreamer subscription events.
+        @nonobjc private let events: MutableProperty<Streamer.Subscription.Event>
+        /// Interface for the subscription state.
+        @nonobjc internal let status: Property<Streamer.Subscription.Event>
         
-        /// Designated initializer passing all needed instances and setting the delegate on the underlying Lightstreamer instance.
-        /// - parameter lowlevel: The underlying objc Lightstreamer subscription.
-        /// - parameter queue: The parent/channel dispatch queue.
-        /// - parameter generator: The Reactive observer input to the subscription event signal.
-        /// - parameter streamerLifetime: *Life-time* representation of the centralized streamer instance.
-        @nonobjc private init(lowlevel: LSSubscription, queue: DispatchQueue, generator: EventSignal.Observer, streamerLifetime: Lifetime) {
-            self.lowlevel = lowlevel
-            self.queue = queue
-            self.generator = generator
-            self.detacher = streamerLifetime.observeEnded { [unowned generator] in
-                generator.sendInterrupted()
-            }
-            super.init()
-            self.lowlevel.addDelegate(self)
-        }
-        
-        /// Produces the subscription instance and a signal forwarding all subscription events.
+        /// Initializes a subscription which is not yet connected to the server.
         /// - parameter mode: The Lightstreamer mode to use on subscription.
         /// - parameter item: The item being subscrbed to (e.g. "MARKET" or "ACCOUNT").
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        /// - parameter streamerLifetime: *Life-time* representation of the centralized streamer instance.
-        /// - returns: The returning signal will complete when the subscription instance is deinitialize, or it will interrupt if the streamer instance is deinitialized.
-        @nonobjc static func make(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool, queue: DispatchQueue, streamerLifetime: Lifetime) -> (subscription: Streamer.Subscription, signal: EventSignal) {
-            let childLabel = queue.label + "." + mode.rawValue.lowercased()
-            let childQueue = DispatchQueue(label: childLabel, qos: .realTimeMessaging, attributes: [], autoreleaseFrequency: .inherit, target: queue)
+        @nonobjc init(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool, target: DispatchQueue) {
+            self.events = .init(.unsubscribed)
+            self.status = self.events.skipRepeats { (lhs, rhs) -> Bool in
+                switch (lhs, rhs) {
+                case (.subscribed, .subscribed),
+                     (.error, .error),
+                     (.unsubscribed, .unsubscribed): return true
+                default: return false
+                }
+            }
             
-            let lowlevel = LSSubscription(subscriptionMode: mode.rawValue, item: item, fields: fields)
-            lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
+            let childLabel = target.label + "." + mode.rawValue.lowercased()
+            self.queue = DispatchQueue(label: childLabel, qos: .realTimeMessaging, autoreleaseFrequency: .inherit, target: target)
             
-            let (signal, generator) = EventSignal.pipe()
-            let subscription = Self.init(lowlevel: lowlevel, queue: childQueue, generator: generator, streamerLifetime: streamerLifetime)
-            return (subscription, signal)
+            self.item = item
+            self.fields = fields
+            self.lowlevel = LSSubscription(subscriptionMode: mode.rawValue, item: item, fields: fields)
+            self.lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
+            super.init()
+            
+            self.lowlevel.addDelegate(self)
         }
         
         deinit {
-            self.detacher?.dispose()
             self.lowlevel.removeDelegate(self)
-            self.generator.sendCompleted()
         }
     }
 }
 
 extension Streamer.Subscription: LSSubscriptionDelegate {
     @objc func subscriptionDidSubscribe(_ subscription: LSSubscription) {
-        self.queue.async { [generator = self.generator] in
-            generator.send(value: .subscriptionSucceeded)
+        self.queue.async { [property = self.events] in
+            property.value = .subscribed
         }
     }
     
     @objc func subscriptionDidUnsubscribe(_ subscription: LSSubscription) {
-        self.queue.async { [generator = self.generator] in
-            generator.send(value: .unsubscribed)
+        self.queue.async { [property = self.events] in
+            property.value = .unsubscribed
         }
     }
     
     @objc func subscription(_ subscription: LSSubscription, didFailWithErrorCode code: Int, message: String?) {
-        self.queue.async { [generator = self.generator] in
-            generator.send(value: .subscriptionFailed(error: .init(code: code, message: message)))
+        self.queue.async { [property = self.events] in
+            property.value = .error(.init(code: code, message: message))
         }
     }
     
     @objc func subscription(_ subscription: LSSubscription, didUpdateItem itemUpdate: LSItemUpdate) {
-        self.queue.async { [generator = self.generator] in
-            generator.send(value: .updateReceived(itemUpdate))
+        self.queue.async { [property = self.events] in
+            property.value = .updateReceived(itemUpdate)
         }
     }
     
     @objc func subscription(_ subscription: LSSubscription, didLoseUpdates lostUpdates: UInt, forItemName itemName: String?, itemPos: UInt) {
-        self.queue.async { [generator = self.generator] in
-            generator.send(value: .updateLost(count: lostUpdates, item: itemName))
+        self.queue.async { [property = self.events] in
+            property.value = .updateLost(count: lostUpdates, item: itemName)
         }
     }
 //    @objc func subscriptionDidAdd(_ subscription: LSSubscription) {}
 //    @objc func subscriptionDidRemove(_ subscription: LSSubscription) {}
 //    @objc func subscription(_ subscription: LSSubscription, didEndSnapshotForItemName itemName: String?, itemPos: UInt) {}
 //    @objc func subscription(_ subscription: LSSubscription, didClearSnapshotForItemName itemName: String?, itemPos: UInt) {}
-//    @objc func subscription(_ subscription: LSSubscription, didLoseUpdates lostUpdates: UInt, forCommandSecondLevelItemWithKey key: String) {}
-//    @objc func subscription(_ subscription: LSSubscription, didFailWithErrorCode code: Int, message: String?, forCommandSecondLevelItemWithKey key: String)
 }

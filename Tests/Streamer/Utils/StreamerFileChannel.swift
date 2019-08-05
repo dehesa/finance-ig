@@ -2,21 +2,20 @@
 import ReactiveSwift
 import XCTest
 
+#warning("Streamer File Channel must be completely redo")
+
 /// Mocked Lightstreamer session that will pick up responses from the bundle's file system.
 final class StreamerFileChannel: StreamerMockableChannel {
     /// The central queue handling all events within the Streamer flow.
     private let queue: DispatchQueue
-    /// The hosting streamer instance *lifetime* representation.
-    private unowned let lifetime: Lifetime
     
     let status: Property<Streamer.Session.Status>
     /// Returns the current streamer status.
     private let mutableStatus: MutableProperty<Streamer.Session.Status>
     
-    init(rootURL: URL, credentials: Streamer.Credentials, lifetime: Lifetime) {
+    init(rootURL: URL, credentials: Streamer.Credentials) {
         let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
         self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
-        self.lifetime = lifetime
         self.mutableStatus = .init(.disconnected(isRetrying: false))
         self.status = self.mutableStatus.skipRepeats()
     }
@@ -43,7 +42,6 @@ final class StreamerFileChannel: StreamerMockableChannel {
     
     func disconnect() {
         if case .disconnected(isRetrying: false) = self.mutableStatus.value { return }
-        #warning("Remove all subscription and remaining tasks")
         
         self.queue.asyncAfter(deadline: .now() + .milliseconds(50)) { [status = self.mutableStatus] in
             status.value = .disconnected(isRetrying: false)
@@ -51,13 +49,12 @@ final class StreamerFileChannel: StreamerMockableChannel {
     }
     
     
-    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String : String], Streamer.Error> {
-        #warning("Do")
+    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String], Streamer.Error> {
         return .empty
     }
     
-    func unsubscribeAll() {
-        
+    func unsubscribeAll() -> [Streamer.Subscription] {
+        return []
     }
 }
 

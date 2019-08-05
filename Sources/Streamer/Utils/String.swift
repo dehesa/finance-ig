@@ -11,7 +11,7 @@ extension String {
     ///     return result
     /// }
     /// ```
-    internal mutating func append<T>(prefix: String, name: String, _ separator: String, value: T?) {
+    internal mutating func append<T>(prefix: String, name: String, _ separator: String, _ value: T?) {
         guard let value = value else { return }
         self.append(prefix)
         self.append(name)

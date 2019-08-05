@@ -41,8 +41,17 @@ extension Streamer.Chart.Aggregated {
     public enum Interval: String {
         case second = "SECOND"
         case minute = "1MINUTE"
-        case minutes5 = "5MINUTE"
+        case minute5 = "5MINUTE"
         case hour = "HOUR"
+        
+        var seconds: TimeInterval {
+            switch self {
+            case .second: return 1
+            case .minute: return 60
+            case .minute5: return 300
+            case .hour: return 3600
+            }
+        }
     }
 }
 
@@ -235,5 +244,30 @@ extension Streamer.Chart.Aggregated {
             self.changeNet = try update[F.dayChangeNet.rawValue].map(U.toDecimal)
             self.changePercentage = try update[F.dayChangePercentage.rawValue].map(U.toDecimal)
         }
+    }
+}
+
+extension Streamer.Chart.Aggregated: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result: String = self.epic.rawValue
+        result.append(prefix: "\n\t", name: "Candle", ":", " ")
+        result.append(prefix: "\n\t\t", name: "date", ": ", self.candle.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t\t", name: "ticks", ": ", self.candle.numTicks)
+        result.append(prefix: "\n\t\t", name: "done", "? ", self.candle.isFinished)
+        result.append(prefix: "\n\t\t", name: "open (bid)", ": ", self.candle.open.bid)
+        result.append(prefix: "\n\t\t", name: "open (ask)", ": ", self.candle.open.ask)
+        result.append(prefix: "\n\t\t", name: "close (bid)", ": ", self.candle.close.bid)
+        result.append(prefix: "\n\t\t", name: "close (ask)", ": ", self.candle.close.ask)
+        result.append(prefix: "\n\t\t", name: "lowest (bid)", ": ", self.candle.lowest.bid)
+        result.append(prefix: "\n\t\t", name: "lowest (ask)", ": ", self.candle.lowest.ask)
+        result.append(prefix: "\n\t\t", name: "highest (bid)", ": ", self.candle.highest.bid)
+        result.append(prefix: "\n\t\t", name: "highest (ask)", ": ", self.candle.highest.ask)
+        result.append(prefix: "\n\t", name: "Dayly statistics", ":", " ")
+        result.append(prefix: "\n\t\t", name: "lowest", ": ", self.day.lowest)
+        result.append(prefix: "\n\t\t", name: "mid", ": ", self.day.mid)
+        result.append(prefix: "\n\t\t", name: "highest", ": ", self.day.highest)
+        result.append(prefix: "\n\t\t", name: "change (net)", ": ", self.day.changeNet)
+        result.append(prefix: "\n\t\t", name: "change (%)", ": ", self.day.changePercentage)
+        return result
     }
 }
