@@ -88,8 +88,8 @@ extension API.Request.Price {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
         case second = "SECOND"
-        case minute = "MINUTE", minutes2 = "MINUTE_2", minutes3 = "MINUTE_3", minutes5 = "MINUTE_5", minutes10 = "MINUTE_10", minutes15 = "MINUTE_15", minutes30 = "MINUTE_30"
-        case hour = "HOUR", hours2 = "HOUR_2", hours3 = "HOUR_3", hours4 = "HOUR_4"
+        case minute = "MINUTE", minute2 = "MINUTE_2", minute3 = "MINUTE_3", minute5 = "MINUTE_5", minute10 = "MINUTE_10", minute15 = "MINUTE_15", minute30 = "MINUTE_30"
+        case hour = "HOUR", hour2 = "HOUR_2", hour3 = "HOUR_3", hour4 = "HOUR_4"
         case day = "DAY", week = "WEEK", month = "MONTH"
         
         /// Creates a resolution from the available ones closest to the amount of seconds passed as argument.
@@ -113,16 +113,16 @@ extension API.Request.Price {
             switch self {
             case .second: return 1
             case .minute: return 60
-            case .minutes2: return 120
-            case .minutes3: return 180
-            case .minutes5: return 300
-            case .minutes10: return 600
-            case .minutes15: return 900
-            case .minutes30: return 1800
+            case .minute2: return 120
+            case .minute3: return 180
+            case .minute5: return 300
+            case .minute10: return 600
+            case .minute15: return 900
+            case .minute30: return 1800
             case .hour: return 3_600
-            case .hours2: return 7_200
-            case .hours3: return 10_800
-            case .hours4: return 14_400
+            case .hour2: return 7_200
+            case .hour3: return 10_800
+            case .hour4: return 14_400
             case .day: return 86_400
             case .week: return 604_800
             case .month: return 2_592_000

@@ -33,7 +33,7 @@ extension Streamer.Request.Markets {
 //                let itemName = Request.Chart.Tick.itemName(epic: epic)
 //                let fields = fields.map { $0.rawValue }
 //                input.send(error: .subscriptionFailed(to: itemName, fields: fields, error: underlyingError))
-//            case .subscriptionSucceeded, .updateLost(_, _):
+//            case .subscribed, .updateLost(_, _):
 //                break
 //            }
 //        }

@@ -32,7 +32,7 @@ extension Streamer {
 //                let itemName = Request.Trade.itemName(identifier: accountId)
 //                let fields = fields.map { $0.rawValue }
 //                input.send(error: .subscriptionFailed(to: itemName, fields: fields, error: underlyingError))
-//            case .subscriptionSucceeded, .updateLost(_,_):
+//            case .subscribed, .updateLost(_,_):
 //                break
 //            }
 //        }
@@ -76,7 +76,7 @@ extension Streamer {
 //                let items = accountIds.joined(separator: ", ")
 //                let error: Streamer.Error = .subscriptionFailed(to: items, fields: fields.map { $0.rawValue }, error: underlyingError)
 //                input.send(error: error)
-//            case .subscriptionSucceeded, .updateLost(_,_):
+//            case .subscribed, .updateLost(_,_):
 //                break
 //            }
 //        }

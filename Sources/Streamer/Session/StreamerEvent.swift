@@ -3,23 +3,38 @@ import Foundation
 
 extension Streamer.Subscription {
     /// Events that can occur within a Streamer subscription.
-    internal enum Event {
+    internal enum Event: Equatable {
+        
         /// A successful subscription is established.
-        case subscriptionSucceeded
-        /// A subscription couldn't be established.
-        case subscriptionFailed(error: Streamer.Subscription.Error)
+        case subscribed
+        /// The subscription was shut down successfully.
+        case unsubscribed
         /// An update has been received.
         case updateReceived(LSItemUpdate)
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
-        /// The subscription was shut down successfully.
-        case unsubscribed
+        /// There was an error during the subscription/unsubscription process.
+        case error(Streamer.Subscription.Error)
+        
+        static func == (lhs: Streamer.Subscription.Event, rhs: Streamer.Subscription.Event) -> Bool {
+            switch (lhs, rhs) {
+            case (.subscribed, .subscribed), (.unsubscribed, .unsubscribed):
+                return true
+            case (.error(let l), .error(let r)):
+                return l == r
+            case (.updateLost(let lc, let li), .updateLost(let rc, let ri)):
+                return (lc == rc) && (li == ri)
+            case (.updateReceived(let lu), .updateReceived(let ru)):
+                return lu.isEqual(ru)
+            default: return false
+            }
+        }
     }
 }
 
 extension Streamer.Subscription {
     /// Error that can occur during the lifetime of a subscription.
-    internal struct Error: Swift.Error, CustomDebugStringConvertible {
+    internal struct Error: Swift.Error, Equatable, CustomDebugStringConvertible {
         /// The type of subscription error.
         let kind: Self.Kind
         /// The integer error code.
@@ -31,6 +46,10 @@ extension Streamer.Subscription {
             self.code = code
             self.message = message
             self.kind = .init(rawValue: code)
+        }
+        
+        static func == (lhs: Streamer.Subscription.Error, rhs: Streamer.Subscription.Error) -> Bool {
+            return lhs.code == rhs.code
         }
         
         var debugDescription: String {
@@ -112,4 +131,3 @@ extension Streamer.Subscription.Error {
         }
     }
 }
-

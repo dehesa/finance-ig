@@ -8,57 +8,148 @@ extension Streamer.Request.Session {
     }
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
-    ///
-    /// If the `Streamer` is already connected, the returning signal will complete immediately.
-    /// - returns: Forwards all statuss till it reliably connects to the server (in which case that status is sent and then the signal completes). If it figures out that the connection is impossible, an error is thrown.
-    @discardableResult public func connect() -> Signal<Streamer.Session.Status,Streamer.Error> {
-        let statusGenerator = self.streamer.channel.status
-        guard !statusGenerator.value.isReady else { return .empty }
-        
-        //let result = self.streamer.channel.status.signal.take(while: { !$0.isReady || $0 == .disconnected(isRetrying: false) })
-        defer { self.streamer.channel.connect() }
-        
-        return  .init { [signal = statusGenerator.signal] (generator, lifetime) in
-            lifetime += signal.observe {
-                guard case .value(let status) = $0 else { return generator.send($0.promoteError(Streamer.Error.self)) }
-                switch status {
-                case .connecting, .connected(.sensing), .disconnected(isRetrying: true):
+    /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
+    public func connect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
+        return .init { [weak streamer = self.streamer] (generator, lifetime) in
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            
+            unowned let channel = streamer.channel
+            let initialStatus = channel.status.value
+            
+            guard initialStatus != .stalled else {
+                return generator.send(error: .invalidRequest(message: "The streamer seems to be \"stalled\". Please, disconnect it and connect it back again."))
+            }
+            guard case .disconnected(isRetrying: false) = initialStatus else {
+                return generator.sendCompleted()
+            }
+            
+            /// Stops the observation from `producer` when triggered.
+            var detacher: Disposable? = nil
+            /// It holds all the statues that this function has seen.
+            var statuses: [Streamer.Session.Status] = []
+            // Let's do the actual connection
+            channel.connect()
+            
+            detacher = lifetime += channel.status.producer.start { (event) in
+                switch event {
+                case .value(let status):
+                    statuses.append(status)
                     generator.send(value: status)
-                case .connected(.http), .connected(.websocket):
-                    generator.send(value: status)
-                    generator.sendCompleted()
-                case .disconnected(isRetrying: false), .stalled:
-                    generator.send(error: .invalidRequest(message: "A connection to the server couldn't be established. Status: \(status)"))
+                    
+                    switch status {
+                    case .connecting, .connected(.sensing), .disconnected(isRetrying: true):
+                        return
+                    case .connected(.http), .connected(.websocket):
+                        generator.sendCompleted()
+                    case .disconnected(isRetrying: false):
+                        guard statuses.count > 1 else { return }
+                        fallthrough
+                    case .stalled:
+                        generator.send(error: .invalidRequest(message: "A connection to the server couldn't be established. Status cycle:\n\(statuses.debugDescription)"))
+                    }
+                case .completed: // The producer shall only complete when the channel is deinitialized
+                    generator.send(error: .sessionExpired)
+                case .interrupted: // The producer shall only be interrupted by stoping the result signal's lifetime
+                    return
+                case .failed: // The producer shall never fail
+                    fatalError("A channel status provider cannot fail")
                 }
+                
+                detacher?.dispose()
             }
         }
     }
     
     /// Disconnects to the Lightstreamer server.
-    ///
-    /// If the `Streamer` is already disconnected, the returning signal will complete immediately.
-    /// - returns: Forwards all statuses till it reliably disconnects from the server.
-    @discardableResult public func disconnect() -> Signal<Streamer.Session.Status,Streamer.Error> {
-        let statusGenerator = self.streamer.channel.status
-        if case .disconnected(isRetrying: false) = statusGenerator.value { return .empty }
-        
-        //let result = self.streamer.channel.status.signal.take(while: { $0 != .disconnected(isRetrying: false) })
-        defer { self.streamer.channel.disconnect() }
-        
-        return .init { [signal = statusGenerator.signal] (generator, lifetime) in
-            lifetime += signal.observe {
-                guard case .value(let status) = $0 else { return generator.send($0.promoteError(Streamer.Error.self)) }
+    /// - returns: Forwards all statuses till it reliably disconnects from the server (in which case the status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
+    @discardableResult public func disconnect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
+        return .init { [weak streamer = self.streamer] (generator, lifetime) in
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            
+            unowned let channel = streamer.channel
+            if case .disconnected(isRetrying: false) = channel.status.value {
+                return generator.sendCompleted()
+            }
+            
+            /// Stops the observation from `producer` when triggered.
+            var detacher: Disposable? = nil
+            // Lets do the actual disconnection
+            channel.disconnect()
+            
+            detacher = lifetime += channel.status.producer.start { (event) in
+                switch event {
+                case .value(let status):
+                    generator.send(value: status)
+                    guard case .disconnected(isRetrying: false) = status else { return }
+                    generator.sendCompleted()
+                case .completed: // The producer shall only complete when the streamer channel is deinitialized
+                    generator.send(error: .sessionExpired)
+                case .interrupted: // The producer shall only be interrupted by stopping the result signal's lifetime
+                    return
+                case .failed: // The producer shall never fail
+                    fatalError("A channel status provider cannot fail")
+                }
                 
-                generator.send(value: status)
-                guard case .disconnected(isRetrying: false) = status else { return }
-                generator.sendCompleted()
+                detacher?.dispose()
             }
         }
     }
     
+    /// Unsubscribes from all ongoing subscriptions.
     ///
-    public func unsubscribeAll() {
-        self.streamer.channel.unsubscribeAll()
+    /// This method forwards the following events:
+    /// - string values representing the subscription items that have been successfully unsubscribed.
+    /// - Send an error if any of the unsubscription encounter any error (but only at the end of the subscription process).
+    /// - Send a complete event once everything is unsubscribed.
+    /// - returns: Forwards all "items" that have been successfully unsubscribed, till there are no more, in which case it sends a *complete* event.
+    public func unsubscribeAll() -> SignalProducer<String,Streamer.Error> {
+        return .init { [weak streamer = self.streamer] (generator, lifetime) in
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            
+            unowned let channel = streamer.channel
+            let iterator: [Self.UnsubWrapper] = channel.unsubscribeAll().map { .init($0) }
+            guard !iterator.isEmpty else { return generator.sendCompleted() }
+            
+            var storage: Set<Self.UnsubWrapper> = .init(iterator)
+            var errors: [Streamer.Error] = []
+            
+            for wrapper in iterator {
+                // Start listening to every single subscription status changes
+                wrapper.detacher = lifetime += wrapper.subscription.status.producer.start { (event) in
+                    switch event {
+                    case .value(let status):
+                        switch status {
+                        case .subscribed, .updateReceived, .updateLost:
+                            return
+                        case .unsubscribed:
+                            storage.remove(wrapper)
+                            generator.send(value: wrapper.subscription.item)
+                        case .error(let error):
+                            storage.remove(wrapper)
+                            errors.append(.subscriptionFailed(item: wrapper.subscription.item, fields: wrapper.subscription.fields, error: error))
+                        }
+                    case .completed: // The producer shall only complete when the channel is deinitialized
+                        storage.remove(wrapper)
+                        errors.append(.sessionExpired)
+                    case .interrupted: // The producer shall only be interrupted by stopping the result signal's lifetime
+                        return
+                    case .failed: // The producer shall never fail
+                        fatalError("A subscription status provide cannot fail.")
+                    }
+                    
+                    wrapper.detacher?.dispose()
+                    guard storage.isEmpty else { return }
+                    
+                    if let error = errors.first {
+                        return generator.send(error: error)
+                    } else {
+                        return generator.sendCompleted()
+                    }
+                }
+            }
+        }
+        
+        
     }
 }
 
@@ -74,6 +165,31 @@ extension Streamer.Request {
         /// - parameter streamer: The instance calling the actual subscriptions.
         init(streamer: Streamer) {
             self.streamer = streamer
+        }
+    }
+}
+
+// MARK: Request Entities
+
+extension Streamer.Request.Session {
+    /// Wrapper for the unsubscription process.
+    fileprivate class UnsubWrapper: Hashable {
+        /// The instance gathering the subscription data (including the underlying Lighstreamer subscription).
+        let subscription: Streamer.Subscription
+        /// Disposable to stop listening for the subscription status.
+        var detacher: Disposable?
+        
+        init(_ subscription: Streamer.Subscription) {
+            self.subscription = subscription
+            self.detacher = nil
+        }
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(self.subscription)
+        }
+        
+        static func == (lhs: Streamer.Request.Session.UnsubWrapper, rhs: Streamer.Request.Session.UnsubWrapper) -> Bool {
+            return lhs.subscription == rhs.subscription
         }
     }
 }
@@ -209,5 +325,13 @@ extension Streamer.Session.Status: CustomDebugStringConvertible {
             if (isRetrying) { result.append(" but retrying...") }
             return result
         }
+    }
+}
+
+extension Array where Element == Streamer.Session.Status {
+    internal var debugDescription: String {
+        return self.enumerated().map { (index, status) in
+            "\t\(index + 1). \(status.debugDescription)"
+        }.joined(separator: "\n")
     }
 }

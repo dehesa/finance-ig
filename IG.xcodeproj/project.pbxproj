@@ -23,6 +23,7 @@
 		8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Collections.swift */; };
 		8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */; };
 		8D3C262C22EB18A50080D3C1 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262B22EB18A50080D3C1 /* Money.swift */; };
+		8D44B3D722F8BDBD0080F17E /* StreamerChartScaleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8E2149A6CE00344CBF /* StreamerChartScaleTests.swift */; };
 		8D4B971522F1C995002B267F /* TestAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B971422F1C995002B267F /* TestAccount.swift */; };
 		8D4B971622F1E43E002B267F /* APIApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */; };
 		8D4B971722F1E48E002B267F /* StreamerMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAF42149A6CE00344CBF /* StreamerMockedJSON.swift */; };
@@ -197,7 +198,7 @@
 		8DC4CA8A2149A6CE00344CBF /* StreamerPlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerPlaygroundTests.swift; sourceTree = "<group>"; };
 		8DC4CA8B2149A6CE00344CBF /* TestStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestStreamer.swift; sourceTree = "<group>"; };
 		8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMarketTests.swift; sourceTree = "<group>"; };
-		8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTests.swift; sourceTree = "<group>"; };
+		8DC4CA8E2149A6CE00344CBF /* StreamerChartScaleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartScaleTests.swift; sourceTree = "<group>"; };
 		8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerTradeTests.swift; sourceTree = "<group>"; };
 		8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPositionTests.swift; sourceTree = "<group>"; };
 		8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIWorkingOrderTests.swift; sourceTree = "<group>"; };
@@ -553,7 +554,7 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */,
-				8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */,
+				8DC4CA8E2149A6CE00344CBF /* StreamerChartScaleTests.swift */,
 			);
 			path = Markets;
 			sourceTree = "<group>";
@@ -867,6 +868,7 @@
 				8D819E0F22F2B1380031A9D5 /* TestStreamer.swift in Sources */,
 				8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */,
 				8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */,
+				8D44B3D722F8BDBD0080F17E /* StreamerChartScaleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

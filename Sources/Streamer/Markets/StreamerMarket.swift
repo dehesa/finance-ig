@@ -212,16 +212,16 @@ extension Streamer.Market: CustomDebugStringConvertible {
 
     public var debugDescription: String {
         var result: String = self.epic.rawValue
-        result.append(prefix: "\n\t", name: "Status", ": ", value: self.status)
-        result.append(prefix: "\n\t", name: "Date", ": ", value: self.date.map { Streamer.Formatter.time.string(from: $0) })
-        result.append(prefix: "\n\t", name: "Are prices delayed?", " ", value: self.isDelayed)
-        result.append(prefix: "\n\t", name: "Price (bid)", ": ", value: self.bid)
-        result.append(prefix: "\n\t", name: "Price (ask)", ": ", value: self.ask)
-        result.append(prefix: "\n\t", name: "Range (high)", ": ", value: self.day.highest)
-        result.append(prefix: "\n\t", name: "Range (mid)", ": ", value: self.day.mid)
-        result.append(prefix: "\n\t", name: "Range (low)", ": ", value: self.day.lowest)
-        result.append(prefix: "\n\t", name: "Change (net)", ": ", value: self.day.changeNet)
-        result.append(prefix: "\n\t", name: "Change (%)", ": ", value: self.day.changePercentage)
+        result.append(prefix: "\n\t", name: "Status", ": ", self.status)
+        result.append(prefix: "\n\t", name: "Date", ": ", self.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t", name: "Are prices delayed?", " ", self.isDelayed)
+        result.append(prefix: "\n\t", name: "Price (bid)", ": ", self.bid)
+        result.append(prefix: "\n\t", name: "Price (ask)", ": ", self.ask)
+        result.append(prefix: "\n\t", name: "Range (high)", ": ", self.day.highest)
+        result.append(prefix: "\n\t", name: "Range (mid)", ": ", self.day.mid)
+        result.append(prefix: "\n\t", name: "Range (low)", ": ", self.day.lowest)
+        result.append(prefix: "\n\t", name: "Change (net)", ": ", self.day.changeNet)
+        result.append(prefix: "\n\t", name: "Change (%)", ": ", self.day.changePercentage)
         return result
     }
 }

@@ -1,23 +1,6 @@
 import ReactiveSwift
 import Foundation
 
-extension Signal where Value==Void, Error==Never {
-    /// When producer is started a single complete event shall be sent after the time interval has elapsed.
-    /// - parameter `interval`: The number of seconds to wait for.
-    /// - parameter ` scheduler`: The scheduler where the complete event will be generated.
-    internal static func empty(after interval: TimeInterval, on scheduler: DateScheduler) -> Self {
-        precondition(!interval.isNaN && interval >= 0)
-        
-        return Self.init { (generator, lifetime) in
-            let date = scheduler.currentDate.addingTimeInterval(interval)
-            
-            lifetime += scheduler.schedule(after: date) {
-                generator.sendCompleted()
-            }
-        }
-    }
-}
-
 extension SignalProducer where Value==Void, Error==Never {
     /// When producer is started a single complete event shall be sent after the time interval has elapsed.
     /// - parameter `interval`: The number of seconds to wait for.
@@ -35,38 +18,16 @@ extension SignalProducer where Value==Void, Error==Never {
     }
 }
 
-extension Signal {
-    /// Forwards any event from the receiving signal, but if the receiving signal is not terminated by `interval` seconds, an error is sent downstream.
-    /// - parameter `interval`: The number of seconds to wait for.
-    /// - parameter ` scheduler`: The scheduler where the error will be generated.
-    /// - parameter ` errorGenerator`: The error generated if the amount of time elapse.
-    /// - precondition: `interval` must be a valid number greater than or equal to zero.
-    /// - returns: Signal forwarding all receiving signal events.
-    internal func timeout(after interval: TimeInterval, on scheduler: DateScheduler, generating errorGenerator: @escaping ()->Error) -> Signal<Value,Error> {
-        precondition(!interval.isNaN && interval >= 0)
-        
-        return Signal { (generator, lifetime) in
-            let date = scheduler.currentDate.addingTimeInterval(interval)
-            
-            lifetime += scheduler.schedule(after: date) {
-                generator.send(error: errorGenerator())
-            }
-            
-            lifetime += self.observe(generator)
-        }
-    }
-}
-
-extension Signal where Error == Never {
-    /// Forwards any event from the receiving signal, but if the receiving signal is not terminated by `interval` seconds, an error is sent downstream.
-    /// - parameter `interval`: The number of seconds to wait for.
-    /// - parameter ` scheduler`: The scheduler where the error will be generated.
-    /// - parameter ` errorGenerator`: The error generated if the amount of time elapse.
-    /// - precondition: `interval` must be a valid number greater than or equal to zero.
-    /// - returns: Signal forwarding all receiving signal events.
-    internal func timeout<NewError>(after interval: TimeInterval, on scheduler: DateScheduler, generating errorGenerator: @escaping ()->NewError) -> Signal<Value,NewError> {
-        return self.promoteError(NewError.self)
-            .timeout(after: interval, on: scheduler, generating: errorGenerator)
+extension SignalProducer {
+    /// Forward events from `self` until `interval`. Then if producer isn't completed yet, fails with `error` on `scheduler`.
+    /// - note: If the interval is 0, the timeout will be scheduled immediately. The producer must complete synchronously (or on a faster scheduler) to avoid the timeout.
+    /// - parameter interval: Number of seconds to wait for `self` to complete.
+    /// - parameter error: Error to send with `failed` event if `self` is not completed when `interval` passes.
+    /// - parameter scheduler: A scheduler to deliver error on.
+    /// - returns: A producer that sends events for at most `interval` seconds, then, if not `completed` - sends `error` with `failed` event on `scheduler`.
+    internal func timeout(after interval: TimeInterval, on queue: DateScheduler, raising error: @escaping ([Value])->Error) -> SignalProducer {
+        var values: [Value] = []
+        return self.on(value: { values.append($0) }).timeout(after: interval, raising: error(values), on: queue)
     }
 }
 
