@@ -33,6 +33,12 @@ extension Streamer {
             $0.calendar = Calendar(identifier: .iso8601)
             $0.timeZone = TimeZone(identifier: "Europe/London")!
         }
+        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd'T'HH:mm:ss.SSS`
+        /// - Example: `2019-11-25T22:33:11.100`
+        static var iso8601miliseconds: DateFormatter {
+            return API.Formatter.iso8601miliseconds
+        }
     }
 }
 

@@ -1,6 +1,6 @@
-import IG
-import ReactiveSwift
 import XCTest
+import ReactiveSwift
+@testable import IG
 
 final class StreamerSessionTests: XCTestCase {
     /// Tests the connection/disconnection events.
@@ -12,21 +12,20 @@ final class StreamerSessionTests: XCTestCase {
         XCTAssertEqual(streamer.session.status.value, .disconnected(isRetrying: false))
         
         // 1. Test connection.
-        XCTAssertNoThrow(try streamer.session
-            .connect()
-            .timeout(after: 1.5, on: scheduler) { .invalidRequest(message: "A connection couldn't be established. Statuses:\n\($0.debugDescription)") }
-            .wait().get() )
-        XCTAssertTrue(streamer.session.status.value.isReady)
+        self.test( streamer.session.connect(), timeout: 1.5, on: scheduler) {
+            XCTAssertNotNil($0.last)
+            XCTAssertTrue($0.last!.isReady)
+            XCTAssertEqual($0.last!, streamer.session.status.value)
+        }
         
         // 2. Give 0.5 for a break
         XCTAssertNoThrow(try SignalProducer.empty(after: 0.5, on: scheduler).wait().get())
         
         // 3. Test disconnection.
-        XCTAssertNoThrow(
-            try streamer.session
-            .disconnect()
-            .timeout(after: 1.5, on: scheduler) { .invalidRequest(message: "The connection couldn't be closed correctly. Statuses:\n\($0.debugDescription)") }
-            .wait().get() )
-        XCTAssertEqual(streamer.session.status.value, .disconnected(isRetrying: false))
+        self.test( streamer.session.disconnect(), timeout: 1.5, on: scheduler) {
+            XCTAssertNotNil($0.last)
+            XCTAssertEqual($0.last!, .disconnected(isRetrying: false))
+            XCTAssertEqual($0.last!, streamer.session.status.value)
+        }
     }
 }

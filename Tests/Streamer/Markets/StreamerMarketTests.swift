@@ -3,37 +3,33 @@ import ReactiveSwift
 @testable import IG
 
 final class StreamerMarketTests: XCTestCase {
+    /// Tests the market info subscription.
     func testMarketSubscriptions() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
 
         let epic: Epic = "CS.D.EURGBP.MINI.IP"
-        let markets = try! streamer.markets.subscribe(to: epic, .all)
-            .collect(count: 3)
-            .take(first: 1)
-            .timeout(after: 7, on: scheduler) { _ in return .invalidRequest(message: "There wasn't enough time to receive 3 values from the subscription.") }
-            .single()!.get()
-
-        for market in markets {
+        self.test( streamer.markets.subscribe(to: epic, fields: .all), value: { (market) in
             XCTAssertEqual(market.epic, epic)
             XCTAssertNotNil(market.status)
             XCTAssertNotNil(market.date)
             XCTAssertNotNil(market.isDelayed)
             XCTAssertNotNil(market.bid)
             XCTAssertNotNil(market.ask)
+            XCTAssertNotNil(market.day.lowest)
+            XCTAssertNotNil(market.day.mid)
+            XCTAssertNotNil(market.day.highest)
+            XCTAssertNotNil(market.day.changeNet)
+            XCTAssertNotNil(market.day.changePercentage)
+        }, take: 3, timeout: 6, on: scheduler)
+        
+        self.test( streamer.session.unsubscribeAll(), take: 1, timeout: 2, on: scheduler) {
+            XCTAssertEqual($0.count, 1)
         }
-
-        let unsubscriptions = try! SignalProducer(streamer.session.unsubscribeAll())
-            .collect()
-            .timeout(after: 3, on: scheduler) { .invalidRequest(message: "There wasn't enough time to unsubscribe properly.\n\($0)") }
-            .single()!.get()
-        XCTAssertEqual(unsubscriptions.count, 1)
-
-        let statuses = try! SignalProducer(streamer.session.disconnect())
-            .collect()
-            .timeout(after: 2, raising: .sessionExpired, on: scheduler)
-            .single()!.get()
-        XCTAssertNotNil(statuses.last)
-        XCTAssertEqual(statuses.last!, .disconnected(isRetrying: false))
+        
+        self.test( streamer.session.disconnect(), timeout: 2, on: scheduler) {
+            XCTAssertNotNil($0.last)
+            XCTAssertEqual($0.last!, .disconnected(isRetrying: false))
+        }
     }
 }

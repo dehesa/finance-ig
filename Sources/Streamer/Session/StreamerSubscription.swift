@@ -40,51 +40,56 @@ extension Streamer {
             
             self.item = item
             self.fields = fields
-            self.lowlevel = LSSubscription(subscriptionMode: mode.rawValue, item: item, fields: fields)
+            self.lowlevel = LSSubscription(mode: mode.rawValue, item: item, fields: fields)
             self.lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
             super.init()
             
-            self.lowlevel.addDelegate(self)
+            self.lowlevel.add(delegate: self)
         }
         
         deinit {
-            self.lowlevel.removeDelegate(self)
+            self.lowlevel.remove(delegate: self)
         }
     }
 }
 
 extension Streamer.Subscription: LSSubscriptionDelegate {
-    @objc func subscriptionDidSubscribe(_ subscription: LSSubscription) {
+    @objc func didSubscribe(to subscription: LSSubscription) {
         self.queue.async { [property = self.events] in
             property.value = .subscribed
         }
     }
     
-    @objc func subscriptionDidUnsubscribe(_ subscription: LSSubscription) {
+    @objc func didUnsubscribe(from subscription: LSSubscription) {
         self.queue.async { [property = self.events] in
             property.value = .unsubscribed
         }
     }
     
-    @objc func subscription(_ subscription: LSSubscription, didFailWithErrorCode code: Int, message: String?) {
+    @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
         self.queue.async { [property = self.events] in
             property.value = .error(.init(code: code, message: message))
         }
     }
     
-    @objc func subscription(_ subscription: LSSubscription, didUpdateItem itemUpdate: LSItemUpdate) {
-        self.queue.async { [property = self.events] in
-            property.value = .updateReceived(itemUpdate)
+    @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
+        self.queue.async { [property = self.events, fields = self.fields] in
+            var result: [String:Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
+            for field in fields {
+                let value = itemUpdate.value(withFieldName: field)
+                result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
+            }
+            property.value = .updateReceived(result)
         }
     }
     
-    @objc func subscription(_ subscription: LSSubscription, didLoseUpdates lostUpdates: UInt, forItemName itemName: String?, itemPos: UInt) {
+    @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
         self.queue.async { [property = self.events] in
             property.value = .updateLost(count: lostUpdates, item: itemName)
         }
     }
-//    @objc func subscriptionDidAdd(_ subscription: LSSubscription) {}
-//    @objc func subscriptionDidRemove(_ subscription: LSSubscription) {}
+//    @objc func didAddDelegate(to subscription: LSSubscription) {}
+//    @objc func didRemoveDelegate(from subscription: LSSubscription) {}
 //    @objc func subscription(_ subscription: LSSubscription, didEndSnapshotForItemName itemName: String?, itemPos: UInt) {}
 //    @objc func subscription(_ subscription: LSSubscription, didClearSnapshotForItemName itemName: String?, itemPos: UInt) {}
 }

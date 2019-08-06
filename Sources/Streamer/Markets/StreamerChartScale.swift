@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Markets {
+extension Streamer.Request.Charts {
     
     // MARK: CHART:EPIC:SCALE
     
@@ -13,7 +13,7 @@ extension Streamer.Request.Markets {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: Epic, aggregation interval: Streamer.Chart.Aggregated.Interval, _ fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
+    public func subscribe(to epic: Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -21,8 +21,7 @@ extension Streamer.Request.Markets {
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
-                    let account = try Streamer.Chart.Aggregated(epic: epic, interval: interval, item: item, update: update)
-                    return .success(account)
+                    return .success(try .init(epic: epic, interval: interval, item: item, update: update))
                 } catch let error as Streamer.Error {
                     return .failure(error)
                 } catch let error {
@@ -33,6 +32,20 @@ extension Streamer.Request.Markets {
 }
 
 // MARK: - Supporting Entities
+
+extension Streamer.Request {
+    /// Contains all functionality related to Streamer markets.
+    public struct Charts {
+        /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
+        internal unowned let streamer: Streamer
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter streamer: The instance calling the actual subscriptions.
+        init(streamer: Streamer) {
+            self.streamer = streamer
+        }
+    }
+}
 
 // MARK: Request Entities
 
@@ -82,7 +95,9 @@ extension Streamer.Chart.Aggregated {
         /// Number of ticks in candle.
         case numTicks = "CONS_TICK_COUNT"
         /// Last traded volume.
-        case lastTradedVolume = "LTV"
+        case volume = "LTV"
+        // /// Incremental trading volume.
+        // case incrementalVolume = "TTV"
         // /// Candle open price (Last Traded Price)
         // case lastTradedPriceOpen = "LTP_OPEN"
         // /// Candle low price (Last Traded Price)
@@ -91,8 +106,6 @@ extension Streamer.Chart.Aggregated {
         // case lastTradedPriceHigh = "LTP_HIGH"
         // /// Candle close price (Last Traded Price)
         // case lastTradedPriceClose = "LTP_CLOSE"
-        // /// Incremental trading volume.
-        // case incrementalTradingVolume = "TTV"
         /// Daily low price.
         case dayLowest = "DAY_LOW"
         /// Mid open price for the day.
@@ -111,7 +124,7 @@ extension Set where Element == Streamer.Chart.Aggregated.Field {
     public static var candle: Self {
         return Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
                           .lowestBid, .lowestAsk, .highestBid, .highestAsk,
-                          .isFinished, .numTicks, .lastTradedVolume])
+                          .isFinished, .numTicks, .volume])
     }
     
     /// Returns a set with all the dayly related fields.
@@ -144,7 +157,7 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: Epic, interval: Self.Interval, item: String, update: [String:String]) throws {
+        internal init(epic: Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             
@@ -181,28 +194,28 @@ extension Streamer.Chart.Aggregated {
         /// The highest bid/ask price for the receiving candle.
         public let highest: Self.Point
 
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Chart.Aggregated.Field
             typealias U = Streamer.Formatter.Update
             
-            self.date = try update[F.date.rawValue].map(U.toEpochDate)
-            self.numTicks = try update[F.numTicks.rawValue].map(U.toInt)
-            self.isFinished = try update[F.isFinished.rawValue].map(U.toBoolean)
+            self.date = try update[F.date.rawValue]?.value.map(U.toEpochDate)
+            self.numTicks = try update[F.numTicks.rawValue]?.value.map(U.toInt)
+            self.isFinished = try update[F.isFinished.rawValue]?.value.map(U.toBoolean)
             
-            let openBid = try update[F.openBid.rawValue].map(U.toDecimal)
-            let openAsk = try update[F.openAsk.rawValue].map(U.toDecimal)
+            let openBid = try update[F.openBid.rawValue]?.value.map(U.toDecimal)
+            let openAsk = try update[F.openAsk.rawValue]?.value.map(U.toDecimal)
             self.open = .init(bid: openBid, ask: openAsk)
             
-            let closeBid = try update[F.closeBid.rawValue].map(U.toDecimal)
-            let closeAsk = try update[F.closeAsk.rawValue].map(U.toDecimal)
+            let closeBid = try update[F.closeBid.rawValue]?.value.map(U.toDecimal)
+            let closeAsk = try update[F.closeAsk.rawValue]?.value.map(U.toDecimal)
             self.close = .init(bid: closeBid, ask: closeAsk)
             
-            let lowestBid = try update[F.lowestBid.rawValue].map(U.toDecimal)
-            let lowestAsk = try update[F.lowestAsk.rawValue].map(U.toDecimal)
+            let lowestBid = try update[F.lowestBid.rawValue]?.value.map(U.toDecimal)
+            let lowestAsk = try update[F.lowestAsk.rawValue]?.value.map(U.toDecimal)
             self.lowest = .init(bid: lowestBid, ask: lowestAsk)
             
-            let highestBid = try update[F.highestBid.rawValue].map(U.toDecimal)
-            let highestAsk = try update[F.highestAsk.rawValue].map(U.toDecimal)
+            let highestBid = try update[F.highestBid.rawValue]?.value.map(U.toDecimal)
+            let highestAsk = try update[F.highestAsk.rawValue]?.value.map(U.toDecimal)
             self.highest = .init(bid: highestBid, ask: highestAsk)
         }
         
@@ -234,15 +247,15 @@ extension Streamer.Chart.Aggregated {
         /// Daily percentage change.
         public let changePercentage: Decimal?
 
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Chart.Aggregated.Field
             typealias U = Streamer.Formatter.Update
 
-            self.lowest = try update[F.dayLowest.rawValue].map(U.toDecimal)
-            self.mid = try update[F.dayMid.rawValue].map(U.toDecimal)
-            self.highest = try update[F.dayHighest.rawValue].map(U.toDecimal)
-            self.changeNet = try update[F.dayChangeNet.rawValue].map(U.toDecimal)
-            self.changePercentage = try update[F.dayChangePercentage.rawValue].map(U.toDecimal)
+            self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
+            self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
+            self.highest = try update[F.dayHighest.rawValue]?.value.map(U.toDecimal)
+            self.changeNet = try update[F.dayChangeNet.rawValue]?.value.map(U.toDecimal)
+            self.changePercentage = try update[F.dayChangePercentage.rawValue]?.value.map(U.toDecimal)
         }
     }
 }

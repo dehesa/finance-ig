@@ -2,7 +2,7 @@
 import ReactiveSwift
 import XCTest
 
-#warning("Streamer File Channel must be completely redo")
+#warning("Streamer File Channel must be completely rework")
 
 /// Mocked Lightstreamer session that will pick up responses from the bundle's file system.
 final class StreamerFileChannel: StreamerMockableChannel {
@@ -49,7 +49,7 @@ final class StreamerFileChannel: StreamerMockableChannel {
     }
     
     
-    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String], Streamer.Error> {
+    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update], Streamer.Error> {
         return .empty
     }
     

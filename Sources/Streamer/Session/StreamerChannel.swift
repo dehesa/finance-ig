@@ -18,7 +18,7 @@ internal protocol StreamerMockableChannel: class {
     /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
     /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
     /// - returns: A producer providing updates as values. The producer will never complete, it will only be stoped by not holding a reference to the signal or by interrupting it with a disposable.
-    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String],Streamer.Error>
+    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update],Streamer.Error>
     /// Unsubscribe to all ongoing subscriptions.
     /// - returns: All currently ongoing subscriptions.
     func unsubscribeAll() -> [Streamer.Subscription]
@@ -76,7 +76,7 @@ extension Streamer.Channel: StreamerMockableChannel {
         self.client.disconnect()
     }
     
-    @nonobjc func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:String],Streamer.Error> {
+    @nonobjc func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update],Streamer.Error> {
         return .init { [weak self] (generator, lifetime) in
             guard let self = self else { return generator.send(error: .sessionExpired) }
             
@@ -97,11 +97,7 @@ extension Streamer.Channel: StreamerMockableChannel {
                 case .value(let event):
                     switch event {
                     case .updateReceived(let update):
-                        if let values = update.fields as? [String:String] {
-                            return generator.send(value: values)
-                        } else {
-                            generator.send(error: .invalidResponse(item: item, fields: update.fields, message: "The update values couldn't be cast to a [String:String] dictioanry"))
-                        }
+                        return generator.send(value: update)
                     case .updateLost(let count, _):
                         #if DEBUG
                         var error = ErrorPrint(domain: "Streamer Channel", title: "\(item) with fields: \(fields.joined(separator: ","))")
@@ -156,6 +152,6 @@ extension Streamer.Channel: LSClientDelegate {
     //@objc func client(_ client: LSLightstreamerClient, didChangeProperty property: String) { <#code#> }
     //@objc func client(_ client: LSLightstreamerClient, willSendRequestFor challenge: URLAuthenticationChallenge) { <#code#> }
     //@objc func client(_ client: LSLightstreamerClient, didReceiveServerError errorCode: Int, withMessage errorMessage: String?) { <#code#> }
-    //@objc func clientDidAdd(_ client: LSLightstreamerClient) { <#code#> }
-    //@objc func clientDidRemove(_ client: LSLightstreamerClient) { <#code#> }
+    //@objc func didAddDelegate(to: LSLightstreamerClient) { <#code#> }
+    //@objc func didRemoveDelegate(to: LSLightstreamerClient) { <#code#> }
 }
