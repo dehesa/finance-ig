@@ -57,7 +57,7 @@ extension API {
                 return
             }
             
-            let details = try Self.Details(from: decoder)
+            let details = try Self.Position(from: decoder)
             self.status = .accepted(details: details)
         }
         
@@ -84,7 +84,7 @@ extension API {
         /// The operation confirmation status.
         public enum Status {
             /// The operation has been confirmed successfully.
-            case accepted(details: API.Confirmation.Details)
+            case accepted(details: API.Confirmation.Position)
             /// The operation has been rejected due to the reason given as an associated value.
             case rejected(reason: API.Confirmation.RejectionReason)
         }
@@ -92,7 +92,7 @@ extension API {
 }
 
 extension API.Confirmation {
-    public struct Details: Decodable {
+    public struct Position: Decodable {
         /// Position status.
         public let status: API.Deal.Status
         /// Affected deals.

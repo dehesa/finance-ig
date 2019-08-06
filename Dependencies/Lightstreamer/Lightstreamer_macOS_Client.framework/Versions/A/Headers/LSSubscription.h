@@ -55,7 +55,7 @@
  <li>COMMAND</li> 
  </ul>
  */
-- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString *)subscriptionMode;
+- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString*)subscriptionMode NS_SWIFT_NAME(init(mode:));
 
 /**
  @brief Creates an object to be used to describe an LSSubscription that is going to be subscribed to through Lightstreamer Server.
@@ -76,7 +76,7 @@
  @throws NSException If either the item or the fields array is left nil.
  @throws NSException If the specified "Field List" is not valid; see #fields for details..
  */
-- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString *)subscriptionMode item:(nonnull NSString *)item fields:(nonnull NSArray *)fields;
+- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString*)subscriptionMode item:(nonnull NSString*)item fields:(nonnull NSArray<NSString*>*)fields NS_SWIFT_NAME(init(mode:item:fields:));
 
 /**
  @brief Creates an object to be used to describe an LSSubscription that is going to be subscribed to through Lightstreamer Server.
@@ -98,7 +98,7 @@
  @throws NSException If either the items or the fields array is left nil.
  @throws NSException If the specified "Item List" or "Field List" is not valid; see #items and #fields for details.
  */
-- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString *)subscriptionMode items:(nonnull NSArray *)items fields:(nonnull NSArray *)fields;
+- (nonnull instancetype) initWithSubscriptionMode:(nonnull NSString*)subscriptionMode items:(nonnull NSArray<NSString*>*)items fields:(nonnull NSArray<NSString*>*)fields NS_SWIFT_NAME(init(mode:items:fields:));
 
 /**
  @brief Adds a delegate that will receive events from the LSSubscription instance.
@@ -107,7 +107,7 @@
  @param delegate An object that will receive the events as documented in the LSSubscriptionDelegate interface.
  <br/> Note: delegates are stored with weak references: make sure you keep a strong reference to your delegates or they may be released prematurely.
  */
-- (void) addDelegate:(nonnull id <LSSubscriptionDelegate>)delegate;
+- (void) addDelegate:(nonnull id <LSSubscriptionDelegate>)delegate NS_SWIFT_NAME(add(delegate:));
 
 /**
  @brief Position of the "command" field in a COMMAND Subscription.
@@ -465,7 +465,7 @@
  <br/> A delegate can be removed at any time.
  @param delegate the delegate to be removed.
  */
-- (void) removeDelegate:(nonnull id <LSSubscriptionDelegate>)delegate;
+- (void) removeDelegate:(nonnull id <LSSubscriptionDelegate>)delegate NS_SWIFT_NAME(remove(delegate:));
 
 
 @end

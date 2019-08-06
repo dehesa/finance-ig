@@ -11,7 +11,7 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: Epic, _ fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
+    public func subscribe(to epic: Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = Streamer.Formatter.time
@@ -20,8 +20,7 @@ extension Streamer.Request.Markets {
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
-                    let market = try Streamer.Market(epic: epic, item: item, update: update, timeFormatter: timeFormatter)
-                    return .success(market)
+                    return .success(try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter))
                 } catch let error as Streamer.Error {
                     return .failure(error)
                 } catch let error {
@@ -29,30 +28,6 @@ extension Streamer.Request.Markets {
                 }
             }
     }
-    
-//    /// Subscribes to the given sprint market and returns in the response the specified attributes/fields.
-//    ///
-//    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-//    /// - parameter epic: The epic identifying the targeted market.
-//    /// - parameter fields: The market properties/fields bieng targeted.
-//    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-//    public func subscribeSprint(to epic: Epic, _ fields: Set<Streamer.SprintMarket.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.SprintMarket,Streamer.Error> {
-//        let item = "MARKET:\(epic.rawValue)"
-//        let properties = fields.map { $0.rawValue }
-//
-//        return self.streamer.channel
-//            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-//            .attemptMap { (update) in
-//                do {
-//                    let market = try Streamer.SprintMarket(epic: epic, item: item, update: update)
-//                    return .success(market)
-//                } catch let error as Streamer.Error {
-//                    return .failure(error)
-//                } catch let error {
-//                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market update.\nError: \(error)"))
-//                }
-//        }
-//    }
 }
 
 // MARK: - Supporting Entities
@@ -113,15 +88,6 @@ extension Set where Element == Streamer.Market.Field {
     }
 }
 
-//extension Streamer.SprintMarket {
-//    /// All available fields/properties to query data from a given sprint market.
-//    public enum Field: String, CaseIterable {
-//        case status = "MARKET_STATE"
-//        case strikePrice = "STRIKE_PRICE"
-//        case odds = "ODDS"
-//    }
-//}
-
 // MARK: Response Entities
 
 extension Streamer {
@@ -146,19 +112,18 @@ extension Streamer {
         public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: Epic, item: String, update: [String:String], timeFormatter: DateFormatter) throws {
+        fileprivate init(epic: Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
-            
             self.epic = epic
             
             do {
-                self.status = try update[F.status.rawValue].map(U.toRawType)
-                self.date = try update[F.date.rawValue].map { try U.toTime($0, timeFormatter: timeFormatter) }
-                self.isDelayed = try update[F.isDelayed.rawValue].map(U.toBoolean)
+                self.status = try update[F.status.rawValue]?.value.map(U.toRawType)
+                self.date = try update[F.date.rawValue]?.value.map { try U.toTime($0, timeFormatter: timeFormatter) }
+                self.isDelayed = try update[F.isDelayed.rawValue]?.value.map(U.toBoolean)
                 
-                self.bid = try update[F.bid.rawValue].map(U.toDecimal)
-                self.ask = try update[F.ask.rawValue].map(U.toDecimal)
+                self.bid = try update[F.bid.rawValue]?.value.map(U.toDecimal)
+                self.ask = try update[F.ask.rawValue]?.value.map(U.toDecimal)
                 
                 self.day = try .init(update: update)
             } catch let error as U.Error {
@@ -198,15 +163,15 @@ extension Streamer.Market: CustomDebugStringConvertible {
         /// Daily percentage change.
         public let changePercentage: Decimal?
         
-        fileprivate init(update: [String:String]) throws {
-            typealias F = Streamer.Chart.Aggregated.Field
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
+            typealias F = Streamer.Market.Field
             typealias U = Streamer.Formatter.Update
             
-            self.lowest = try update[F.dayLowest.rawValue].map(U.toDecimal)
-            self.mid = try update[F.dayMid.rawValue].map(U.toDecimal)
-            self.highest = try update[F.dayHighest.rawValue].map(U.toDecimal)
-            self.changeNet = try update[F.dayChangeNet.rawValue].map(U.toDecimal)
-            self.changePercentage = try update[F.dayChangePercentage.rawValue].map(U.toDecimal)
+            self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
+            self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
+            self.highest = try update[F.dayHighest.rawValue]?.value.map(U.toDecimal)
+            self.changeNet = try update[F.dayChangeNet.rawValue]?.value.map(U.toDecimal)
+            self.changePercentage = try update[F.dayChangePercentage.rawValue]?.value.map(U.toDecimal)
         }
     }
 
@@ -225,43 +190,3 @@ extension Streamer.Market: CustomDebugStringConvertible {
         return result
     }
 }
-
-//extension Streamer {
-//    /// Displays the latests information from a given market.
-//    public struct SprintMarket: CustomDebugStringConvertible {
-//        /// The market epic identifier.
-//        public let epic: Epic
-//        /// The current market status.
-//        public let status: Streamer.Market.Status?
-//        /// (Sprint markets) Strike price.
-//        public let strikePrice: Decimal?
-//        /// (Sprint markets) Trade odds.
-//        public let odds: String?
-//
-//        /// Designated initializer for a `Streamer` market update.
-//        fileprivate init(epic: Epic, item: String, update: [String:String]) throws {
-//            typealias F = Self.Field
-//            typealias U = Streamer.Formatter.Update
-//
-//            self.epic = epic
-//            self.odds = update[F.odds.rawValue]
-//
-//            do {
-//                self.status = try update[F.status.rawValue].map(U.toRawType)
-//                self.strikePrice = try update[F.strikePrice.rawValue].map(U.toDecimal)
-//            } catch let error as U.Error {
-//                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
-//            } catch let error {
-//                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
-//            }
-//        }
-//
-//        public var debugDescription: String {
-//            var result: String = self.epic.rawValue
-//            result.append(prefix: "\n\t", name: "Status", ": ", value: self.status)
-//            result.append(prefix: "\n\t", name: "Sprint markets (strike)", ": ", value: self.strikePrice)
-//            result.append(prefix: "\n\t", name: "Sprint markets (odds)", ": ", value: self.odds)
-//            return result
-//        }
-//    }
-//}

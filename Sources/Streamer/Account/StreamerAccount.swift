@@ -8,12 +8,12 @@ extension Streamer.Request.Accounts {
     /// Subscribes to the given account and returns in the response the specified attribute/fields.
     ///
     /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter accountId: The Account identifier.
+    /// - parameter accountIdentifier: The Account identifier.
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to accountIdentifier: String, _ fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Account,Streamer.Error> {
-        let item = "MARKET:".appending(accountIdentifier)
+    public func subscribe(to accountIdentifier: String, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Account,Streamer.Error> {
+        let item = "ACCOUNT:".appending(accountIdentifier)
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
@@ -84,6 +84,13 @@ extension Streamer.Account {
     }
 }
 
+extension Set where Element == Streamer.Account.Field {
+    /// Returns all queryable fields.
+    public static var all: Self {
+        return .init(Element.allCases)
+    }
+}
+
 // MARK: Response Entities
 
 extension Streamer {
@@ -100,7 +107,7 @@ extension Streamer {
         /// Account Profit and Loss values.
         public let profitLoss: Self.ProfitLoss
         
-        internal init(identifier: String, item: String, update: [String:String]) throws {
+        internal init(identifier: String, item: String, update: [String:Streamer.Subscription.Update]) throws {
             self.identifier = identifier
             do {
                 self.equity = try .init(update: update)
@@ -124,12 +131,12 @@ extension Streamer.Account {
         /// The equity used.
         public let used: Decimal?
         
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Account.Field
             typealias U = Streamer.Formatter.Update
             
-            self.value = try update[F.equity.rawValue].map(U.toDecimal)
-            self.used = try update[F.equityUsed.rawValue].map(U.toDecimal)
+            self.value = try update[F.equity.rawValue]?.value.map(U.toDecimal)
+            self.used = try update[F.equityUsed.rawValue]?.value.map(U.toDecimal)
         }
     }
     
@@ -144,14 +151,14 @@ extension Streamer.Account {
         /// Account minimum deposit value required for margins.
         public let deposit: Decimal?
         
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Account.Field
             typealias U = Streamer.Formatter.Update
             
-            self.value = try update[F.funds.rawValue].map(U.toDecimal)
-            self.cashAvailable = try update[F.cashAvailable.rawValue].map(U.toDecimal)
-            self.tradeAvailable = try update[F.tradeAvailable.rawValue].map(U.toDecimal)
-            self.deposit = try update[F.deposit.rawValue].map(U.toDecimal)
+            self.value = try update[F.funds.rawValue]?.value.map(U.toDecimal)
+            self.cashAvailable = try update[F.cashAvailable.rawValue]?.value.map(U.toDecimal)
+            self.tradeAvailable = try update[F.tradeAvailable.rawValue]?.value.map(U.toDecimal)
+            self.deposit = try update[F.deposit.rawValue]?.value.map(U.toDecimal)
         }
     }
     
@@ -164,13 +171,13 @@ extension Streamer.Account {
         /// Non-limited risk margin.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Account.Field
             typealias U = Streamer.Formatter.Update
             
-            self.value = try update[F.margin.rawValue].map(U.toDecimal)
-            self.limitedRisk = try update[F.marginLimitedRisk.rawValue].map(U.toDecimal)
-            self.nonLimitedRisk = try update[F.marginNonLimitedRisk.rawValue].map(U.toDecimal)
+            self.value = try update[F.margin.rawValue]?.value.map(U.toDecimal)
+            self.limitedRisk = try update[F.marginLimitedRisk.rawValue]?.value.map(U.toDecimal)
+            self.nonLimitedRisk = try update[F.marginNonLimitedRisk.rawValue]?.value.map(U.toDecimal)
         }
     }
     
@@ -183,13 +190,36 @@ extension Streamer.Account {
         /// Non-limited risk PNL value.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:String]) throws {
+        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Streamer.Account.Field
             typealias U = Streamer.Formatter.Update
             
-            self.value = try update[F.profitLoss.rawValue].map(U.toDecimal)
-            self.limitedRisk = try update[F.profitLossLimitedRisk.rawValue].map(U.toDecimal)
-            self.nonLimitedRisk = try update[F.profitLossNonLimitedRisk.rawValue].map(U.toDecimal)
+            self.value = try update[F.profitLoss.rawValue]?.value.map(U.toDecimal)
+            self.limitedRisk = try update[F.profitLossLimitedRisk.rawValue]?.value.map(U.toDecimal)
+            self.nonLimitedRisk = try update[F.profitLossNonLimitedRisk.rawValue]?.value.map(U.toDecimal)
         }
+    }
+}
+
+extension Streamer.Account: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result: String = self.identifier
+        result.append(prefix: "\n\t", name: "Equity", ":", " ")
+        result.append(prefix: "\n\t\t", name: "value", ": ", self.equity.value)
+        result.append(prefix: "\n\t\t", name: "used", ": ", self.equity.used)
+        result.append(prefix: "\n\t", name: "Funds", ":", " ")
+        result.append(prefix: "\n\t\t", name: "value", ": ", self.funds.value)
+        result.append(prefix: "\n\t\t", name: "cash available", ": ", self.funds.cashAvailable)
+        result.append(prefix: "\n\t\t", name: "trade available", ": ", self.funds.tradeAvailable)
+        result.append(prefix: "\n\t\t", name: "deposit", ": ", self.funds.deposit)
+        result.append(prefix: "\n\t", name: "Margins", ":", " ")
+        result.append(prefix: "\n\t\t", name: "value", ": ", self.margins.value)
+        result.append(prefix: "\n\t\t", name: "limited risk", ": ", self.margins.limitedRisk)
+        result.append(prefix: "\n\t\t", name: "non limited risk", ": ", self.margins.nonLimitedRisk)
+        result.append(prefix: "\n\t", name: "Profit & Loss", ":", " ")
+        result.append(prefix: "\n\t\t", name: "value", ": ", self.profitLoss.value)
+        result.append(prefix: "\n\t\t", name: "limited risk", ": ", self.profitLoss.limitedRisk)
+        result.append(prefix: "\n\t\t", name: "non limited risk", ": ", self.profitLoss.nonLimitedRisk)
+        return result
     }
 }

@@ -10,10 +10,14 @@ public final class Streamer {
     
     /// Holds functionality related to the current streamer session.
     public var session: Streamer.Request.Session { return .init(streamer: self) }
-    /// Holds functionality related to markets and charts.
+    /// Holds functionality related to markets.
     public var markets: Streamer.Request.Markets { return .init(streamer: self) }
+    /// Holds functionality related to charts.
+    public var charts: Streamer.Request.Charts { return .init(streamer: self) }
     /// Hold functionality related to accounts.
     public var accounts: Streamer.Request.Accounts { return .init(streamer: self) }
+    /// Hold functionality related to deals (positions, working orders, and confirmations).
+    public var deals: Streamer.Request.Deals { return .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///

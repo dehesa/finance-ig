@@ -26,7 +26,7 @@
  <br/> This is the last event to be fired on the delegate.
  @param client the LSLightstreamerClient this instance was removed from.
  */
-- (void) clientDidRemoveDelegate:(nonnull LSLightstreamerClient *)client;
+- (void) clientDidRemoveDelegate:(nonnull LSLightstreamerClient *)client NS_SWIFT_NAME(didRemoveDelegate(to:));
 
 /**
  @brief Event handler that receives a notification when the LSClientDelegate instance is added to a LSLightstreamerClient through 
@@ -34,7 +34,7 @@
  <br/> This is the first event to be fired on the delegate.
  @param client the LSLightstreamerClient this instance was added to.
  */
-- (void) clientDidAddDelegate:(nonnull LSLightstreamerClient *)client;
+- (void) clientDidAddDelegate:(nonnull LSLightstreamerClient *)client NS_SWIFT_NAME(didAddDelegate(to:));
 
 /**
  @brief Event handler that is called when the Server notifies a refusal on the client attempt to open a new connection or the interruption of a streaming connection.

@@ -4,13 +4,12 @@ import Foundation
 extension Streamer.Subscription {
     /// Events that can occur within a Streamer subscription.
     internal enum Event: Equatable {
-        
         /// A successful subscription is established.
         case subscribed
         /// The subscription was shut down successfully.
         case unsubscribed
         /// An update has been received.
-        case updateReceived(LSItemUpdate)
+        case updateReceived([String:Streamer.Subscription.Update])
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
         /// There was an error during the subscription/unsubscription process.
@@ -24,10 +23,23 @@ extension Streamer.Subscription {
                 return l == r
             case (.updateLost(let lc, let li), .updateLost(let rc, let ri)):
                 return (lc == rc) && (li == ri)
-            case (.updateReceived(let lu), .updateReceived(let ru)):
-                return lu.isEqual(ru)
             default: return false
             }
+        }
+    }
+}
+
+extension Streamer.Subscription {
+    /// A single field update.
+    internal struct Update {
+        /// Whether the field has been updated since the last udpate.
+        let isUpdated: Bool
+        /// The latest value.
+        let value: String?
+        /// Designated initializer.
+        init(_ value: String?, isUpdated: Bool) {
+            self.value = value
+            self.isUpdated = isUpdated
         }
     }
 }

@@ -30,7 +30,7 @@ internal struct ErrorPrint {
     /// - parameter underlyingError: An error associated with the receiving error.
     mutating func append(underlyingError: Swift.Error?) {
         guard let error = underlyingError else { return }
-        self.details.append("\(error)")
+        self.details.append(String(describing: error))
     }
     /// Associates all the object within the given collection with the receiving error.
     ///
@@ -57,11 +57,11 @@ extension ErrorPrint: CustomDebugStringConvertible {
             result.append("\n\t")
             result.append(detail)
         }
-        result.append("\n\n")
+        result.append("\n")
         guard !self.involved.isEmpty else { return result }
         
         for target in self.involved {
-            result.append("\n\n\(target)")
+            result.append("\n\(target)")
         }
         result.append("\n\n")
         return result

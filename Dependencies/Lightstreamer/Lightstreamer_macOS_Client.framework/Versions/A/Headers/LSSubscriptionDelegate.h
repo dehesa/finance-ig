@@ -91,7 +91,7 @@
  @param itemName name of the involved item. If the Subscription was initialized using an "Item Group" then a nil value is supplied.
  @param itemPos 1-based position of the item within the "Item List" or "Item Group".
  */
-- (void) subscription:(nonnull LSSubscription *)subscription didLoseUpdates:(NSUInteger)lostUpdates forItemName:(nullable NSString *)itemName itemPos:(NSUInteger)itemPos;
+- (void) subscription:(nonnull LSSubscription *)subscription didLoseUpdates:(NSUInteger)lostUpdates forItemName:(nullable NSString *)itemName itemPos:(NSUInteger)itemPos NS_SWIFT_NAME(didLoseUpdates(_:count:itemName:itemPosition:));
 
 /**
  @brief Event handler that is called by Lightstreamer each time an update pertaining to an item in the LSSubscription has been received from the Server.
@@ -99,14 +99,14 @@
  @param itemUpdate a value object containing the updated values for all the fields, together with meta-information about the update itself and some helper
  methods that can be used to iterate through all or new values.
  */
-- (void) subscription:(nonnull LSSubscription *)subscription didUpdateItem:(nonnull LSItemUpdate *)itemUpdate;
+- (void) subscription:(nonnull LSSubscription *)subscription didUpdateItem:(nonnull LSItemUpdate *)itemUpdate NS_SWIFT_NAME(didUpdate(_:item:));
 
 /**
  @brief Event handler that receives a notification when the LSSubscriptionDelegate instance is removed from a LSSubscription through LSSubscription#removeDelegate:.
  <br/> This is the last event to be fired on the delegate.
  @param subscription the LSSubscription this instance was removed from.
  */
-- (void) subscriptionDidRemoveDelegate:(nonnull LSSubscription *)subscription;
+- (void) subscriptionDidRemoveDelegate:(nonnull LSSubscription *)subscription NS_SWIFT_NAME(didRemoveDelegate(from:));
 
 /**
  @brief Event handler that receives a notification when the LSSubscriptionDelegate instance is added to a LSSubscription through 
@@ -114,7 +114,7 @@
  <br/> This is the first event to be fired on the delegate.
  @param subscription the LSSubscription this instance was added to.
  */
-- (void) subscriptionDidAddDelegate:(nonnull LSSubscription *)subscription;
+- (void) subscriptionDidAddDelegate:(nonnull LSSubscription *)subscription NS_SWIFT_NAME(didAddDelegate(to:));
 
 /**
  @brief Event handler that is called by Lightstreamer to notify that a LSSubscription has been successfully subscribed to through the Server.
@@ -127,7 +127,7 @@
  <br/> If the involved LSSubscription has a two-level behavior enabled, second-level subscriptions are not notified.
  @param subscription the LSSubscription involved.
  */
-- (void) subscriptionDidSubscribe:(nonnull LSSubscription *)subscription;
+- (void) subscriptionDidSubscribe:(nonnull LSSubscription *)subscription NS_SWIFT_NAME(didSubscribe(to:));
 
 /**
  @brief Event handler that is called when the Server notifies an error on a LSSubscription.
@@ -153,7 +153,7 @@
  </ul>
  @param message The description of the error sent by the Server; it can be nil.
  */
-- (void) subscription:(nonnull LSSubscription *)subscription didFailWithErrorCode:(NSInteger)code message:(nullable NSString *)message;
+- (void) subscription:(nonnull LSSubscription *)subscription didFailWithErrorCode:(NSInteger)code message:(nullable NSString *)message NS_SWIFT_NAME(didFail(_:errorCode:message:));
 
 /**
  @brief Event handler that is called by Lightstreamer to notify that a LSSubscription has been successfully unsubscribed from.
@@ -165,7 +165,7 @@
  is eventually fired.
  <br/> If the involved LSSubscription has a two-level behavior enabled, second-level unsubscriptions are not notified.
  */
-- (void) subscriptionDidUnsubscribe:(nonnull LSSubscription *)subscription;
+- (void) subscriptionDidUnsubscribe:(nonnull LSSubscription *)subscription NS_SWIFT_NAME(didUnsubscribe(from:));
 
 
 @end
