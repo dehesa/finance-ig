@@ -11,7 +11,7 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
+    public func subscribe(to epic: IG.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = Streamer.Formatter.time
@@ -21,10 +21,13 @@ extension Streamer.Request.Markets {
             .attemptMap { (update) in
                 do {
                     return .success(try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter))
-                } catch let error as Streamer.Error {
+                } catch var error as Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
                     return .failure(error)
-                } catch let error {
-                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market update.\nError: \(error)"))
+                } catch let underlyingError {
+                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    return .failure(error)
                 }
             }
     }
@@ -94,7 +97,7 @@ extension Streamer {
     /// Displays the latests information from a given market.
     public struct Market {
         /// The market epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// The current market status.
         public let status: Self.Status?
         
@@ -112,7 +115,7 @@ extension Streamer {
         public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
+        fileprivate init(epic: IG.Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             self.epic = epic
@@ -127,9 +130,9 @@ extension Streamer {
                 
                 self.day = try .init(update: update)
             } catch let error as U.Error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
-            } catch let error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+            } catch let underlyingError {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
             }
         }
     }
@@ -176,7 +179,7 @@ extension Streamer.Market: CustomDebugStringConvertible {
     }
 
     public var debugDescription: String {
-        var result: String = self.epic.rawValue
+        var result: String = "Market (epic): \(self.epic.rawValue)"
         result.append(prefix: "\n\t", name: "Status", ": ", self.status)
         result.append(prefix: "\n\t", name: "Date", ": ", self.date.map { Streamer.Formatter.time.string(from: $0) })
         result.append(prefix: "\n\t", name: "Are prices delayed?", " ", self.isDelayed)

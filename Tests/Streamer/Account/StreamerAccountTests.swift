@@ -8,9 +8,9 @@ final class StreamerAccountTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
-        let accountIdentifier = Test.account.identifier
-        self.test( streamer.accounts.subscribe(to: accountIdentifier, fields: .all, snapshot: true), value: { (account) in
-            XCTAssertEqual(account.identifier, accountIdentifier)
+        let accountId = Test.account.identifier
+        self.test( streamer.accounts.subscribe(to: accountId, fields: .all, snapshot: true), value: { (account) in
+            XCTAssertEqual(account.identifier, accountId)
             XCTAssertNotNil(account.equity.value)
             XCTAssertNotNil(account.equity.used)
             XCTAssertNotNil(account.funds.value)

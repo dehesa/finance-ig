@@ -9,7 +9,7 @@ extension SignalProducer where Value==API.Request.WrapperValid<Void>, Error==API
     internal init(api: API) {
         self.init { [weak api] (input, _) in
             guard let api = api else {
-                return input.send(error: .sessionExpired)
+                return input.send(error: .sessionExpired())
             }
             
             input.send(value: (api, ()))
@@ -23,10 +23,10 @@ extension SignalProducer where Error==API.Error {
     /// - attention: This function makes a weak bond with the receiving API instance. When the `SignalProducer` is started, the bond will be tested and if the instance is `nil`, the `SignalProducer` will generate an error event.
     /// - parameter api: The API session where API calls will be performed.
     /// - parameter validating: Closure validating some values that will pass with the signal event to the following step.
-    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where SignalProducer.Value==API.Request.WrapperValid<T> {
+    internal init<T>(api: API, validating: @escaping API.Request.Generator.Validation<T>) where Value==API.Request.WrapperValid<T> {
         self.init { [weak api] (input, _) in
             guard let api = api else {
-                return input.send(error: .sessionExpired)
+                return input.send(error: .sessionExpired())
             }
             
             let values: T
@@ -34,8 +34,9 @@ extension SignalProducer where Error==API.Error {
                 values = try validating(api)
             } catch let error as API.Error {
                 return input.send(error: error)
-            } catch let error {
-                return input.send(error: .invalidRequest(underlyingError: error, message: "The request validation failed."))
+            } catch let underlyingError {
+                let error: API.Error = .invalidRequest("The request validation failed.", underlying: underlyingError, suggestion: API.Error.Suggestion.readDocumentation)
+                return input.send(error: error)
             }
             
             input.send(value: (api, values))
@@ -54,8 +55,9 @@ extension SignalProducer where Error==API.Error {
                 request = try requestGenerator(validated.api, validated.values)
             } catch let error as API.Error {
                 return .failure(error)
-            } catch let error {
-                return .failure(.invalidRequest(underlyingError: error, message: "The URL request couldn't be formed."))
+            } catch let underlyingError {
+                let error: API.Error = .invalidRequest("The URL request couldn't be created.", underlying: underlyingError, suggestion: API.Error.Suggestion.readDocumentation)
+                return .failure(error)
             }
             
             return .success( (validated.api, request) )
@@ -87,18 +89,22 @@ extension SignalProducer where Error==API.Error {
                     queries = try queryGenerator(validated.api, validated.values)
                 } catch let error as API.Error {
                     return .failure(error)
-                } catch let error {
-                    return .failure(.invalidRequest(underlyingError: error, message: "The URL request queries couldn't be formed."))
+                } catch let underlyingError {
+                    let error: API.Error = .invalidRequest("The URL request queries couldn't be formed.", underlying: underlyingError, suggestion: API.Error.Suggestion.readDocumentation)
+                    return .failure(error)
                 }
                 
                 if !queries.isEmpty {
                     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-                        return .failure(.invalidRequest(underlyingError: nil, message: "The URL \"\(url)\" cannot be transformed into URL components."))
+                        let error: API.Error = .invalidRequest(#""\#(method.rawValue) \#(url)" URL cannot be transmuted into "URLComponents"."#, suggestion: API.Error.Suggestion.bug)
+                        return .failure(error)
                     }
                     
                     components.queryItems = queries
                     guard let requestURL = components.url else {
-                        return .failure(.invalidRequest(underlyingError: nil, message: "The URL couldn't be formed"))
+                        let representation = queries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
+                        let error: API.Error = .invalidRequest(#"An error was encountered when appending the URL queries "[\#(representation)]" to "\#(method.rawValue) \#(url)" URL."#, suggestion: API.Error.Suggestion.readDocumentation)
+                        return .failure(error)
                     }
                     url = requestURL
                 }
@@ -108,28 +114,38 @@ extension SignalProducer where Error==API.Error {
             var request = URLRequest(url: url)
             request.httpMethod = method.rawValue
             
+            let credentials: API.Credentials?
+            if usingCredentials {
+                if let storedCredentials = validated.api.session.credentials {
+                    credentials = storedCredentials
+                } else {
+                    let error: API.Error = .invalidRequest(API.Error.Message.noCredentials, request: request, suggestion: API.Error.Suggestion.logIn)
+                    return .failure(error)
+                }
+            } else {
+                credentials = nil
+            }
+            
             do {
-                var credentials: API.Credentials? = nil
-                
-                if usingCredentials {
-                    if let storedCredentials = validated.api.session.credentials {
-                        credentials = storedCredentials
-                    } else {
-                        return .failure(.invalidCredentials(nil, message: "No credentials found."))
-                    }
-                }
-                
                 request.addHeaders(version: version, credentials: credentials, try headerGenerator?(validated.api, validated.values))
-                
-                if let bodyGenerator = bodyGenerator {
-                    let body = try bodyGenerator(validated.api, validated.values)
-                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
-                    request.httpBody = body.data
-                }
             } catch let error as API.Error {
                 return .failure(error)
             } catch let error {
-                return .failure(.invalidRequest(underlyingError: error, message: "The request couldn't be formed."))
+                let error: API.Error = .invalidRequest("The request header couldn't be created.", request: request, underlying: error, suggestion: API.Error.Suggestion.readDocumentation)
+                return .failure(error)
+            }
+            
+            if let bodyGenerator = bodyGenerator {
+                do {
+                    let body = try bodyGenerator(validated.api, validated.values)
+                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
+                    request.httpBody = body.data
+                } catch let error as API.Error {
+                    return .failure(error)
+                } catch let error {
+                    let error: API.Error = .invalidRequest("The request body couldn't be created.", request: request, underlying: error, suggestion: API.Error.Suggestion.readDocumentation)
+                    return .failure(error)
+                }
             }
             return .success( (validated.api, request) )
         }
@@ -156,11 +172,14 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                 detacher?.dispose()
                 
                 if let error = error {
-                    return generator.send(error: .callFailed(request: request, response: response, underlyingError: error, message: "The HTTP request failed."))
+                    let error: API.Error = .callFailed(message: "The HTTP request call failed.", request: request, response: response as? HTTPURLResponse, data: data, underlying: error, suggestion: "The server must be reachable before performing this request. Try again when the connection is established.")
+                    return generator.send(error: error)
                 }
                 
                 guard let header = response as? HTTPURLResponse else {
-                    return generator.send(error: .callFailed(request: request, response: response, underlyingError: nil, message: "The URL response couldn't be parsed to a HTTP URL Response."))
+                    var error: API.Error = .callFailed(message: #"The response was not of HTTPURLResponse type."#, request: request, response: nil, data: data, underlying: error, suggestion: API.Error.Suggestion.bug)
+                    if let httpResponse = response { error.context.append(("Received response", httpResponse)) }
+                    return generator.send(error: error)
                 }
                 
                 generator.send(value: (request,header,data))
@@ -198,7 +217,12 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                 detacher?.dispose()
                 
                 guard let api = api else {
-                    return generator.send(error: .sessionExpired)
+                    var error: API.Error = .sessionExpired()
+                    error.request = initialRequest
+                    if let previous = previousRequest {
+                        error.context.append(("Last successfully executed paginated request", previous.request))
+                    }
+                    return generator.send(error: error)
                 }
                 
                 let paginatedRequest: URLRequest?
@@ -207,7 +231,11 @@ extension SignalProducer where Value==API.Request.Wrapper, Error==API.Error {
                 } catch let error as API.Error {
                     return generator.send(error: error)
                 } catch let error {
-                    return generator.send(error: .invalidRequest(underlyingError: error, message: "The paginated request couldn't be formed."))
+                    var error: API.Error = .invalidRequest("The paginated request couldn't be created.", request: initialRequest, underlying: error, suggestion: API.Error.Suggestion.bug)
+                    if let previous = previousRequest {
+                        error.context.append(("Last successfully executed paginated request", previous.request))
+                    }
+                    return generator.send(error: error)
                 }
                 
                 guard let nextRequest = paginatedRequest else {
@@ -240,7 +268,8 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
     internal func validate<S>(statusCodes: S) -> SignalProducer<Value,Error> where S: Sequence, S.Element==Int {
         return self.attemptMap { (request, header, data) -> Result<Value,API.Error> in
             guard statusCodes.contains(header.statusCode) else {
-                let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: nil, message: "Status code validation failed.\n\tExpected: \(statusCodes).\n\tReceived: \(header.statusCode).")
+                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(statusCodes) codes were expected."#
+                let error: API.Error = .invalidResponse(message: message, request: request, response: header, data: data, suggestion: API.Error.Suggestion.reviewError)
                 return .failure(error)
             }
             
@@ -259,12 +288,13 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
     internal func validateLadenData<S>(statusCodes: S? = nil) -> SignalProducer<API.Response.WrapperData,Error> where S: Sequence, S.Element==Int {
         return self.attemptMap { (request, header, data) -> Result<API.Response.WrapperData,API.Error> in
             if let codes = statusCodes, !codes.contains(header.statusCode) {
-                let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: nil, message: "Status code validation failed.\n\tExpected: \(codes).\n\tReceived: \(header.statusCode).")
+                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(codes) codes were expected."#
+                let error: API.Error = .invalidResponse(message: message, request: request, response: header, data: data, suggestion: API.Error.Suggestion.reviewError)
                 return .failure(error)
             }
             
             guard let data = data else {
-                let error: API.Error = .invalidResponse(header, request: request, data: nil, underlyingError: nil, message: "Response was expected to contained a body, but no data was found.")
+                let error: API.Error = .invalidResponse(message: "Response was expected to contained a body, but no data was found.", request: request, response: header, suggestion: API.Error.Suggestion.reviewError)
                 return .failure(error)
             }
             
@@ -282,15 +312,23 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
 extension SignalProducer where Value==API.Response.WrapperData, Error==API.Error {
     /// Decodes the JSON payload with a given `JSONDecoder`.
     /// - parameter decoderGenerator: Callback receiving the url request and HTTP header. It must return the JSON decoder to actually decode the data.
+    /// - attention: The JSON decoder used (whether the defaul or the provided one) will attach the response header to the decoder's `userInfo`.
     internal func decodeJSON<T:Decodable>(with decoderGenerator: API.Request.Generator.Decoder? = nil) -> SignalProducer<T,API.Error> {
         return self.attemptMap { (request, header, data) -> Result<T,API.Error> in
             do {
                 let decoder: JSONDecoder = try decoderGenerator?(request, header) ?? JSONDecoder()
-                return .success(try decoder.decode(T.self, from: data))
-            } catch let error as API.Error {
+                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = header
+                let result = try decoder.decode(T.self, from: data)
+                return .success(result)
+            } catch var error as API.Error {
+                if case .none = error.request { error.request = request }
+                if case .none = error.response { error.response = header }
+                if case .none = error.responseData { error.responseData = data }
                 return .failure(error)
-            } catch let e {
-                let error: API.Error = .invalidResponse(header, request: request, data: data, underlyingError: e, message: #"The response body could not be parsed to the expected type: "\#(T.self)"."#)
+            } catch let underlyingError {
+                let message =  #"The response body could not be decoded as the expected type: "\#(T.self)"."#
+                let suggestion = "Review the underlying error and try to figure out the issue."
+                let error: API.Error = .invalidResponse(message: message, request: request, response: header, data: data, underlying: underlyingError, suggestion: suggestion)
                 return .failure(error)
             }
         }

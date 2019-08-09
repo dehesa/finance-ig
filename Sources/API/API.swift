@@ -42,19 +42,19 @@ public final class API {
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter configurations: URL session configuration properties. By default, you get a non-cached, non-cookies, pipeline and secure URL session configuration.
+    /// - parameter configuration: URL session configuration properties. By default, you get a non-cached, non-cookies, pipeline and secure URL session configuration.
     public convenience init(rootURL: URL, credentials: API.Credentials?, configuration: URLSessionConfiguration = API.defaultSessionConfigurations) {
         let channel = URLSession(configuration: configuration)
-        self.init(rootURL: rootURL, channel: channel, credentials: credentials)
+        self.init(rootURL: rootURL, credentials: credentials, channel: channel)
     }
     
     /// Designated initializer allowing you to change the internal URL session.
     ///
     /// This initializer is used for testing purposes; that is why is marked with `internal` access.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
+    /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time. 
     /// - parameter channel: URL session used to perform all HTTP requests.
-    /// - parameter credentials: Credentials used to authenticate the endpoints. Pass `nil` if the credentials are unknown at creation time.
-    internal init<A:APIMockableChannel>(rootURL: URL, channel: A, credentials: API.Credentials? = nil) {
+    internal init<C:APIMockableChannel>(rootURL: URL, credentials: API.Credentials?, channel: C) {
         self.rootURL = rootURL
         (self.lifetime, self.lifetimeToken) = Lifetime.make()
         self.channel = channel

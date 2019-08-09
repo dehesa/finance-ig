@@ -78,7 +78,7 @@ extension API {
     /// Client account.
     public struct Account: Decodable {
         /// Account identifier.
-        public let identifier: String
+        public let identifier: IG.Account.Identifier
         /// Account name.
         public let name: String
         /// Account alias.
@@ -98,7 +98,7 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.identifier = try container.decode(String.self, forKey: .identifier)
+            self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .identifier)
             self.name = try container.decode(String.self, forKey: .name)
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)

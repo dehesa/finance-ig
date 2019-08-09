@@ -1,5 +1,19 @@
 import Foundation
 
+#if canImport(Darwin)
+extension Decimal {
+    /// Boolean indicating whether the number has no decimals (is whole).
+    var isWhole: Bool {
+        var original = self.magnitude
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &original, 0, .down)
+        return original - rounded == 0
+    }
+}
+#else
+#error("Decimal rounding is not supported by non-Darwin platforms.")
+#endif
+
 // MARK: - Decoder
 
 extension SingleValueDecodingContainer {

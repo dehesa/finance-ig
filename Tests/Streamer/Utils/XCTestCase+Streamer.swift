@@ -1,6 +1,6 @@
 import XCTest
 import ReactiveSwift
-import IG
+@testable import IG
 
 extension XCTestCase {
     /// Convenience function to test streamer `SignalProducer`s.
@@ -16,17 +16,19 @@ extension XCTestCase {
     /// - parameter complete: Optional closure to check all received values.
     func test<V>(_ expression: @autoclosure ()->SignalProducer<V,Streamer.Error>, value: ((V)->Void)? = nil, take: Int? = nil, timeout: TimeInterval, on scheduler: DateScheduler, complete: (([V])->Void)? = nil) {
         var collection: [V] = []
-        var producer = expression()
-            .on(value: {
-                collection.append($0)
-                value?($0)
-            })
+        var producer = expression().on(value: { collection.append($0); value?($0) })
+        
+        let suggestion = "Check that you are running the tests while the markets are open (on weekends, the subscription doesn't usually work)."
         
         if let take = take {
-            producer = producer.take(first: take)
-                .timeout(after: timeout, raising: .invalidRequest(message: "The \(timeout) seconds interval timeout elapsed. Only \(collection.count) values out of the \(take) requested were gathered. Values:\n\(collection)"), on: scheduler)
+            let message = "The \(timeout) seconds interval timeout elapsed. Only \(collection.count) values out of the \(take) requested were gathered. Values:\n\(collection)"
+            producer = producer
+                .take(first: take)
+                .timeout(after: timeout, raising: .invalidRequest(message, suggestion: suggestion), on: scheduler)
         } else {
-            producer = producer.timeout(after: timeout, raising: .invalidRequest(message: "The \(timeout) interval tiemout elapsed and the producer hasn't completed. Values:\n\(collection)"), on: scheduler)
+            let message = "The \(timeout) interval tiemout elapsed and the producer hasn't completed. Values:\n\(collection)"
+            producer = producer
+                .timeout(after: timeout, raising: .invalidRequest(message, suggestion: suggestion), on: scheduler)
         }
         
         XCTAssertNoThrow(try producer.wait().get())

@@ -8,8 +8,8 @@ final class StreamerTradeTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
-        let accountIdentifier = Test.account.identifier
-        self.test( streamer.deals.subscribe(to: accountIdentifier, updates: .all, snapshot: true), value: { (update) in
+        let account = Test.account.identifier
+        self.test( streamer.deals.subscribe(to: account, updates: .all, snapshot: true), value: { (update) in
             print(update)
         }, take: 1, timeout: 2, on: scheduler)
         
@@ -29,7 +29,7 @@ final class StreamerTradeTests: XCTestCase {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
-        var dealId: API.Deal.Identifier! = nil
+        var dealId: IG.Deal.Identifier! = nil
         _ = streamer.deals.subscribe(to: Test.account.identifier, updates: .all, snapshot: false).startWithResult {
             switch $0 {
             case .success(let update):
@@ -51,7 +51,7 @@ final class StreamerTradeTests: XCTestCase {
         try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
         print("\n------- 1. Update stream setup. -------\n")
         
-        let epic: Epic = "CS.D.EURUSD.MINI.IP"
+        let epic: IG.Epic = "CS.D.EURUSD.MINI.IP"
         let market = try! api.markets.get(epic: epic).single()!.get()
         let level = market.snapshot.price!.lowest - (0.0001 * 30)
         

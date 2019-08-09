@@ -1,30 +1,6 @@
 import Foundation
 
 extension Streamer {
-    /// List of request data needed to make subscriptions.
-    public enum Request {}
-}
-
-extension DispatchQoS {
-    /// Quality of Service for real time messaging.
-    internal static let realTimeMessaging = DispatchQoS(qosClass: .userInitiated, relativePriority: 0)
-}
-
-extension Streamer {
-    /// Possible Lightstreamer modes.
-    internal enum Mode: String {
-        /// Lightstreamer MERGE mode.
-        case merge = "MERGE"
-        /// Lightstreamer DISTINCT mode.
-        case distinct = "DISTINCT"
-        /// Lightstreamer RAW mode.
-        case raw = "RAW"
-        /// Lightstreamer COMMAND mode.
-        case command = "COMMAND"
-    }
-}
-
-extension Streamer {
     /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `Streamer` instance context.
     internal enum Formatter {
         /// Time formatter (e.g. 17:30:29) for a date on London (including summer time if need be).
@@ -70,9 +46,9 @@ extension Streamer.Formatter {
             let now = Date()
             let formatter = Streamer.Formatter.time
             guard let cal = formatter.calendar, let zone = formatter.timeZone,
-                  let timeDate = formatter.date(from: value),
-                  let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
-                throw Self.Error(value: value, to: Date.self)
+                let timeDate = formatter.date(from: value),
+                let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
+                    throw Self.Error(value: value, to: Date.self)
             }
             
             guard mixDate > now else { return mixDate }
@@ -104,3 +80,4 @@ extension Streamer.Formatter {
         }
     }
 }
+

@@ -12,7 +12,7 @@ extension API {
     /// - **Confirmation**. A deal identifier is received by subscribing to the `TRADES:CONFIRMS` streaming messages (recommended), or by polling this endpoint (`confirmTransientPositions`).
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay. Also not the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: API.Deal.Reference) -> SignalProducer<API.Confirmation,API.Error> {
+    public func confirm(reference: IG.Deal.Reference) -> SignalProducer<API.Confirmation,API.Error> {
         return SignalProducer(api: self)
             .request(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -29,26 +29,26 @@ extension API {
     /// Confirmation data returned just after opening a position or a working order.
     public struct Confirmation: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: API.Deal.Identifier
+        public let identifier: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
-        public let reference: API.Deal.Reference
+        public let reference: IG.Deal.Reference
         /// Date the position was created.
         public let date: Date
         /// Instrument epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// Instrument expiration period.
-        public let expiry: API.Instrument.Expiry
+        public let expiry: IG.Deal.Expiry
         /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
         public let status: Self.Status
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
-            self.reference = try container.decode(API.Deal.Reference.self, forKey: .reference)
+            self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
+            self.reference = try container.decode(IG.Deal.Reference.self, forKey: .reference)
             self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601miliseconds)
             
-            self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.expiry = try container.decode(API.Instrument.Expiry.self, forKey: .expiry)
+            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
+            self.expiry = try container.decode(IG.Deal.Expiry.self, forKey: .expiry)
             
             let status = try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status)
             guard case .accepted = status else {
@@ -98,15 +98,15 @@ extension API.Confirmation {
         /// Affected deals.
         public let affectedDeals: [API.Confirmation.Deal]
         /// Deal direction.
-        public let direction: API.Deal.Direction
+        public let direction: IG.Deal.Direction
         /// The deal size
         public let size: Decimal
         /// Instrument price.
         public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: API.Deal.Limit?
+        public let limit: IG.Deal.Limit?
         /// The level at which the user doesn't want to incur more losses.
-        public let stop: API.Deal.Stop?
+        public let stop: IG.Deal.Stop?
         /// Profit (value and currency).
         public let profit: API.Deal.ProfitLoss?
         
@@ -114,37 +114,11 @@ extension API.Confirmation {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.status = try container.decode(API.Deal.Status.self, forKey: .status)
             self.affectedDeals = try container.decode([API.Confirmation.Deal].self, forKey: .affectedDeals)
-            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
+            self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            // Figure out limit.
-            let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
-            let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
-            switch (limitLevel, limitDistance) {
-            case (.none, .none):      self.limit = nil
-            case (.none, let dista?): self.limit = .distance(dista)
-            case (let level?, .none): self.limit = .position(level: level)
-            case (.some, .some): throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Limit level and distance are both set on a deal confirmation. This is not suppose to happen!")
-            }
-            // Figure out stop.
-            let stop: API.Deal.Stop.Kind?
-            let stopLevel = try container.decodeIfPresent(Decimal.self, forKey: .stopLevel)
-            let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance)
-            switch (stopLevel, stopDistance) {
-            case (.none, .none):      stop = nil
-            case (.none, let dista?): stop = .distance(dista)
-            case (let level?, .none): stop = .position(level: level)
-            case (.some, .some): throw DecodingError.dataCorruptedError(forKey: .stopLevel, in: container, debugDescription: "Stop level and distance are both set on a deal confirmation. This is not suppose to happen!")
-            }
-            if let stop = stop {
-                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
-                let isTrailing = try container.decode(Bool.self, forKey: .isStopTrailing)
-                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
-                let trailing: API.Deal.Stop.Trailing = (isTrailing) ? .dynamic(nil) : .static
-                self.stop = .init(stop, risk: risk, trailing: trailing)
-            } else {
-                self.stop = nil
-            }
+            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance, referencing: (self.direction, self.level))
+            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil), referencing: (self.direction, self.level))
             // Figure out P&L.
             let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
             let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)

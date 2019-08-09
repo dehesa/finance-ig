@@ -13,7 +13,7 @@ extension Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
+    public func subscribe(to epic: IG.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -22,10 +22,13 @@ extension Streamer.Request.Charts {
             .attemptMap { (update) in
                 do {
                     return .success(try .init(epic: epic, interval: interval, item: item, update: update))
-                } catch let error as Streamer.Error {
+                } catch var error as Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
                     return .failure(error)
-                } catch let error {
-                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market chart update.\nError: \(error)"))
+                } catch let underlyingError {
+                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    return .failure(error)
                 }
             }
     }
@@ -149,7 +152,7 @@ extension Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Aggregated {
         /// The market epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// The aggregation interval chosen on subscription.
         public let interval: Self.Interval
         /// The candle for the ongoing time interval.
@@ -157,7 +160,7 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             
@@ -167,10 +170,10 @@ extension Streamer.Chart {
             do {
                 self.candle = try .init(update: update)
                 self.day = try .init(update: update)
-            } catch let error as Streamer.Formatter.Update.Error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
-            } catch let error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
+            } catch let error as U.Error {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+            } catch let underlyingError {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
             }
         }
     }

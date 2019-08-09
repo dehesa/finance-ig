@@ -17,13 +17,20 @@ extension API.Request.Applications {
     // MARK: PUT /operations/application
 
     /// Alters the details of a given user application.
-    /// - parameter apiKey: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
+    /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(apiKey: String? = nil, status: API.Application.Status, accountAllowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
+    public func update(key: API.Key? = nil, status: API.Application.Status, accountAllowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
         return SignalProducer(api: self.api) { (api) -> Self.PayloadUpdate in
-                let apiKey = try api.session.credentials?.apiKey ?! API.Error.invalidCredentials(nil, message: "The API key couldn't be found")
-                return .init(apiKey: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+                let apiKey: API.Key
+                if let key = key {
+                    apiKey = key
+                } else if let key = api.session.credentials?.key {
+                    apiKey = key
+                } else {
+                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                }
+                return .init(key: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -55,7 +62,7 @@ extension API.Request.Applications {
     /// Let the user updates one parameter of its application.
     private struct PayloadUpdate: Encodable {
         /// API key to be added to the request.
-        let apiKey: String
+        let key: API.Key
         /// Desired application status.
         let status: API.Application.Status
         /// Per account request per minute allowance.
@@ -65,14 +72,14 @@ extension API.Request.Applications {
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: Self.CodingKeys.self)
-            try container.encode(self.apiKey, forKey: .apiKey)
+            try container.encode(self.key, forKey: .key)
             try container.encodeIfPresent(self.status, forKey: .status)
             try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
             try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case apiKey, status
+            case key = "apiKey", status
             case overallAccountAllowance = "allowanceAccountOverall"
             case tradingAccountAllowance = "allowanceAccountTrading"
         }
@@ -87,7 +94,7 @@ extension API {
         /// Application name given by the developer.
         public let name: String
         /// Application API key identifying the application and the developer.
-        public let apiKey: String
+        public let key: API.Key
         ///  Application status.
         public let status: Self.Status
         /// Application creation date (referencing UTC dates, although no time data is stored).
@@ -98,17 +105,15 @@ extension API {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.name = try container.decode(String.self, forKey: .name)
-            self.apiKey = try container.decode(String.self, forKey: .apiKey)
+            self.key = try container.decode(API.Key.self, forKey: .key)
             self.status = try container.decode(API.Application.Status.self, forKey: .status)
             self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.Formatter.yearMonthDay)
             self.allowance = try Allowance(from: decoder)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case name
-            case apiKey
-            case status
-            case creationDate = "createdDate"
+            case name, key = "apiKey"
+            case status, creationDate = "createdDate"
         }
     }
 }

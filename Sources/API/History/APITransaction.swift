@@ -12,9 +12,11 @@ extension API.Request.Transactions {
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received (`0` means paging is disabled).
-    public func get(from: Date, to: Date? = nil, type: Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
+    public func get(from: Date, to: Date? = nil, type: Self.Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
-                let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials found")
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                }
                 return API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
             }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
@@ -144,9 +146,9 @@ extension API {
         /// Instrument name.
         public let description: String
         /// Instrument expiry period.
-        public let period: API.Instrument.Expiry
+        public let period: IG.Deal.Expiry
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
-        public let size: (direction: API.Deal.Direction, amount: Decimal)?
+        public let size: (direction: IG.Deal.Direction, amount: Decimal)?
         /// Open position level/price and date.
         public let open: (date: Date, level: Decimal?)
         /// Close position level/price and date.
@@ -162,7 +164,7 @@ extension API {
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.reference = try container.decode(String.self, forKey: .reference)
             self.description = try container.decode(String.self, forKey: .description)
-            self.period = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .period) ?? .none
+            self.period = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .period) ?? .none
             
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {

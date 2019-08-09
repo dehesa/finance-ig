@@ -29,7 +29,8 @@ extension API.Request.Nodes {
     public func getMarkets(matching searchTerm: String) -> SignalProducer<[API.Node.Market],API.Error> {
         return SignalProducer(api: self.api) { (_) -> String in
             guard !searchTerm.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "Search for markets failed! The search term cannot be empty")
+                let message = "Search for markets failed! The search term cannot be empty."
+                throw API.Error.invalidRequest(message, suggestion: API.Error.Suggestion.readDocumentation)
             }
             return searchTerm
         }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) in
@@ -39,7 +40,8 @@ extension API.Request.Nodes {
             .decodeJSON { (request, response) in
                 guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = API.Formatter.humanReadableLong.date(from: dateString) else {
-                    throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
+                    let message = "The response date couldn't be extracted from the response header."
+                    throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
                 }
                 
                 let decoder = JSONDecoder()
@@ -61,7 +63,6 @@ extension API.Request.Nodes {
             .validateLadenData(statusCodes: 200)
             .decodeJSON { (_, responseHeader) -> JSONDecoder in
                 let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
                 
                 if let identifier = node.identifier {
                     decoder.userInfo[API.JSON.DecoderKey.nodeIdentifier] = identifier
@@ -203,9 +204,9 @@ extension API.Request.Nodes {
 
 extension API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node identifier will be stored.
-    fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "nodeId")!
+    fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "APINodeId")!
     /// Key for JSON decoders under which a node name will be stored.
-    fileprivate static let nodeName = CodingUserInfoKey(rawValue: "nodeName")!
+    fileprivate static let nodeName = CodingUserInfoKey(rawValue: "APINodeName")!
 }
 
 extension API {

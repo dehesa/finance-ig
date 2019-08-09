@@ -8,24 +8,26 @@ extension Streamer.Request.Deals {
     /// Subscribes to the given account and receives updates on positions, working orders, and trade confirmations.
     ///
     /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter accountIdentifier: The Account identifier.
+    /// - parameter account: The Account identifier.
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to accountIdentifier: String, updates fields: Set<Streamer.Deal.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Deal,Streamer.Error> {
-        let item = "TRADE:".appending(accountIdentifier)
+    public func subscribe(to account: IG.Account.Identifier, updates fields: Set<Streamer.Deal.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Deal,Streamer.Error> {
+        let item = "TRADE:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
             .subscribe(mode: .distinct, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
-                    return .success(try .init(identifier: accountIdentifier, item: item, update: update))
-                } catch let error as Streamer.Error {
+                    return .success(try .init(account: account, item: item, update: update))
+                } catch var error as Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
                     return .failure(error)
-                } catch let error {
-                    let representation = update.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
-                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing a market chart update.\n\tPayload\(representation)\n\tError: \(error)"))
+                } catch let underlyingError {
+                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    return .failure(error)
                 }
         }
     }
@@ -74,7 +76,7 @@ extension Streamer {
     ///
     public struct Deal {
         /// Account identifier.
-        let accountIdentifier: String
+        let account: IG.Account.Identifier
         /// Confirmation update.
         let confirmation: API.Confirmation?
         /// Open position update.
@@ -83,21 +85,21 @@ extension Streamer {
         /// - note: This seems never to be set up.
         let workingOrder: String?
         
-        internal init(identifier: String, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(account: IG.Account.Identifier, item: String, update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             
             let decoder = JSONDecoder()
             self.workingOrder = update[F.workingOrders.rawValue]?.value
             
-            self.accountIdentifier = identifier
+            self.account = account
             do {
                 self.confirmation = try update[F.confirmations.rawValue]?.value.map { try decoder.decode(API.Confirmation.self, from: .init($0.utf8)) }
                 self.position = try update[F.positions.rawValue]?.value.map { try decoder.decode(Self.Position.self, from: .init($0.utf8)) }
-            } catch let error as Streamer.Formatter.Update.Error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
-            } catch let error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
+            } catch let error as U.Error {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+            } catch let underlyingError {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
             }
         }
     }
@@ -107,15 +109,15 @@ extension Streamer.Deal {
     /// Information relative to the position
     struct Position: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: API.Deal.Identifier
+        public let identifier: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
-        public let reference: API.Deal.Reference
+        public let reference: IG.Deal.Reference
         /// Date the position was created.
         public let date: Date
         /// Instrument epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// Instrument expiration period.
-        public let expiry: API.Instrument.Expiry
+        public let expiry: IG.Deal.Expiry
         /// The position's currency.
         public let currency: Currency.Code
         /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
@@ -124,7 +126,7 @@ extension Streamer.Deal {
         /// Position status.
         public let status: Self.Status
         /// Deal direction.
-        public let direction: API.Deal.Direction
+        public let direction: IG.Deal.Direction
         /// The deal size
         public let size: Decimal
         /// Instrument price.
@@ -136,11 +138,11 @@ extension Streamer.Deal {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
-            self.reference = try container.decode(API.Deal.Reference.self, forKey: .reference)
+            self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
+            self.reference = try container.decode(IG.Deal.Reference.self, forKey: .reference)
             self.date = try container.decode(Date.self, forKey: .date, with: Streamer.Formatter.iso8601miliseconds)
-            self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.expiry = try container.decode(API.Instrument.Expiry.self, forKey: .expiry)
+            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
+            self.expiry = try container.decode(IG.Deal.Expiry.self, forKey: .expiry)
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             let dealStatus = try container.decode(String.self, forKey: .dealStatus)
             switch dealStatus {
@@ -150,7 +152,7 @@ extension Streamer.Deal {
             }
             
             self.status = try container.decode(Self.Status.self, forKey: .positionStatus)
-            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
+            self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
             #warning("Figure out limits and stops.")
@@ -228,7 +230,7 @@ extension Streamer.Deal.Position {
 
 extension Streamer.Deal: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = self.accountIdentifier
+        var result: String = self.account.rawValue
         result.append(prefix: "\n\t", name: "Confirmation", ": ", self.confirmation)
         result.append(prefix: "\n\n\t", name: "Position", ": ", self.position)
         result.append(prefix: "\n\n\t", name: "Working Order", ": ", self.workingOrder)

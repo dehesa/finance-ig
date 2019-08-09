@@ -11,7 +11,7 @@ final class APIWorkingOrderTests: XCTestCase {
         let epic = market.instrument.epic
         let expiry = market.instrument.expiration.expiry
         let currency = market.instrument.currencies[0].code
-        let direction: API.Deal.Direction = .buy
+        let direction: IG.Deal.Direction = .buy
         let type: API.WorkingOrder.Kind = .limit
         let size: Decimal = 1
         let level = market.snapshot.price!.lowest - (0.0001 * 30)

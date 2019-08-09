@@ -7,28 +7,21 @@ extension API.Request.Session {
     
     /// Performs the OAuth login request to the dealing system with the login credential passed as parameter.
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` with the new refreshed credentials.
-    internal func loginOAuth(apiKey: String, user: API.User) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self.api) { (_) in
-                let apiKeyLength = 40
-                guard apiKey.utf8.count == apiKeyLength else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
-                }
-            }.request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_,_) in
+    internal func loginOAuth(key: API.Key, user: API.User) -> SignalProducer<API.Credentials,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
                 let payload = Self.PayloadOAuth(user: user)
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_,responseHeader) -> JSONDecoder in
-                return JSONDecoder().set {
-                    $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
-                }
-            }.map { (r: API.Session.OAuth) in
+            .decodeJSON()
+            .map { (r: API.Session.OAuth) in
                 let token = API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
 
@@ -37,31 +30,24 @@ extension API.Request.Session {
     /// Refreshes a trading session token, obtaining new session for subsequent API.
     /// - note: No credentials are needed for this endpoint.
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: SignalProducer with the new refreshed credentials.
-    internal func refreshOAuth(token: String, apiKey: String) -> SignalProducer<API.Credentials.Token,API.Error> {
+    internal func refreshOAuth(token: String, key: API.Key) -> SignalProducer<API.Credentials.Token,API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.TemporaryRefresh in
                 guard !token.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The OAuth refresh token can't be empty.")
+                    let error: API.Error = .invalidRequest("The OAuth refresh token cannot be empty.", suggestion: API.Error.Suggestion.readDocumentation)
+                    throw error
                 }
             
-                let apiKeyLength = 40
-                guard apiKey.utf8.count == apiKeyLength else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
-                }
-            
-                return .init(refreshToken: token, apiKey: apiKey)
+                return .init(refreshToken: token, apiKey: key)
             }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: TemporaryRefresh) in
-                [.apiKey: values.apiKey]
+                [.apiKey: values.apiKey.rawValue]
             }, body: { (_, values: TemporaryRefresh) in
                 (.json, try JSONEncoder().encode(["refresh_token": values.refreshToken]))
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_,responseHeader) -> JSONDecoder in
-                return JSONDecoder().set {
-                    $0.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
-                }
-            }.map { (r: API.Session.OAuth.Token) in
+            .decodeJSON()
+            .map { (r: API.Session.OAuth.Token) in
                 return .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }
     }
@@ -88,7 +74,7 @@ extension API.Request.Session {
     
     private struct TemporaryRefresh {
         let refreshToken: String
-        let apiKey: String
+        let apiKey: API.Key
     }
 }
 
@@ -98,9 +84,9 @@ extension API.Session {
     /// Oauth credentials used to access the IG platform.
     fileprivate struct OAuth: Decodable {
         /// Client identifier.
-        let clientId: Int
+        let clientId: IG.Client.Identifier
         /// Active account identifier.
-        let accountId: String
+        let accountId: IG.Account.Identifier
         /// Lightstreamer endpoint for subscribing to account and price updates.
         let streamerURL: URL
         /// Timezone of the active account.
@@ -110,14 +96,11 @@ extension API.Session {
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            
-            let client = try container.decode(String.self, forKey: .clientId)
-            self.clientId = try Int(client) ?! DecodingError.dataCorruptedError(forKey: .clientId, in: container, debugDescription: "The clientID \"\(client)\" couldn't be transformed into an integer.")
-            
-            self.accountId = try container.decode(String.self, forKey: .accountId)
+            self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
+            self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             
-            /// - bug: The server returns one hour less for the timezone offset.
+            /// - bug: The server returns one hour less for the timezone offset. I believe this is due not accounting for the summer time. Check in winter!
             let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
             

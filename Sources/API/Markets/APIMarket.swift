@@ -8,17 +8,26 @@ extension API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: Epic) -> SignalProducer<API.Market,API.Error> {
+    public func get(epic: IG.Epic) -> SignalProducer<API.Market,API.Error> {
         let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds.deepCopy
         
         return SignalProducer(api: self.api) { (api) in
-                let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                }
                 dateFormatter.timeZone = timezone
             }.request(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_,_) in
+            .decodeJSON { (request, response) in
+                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                    let message = "The response date couldn't be extracted from the response header."
+                    throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
+                }
+                
                 let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
                 decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
                 return decoder
             }
@@ -33,23 +42,31 @@ extension API.Request.Markets {
         let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds
         
         return SignalProducer(api: self.api) { (api) in
-            let errorBlurb = "Search for market epics failed!"
-            guard !epics.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) There needs to be at least one epic defined.")
-            }
-            guard epics.count <= 50 else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "\(errorBlurb) You cannot pass more than 50 epics.")
+            let epicRange = 1...50
+            guard epicRange.contains(epics.count) else {
+                let message = "Only between 1 to 50 markets can be queried at the same time."
+                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
+                throw API.Error.invalidRequest(message, suggestion: suggestion)
             }
             
-            let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
+            guard let timezone = api.session.credentials?.timezone else {
+                throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+            }
             dateFormatter.timeZone = timezone
         }.request(.get, "markets", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
             [URLQueryItem(name: "filter", value: "ALL"),
              URLQueryItem(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
         }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_,_) in
+            .decodeJSON { (request, response) in
+                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                    let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                        let message = "The response date couldn't be extracted from the response header."
+                        throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
+                }
+                
                 let decoder = JSONDecoder()
+                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
                 decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
                 return decoder
             }.map { (list: Self.WrapperList) in list.marketDetails }
@@ -129,7 +146,7 @@ extension API.Market {
     /// Instrument details.
     public struct Instrument: Decodable {
         /// Instrument identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// Instrument name.
         public let name: String
         /// Instrument type.
@@ -184,7 +201,7 @@ extension API.Market {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.epic = try container.decode(Epic.self, forKey: .epic)
+            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
             self.type = try container.decode(API.Instrument.self, forKey: .type)
             self.expiration = try .init(from: decoder)
@@ -255,7 +272,7 @@ extension API.Market.Instrument {
     /// Expiration date details.
     public struct Expiration: Decodable {
         /// Expiration date. The date (and sometimes time) at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire, and have an expiry of '-'. eg DEC-14, or DFB for daily funded bets.
-        public let expiry: API.Instrument.Expiry
+        public let expiry: IG.Deal.Expiry
         /// The last dealing date.
         public let lastDealingDate: Date?
         /// Settlement information.
@@ -264,7 +281,7 @@ extension API.Market.Instrument {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
 
-            self.expiry = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .expirationDate) ?? .none
+            self.expiry = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
                 self.settlementInfo = nil
                 self.lastDealingDate = nil; return
@@ -555,7 +572,10 @@ extension API.Market {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date ?? Date()
+            guard let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date else {
+                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The response date wasn't found on JSONDecoder "userInfo""#)
+                throw DecodingError.valueNotFound(Date.self, ctx)
+            }
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.Formatter.time)
             
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {

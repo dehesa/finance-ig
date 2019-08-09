@@ -10,29 +10,22 @@ extension API.Request.Session {
     /// Region-specific login restrictions may apply.
     /// - note: No credentials are needed for this endpoint.
     /// - todo: Password encryption doesn't work! Currently it is ignoring the parameter.
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func loginCertificate(apiKey: String, user: API.User, encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
-        return SignalProducer(api: self.api) { (_) in
-                let apiKeyLength: Int = 40
-                guard apiKey.utf8.count == apiKeyLength else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided must be exactly \(apiKeyLength) UTF8 characters. The one provided (\"\(apiKey)\") has \(apiKey.utf8.count) characters.")
-                }
-            }.request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: apiKey] }, body: { (_,_) in
+    internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
-                let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
-                return decoder
-            }).map { (r: API.Session.Certificate) in
+            .decodeJSON()
+            .map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(clientId: r.clientId, accountId: r.accountId, apiKey: apiKey, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
     
@@ -46,11 +39,8 @@ extension API.Request.Session {
                 [URLQueryItem(name: "fetchSessionTokens", value: "true")]
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
-                let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
-                return decoder
-            }).map { (r: API.Session.WrapperCertificate) in
+            .decodeJSON()
+            .map { (r: API.Session.WrapperCertificate) in
                 .init(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
             }
     }
@@ -76,11 +66,8 @@ extension API.Request.Session {
                 return result
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON(with: { (_, responseHeader) -> JSONDecoder in
-                let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseHeader] = responseHeader
-                return decoder
-            }).map { (r: API.Session.WrapperCertificate) in
+            .decodeJSON()
+            .map { (r: API.Session.WrapperCertificate) in
                 let token = API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
             }
@@ -94,16 +81,12 @@ extension API.Request.Session {
     /// 1. call /session/encryptionKey which gives a key and timestamp
     /// 2. create a RSA token using the key.
     /// 3. encrypt password + "|" + timestamp
-    /// - parameter apiKey: The API key which the encryption key will be associated to.
+    /// - parameter key: The API key which the encryption key will be associated to.
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
-    fileprivate func generateEncryptionKey(apiKey: String) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
-        return SignalProducer(api: self.api) { (_) -> String in
-            guard !apiKey.isEmpty else {
-                throw API.Error.invalidRequest(underlyingError: nil, message: "The API key provided cannot be empty.")
-            }
-            return apiKey
-        }.request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,key) in [.apiKey: key] })
+    fileprivate func generateEncryptionKey(key: API.Key) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
+        return SignalProducer(api: self.api)
+            .request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] })
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
@@ -139,9 +122,9 @@ extension API.Session {
     /// CST credentials used to access the IG platform.
     fileprivate struct Certificate: Decodable {
         /// Client identifier.
-        let clientId: Int
+        let clientId: IG.Client.Identifier
         /// Active account identifier.
-        let accountId: String
+        let accountId: IG.Account.Identifier
         /// Lightstreamer endpoint for subscribing to account and price updates.
         let streamerURL: URL
         /// Timezone of the active account.
@@ -152,10 +135,8 @@ extension API.Session {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            let client = try container.decode(String.self, forKey: .clientId)
-            self.clientId = try Int(client) ?! DecodingError.dataCorruptedError(forKey: .clientId, in: container, debugDescription: "The clientID \"\(client)\" couldn't be transformed into an integer.")
-            
-            self.accountId = try container.decode(String.self, forKey: .accountId)
+            self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
+            self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             
             let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)

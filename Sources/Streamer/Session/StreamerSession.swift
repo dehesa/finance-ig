@@ -11,13 +11,14 @@ extension Streamer.Request.Session {
     /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
     public func connect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
-            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
             unowned let channel = streamer.channel
             let initialStatus = channel.status.value
             
             guard initialStatus != .stalled else {
-                return generator.send(error: .invalidRequest(message: "The streamer seems to be \"stalled\". Please, disconnect it and connect it back again."))
+                let error: Streamer.Error = .invalidRequest(#"The streamer seems to be "stalled"."#, suggestion: "Disconnect it and connect it back again.")
+                return generator.send(error: error)
             }
             guard case .disconnected(isRetrying: false) = initialStatus else {
                 return generator.sendCompleted()
@@ -45,10 +46,12 @@ extension Streamer.Request.Session {
                         guard statuses.count > 1 else { return }
                         fallthrough
                     case .stalled:
-                        generator.send(error: .invalidRequest(message: "A connection to the server couldn't be established. Status cycle:\n\(statuses.debugDescription)"))
+                        var error: Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status."#, suggestion: "Disconnect it and connect it back again.")
+                        error.context.append(("Status cycle", statuses))
+                        generator.send(error: error)
                     }
                 case .completed: // The producer shall only complete when the channel is deinitialized
-                    generator.send(error: .sessionExpired)
+                    generator.send(error: .sessionExpired())
                 case .interrupted: // The producer shall only be interrupted by stoping the result signal's lifetime
                     return
                 case .failed: // The producer shall never fail
@@ -64,7 +67,7 @@ extension Streamer.Request.Session {
     /// - returns: Forwards all statuses till it reliably disconnects from the server (in which case the status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
     @discardableResult public func disconnect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
-            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
             unowned let channel = streamer.channel
             if case .disconnected(isRetrying: false) = channel.status.value {
@@ -83,7 +86,7 @@ extension Streamer.Request.Session {
                     guard case .disconnected(isRetrying: false) = status else { return }
                     generator.sendCompleted()
                 case .completed: // The producer shall only complete when the streamer channel is deinitialized
-                    generator.send(error: .sessionExpired)
+                    generator.send(error: .sessionExpired())
                 case .interrupted: // The producer shall only be interrupted by stopping the result signal's lifetime
                     return
                 case .failed: // The producer shall never fail
@@ -104,7 +107,7 @@ extension Streamer.Request.Session {
     /// - returns: Forwards all "items" that have been successfully unsubscribed, till there are no more, in which case it sends a *complete* event.
     public func unsubscribeAll() -> SignalProducer<String,Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
-            guard let streamer = streamer else { return generator.send(error: .sessionExpired) }
+            guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
             unowned let channel = streamer.channel
             let iterator: [Self.UnsubWrapper] = channel.unsubscribeAll().map { .init($0) }
@@ -124,13 +127,16 @@ extension Streamer.Request.Session {
                         case .unsubscribed:
                             storage.remove(wrapper)
                             generator.send(value: wrapper.subscription.item)
-                        case .error(let error):
+                        case .error(let underlyingError):
                             storage.remove(wrapper)
-                            errors.append(.subscriptionFailed(item: wrapper.subscription.item, fields: wrapper.subscription.fields, error: error))
+                            let message = "An unknown problem occurred when unsubscribing."
+                            let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
+                            let error: Streamer.Error = .subscriptionFailed(message, item: wrapper.subscription.item, fields: wrapper.subscription.fields, underlying: underlyingError, suggestion: suggestion)
+                            errors.append(error)
                         }
                     case .completed: // The producer shall only complete when the channel is deinitialized
                         storage.remove(wrapper)
-                        errors.append(.sessionExpired)
+                        errors.append(.sessionExpired())
                     case .interrupted: // The producer shall only be interrupted by stopping the result signal's lifetime
                         return
                     case .failed: // The producer shall never fail
@@ -140,10 +146,15 @@ extension Streamer.Request.Session {
                     wrapper.detacher?.dispose()
                     guard storage.isEmpty else { return }
                     
-                    if let error = errors.first {
-                        return generator.send(error: error)
-                    } else {
+                    if errors.isEmpty {
                         return generator.sendCompleted()
+                        
+                    } else {
+                        let message = "\(errors.count) were encountered when trying to unsubscribe all current \(Streamer.self) subscriptions."
+                        let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
+                        var error: Streamer.Error = .init(.subscriptionFailed, message, suggestion: suggestion)
+                        error.context.append(("Unsubscription errors", errors))
+                        return generator.send(error: error)
                     }
                 }
             }
@@ -303,26 +314,32 @@ extension Streamer.Session.Status {
 extension Streamer.Session.Status: CustomDebugStringConvertible {
     public var debugDescription: String {
         switch self {
-        case .connecting: return "Connecting..."
+        case .connecting: return "Connecting"
         case .connected(let connection):
-            var result = "Connected"
+            var (result, isPolling) = ("Connected ", false)
             switch connection {
             case .sensing:
-                result.append(" but sensing medium...")
-            case .websocket(let isPolling):
-                result.append(" (WebSocket")
-                if (isPolling) { result.append(" polling)") }
-                else { result.append(" stream)") }
-            case .http(let isPolling):
-                result.append(" (HTTP")
-                if (isPolling) { result.append(" polling)") }
-                else { result.append(" stream)") }
+                result.append("(sensing)")
+                return result
+            case .websocket(let polling):
+                result.append("[WebSocket")
+                isPolling = polling
+            case .http(let polling):
+                result.append("[HTTP")
+                isPolling = polling
+            }
+            if (isPolling) {
+                result.append(" polling]")
+            } else {
+                result.append(" stream]")
             }
             return result
         case .stalled:    return "Stalled!"
         case .disconnected(let isRetrying):
             var result = "Disconnected"
-            if (isRetrying) { result.append(" but retrying...") }
+            if (isRetrying) {
+                result.append(" (retrying)")
+            }
             return result
         }
     }

@@ -25,7 +25,7 @@ extension API.Response {
     /// - parameter data: The data returned by the server.
     /// - parameter response: An object that provides response metadata, such as HTTP headers and status code. If you are making an HTTP or HTTPS request, the returned object is actually an `HTTPURLResponse` object.
     /// - parameter error: An error object that indicates why the request failed, or nil if the request was successful.
-    internal typealias DataTaskResult = (Data?, URLResponse?, Error?) -> Swift.Void
+    internal typealias DataTaskResult = (Data?, URLResponse?, Swift.Error?) -> Swift.Void
 }
 
 //public typealias DataTaskResult = (Data?, URLResponse?, Error?) -> Swift.Void

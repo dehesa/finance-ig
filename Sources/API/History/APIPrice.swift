@@ -14,18 +14,14 @@ extension API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func get(epic: Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func get(epic: IG.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
         return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: DateFormatter) in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidCredentials(nil, message: "No credentials found")
+                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
                 }
             
                 let formatter = API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
-            
-                guard let page = page else {
-                    return (0, 1, formatter)
-                }
-            
+                guard let page = page else { return (0, 1, formatter) }
                 let pageNumber = (page.number > 0) ? page.number : 1
                 return (page.size, pageNumber, formatter)
             }).request(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (_,validated) in
@@ -49,16 +45,8 @@ extension API.Request.Price {
             }, endpoint: { (producer) -> SignalProducer<(Self.PagedPrices.Metadata.Page, (prices: [API.Price], allowance: API.Price.Allowance)), API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
-                    .decodeJSON { (request, response) -> JSONDecoder in
-                        guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                              let date = API.Formatter.humanReadableLong.date(from: dateString) else {
-                            throw API.Error.invalidResponse(response, request: request, data: nil, underlyingError: nil, message: "The response date couldn't be inferred.")
-                        }
-                        
-                        return JSONDecoder().set {
-                            $0.userInfo[API.JSON.DecoderKey.responseDate] = date
-                        }
-                    }.map { (response: Self.PagedPrices) in
+                    .decodeJSON()
+                    .map { (response: Self.PagedPrices) in
                         let result = (response.prices, allowance: response.metadata.allowance)
                         return (response.metadata.page, result)
                     }
@@ -239,10 +227,18 @@ extension API.Price {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
-            guard let date = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date else {
-                throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: "The JSON decoder didn't have the response date in its userinfo property.")
+            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
+                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The request/response values stored in the JSONDecoder "userInfo" couldn't be found"#)
+                throw DecodingError.valueNotFound(HTTPURLResponse.self, ctx)
             }
+            
+            guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                  let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                let message = "The date on the response header couldn't be processed."
+                throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: message)
+            }
+            
+            let numSeconds = try container.decode(TimeInterval.self, forKey: .seconds)
             self.resetDate = date.addingTimeInterval(numSeconds)
             
             self.remaining = try container.decode(UInt.self, forKey: .remainingDataPoints)

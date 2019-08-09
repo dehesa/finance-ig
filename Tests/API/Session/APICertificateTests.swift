@@ -7,15 +7,14 @@ final class APICertificateTests: XCTestCase {
     /// Tests the CST lifecycle: session creation, refresh, and disconnection.
     func testCertificateLogInOut() {
         let api = Test.makeAPI(credentials: nil)
-        
-        /// The info needed to request CST credentials.
-        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        let account = Test.account.identifier
+        let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
         
-        let credentials = try! api.session.loginCertificate(apiKey: info.apiKey, user: user).single()!.get()
-        XCTAssertGreaterThan(credentials.clientIdentifier, 0)
-        XCTAssertEqual(credentials.apiKey, info.apiKey)
-        XCTAssertEqual(credentials.accountIdentifier, info.accountId)
+        let credentials = try! api.session.loginCertificate(key: key, user: user).single()!.get()
+        XCTAssertFalse(credentials.client.rawValue.isEmpty)
+        XCTAssertEqual(credentials.key, key)
+        XCTAssertEqual(credentials.account, account)
         XCTAssertGreaterThan(credentials.token.expirationDate, Date())
         guard case .certificate(let access, let security) = credentials.token.value else {
             return XCTFail("Credentials were expected to be CST. Credentials received: \(credentials)")
@@ -34,15 +33,15 @@ final class APICertificateTests: XCTestCase {
     /// Tests the refresh functionality.
     func testRefreshCertificates() {
         let api = Test.makeAPI(credentials: nil)
-        
-        let info: (accountId: String, apiKey: String) = (Test.account.identifier, Test.account.api.key)
+        let account = Test.account.identifier
+        let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
         
-        let credentials = try! api.session.loginOAuth(apiKey: info.apiKey, user: user).single()!.get()
+        let credentials = try! api.session.loginOAuth(key: key, user: user).single()!.get()
         api.session.credentials = credentials
-        XCTAssertGreaterThan(credentials.clientIdentifier, 0)
-        XCTAssertEqual(credentials.apiKey, info.apiKey)
-        XCTAssertEqual(credentials.accountIdentifier, info.accountId)
+        XCTAssertFalse(credentials.client.rawValue.isEmpty)
+        XCTAssertEqual(credentials.key, key)
+        XCTAssertEqual(credentials.account, account)
         XCTAssertGreaterThan(credentials.token.expirationDate, Date())
         guard case .oauth = credentials.token.value else { return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)") }
         

@@ -5,7 +5,7 @@ extension Test {
     /// Structure containing the loging information for the testing environment.
     struct Account: Decodable {
         /// The target account identifier.
-        let identifier: String
+        let identifier: IG.Account.Identifier
         /// List of variables required to connect to the API.
         let api: Self.APIData
         /// List of variables required to connect to the Streamer.
@@ -13,7 +13,7 @@ extension Test {
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.identifier = try container.decode(String.self, forKey: .accountId)
+            self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.api = try container.decode(Self.APIData.self, forKey: .api)
             self.streamer = try container.decodeIfPresent(Self.StreamerData.self, forKey: .streamer)
         }
@@ -39,7 +39,7 @@ extension Test.Account {
         /// ```
         let rootURL: URL
         /// The API API key used to identify the developer.
-        let key: String
+        let key: IG.API.Key
         /// Credentials used on the API server
         let credentials: Self.Credentials
         
@@ -56,7 +56,7 @@ extension Test.Account {
                 throw DecodingError.dataCorruptedError(forKey: .rootURL, in: container, debugDescription: "The API scheme couldn't be inferred from the API root URL: \(self.rootURL)")
             }
             self.scheme = processedScheme
-            self.key = try container.decode(String.self, forKey: .key)
+            self.key = try container.decode(IG.API.Key.self, forKey: .key)
             
             if container.contains(.user) {
                 let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .user)
@@ -107,7 +107,7 @@ extension Test.Account {
         /// - a https URL (e.g. `https://demo-apd.marketdatasystems.com`).
         let rootURL: URL
         /// The Lightstreamer identifier and password.
-        let credentials: (identifier: String, password: String)?
+        let credentials: (identifier: IG.Account.Identifier, password: String)?
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -119,7 +119,7 @@ extension Test.Account {
             
             if container.contains(.user) {
                 let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .user)
-                let identifier = try nested.decode(String.self, forKey: .identifier)
+                let identifier = try nested.decode(IG.Account.Identifier.self, forKey: .identifier)
                 guard nested.contains(.password) else {
                     let ctx = DecodingError.Context(codingPath: nested.codingPath, debugDescription: "The password key was not found.")
                     throw DecodingError.keyNotFound(Self.CodingKeys.NestedKeys.password, ctx)
@@ -166,45 +166,6 @@ extension Test.Account {
             self = result
         }
     }
-    
-    /// Error that can be thrown by trying to load an testing account file.
-    private enum Error: Swift.Error, CustomDebugStringConvertible {
-        /// The environment key passed as parameter was not found on the environment variables.
-        case environmentVariableNotFound(key: String)
-        /// The URL given in the file is invalid or none existant
-        case invalidURL(String?)
-        /// The bundle resource path couldn't be found.
-        case bundleResourcesNotFound
-        /// The account file couldn't be retrieved.
-        case dataLoadFailed(url: URL, underlyingError: Swift.Error)
-        /// The account failed couldn't be parsed.
-        case accountParsingFailed(url: URL, underlyingError: Swift.Error)
-        
-        var debugDescription: String {
-            var result = IG.ErrorPrint(domain: "Test Account Error")
-            
-            switch self {
-            case .environmentVariableNotFound(let key):
-                result.title = "Environment variable key not found."
-                result.append(details: "Key: \(key)")
-            case .invalidURL(let path):
-                result.title = "Invald URL."
-                result.append(details: "Path: \"\(path ?? "nil")\"")
-            case .bundleResourcesNotFound:
-                result.title = "Bundle resources not found."
-            case .dataLoadFailed(let url, let underlyingError):
-                result.title = "Data load failed."
-                result.append(details: "File URL: \(url.absoluteString)")
-                result.append(underlyingError: underlyingError)
-            case .accountParsingFailed(let url, let underlyingError):
-                result.title = "Account parsing failed."
-                result.append(details: "File URL: \(url.absoluteString)")
-                result.append(underlyingError: underlyingError)
-            }
-            
-            return result.debugDescription
-        }
-    }
 }
 
 // MARK: Interface
@@ -221,10 +182,8 @@ extension Test.Account {
         let accountFileURL: URL
         do {
             accountFileURL = try Self.parse(path: accountPath)
-        } catch let error as Self.Error {
-            fatalError(error.debugDescription)
-        } catch {
-            fatalError("Error couldn't be identified.")
+        } catch let error {
+            fatalError((error as! Self.Error).debugDescription)
         }
         
         let data: Data
@@ -277,7 +236,7 @@ extension Test.Account {
     /// Returns the URL for the test bundle resource.
     private static func bundleResourceURL() throws -> URL {
         let bundle = Bundle(for: UselessClass.self)
-        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound }
+        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound() }
         return url
     }
     

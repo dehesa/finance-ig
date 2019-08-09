@@ -15,11 +15,13 @@ extension API.Request.Activity {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (dealId: String?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
+    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
         let dateFormatter: DateFormatter = API.Formatter.iso8601.deepCopy
         
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
-                let timezone = try api.session.credentials?.timezone ?! API.Error.invalidCredentials(nil, message: "No credentials were found; thus, the user's timezone couldn't be inferred.")
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                }
                 dateFormatter.timeZone = timezone
                 return dateFormatter
             }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in
@@ -33,8 +35,8 @@ extension API.Request.Activity {
                     queries.append(URLQueryItem(name: "detailed", value: "true"))
                 }
                 
-                if let dealId = filterBy.dealId {
-                    queries.append(URLQueryItem(name: "dealId", value: dealId))
+                if let dealIdentifier = filterBy.identifier {
+                    queries.append(URLQueryItem(name: "dealId", value: dealIdentifier.rawValue))
                 }
                 
                 if let filter = filterBy.FIQL {
@@ -54,11 +56,15 @@ extension API.Request.Activity {
                     return nil
                 }
                 
-                let queries = try URLComponents(string: next)?.queryItems ?! API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activities couldn't be processed because there were no \"next\" queries.")
+                guard let queries = URLComponents(string: next)?.queryItems else {
+                    let message = #"The paginated request for activities couldn't be processed because there were no "next" queries."#
+                    throw API.Error.invalidRequest(message, request: previous.request, suggestion: API.Error.Suggestion.bug)
+                }
                 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The paginated request for activies couldn't be processed because the \"from\" and/or \"to\" queries couldn't be found.")
+                    let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found."#
+                    throw API.Error.invalidRequest(message, request: previous.request, suggestion: API.Error.Suggestion.bug)
                 }
                 
                 var nextRequest = initialRequest
@@ -133,7 +139,7 @@ extension API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
         /// Deal identifier.
-        public let dealIdentifier: API.Deal.Identifier
+        public let identifier: IG.Deal.Identifier
         /// Activity type.
         public let type: Self.Kind
         /// Action status.
@@ -143,9 +149,9 @@ extension API {
         /// The channel which triggered the activity.
         public let channel: Self.Channel
         /// Instrument epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// The period of the activity item.
-        public let expiry: API.Instrument.Expiry
+        public let expiry: IG.Deal.Expiry
         /// Activity description.
         public let title: String
         /// Activity details.
@@ -156,18 +162,19 @@ extension API {
             let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
-            self.dealIdentifier = try container.decode(API.Deal.Identifier.self, forKey: .dealId)
+            self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.status = try container.decode(Self.Status.self, forKey: .status)
             self.channel = try container.decode(Self.Channel.self, forKey: .channel)
             self.title = try container.decode(String.self, forKey: .title)
-            self.epic = try container.decode(Epic.self, forKey: .epic)
-            self.expiry = try container.decodeIfPresent(API.Instrument.Expiry.self, forKey: .expiry) ?? .none
+            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
+            self.expiry = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .expiry) ?? .none
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case dealId, type, status, date, channel
+            case identifier = "dealId"
+            case type, status, date, channel
             case epic, expiry = "period"
             case title = "description", details
         }
@@ -216,23 +223,23 @@ extension API.Activity {
     /// Further details of the targeted activity.
     public struct Details: Decodable {
         /// Transient deal reference for an unconfirmed trade.
-        public let dealReference : API.Deal.Reference?
+        public let reference : IG.Deal.Reference?
         /// Deal affected by an activity.
         public let actions: [Self.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
-        /// The currency denomination (e.g. `GBP`).
+        /// The currency denomination.
         public let currency: Currency.Code
         /// Deal direction.
-        public let direction: API.Deal.Direction
+        public let direction: IG.Deal.Direction
         /// Deal size.
         public let size: Decimal
         /// Instrument price at which the activity has been "commited"
         public let level: Decimal
         /// Level at which the user is happy to take profit.
-        public let limit: API.Deal.Limit?
+        public let limit: IG.Deal.Limit?
         /// Stop for the targeted deal
-        public let stop: API.Deal.Stop?
+        public let stop: IG.Deal.Stop?
         /// Working order expiration.
         ///
         /// If the activity doesn't reference a working order, this property will be `nil`.
@@ -240,72 +247,32 @@ extension API.Activity {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.dealReference = try container.decodeIfPresent(API.Deal.Reference.self, forKey: .dealReference)
+            self.reference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .reference)
             self.actions = try container.decode([Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
-            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
+            self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            // Figure out limit.
-            let limitLevel = try container.decodeIfPresent(Decimal.self, forKey: .limitLevel)
-            let limitDistance = try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)
-            switch (limitLevel, limitDistance) {
-            case (.none, .none):
-                self.limit = nil
-            case (.none, let distance?):
-                self.limit = .distance(distance)
-            case (let level?,_):
-                self.limit = .position(level: level)
-            }
-            // Figure out stop.
-            let stop: API.Deal.Stop.Kind?
-            let stopLevel = try container.decodeIfPresent(Decimal.self, forKey: .stopLevel)
-            let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance)
-            switch (stopLevel, stopDistance) {
-            case (.none, .none): stop = nil
-            case (.none, let distance?): stop = .distance(distance)
-            case (let level?, _): stop = .position(level: level)
-            }
-            if let stop = stop {
-                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
-                let trailingDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopTrailingDistance)
-                let trailingIncrement = try container.decodeIfPresent(Decimal.self, forKey: .stopTrailingIncrement)
-                
-                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: nil) : .exposed
-                let trailing: API.Deal.Stop.Trailing
-                switch (trailingDistance, trailingIncrement) {
-                case (.none, .none):
-                    trailing = .static
-                case (let distance?, let increment?):
-                    trailing = .dynamic(.init(distance: distance, increment: increment))
-                case (.some, .none):
-                    throw DecodingError.keyNotFound(Self.CodingKeys.stopTrailingDistance,  .init(codingPath: container.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
-                case (.none, .some):
-                    throw DecodingError.keyNotFound(Self.CodingKeys.stopTrailingIncrement, .init(codingPath: container.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
-                }
-                self.stop = .init(stop, risk: risk, trailing: trailing)
-            } else {
-                self.stop = nil
-            }
-            // Figure out working order expiration.
-            if let expirationString = try container.decodeIfPresent(String.self, forKey: .expiration) {
-                if expirationString == "GTC" {
-                    self.expiration = .tillCancelled
-                } else {
+            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance, referencing: (self.direction, self.level))
+            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement), referencing: (self.direction, self.level))
+            self.expiration = try {
+                switch try container.decodeIfPresent(String.self, forKey: .expiration) {
+                case .none: return nil
+                case "GTC": return .tillCancelled
+                case let dateString?:
                     guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
                         throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
                     }
-                    let date = try formatter.date(from: expirationString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: expirationString))
-                    self.expiration = .tillDate(date)
+                    let date = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
+                    return .tillDate(date)
                 }
-            } else {
-                self.expiration = nil
-            }
+            }()
         }
         
         private enum CodingKeys: String, CodingKey {
-            case dealReference, actions, currency, direction
+            case reference = "dealReference"
+            case actions, currency, direction
             case marketName, size
             case level, limitLevel, limitDistance
             case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
@@ -321,7 +288,7 @@ extension API.Activity.Details {
         /// Action type.
         public let type: Self.Kind
         /// Affected deal identifier.
-        public let dealIdentifier: API.Deal.Identifier
+        public let dealIdentifier: IG.Deal.Identifier
         
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }

@@ -2,31 +2,6 @@ import Lightstreamer_macOS_Client
 import ReactiveSwift
 import Foundation
 
-internal protocol StreamerMockableChannel: class {
-    /// Initializes the session setting up all parameters to be ready to connect.
-    /// - parameter rootURL: The URL where the streaming server is located.
-    /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
-    init(rootURL: URL, credentials: Streamer.Credentials)
-    /// Returns the current streamer status.
-    var status: Property<Streamer.Session.Status> { get }
-    /// Requests to open the session against the Lightstreamer server.
-    /// - note: This method doesn't check whether the channel is currently connected or not.
-    func connect()
-    /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
-    /// - parameter mode: The streamer subscription mode.
-    /// - parameter item: The item identfier (e.g. "MARKET", "ACCOUNT", etc).
-    /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
-    /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
-    /// - returns: A producer providing updates as values. The producer will never complete, it will only be stoped by not holding a reference to the signal or by interrupting it with a disposable.
-    func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update],Streamer.Error>
-    /// Unsubscribe to all ongoing subscriptions.
-    /// - returns: All currently ongoing subscriptions.
-    func unsubscribeAll() -> [Streamer.Subscription]
-    /// Requests to close the Session opened against the configured Lightstreamer Server (if any).
-    /// - note: Active sbuscription instances, associated with this LightstreamerClient instance, are preserved to be re-subscribed to on future Sessions.
-    func disconnect()
-}
-
 extension Streamer {
     /// Contains all functionality related to the Streamer session.
     internal final class Channel: NSObject {
@@ -51,7 +26,7 @@ extension Streamer {
             self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
             
             self.client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-            self.client.connectionDetails.user = credentials.identifier
+            self.client.connectionDetails.user = credentials.identifier.rawValue
             self.client.connectionDetails.setPassword(credentials.password)
             self.mutableStatus = .init(.disconnected(isRetrying: false))
             self.status = self.mutableStatus.skipRepeats()
@@ -78,7 +53,7 @@ extension Streamer.Channel: StreamerMockableChannel {
     
     @nonobjc func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update],Streamer.Error> {
         return .init { [weak self] (generator, lifetime) in
-            guard let self = self else { return generator.send(error: .sessionExpired) }
+            guard let self = self else { return generator.send(error: .sessionExpired()) }
             
             let subscription = Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, target: self.queue)
             self.subscriptions.insert(subscription)
@@ -100,13 +75,13 @@ extension Streamer.Channel: StreamerMockableChannel {
                         return generator.send(value: update)
                     case .updateLost(let count, _):
                         #if DEBUG
-                        var error = ErrorPrint(domain: "Streamer Channel", title: "\(item) with fields: \(fields.joined(separator: ","))")
-                        error.append(details: "\(count) updates were lost before the next one arrived.")
-                        print(error.debugDescription)
+                        debugPrint("Streamer subscription lost \(count) updates from \(item) [\(fields.joined(separator: ","))].")
                         #endif
                         return
                     case .error(let error):
-                        generator.send(error: .subscriptionFailed(item: item, fields: fields, error: error))
+                        let message = "The subscription couldn't be established."
+                        let error: Streamer.Error = .subscriptionFailed(message, item: item, fields: fields, underlying: error, suggestion: Streamer.Error.Suggestion.reviewError)
+                        generator.send(error: error)
                     case .subscribed, .unsubscribed: // Subscription and unsubscription may happen for temporary loss of connection.
                         return
                     }

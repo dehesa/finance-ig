@@ -25,3 +25,4 @@ extension NumberFormatter: SetUp {}
 extension DateFormatter: SetUp {}
 extension DateComponents: SetUp {}
 extension Calendar: SetUp {}
+extension API.Error: SetUp {}

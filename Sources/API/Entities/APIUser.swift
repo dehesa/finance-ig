@@ -28,7 +28,7 @@ extension API {
         }
         
         public init(arrayLiteral elements: String...) {
-            guard elements.count == 2 else { fatalError("A \(Self.self) can only be initialized with an array with two non-empty strings.")}
+            guard elements.count == 2 else { fatalError(#"A "\#(Self.self)" type can only be initialized with an array with two non-empty strings."#)}
             self.name = .init(stringLiteral: elements[0])
             self.password = .init(stringLiteral: elements[1])
         }
@@ -41,7 +41,7 @@ extension API.User {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The username is not in the valid format.") }
+            guard Self.validate(value) else { fatalError(#"The username "\#(value)" is not in a valid format."#) }
             self.rawValue = value
         }
         
@@ -54,7 +54,7 @@ extension API.User {
             let container = try decoder.singleValueContainer()
             let name = try container.decode(String.self)
             guard Self.validate(name) else {
-                let reason = "The username being decoded doesn't conform to the validation function."
+                let reason = #"The username "\#(name)" doesn't conform to the validation function."#
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = name
@@ -74,8 +74,7 @@ extension API.User {
             return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
         }
         
-        /// The allowed character set for username..
-        /// It is used on validation.
+        /// The allowed character set for username. It is used on validation.
         private static let allowedSet: CharacterSet = {
             var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
             result.formUnion(CharacterSet.IG.lowercaseANSI)
@@ -92,7 +91,7 @@ extension API.User {
         private let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The password is not in the valid format.") }
+            guard Self.validate(value) else { fatalError("The password is not in a valid format.") }
             self.rawValue = value
         }
         
