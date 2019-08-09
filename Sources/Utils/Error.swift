@@ -1,69 +1,115 @@
-/// Wrapper for an error representation.
-internal struct ErrorPrint {
-    /// Two, three, or four words title of where the error happened.
-    let domain: String
-    /// Brief title description of the error.
-    var title: String
-    /// Several line details on what happenend.
-    private(set) var details: [String] = []
-    /// Any value/class instances involved on the error.
-    private(set) var involved: [Any] = []
+import Foundation
+
+/// Errors thrown by this framework follow this protocol.
+public protocol Error: Swift.Error, CustomDebugStringConvertible {
+    /// The error subtype within this errors domain.
+    associatedtype Kind: CaseIterable
     
-    /// Designated initializer giving the error domain.
-    /// - parameter domain: Two, three, or four words explaining where the error has happened.
-    /// - parameter title: Error title explain in one line of text what has happenend.
-    init(domain: String, title: String = "") {
-        self.domain = domain
-        self.title = title
+    /// The type of error.
+    var type: Self.Kind { get }
+    /// A message accompaigning the error explaining what happened.
+    var message: String { get }
+    /// Possible solutions for the problem.
+    var suggestion: String { get }
+    /// Any underlying error that was raised right before this hosting error.
+    var underlyingError: Swift.Error? { get }
+    /// Store values/objects that gives context to the hosting error.
+    var context: [(title: String, value: Any)] { get }
+}
+
+internal protocol ErrorPrintable {
+    /// The human readable error domain.
+    var printableDomain: String { get }
+    /// The human readable error type.
+    var printableType: String { get }
+}
+
+extension Error where Self: ErrorPrintable {
+    /// Prefix to append before any new line when making a human readable version of the error.
+    internal static var prefix: String { "\n\t" }
+    /// Header to be appended to any human readable version of the error.
+    internal var printableHeader: String {
+        var result = "\n\n[\(self.printableDomain)] \(self.printableType)."
+        result.append("\(Self.prefix)Description: \(self.message)")
+        result.append("\(Self.prefix)Suggestions: \(self.suggestion)")
+        return result
     }
-    /// Appends a new description line (if any) to the error details.
-    ///
-    /// This function won't perform any operation if `details` is nil or an empty string.
-    /// - parameter details: The new line giving further details about the error.
-    mutating func append(details: String?) {
-        guard let details = details, !details.isEmpty else { return }
-        self.details.append(details)
+    /// Human readable version of the underlying error.
+    internal var printableUnderlyingError: String? {
+        var result = "\(Self.prefix)Underlying "
+        var underlyingError: Swift.Error? = nil
+        
+        guard let error = self.underlyingError else { return nil }
+        
+        if let encodingError = error as? EncodingError {
+            result.append("encoding error: ")
+            switch encodingError {
+            case .invalidValue(let value, let ctx):
+                result.append(#"Invalid value at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
+                result.append("\(Self.prefix)\t\(String(describing: value))")
+                underlyingError = ctx.underlyingError
+            @unknown default:
+                result.append("Non-identifyiable.")
+            }
+        } else if let decodingError = error as? DecodingError {
+            result.append("decoding error: ")
+            switch decodingError {
+            case .keyNotFound(let key, let ctx):
+                result.append(#"Key "\#(key.printable)" not found at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
+                underlyingError = ctx.underlyingError
+            case .valueNotFound(let type, let ctx):
+                result.append(#"Value of type "\#(type.self)" not found at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
+                underlyingError = ctx.underlyingError
+            case .typeMismatch(let type, let ctx):
+                result.append(#"Mismatch of expected value type "\#(type.self)" at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
+                underlyingError = ctx.underlyingError
+            case .dataCorrupted(let ctx):
+                result.append(#"Data corrupted at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
+                underlyingError = ctx.underlyingError
+            @unknown default:
+                result.append("Non-identifyiable.")
+            }
+        } else {
+            #warning("Implement underlying error representation")
+            fatalError()
+        }
+        
+        if let suberror = underlyingError {
+            result.append("\(Self.prefix)\tUnderlying \(suberror.self) error: )")
+            
+            let string = String(describing: suberror)
+            let end = string.index(string.startIndex, offsetBy: 50, limitedBy: string.endIndex) ?? string.endIndex
+            result.append(String(string[..<end]))
+        }
+        return result
     }
-    /// Transforms the error into a `String` and appends it to the receiving error details.
-    ///
-    /// This function won't perform any operation if `underlyingError` is `nil`.
-    /// - parameter underlyingError: An error associated with the receiving error.
-    mutating func append(underlyingError: Swift.Error?) {
-        guard let error = underlyingError else { return }
-        self.details.append(String(describing: error))
-    }
-    /// Associates all the object within the given collection with the receiving error.
-    ///
-    /// This function won't perform any operation if `involved` is `nil` or an empty collection.
-    /// - parameter involved: Objects involved on the receiving error's occurrance.
-    mutating func append<C:Collection>(involved: C?) {
-        guard let involved = involved, !involved.isEmpty else { return }
-        self.involved.append(involved)
-    }
-    /// Associates the given object with the the receiving error.
-    ///
-    /// This function won't perform any operation if `involved` is `nil`.
-    /// - parameter involved: Object "involved" on the receiving error's occurrance.
-    mutating func append(involved: Any?) {
-        guard let involved = involved else { return }
-        self.involved.append(involved)
+    /// Huamn readable version of the error context.
+    internal var printableContext: String? {
+        #warning("Implement context representation")
+        fatalError()
     }
 }
 
-extension ErrorPrint: CustomDebugStringConvertible {
-    var debugDescription: String {
-        var result = "\n\n[\(self.domain)] \(self.title)"
-        for detail in details {
-            result.append("\n\t")
-            result.append(detail)
+// MARK: - Supporting functionality
+
+extension CodingKey {
+    /// Human readable print version of the coding key.
+    fileprivate var printable: String {
+        if let number = self.intValue {
+            return String(number)
+        } else {
+            return self.stringValue
         }
-        result.append("\n")
-        guard !self.involved.isEmpty else { return result }
-        
-        for target in self.involved {
-            result.append("\n\(target)")
-        }
-        result.append("\n\n")
-        return result
+    }
+}
+
+extension Array where Array.Element == CodingKey {
+    fileprivate var printable: String {
+        return self.map { $0.printable }.joined(separator: "/")
     }
 }

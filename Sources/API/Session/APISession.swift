@@ -9,22 +9,23 @@ extension API.Request.Session {
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` indicating whether the endpoint was successful.
-    public func login(type: Self.Kind, apiKey: String, user: API.User) -> SignalProducer<Void,API.Error> {
+    public func login(type: Self.Kind, key: API.Key, user: API.User) -> SignalProducer<Void,API.Error> {
         let result: SignalProducer<API.Credentials,API.Error>
         
         switch type {
         case .certificate:
-            result = self.loginCertificate(apiKey: apiKey, user: user, encryptPassword: false)
+            result = self.loginCertificate(key: key, user: user, encryptPassword: false)
         case .oauth:
-            result = self.loginOAuth(apiKey: apiKey, user: user)
+            result = self.loginOAuth(key: key, user: user)
         }
         
-        return result.map { [weak weakAPI = self.api] (credentials) in
-            weakAPI?.session.credentials = credentials
-            return ()
+        return result.attemptMap { [weak weakAPI = self.api] (credentials) -> Result<Void,API.Error> in
+            guard let api = weakAPI else { return .failure(.sessionExpired()) }
+            api.session.credentials = credentials
+            return .success(())
         }
     }
 
@@ -42,13 +43,13 @@ extension API.Request.Session {
     
     /// Returns the user's session details for the given credentials.
     /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints. 
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: `SignalProducer` returning information about the current user's session.
-    public func get(apiKey: String, token: API.Credentials.Token) -> SignalProducer<API.Session,API.Error> {
+    public func get(key: API.Key, token: API.Credentials.Token) -> SignalProducer<API.Session,API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: false, headers: { (_,_) in
-                var result = [API.HTTP.Header.Key.apiKey: apiKey]
+                var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -68,31 +69,33 @@ extension API.Request.Session {
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
     /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
-    /// - parameter accountIdentifier: The identifier for the account that the user want to switch to.
+    /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func `switch`(to accountIdentifier: String, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
-        return SignalProducer(api: self.api) { (api) -> Self.PayloadSwitch in
-                guard !accountIdentifier.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "The account identifier cannot be empty.")
-                }
-                return .init(accountId: accountIdentifier, defaultAccount: makingDefault)
-            }.request(.put, "session", version: 1, credentials: true, body: { (_, payload) in
+    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
+        var stored: (request: URLRequest, response: HTTPURLResponse)! = nil
+        return SignalProducer(api: self.api)
+            .request(.put, "session", version: 1, credentials: true, body: { (_,_) in
+                let payload = Self.PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
-            .decodeJSON()
+            .decodeJSON { (request, response) -> JSONDecoder in
+                stored = (request, response)
+                return JSONDecoder()
+            }
             .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Switch) -> Result<API.Session.Switch,API.Error> in
                 guard let api = weakAPI else {
-                    return .failure(.sessionExpired)
+                    return .failure(.sessionExpired())
                 }
                 
                 guard var credentials = api.session.credentials else {
-                    return .failure(.invalidCredentials(nil, message: "The API instance doesn't have any credentials."))
+                    let error: API.Error = .invalidResponse(message: API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation.")
+                    return .failure(error)
                 }
+                credentials.account = accountId
                 
-                credentials.accountIdentifier = accountIdentifier
                 api.session.credentials = credentials
                 return .success(sessionSwitch)
             }
@@ -108,7 +111,7 @@ extension API.Request.Session {
     public func logout() -> SignalProducer<Void,API.Error> {
         return SignalProducer { [weak weakAPI = self.api] (input, lifetime) in
             guard let api = weakAPI else {
-                return input.send(error: .sessionExpired)
+                return input.send(error: .sessionExpired())
             }
             
             guard let creds = api.session.credentials else {
@@ -148,11 +151,11 @@ extension API.Request {
         /// Pointer to the API instance in charge of calling the session endpoints.
         private var pointer: Unmanaged<API>?
         /// The credentials used to call API endpoints.
-        var credentials: API.Credentials?
+        internal var credentials: API.Credentials?
         
         /// Pointer to the actual API instance in charge of calling the endpoint.
         /// - important: Before using the getter, be sure to have set this property or the application will crash.
-        var api: API {
+        internal var api: API {
             get { return pointer!.takeUnretainedValue() }
             set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
         }
@@ -160,7 +163,7 @@ extension API.Request {
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the session endpoints.
         /// - parameter credentials: The credentials to be stored within this API session.
-        init(credentials: API.Credentials?) {
+        internal init(credentials: API.Credentials?) {
             self.pointer = nil
             self.credentials = credentials
         }
@@ -191,9 +194,9 @@ extension API {
     /// Representation of a dealing session.
     public struct Session: Decodable {
         /// Client identifier.
-        public let clientIdentifier: Int
+        public let client: IG.Client.Identifier
         /// Active account identifier.
-        public let accountIdentifier: String
+        public let account: IG.Account.Identifier
         /// Lightstreamer endpoint for subscribing to account and price updates.
         public let streamerURL: URL
         /// Timezone of the active account.
@@ -206,10 +209,8 @@ extension API {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            let clientString = try container.decode(String.self, forKey: .clientIdentifier)
-            self.clientIdentifier = try Int(clientString)
-                ?! DecodingError.typeMismatch(Int.self, .init(codingPath: container.codingPath, debugDescription: "The clientId \"\(clientString)\" couldn't be parsed to a number."))
-            self.accountIdentifier = try container.decode(String.self, forKey: .accountIdentifier)
+            self.client = try container.decode(IG.Client.Identifier.self, forKey: .client)
+            self.account = try container.decode(IG.Account.Identifier.self, forKey: .account)
             let offset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
@@ -219,8 +220,8 @@ extension API {
         }
         
         private enum CodingKeys: String, CodingKey {
-            case clientIdentifier = "clientId"
-            case accountIdentifier = "accountId"
+            case client = "clientId"
+            case account = "accountId"
             case timezoneOffset, locale, currency
             case streamerURL = "lightstreamerEndpoint"
         }

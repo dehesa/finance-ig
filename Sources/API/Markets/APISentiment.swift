@@ -11,7 +11,9 @@ extension API.Request.Markets {
         return SignalProducer(api: self.api) { (_) -> [String] in
                 let filteredIds = marketIdentifiers.filter { !$0.isEmpty }
                 guard !filteredIds.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "There needs to be at least one market identifier.")
+                    let message = "There were no market identifiers to query"
+                    let suggestion = "Input at least one (non-empty) market identifier"
+                    throw API.Error.invalidRequest(message, suggestion: suggestion)
                 }
                 return filteredIds
             }.request(.get, "clientsentiment", version: 1, credentials: true, queries: { (_, marketIds) -> [URLQueryItem] in
@@ -29,7 +31,9 @@ extension API.Request.Markets {
     public func getSentiment(from marketIdentifier: String) -> SignalProducer<API.Market.Sentiment,API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !marketIdentifier.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "An empty market identifier is not supported.")
+                    let message = "There market identifier provided contained no characters"
+                    let suggestion = "Input a valid market identifier"
+                    throw API.Error.invalidRequest(message, suggestion: suggestion)
                 }
             }.request(.get, "clientsentiment/\(marketIdentifier)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -44,8 +48,10 @@ extension API.Request.Markets {
     public func getSentimentRelated(to marketIdentifier: String) -> SignalProducer<[API.Market.Sentiment],API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !marketIdentifier.isEmpty else {
-                    throw API.Error.invalidRequest(underlyingError: nil, message: "An empty market identifier is not supported.")
-                }
+                    let message = "There market identifier provided contained no characters"
+                    let suggestion = "Input a valid market identifier"
+                    throw API.Error.invalidRequest(message, suggestion: suggestion)
+            }
             }.request(.get, "clientsentiment/related/\(marketIdentifier)", version: 1, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)

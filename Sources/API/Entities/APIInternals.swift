@@ -1,6 +1,13 @@
 import Foundation
 import ReactiveSwift
 
+extension API {
+    /// Domain namespace retaining anything related to API requests.
+    public enum Request {}
+    /// Domain namespace retaining anything related to API responses.
+    public enum Response {}
+}
+
 // MARK: - Request types
 
 extension API.Request {
@@ -72,11 +79,13 @@ extension API {
         /// Namesapce for JSON decoding keys.
         enum DecoderKey {
             /// Key for JSON decoders under which the URL response will be stored.
+            static let request = CodingUserInfoKey(rawValue: "urlRequest")!
+            /// Key for JSON decoders under which the URL response will be stored.
             static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
-            /// Key for JSON decoders under which the response date is stored.
+            /// Key for JSON decoders under which the URL response data will be stored.
             static let responseDate = CodingUserInfoKey(rawValue: "urlResponseDate")!
             /// Key for JSON decoders under which a date formatter will be stored.
-            static let dateFormatter = CodingUserInfoKey(rawValue: "dateFormatter")!
+            static let dateFormatter = CodingUserInfoKey(rawValue: "APIDateFormatter")!
         }
     }
     

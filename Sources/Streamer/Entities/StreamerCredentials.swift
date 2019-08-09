@@ -4,16 +4,30 @@ extension Streamer {
     /// Data needed to access the Streaming service.
     public struct Credentials {
         /// Active IG account identifier.
-        public let identifier: String
+        public let identifier: IG.Account.Identifier
         /// Lightstreamer temporal password.
         public let password: String
         
         /// Initializer for hardcoded data.
         /// - parameter identifier: The account identifier.
         /// - parameter password: The lightstreamer password.
-        public init(identifier: String, password: String) {
+        public init(identifier: IG.Account.Identifier, password: String) {
             self.identifier = identifier
             self.password = password
+        }
+        
+        /// Creates the `Streamer` credentials from the received `API` credentials.
+        /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
+        public init(credentials: API.Credentials) throws {
+            guard case .certificate(let access, let security) = credentials.token.value else {
+                throw Streamer.Error.invalidRequest("No Certificate credentials were found.", suggestion: #"Set the API log in as "certificate" type."#)
+            }
+            
+            guard let password = Streamer.Credentials.password(fromCST: access, security: security) else {
+                throw Streamer.Error.invalidRequest("The Streamer password couldn't be formed with the given credentials.", suggestion: #"There seems to be a problem with the "certificate" password provided. If you input it manually, double check it. If not, contact the repository maintainer."#)
+            }
+            
+            self.init(identifier: credentials.account, password: password)
         }
         
         /// Encapsulates the creation of a Lightstreamer password.
@@ -46,22 +60,5 @@ extension Streamer.Credentials: CustomDebugStringConvertible {
             Password:   \(self.password)
         }
         """
-    }
-}
-
-extension API.Credentials {
-    /// Convenience initializer to create the credentials for the Streamer.
-    ///
-    /// - throws: API.Error.invalidCredentials if the receiving credentials is not of certificate type.
-    public func streamerCredentials() throws -> Streamer.Credentials {
-        guard case .certificate(let access, let security) = self.token.value else {
-            throw API.Error.invalidCredentials(self, message: "Streamer credentials initialization failed! The passed API credentials are not of \"certificate\" type.")
-        }
-        
-        guard let password = Streamer.Credentials.password(fromCST: access, security: security) else {
-            throw API.Error.invalidCredentials(self, message: "The Streamer password couldn't be formed with the given credentials.")
-        }
-        
-        return Streamer.Credentials(identifier: self.accountIdentifier, password: password)
     }
 }

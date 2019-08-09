@@ -8,24 +8,27 @@ extension Streamer.Request.Accounts {
     /// Subscribes to the given account and returns in the response the specified attribute/fields.
     ///
     /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter accountIdentifier: The Account identifier.
+    /// - parameter account: The Account identifier.
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to accountIdentifier: String, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Account,Streamer.Error> {
-        let item = "ACCOUNT:".appending(accountIdentifier)
+    public func subscribe(to account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Account,Streamer.Error> {
+        let item = "ACCOUNT:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
-                    let account = try Streamer.Account(identifier: accountIdentifier, item: item, update: update)
+                    let account = try Streamer.Account(identifier: account, item: item, update: update)
                     return .success(account)
-                } catch let error as Streamer.Error {
+                } catch var error as Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
                     return .failure(error)
-                } catch let error {
-                    return .failure(.invalidResponse(item: item, fields: update, message: "An unkwnon error occur will parsing an account update.\nError: \(error)"))
+                } catch let underlyingError {
+                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    return .failure(error)
                 }
             }
     }
@@ -97,7 +100,7 @@ extension Streamer {
     /// Latest information from a user account.
     public struct Account {
         /// Account identifier.
-        public let identifier: String
+        public let identifier: IG.Account.Identifier
         /// Account equity.
         public let equity: Self.Equity
         /// Account funds.
@@ -107,7 +110,7 @@ extension Streamer {
         /// Account Profit and Loss values.
         public let profitLoss: Self.ProfitLoss
         
-        internal init(identifier: String, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(identifier: IG.Account.Identifier, item: String, update: [String:Streamer.Subscription.Update]) throws {
             self.identifier = identifier
             do {
                 self.equity = try .init(update: update)
@@ -115,9 +118,9 @@ extension Streamer {
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
             } catch let error as Streamer.Formatter.Update.Error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An error was encountered when parsing the value \"\(error.value)\" from a \"String\" to a \"\(error.type)\".")
-            } catch let error {
-                throw Streamer.Error.invalidResponse(item: item, fields: update, message: "An unknown error was encountered when parsing the updated payload.\nError: \(error)")
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+            } catch let underlyingError {
+                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
             }
         }
     }
@@ -203,7 +206,7 @@ extension Streamer.Account {
 
 extension Streamer.Account: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = self.identifier
+        var result: String = self.identifier.rawValue
         result.append(prefix: "\n\t", name: "Equity", ":", " ")
         result.append(prefix: "\n\t\t", name: "value", ": ", self.equity.value)
         result.append(prefix: "\n\t\t", name: "used", ": ", self.equity.used)

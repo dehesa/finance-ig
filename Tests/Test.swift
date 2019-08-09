@@ -38,30 +38,27 @@ extension Test {
             var api: IG.API! = Test.makeAPI(credentials: nil)
             defer { api = nil }
             
-            let testApiKey = Test.account.api.key
-            let testCredentials = Test.account.api.credentials
-            let result: Result<API.Credentials, API.Error>?
-            if case .user(let user) = testCredentials {
-                result = api.session.loginCertificate(apiKey: testApiKey, user: user).single()
-            } else {
-                let token: API.Credentials.Token
-                if case .certificate(let access, let security) = testCredentials {
-                    token = .init(.certificate(access: access, security: security), expiresIn: 6 * 60 * 60)
-                } else if case .oauth(let access, let refresh, let scope, let type) = testCredentials {
-                    token = .init(.oauth(access: access, refresh: refresh, scope: scope, type: type), expiresIn: 59)
-                } else { fatalError() }
-                
-                result = api.session.get(apiKey: testApiKey, token: token).map({ (s) -> API.Credentials in
-                    .init(clientId: s.clientIdentifier, accountId: s.accountIdentifier, apiKey: testApiKey, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
-                }).single()
+            let key = Test.account.api.key
+            let result: Result<API.Credentials, API.Error>
+            
+            switch Test.account.api.credentials {
+            case .user(let user):
+                result = api.session.loginCertificate(key: key, user: user).single()!
+            case .certificate(let access, let security):
+                let token = API.Credentials.Token(.certificate(access: access, security: security), expiresIn: 6 * 60 * 60)
+                result = api.session.get(key: key, token: token).map {
+                    API.Credentials(client: $0.client, account: $0.account, key: key, token: token, streamerURL: $0.streamerURL, timezone: $0.timezone)
+                }.single()!
+            case .oauth(let access, let refresh, let scope, let type):
+                let token = API.Credentials.Token(.oauth(access: access, refresh: refresh, scope: scope, type: type), expiresIn: 59)
+                result = api.session.get(key: key, token: token).map {
+                    API.Credentials(client: $0.client, account: $0.account, key: key, token: token, streamerURL: $0.streamerURL, timezone: $0.timezone)
+                }.single()!
             }
 
             switch result {
-            case .none: fatalError("The credentials couldn't be fetched from the server on root URL: \(api.rootURL)")
+            case .success(let creds): self.apiCredentials = creds; return creds
             case .failure(let error): fatalError("\(error)")
-            case .success(let creds):
-                self.apiCredentials = creds
-                return creds
             }
         }
         
@@ -79,7 +76,7 @@ extension Test {
             
             var apiCredentials = self.api
             if case .certificate = apiCredentials.token.value {
-                self.streamerCredentials = try! apiCredentials.streamerCredentials()
+                self.streamerCredentials = try! .init(credentials: apiCredentials)
                 return self.streamerCredentials!
             }
             
@@ -91,7 +88,7 @@ extension Test {
             case .failure(let error): fatalError("\(error)")
             case .success(let token):
                 apiCredentials.token = token
-                self.streamerCredentials = try! apiCredentials.streamerCredentials()
+                self.streamerCredentials = try! .init(credentials: apiCredentials)
                 return self.streamerCredentials!
             }
         }

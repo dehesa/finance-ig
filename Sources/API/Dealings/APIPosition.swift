@@ -21,7 +21,7 @@ extension API.Request.Positions {
     
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
-    public func get(identifier: API.Deal.Identifier) -> SignalProducer<API.Position,API.Error> {
+    public func get(identifier: IG.Deal.Identifier) -> SignalProducer<API.Position,API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json)
@@ -58,15 +58,15 @@ extension API {
     /// Open position data.
     public struct Position: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: API.Deal.Identifier
+        public let identifier: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
-        public let reference: API.Deal.Reference
+        public let reference: IG.Deal.Reference
         /// Date the position was created.
         public let date: Date
         /// Position currency ISO code.
         public let currency: Currency.Code
         /// Deal direction.
-        public let direction: API.Deal.Direction
+        public let direction: IG.Deal.Direction
         /// Size of the contract.
         public let contractSize: Decimal
         /// Deal size.
@@ -74,9 +74,9 @@ extension API {
         /// Level (instrument price) at which the position was openend.
         public let level: Decimal
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: API.Deal.Limit?
+        public let limit: IG.Deal.Limit?
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
-        public let stop: API.Deal.Stop?
+        public let stop: IG.Deal.Stop?
         /// The market basic information and current state (i.e. snapshot).
         public let market: API.Node.Market
         
@@ -85,36 +85,16 @@ extension API {
             self.market = try container.decode(API.Node.Market.self, forKey: .market)
             
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
-            self.identifier = try nestedContainer.decode(API.Deal.Identifier.self, forKey: .identifier)
-            self.reference = try nestedContainer.decode(API.Deal.Reference.self, forKey: .reference)
+            self.identifier = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
+            self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
             self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
             self.currency = try nestedContainer.decode(Currency.Code.self, forKey: .currency)
-            self.direction = try nestedContainer.decode(API.Deal.Direction.self, forKey: .direction)
+            self.direction = try nestedContainer.decode(IG.Deal.Direction.self, forKey: .direction)
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)
             self.size = try nestedContainer.decode(Decimal.self, forKey: .size)
             self.level = try nestedContainer.decode(Decimal.self, forKey: .level)
-            self.limit = (try nestedContainer.decodeIfPresent(Decimal.self, forKey: .limitLevel)).map { .position(level: $0) }
-            // Figure out stop.
-            if let stopLevel = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopLevel) {
-                let isGuaranteed = try nestedContainer.decode(Bool.self, forKey: .isStopGuaranteed)
-                let premium = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopRiskPremium)
-                let trailingDistance = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingDistance)
-                let trailingIncrement = try nestedContainer.decodeIfPresent(Decimal.self, forKey: .stopTrailingIncrement)
-                
-                let trailing: API.Deal.Stop.Trailing
-                switch (trailingDistance, trailingIncrement) {
-                case (.none, .none):   trailing = .static
-                case (let d?, let i?): trailing = .dynamic(.init(distance: d, increment: i))
-                case (.some, .none): throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingDistance,  .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing increment/step couldn't be found (even when the trailing distance was set."))
-                case (.none, .some): throw DecodingError.keyNotFound(Self.CodingKeys.PositionKeys.stopTrailingIncrement, .init(codingPath: nestedContainer.codingPath, debugDescription: "The trailing distance couldn't be found (even when the trailing increment/step was set."))
-                }
-                
-                let type: API.Deal.Stop.Kind = .position(level: stopLevel)
-                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: premium) : .exposed
-                self.stop = .init(type, risk: risk, trailing: trailing)
-            } else {
-                self.stop = nil
-            }
+            self.limit = try nestedContainer.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: nil, referencing: (self.direction, self.level))
+            self.stop = try nestedContainer.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: nil, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement), referencing: (self.direction, self.level))
         }
         
         private enum CodingKeys: String, CodingKey {

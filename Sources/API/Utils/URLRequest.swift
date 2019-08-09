@@ -3,18 +3,20 @@ import Foundation
 extension URLRequest {
     /// Convenience function to append the given URL queries to the receiving URL request.
     /// - parameter newQueries: URL queries to be appended at the end of the given URL.
-    /// - throws: `API.Error.invalidRequest` if the receiving request have no URL (or cannot be transformed into `URLComponents`) or the given queries cannot be appended to the receiving request URL.
+    /// - throws: `API.Error` of `.invalidRequest` type if the receiving request have no URL (or cannot be transformed into `URLComponents`) or the given queries cannot be appended to the receiving request URL.
     internal mutating func addQueries(_ newQueries: [URLQueryItem]) throws {
         guard !newQueries.isEmpty else {
             return
         }
         
         guard let previousURL = self.url else {
-            throw API.Error.invalidRequest(underlyingError: nil, message: "Queries cannot be appended to a request without a URL.")
+            let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty."
+            throw API.Error.invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
-            throw API.Error.invalidRequest(underlyingError: nil, message: "URL components couldn't be formed from URL: \(previousURL)")
+            let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents"."#
+            throw API.Error.invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
         }
         
         if let previousQueries = components.queryItems {
@@ -31,7 +33,12 @@ extension URLRequest {
         }
         
         guard let url = components.url else {
-            throw API.Error.invalidRequest(underlyingError: nil, message: "A new URL couldn't be formed appending queries: \(newQueries) to url: \(previousURL)")
+            let message = "A new URL from the previous request and the given queries couldn't be formed."
+            let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
+            
+            var error: API.Error = .invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
+            error.context.append(("Queries", representation))
+            throw error
         }
         self.url = url
     }
@@ -66,10 +73,10 @@ extension URLRequest {
     /// - throws: `API.Error.invalidRequest` if the given argument couldn't be serialized. The API error will wrap the encoding error.
     internal mutating func attachJSON<T:Encodable>(_ body: T, with encoder: JSONEncoder) throws {
         do {
-            // self.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
             self.httpBody = try encoder.encode(body)
         } catch let error {
-            throw API.Error.invalidRequest(underlyingError: error, message: "The provided body for the request couldn't be serialized. Body:\n\(body)")
+            let message = #"The provided body (of type "\#(T.self)") for the request couldn't be serialized."#
+            throw API.Error.invalidRequest(message, request: self, underlying: error, suggestion: API.Error.Suggestion.readDocumentation)
         }
         
         self.addValue(API.HTTP.Header.Value.ContentType.json.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)

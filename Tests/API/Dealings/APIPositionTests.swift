@@ -7,15 +7,15 @@ final class APIPositionTests: XCTestCase {
     func testPositionLifecycle() {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         
-        let epic: Epic = "CS.D.EURUSD.MINI.IP"
-        let expiry: API.Instrument.Expiry = nil
-        let currency: Currency.Code = "USD"
-        let direction: API.Deal.Direction = .sell
+        let epic: IG.Epic = "CS.D.EURUSD.MINI.IP"
+        let expiry: IG.Deal.Expiry = nil
+        let currency: IG.Currency.Code = "USD"
+        let direction: IG.Deal.Direction = .sell
         let order: API.Position.Order = .market
         let strategy: API.Position.Order.Strategy = .execute
         let size: Decimal = 1
-        let limit: API.Deal.Limit = .distance(10)
-        let stop: API.Deal.Stop = .trailing(20, increment: 5)
+        let limit: IG.Deal.Limit = .distance(10)!
+        let stop: IG.Deal.Stop = .trailing(20, increment: 5)!
         //let scalingFactor: Double = 10000
         
         let reference = try! api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop).single()!.get()

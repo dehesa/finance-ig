@@ -11,7 +11,7 @@ extension Test {
         case .https:
             return .init(rootURL: rootURL, credentials: credentials)
         case .file:
-            return .init(rootURL: rootURL, channel: APIFileChannel(), credentials: credentials)
+            return .init(rootURL: rootURL, credentials: credentials, channel: APIFileChannel())
         }
     }
 }
@@ -44,7 +44,7 @@ extension Test {
         if case .yes(let timeout, let queue) = autoconnect {
             do {
                 try streamer.session.connect()
-                    .timeout(after: timeout, on: queue) { .invalidRequest(message: "The connection timeout elapsed with status:\n\($0.debugDescription)") }
+                    .timeout(after: timeout, on: queue) { .invalidRequest("The connection timeout elapsed with status:\n\($0.debugDescription)", suggestion: "Be sure to be connected to the internet and that the credentials for the test account are appropriate. If so, try again later or contact the repository maintainer.") }
                     .wait().get()
             } catch let error {
                 fatalError("\(error)")

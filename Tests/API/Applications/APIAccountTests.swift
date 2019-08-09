@@ -10,7 +10,7 @@ final class APIAccountTests: XCTestCase {
         let accounts = try! api.accounts.getAll().single()!.get()
         
         let account = accounts.first!
-        XCTAssertEqual(account.identifier, api.session.credentials!.accountIdentifier)
+        XCTAssertEqual(account.identifier, api.session.credentials!.account)
         XCTAssertFalse(account.name.isEmpty)
         XCTAssertEqual(account.status, .enabled)
     }

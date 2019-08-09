@@ -65,9 +65,11 @@ extension Streamer.Subscription {
         }
         
         var debugDescription: String {
-            var result = ErrorPrint(domain: "Streamer Subscription Error", title: "Code \(self.code) - \(self.kind.debugDescription)")
-            result.append(details: self.message)
-            return result.debugDescription
+//            var result = ErrorPrint(domain: "Streamer Subscription Error", title: "Code \(self.code) - \(self.kind.debugDescription)")
+//            result.append(details: self.message)
+//            return result.debugDescription
+            #warning("Implement Streamer.Subscription.Error CustomDebugStringConvertible")
+            fatalError()
         }
     }
 }

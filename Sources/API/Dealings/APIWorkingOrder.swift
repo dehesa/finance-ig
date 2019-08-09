@@ -46,15 +46,15 @@ extension API {
     /// Working order awaiting for its trigger to be met.
     public struct WorkingOrder: Decodable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: API.Deal.Identifier
+        public let identifier: IG.Deal.Identifier
         /// Date when the order was created.
         public let date: Date
         /// Instrument epic identifier.
-        public let epic: Epic
+        public let epic: IG.Epic
         /// Currency ISO code.
         public let currency: Currency.Code
         /// Deal direction.
-        public let direction: API.Deal.Direction
+        public let direction: IG.Deal.Direction
         /// The working order type.
         public let type: Self.Kind
         /// Deal size.
@@ -62,9 +62,9 @@ extension API {
         /// Price at which to execute the trade.
         public let level: Decimal
         /// The level/distance at which the user is happy to take profit.
-        public let limit: API.Deal.Limit?
+        public let limit: IG.Deal.Limit?
         /// The distance from `level` at which the stop will be set once the order is fulfilled.
-        public let stop: API.Deal.Stop?
+        public let stop: IG.Deal.Stop?
         /// A way of directly interacting with the order book of an exchange.
         public let isDirectlyAccessingMarket: Bool
         /// Indicates when the working order expires if its triggers hasn't been met.
@@ -77,36 +77,24 @@ extension API {
             self.market = try topContainer.decode(API.Node.Market.self, forKey: .market)
             
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
-            self.identifier = try container.decode(API.Deal.Identifier.self, forKey: .identifier)
+            self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
-            self.epic = try container.decode(Epic.self, forKey: .epic)
+            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
             self.currency = try container.decode(Currency.Code.self, forKey: .currency)
-            self.direction = try container.decode(API.Deal.Direction.self, forKey: .direction)
+            self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            self.limit = (try container.decodeIfPresent(Decimal.self, forKey: .limitDistance)).map { .distance($0) }
-            // Figure out stop.
-            if let stopDistance = try container.decodeIfPresent(Decimal.self, forKey: .stopDistance) {
-                let isGuaranteed = try container.decode(Bool.self, forKey: .isStopGuaranteed)
-                let premium = try container.decodeIfPresent(Decimal.self, forKey: .stopRiskPremium)
-                let risk: API.Deal.Stop.Risk = (isGuaranteed) ? .limited(premium: premium) : .exposed
-                self.stop = .init(.distance(stopDistance), risk: risk, trailing: .static)
-            } else {
-                self.stop = nil
-            }
+            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: nil, distanceKey: .limitDistance, referencing: (self.direction, self.level))
+            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: nil, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, nil, nil), referencing: (self.direction, self.level))
             self.isDirectlyAccessingMarket = try container.decode(Bool.self, forKey: .isDirectlyAccessingMarket)
-            
-            let expirationType = try container.decode(String.self, forKey: .expiration)
-            switch expirationType {
-            case Self.Expiration.CodingKeys.tillCancelled.rawValue:
-                self.expiration = .tillCancelled
-            case Self.Expiration.CodingKeys.tillDate.rawValue:
-                let date = try container.decode(Date.self, forKey: .expirationDate, with: API.Formatter.iso8601noSeconds)
-                self.expiration = .tillDate(date)
-            default:
-                throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\(expirationType)\" couldn't be processed.")
-            }
+            self.expiration = try {
+                switch $0 {
+                case Self.Expiration.CodingKeys.tillCancelled.rawValue: return .tillCancelled
+                case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: API.Formatter.iso8601noSeconds))
+                default: throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\($0)\" couldn't be processed.")
+                }
+            }(try container.decode(String.self, forKey: .expiration))
         }
         
         private enum CodingKeys: String, CodingKey {

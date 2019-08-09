@@ -1,3 +1,4 @@
+import Foundation
 
 extension Array where Element: Equatable {
     /// Removes the duplicate elements while conserving order.

@@ -2,69 +2,118 @@ import Foundation
 
 extension API {
     /// List of errors that can be generated through the API.
-    public enum Error: Swift.Error {
-        /// The API/URLSession experied before the endpoint call could finish.
-        case sessionExpired
-        /// There were no credentials or a problem was encountered when unpacking login credentials.
-        case invalidCredentials(API.Credentials?, message: String)
-        /// The request parameters given are invalid.
-        case invalidRequest(underlyingError: Swift.Error?, message: String)
-        /// The given request was executed, but the given error was returned by low-level layers, or the response couldn't be parsed.
-        case callFailed(request: URLRequest, response: URLResponse?, underlyingError: Swift.Error?, message: String)
-        /// The received response was invalid. In most cases `URLResponse` will be of type `HTTPURLResponse`.
-        case invalidResponse(HTTPURLResponse, request: URLRequest, data: Data?, underlyingError: Swift.Error?, message: String)
-    }
-}
-
-extension API.Error: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        var result = ErrorPrint(domain: "API Error")
+    public struct Error: IG.Error {
+        /// The type of API error.
+        public let type: Self.Kind
+        /// A message accompaigning the error explaining what happened.
+        public internal(set) var message: String
+        /// Possible solutions for the problem.
+        public internal(set) var suggestion: String
+        /// The URL request that generated the error.
+        public internal(set) var request: URLRequest?
+        /// The URL response generated when the error occurred.
+        public internal(set) var response: HTTPURLResponse?
+        /// The data received from the server.
+        public internal(set) var responseData: Data?
+        /// Any underlying error that was raised right before this hosting error.
+        public internal(set) var underlyingError: Swift.Error?
+        /// Store values/objects that gives context to the hosting error.
+        public internal(set) var context: [(title: String, value: Any)] = []
         
-        switch self {
-        case .sessionExpired:
-            result.title = "Session expired."
-            result.append(details: "The underlying URL session or the \(API.self) instance cannot be found. You can probably solve this problem by creating a strong reference to the \(API.self) instance.")
-        case .invalidCredentials(let credentials, let message):
-            result.title = "Invalid credentals."
-            result.append(details: message)
-            result.append(involved: credentials)
-        case .invalidRequest(let error, let message):
-            result.title = "Invalid request."
-            result.append(details: message)
-            result.append(underlyingError: error)
-        case .callFailed(let request, let response, let error, let message):
-            result.title = "Call failed"
-            result.append(details: message)
-            result.append(details: Self.represent(request: request))
-            result.append(involved: response)
-            result.append(underlyingError: error)
-        case .invalidResponse(let response, let request, let data, let error, let message):
-            result.title = "Invalid response"
-            result.append(details: message)
-            if let data = data {
-                if let payload = try? JSONDecoder().decode(Self.Payload.self, from: data) {
-                    result.append(details: "Server error code: \(payload.code)")
-                } else {
-                    let representation = String(decoding: data, as: UTF8.self)
-                    result.append(details: "Stringify payload: \(representation)")
-                }
-            }
-            result.append(details: Self.represent(response: response))
-            result.append(details: Self.represent(request: request))
-            result.append(underlyingError: error)
+        /// Designated initializer, filling all required error fields.
+        /// - parameter type: The error type.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        /// - parameter request: The request that raised the error.
+        /// - parameter response: The response that raised the error.
+        /// - parameter data: The response data accompaigning the response.
+        /// - parameter error: The underlying error that happened right before this error was created.
+        internal init(_ type: Self.Kind, _ message: String, suggestion: String, request: URLRequest? = nil, response: HTTPURLResponse? = nil, data: Data? = nil, underlying error: Swift.Error? = nil) {
+            self.type = type
+            self.message = message
+            self.request = request
+            self.response = response
+            self.responseData = data
+            self.underlyingError = error
+            self.suggestion = suggestion
         }
         
-        return result.debugDescription
+        /// A factory function for `.sessionExpired` API errors.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        internal static func sessionExpired(message: String = Self.Message.sessionExpired, suggestion: String = Self.Suggestion.keepSession) -> Self {
+            self.init(.sessionExpired, message, suggestion: suggestion)
+        }
+        
+        /// A factory function for `.invalidRequest` API errors.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        internal static func invalidRequest(_ message: String, request: URLRequest? = nil, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+            self.init(.invalidRequest, message, suggestion: suggestion, request: request, underlying: error)
+        }
+
+        /// A factory function for `.callFailed` API errors.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        internal static func callFailed(message: String, request: URLRequest, response: HTTPURLResponse?, data: Data?, underlying error: Swift.Error?, suggestion: String) -> Self {
+            self.init(.callFailed, message, suggestion: suggestion, request: request, response: response, data: data, underlying: error)
+        }
+        
+        /// A factory function for `.invalidResponse` API errors.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        internal static func invalidResponse(message: String, request: URLRequest, response: HTTPURLResponse, data: Data? = nil, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+            self.init(.invalidResponse, message, suggestion: suggestion, request: request, response: response, data: data, underlying: error)
+        }
+        
+        /// The server sends error codes when a request was invalid or on per-request basis.
+        ///
+        /// If the error contains a `responseData`, this data may be decoded into a server code message.
+        var serverCode: String? {
+            guard let data = self.responseData,
+                  let payload = try? JSONDecoder().decode(Self.Payload.self, from: data) else { return nil }
+            return payload.code
+        }
     }
 }
 
 extension API.Error {
+    /// The type of API error raised.
+    public enum Kind: CaseIterable {
+        /// The API/URLSession experied before the endpoint call could finish.
+        case sessionExpired
+        /// The request parameters given are invalid.
+        case invalidRequest
+        /// A URL request was executed, but an error was returned by low-level layers.
+        case callFailed
+        /// The received response was invalid.
+        case invalidResponse
+    }
+    
+    /// Namespace for messages reused over the framework.
+    internal enum Message {
+        static var sessionExpired: String { "The API instance was not found." }
+        static var noCredentials: String { "No credentials were found on the API instance." }
+        static var invalidTrailingStop: String { "Invalid trailing stop setting" }
+    }
+    
+    /// Namespace for suggestions reused over the framework.
+    internal enum Suggestion {
+        static var keepSession: String { "API functionality is asynchronous; keep around the API instance while a response hasn't been received." }
+        static var readDocumentation: String { "Read the request documentation and be sure to follow all requirements." }
+        static var logIn: String { "Log in before calling this request." }
+        static var bug: String { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print." }
+        static var reviewError: String { "Review the returned error and try to fix the problem." }
+        static var validLimit: String { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals."# }
+        static var validStop: String { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals."# }
+    }
+
     /// A typical server error payload.
-    public struct Payload: Decodable {
+    internal struct Payload: Decodable {
         /// The server error code.
-        public let code: String
-        
-        public init(from decoder: Decoder) throws {
+        let code: String
+
+        init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.code = try container.decode(String.self, forKey: .code)
             
@@ -74,63 +123,74 @@ extension API.Error {
                 throw DecodingError.typeMismatch(Self.self, ctx)
             }
         }
-        
-        private enum CodingKeys: String, CodingKey {
+
+        enum CodingKeys: String, CodingKey {
             case code = "errorCode"
         }
     }
 }
 
-extension API.Error {
-    /// "Stringify" the URL request.
-    private static func represent(request: URLRequest) -> String {
-        var result = "Request"
-        
-        if let method = request.httpMethod {
-            result.append(" \(method)")
-        }
-        
-        if let url = request.url {
-            result.append(" \(url)")
-        }
-        
-        if let headers = request.allHTTPHeaderFields {
-            result.append("  keys: [")
-            for (key, value) in headers {
-                result.append("\(key): \(value), ")
-            }
-            result.removeLast(2)
-            result.append("]")
-        }
-        
-        if let data = request.httpBody {
-            result.append(" body: ")
-            result.append(String(decoding: data, as: UTF8.self))
-        }
-        
-        return result
+extension API.Error: ErrorPrintable {
+    var printableDomain: String {
+        return "API Error"
     }
     
-    /// "Stringify" the URL response.
-    private static func represent(response: HTTPURLResponse) -> String {
-        var result = "Response code: \(response.statusCode)"
-        
-        guard let keys = response.allHeaderFields as? [String:String] else {
-            fatalError("HTTP URL response keys couldn't be transformed to [String:String]. Source: \(response.allHeaderFields)")
+    var printableType: String {
+        switch self.type {
+        case .sessionExpired: return "Session expired"
+        case .invalidRequest: return "Invalid request"
+        case .callFailed: return "HTTP call failed"
+        case .invalidResponse: return "Invalid HTTP response"
         }
-        guard !keys.isEmpty else {
-            return result
+    }
+    
+    public var debugDescription: String {
+        var result = self.printableHeader
+        
+        if let request = self.request {
+            result.append("\(Self.prefix)URL Request: ")
+            
+            if let method = request.httpMethod {
+                result.append("\(method) ")
+            }
+            
+            if let url = request.url {
+                result.append("\(url), ")
+            }
+            
+            if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
+                result.append("\(Self.prefix)\tHeaders: [")
+                result.append(headers.map { "\($0): \($1)" }.joined(separator: ", "))
+                result.append("]")
+            }
         }
         
-        result.append(", keys: [")
-        for (key, value) in keys {
-            result.append("\(key): \(value), ")
+        if let response = self.response {
+            result.append("\(Self.prefix)Response code: \(response.statusCode)")
+            
+            if let headers = response.allHeaderFields as? [String:String], !headers.isEmpty {
+                result.append("\(Self.prefix)\tHeaders: [")
+                result.append(headers.map { "\($0): \($1)" }.joined(separator: ", "))
+                result.append("]")
+            }
         }
         
-        result.removeLast(2)
-        result.append("]")
+        if let serverCode = self.serverCode {
+            result.append("\(Self.prefix)Server code: \(serverCode)")
+        } else if let data = self.responseData {
+            let representation = String(decoding: data, as: UTF8.self)
+            result.append("\(Self.prefix)Response data: \(representation)")
+        }
+        
+        if let underlyingString = self.printableUnderlyingError {
+            result.append(underlyingString)
+        }
+        
+        if let contextString = self.printableContext {
+            result.append(contextString)
+        }
+        
+        result.append("\n")
         return result
     }
 }
-
-
