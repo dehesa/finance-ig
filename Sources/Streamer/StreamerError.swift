@@ -121,12 +121,12 @@ extension Streamer.Error: ErrorPrintable {
             result.append("\(Self.prefix)Subscription fields: [\(fields.joined(separator: ", "))]")
         }
         
-        if let underlyingString = self.printableUnderlyingError {
-            result.append(underlyingString)
-        }
-        
         if let contextString = self.printableContext {
             result.append(contextString)
+        }
+        
+        if let underlyingString = self.printableUnderlyingError {
+            result.append(underlyingString)
         }
         
         result.append("\n")

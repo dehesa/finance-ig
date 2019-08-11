@@ -93,8 +93,8 @@ extension API {
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)
             self.size = try nestedContainer.decode(Decimal.self, forKey: .size)
             self.level = try nestedContainer.decode(Decimal.self, forKey: .level)
-            self.limit = try nestedContainer.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: nil, referencing: (self.direction, self.level))
-            self.stop = try nestedContainer.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: nil, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement), referencing: (self.direction, self.level))
+            self.limit = try nestedContainer.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: nil)
+            self.stop = try nestedContainer.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: nil, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement))
         }
         
         private enum CodingKeys: String, CodingKey {

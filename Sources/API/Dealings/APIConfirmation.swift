@@ -117,8 +117,8 @@ extension API.Confirmation {
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance, referencing: (self.direction, self.level))
-            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil), referencing: (self.direction, self.level))
+            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance)
+            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil))
             // Figure out P&L.
             let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
             let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)

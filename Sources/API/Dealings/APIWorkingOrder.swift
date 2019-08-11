@@ -85,8 +85,8 @@ extension API {
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
-            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: nil, distanceKey: .limitDistance, referencing: (self.direction, self.level))
-            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: nil, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, nil, nil), referencing: (self.direction, self.level))
+            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: nil, distanceKey: .limitDistance)
+            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: nil, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, nil, nil))
             self.isDirectlyAccessingMarket = try container.decode(Bool.self, forKey: .isDirectlyAccessingMarket)
             self.expiration = try {
                 switch $0 {

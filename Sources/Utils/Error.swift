@@ -36,62 +36,136 @@ extension Error where Self: ErrorPrintable {
     }
     /// Human readable version of the underlying error.
     internal var printableUnderlyingError: String? {
+        guard let subError = self.underlyingError else { return nil }
+        var attachedError: Swift.Error? = nil
+        
         var result = "\(Self.prefix)Underlying "
-        var underlyingError: Swift.Error? = nil
-        
-        guard let error = self.underlyingError else { return nil }
-        
-        if let encodingError = error as? EncodingError {
+        if let encodingError = subError as? EncodingError {
             result.append("encoding error: ")
             switch encodingError {
             case .invalidValue(let value, let ctx):
                 result.append(#"Invalid value at coding path "\#(ctx.codingPath.printable)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 result.append("\(Self.prefix)\t\(String(describing: value))")
-                underlyingError = ctx.underlyingError
+                attachedError = ctx.underlyingError
             @unknown default:
                 result.append("Non-identifyiable.")
             }
-        } else if let decodingError = error as? DecodingError {
+        } else if let decodingError = subError as? DecodingError {
             result.append("decoding error: ")
             switch decodingError {
             case .keyNotFound(let key, let ctx):
                 result.append(#"Key "\#(key.printable)" not found at coding path "\#(ctx.codingPath.printable)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                underlyingError = ctx.underlyingError
+                attachedError = ctx.underlyingError
             case .valueNotFound(let type, let ctx):
                 result.append(#"Value of type "\#(type.self)" not found at coding path "\#(ctx.codingPath.printable)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                underlyingError = ctx.underlyingError
+                attachedError = ctx.underlyingError
             case .typeMismatch(let type, let ctx):
                 result.append(#"Mismatch of expected value type "\#(type.self)" at coding path "\#(ctx.codingPath.printable)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                underlyingError = ctx.underlyingError
+                attachedError = ctx.underlyingError
             case .dataCorrupted(let ctx):
                 result.append(#"Data corrupted at coding path "\#(ctx.codingPath.printable)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                underlyingError = ctx.underlyingError
+                attachedError = ctx.underlyingError
             @unknown default:
                 result.append("Non-identifyiable.")
             }
+        } else if let error = subError as? API.Error {
+            result.append("API error: \(error.type) \(error.message) \(error.suggestion)")
+            attachedError = error.underlyingError
+        } else if let error = subError as? Streamer.Error {
+            result.append("Streamer error: \(error.type) \(error.message) \(error.suggestion))")
+            attachedError = error.underlyingError
         } else {
-            #warning("Implement underlying error representation")
-            fatalError()
+            result.append("unknown error: ")
+            result.append(Self.excerpt(of: subError, maximumCharacters: 50))
         }
         
-        if let suberror = underlyingError {
-            result.append("\(Self.prefix)\tUnderlying \(suberror.self) error: )")
-            
-            let string = String(describing: suberror)
-            let end = string.index(string.startIndex, offsetBy: 50, limitedBy: string.endIndex) ?? string.endIndex
-            result.append(String(string[..<end]))
+        if let sourceError = attachedError {
+            result.append("\(Self.prefix)\tSource error: \(Self.excerpt(of: sourceError, maximumCharacters: 50))")
         }
         return result
     }
     /// Huamn readable version of the error context.
     internal var printableContext: String? {
-        #warning("Implement context representation")
-        fatalError()
+        guard !self.context.isEmpty else { return nil }
+        
+        var result = "\(Self.prefix)Context:"
+        for element in self.context {
+            result.append("\(Self.prefix)\t* \(element.title): ")
+            
+            switch element.value {
+            case let string as String:
+                result.append(string)
+            case let update as [String:Streamer.Subscription.Update]:
+                result.append("[")
+                result.append(update.map { (key, value) in
+                    let u = (value.isUpdated) ? "(↓) " : ""
+                    let v = value.value ?? "nil"
+                    return "\(key): \(u)\(v)"
+                }.joined(separator: ", "))
+                result.append("]")
+            case let date as Date:
+                result.append(self.dateFormatter.string(from: date))
+            case let limit as IG.Deal.Limit:
+                switch limit.type {
+                case .distance(let distance): result.append(#"distance "\#(distance)""#)
+                case .position(let level): result.append(#"level "\#(level)""#)
+                }
+            case let stop as IG.Deal.Stop:
+                switch stop.type {
+                case .distance(let distance): result.append(#"distance "\#(distance)""#)
+                case .position(let level): result.append(#"level "\#(level)""#)
+                }
+                result.append(", ")
+                switch stop.risk {
+                case .exposed: result.append("exposed risk")
+                case .limited(let premium):
+                    result.append("limited risk")
+                    if let comission = premium { result.append(#" (premium "\#(comission)""#) }
+                }
+                switch stop.trailing {
+                case .static: break
+                case .dynamic(let settings):
+                    result.append(", trailing")
+                    if let s = settings { result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#) }
+                }
+            case let request as URLRequest:
+                if let method = request.httpMethod { result.append("\(method) ") }
+                if let url = request.url { result.append("\(url) ") }
+                if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
+                    result.append("\(Self.prefix)\t[")
+                    result.append(headers.map { "\($0): \($1)" }.joined(separator: ", "))
+                    result.append("]")
+                }
+            case let statuses as [Streamer.Session.Status]:
+                let representation = statuses.map { $0.debugDescription }.joined(separator: ", ")
+                result.append("[\(representation)]")
+            case let errors as [Streamer.Error]:
+                let representation = errors.map { "\($0.type)" }.joined(separator: ", ")
+                result.append("[\(representation)]")
+            default:
+                result.append(Self.excerpt(of: element.value, maximumCharacters: 45))
+            }
+        }
+        return result
+    }
+    
+    /// The date formatter to use when representing dates on errors.
+    private var dateFormatter: DateFormatter {
+        let result = API.Formatter.humanReadableLong.deepCopy
+        result.timeZone = TimeZone.current
+        return result
+    }
+    
+    /// Returns a `String` representation of the given instance with a maximum of `max` characters.
+    private static func excerpt(of instance: Any, maximumCharacters max: Int) -> String {
+        let string = String(describing: instance)
+        let end = string.index(string.startIndex, offsetBy: 50, limitedBy: string.endIndex) ?? string.endIndex
+        return String(string[..<end])
     }
 }
 
