@@ -118,11 +118,11 @@ extension Deal.Limit {
         }
     }
     
-    /// Checks that the distance is not zero and it is a positive number.
+    /// Checks that the distance is a valid number.
     /// - parameter distance: A number reflecting a relative distance.
     /// - Boolean indicating whether the argument will work as a *distance* level.
     public static func isValid(distance: Decimal) -> Bool {
-        return distance.isNormal && !distance.isSignMinus
+        return distance.isFinite
     }
 }
 
@@ -147,9 +147,8 @@ extension KeyedDecodingContainer {
     /// - parameter type: The type of value to decode.
     /// - parameter levelKey: The key that the limit level value is associated with.
     /// - parameter distanceKey: The key that the limit distance value is associated with.
-    /// - parameter referencing: The deal direction and level given where the stop will apply.
     /// - returns: A decoded value of the deal limit type, or  `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
-    internal func decodeIfPresent(_ type: IG.Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?, referencing: (direction: IG.Deal.Direction, base: Decimal)? = nil) throws -> IG.Deal.Limit? {
+    internal func decodeIfPresent(_ type: IG.Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?) throws -> IG.Deal.Limit? {
         
         typealias L = IG.Deal.Limit
         
@@ -161,27 +160,23 @@ extension KeyedDecodingContainer {
         case (.none, let distance?):
             return try L.distance(distance) ?! DecodingError.dataCorruptedError(forKey: distanceKey!, in: self, debugDescription: #"The limit distance "\#(distance)" decoded is not valid."#)
         case (let level?, .none):
-            if let reference = referencing {
-                return try L.position(level: level, reference.direction, from: reference.base) ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The limit level "\#(level)" decoded is not valid (deal direction "\#(reference.direction)", deal level "\#(reference.base)")."#)
-            } else {
-                return try L.position(level: level) ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The limit level "\#(level)" decoded is not valid."#)
-            }
+            return try L.position(level: level) ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The limit level "\#(level)" decoded is not valid."#)
         case (let level?, let distance?):
             var possibleLimit: L? = nil
             // Whole numbers are prefered as distances.
             if let limit = L.distance(distance) {
-                if distance.isWhole { return limit }
+                if distance.isWhole {
+                    return limit
+                }
                 possibleLimit = limit
             }
-            
-            if let reference = referencing {
-                if let limit = L.position(level: level, reference.direction, from: reference.base) { return limit }
-            } else {
-                if let limit = L.position(level: level) { return limit }
+
+            if let limit = L.position(level: level) {
+                return limit
             }
             
             guard let limit = possibleLimit else {
-                let msg = #"Both the limit level "\#(level)" and the limit distance "\#(distance)" decoded were invalid."#
+                let msg = #"The limit level "\#(level)" and/or the limit distance "\#(distance)" decoded were invalid."#
                 throw DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: msg)
             }
             return limit

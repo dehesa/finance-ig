@@ -107,8 +107,7 @@ extension Deal.Stop {
         if case .limited(let premium?) = risk,
            !Self.Risk.isValid(premium: premium) { return nil }
         if case .dynamic(let settings?) = trailing,
-           Self.Trailing.Settings.isValid(settings.distance),
-           Self.Trailing.Settings.isValid(settings.increment) { return nil }
+           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
         return self.init(.position(level: level), risk: risk, trailing: .static)
     }
     
@@ -125,8 +124,7 @@ extension Deal.Stop {
         if case .limited(let premium?) = risk,
            !Self.Risk.isValid(premium: premium) { return nil }
         if case .dynamic(let settings?) = trailing,
-           Self.Trailing.Settings.isValid(settings.distance),
-           Self.Trailing.Settings.isValid(settings.increment) { return nil }
+           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
         return self.init(.position(level: level), risk: risk, trailing: .static)
     }
     
@@ -151,8 +149,7 @@ extension Deal.Stop {
         if case .limited(let premium?) = risk,
            !Self.Risk.isValid(premium: premium) { return nil }
         if case .dynamic(let settings?) = trailing,
-           Self.Trailing.Settings.isValid(settings.distance),
-           Self.Trailing.Settings.isValid(settings.increment) { return nil }
+           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
         return self.init(.distance(distance), risk: risk, trailing: .static)
     }
     
@@ -176,7 +173,7 @@ extension Deal.Stop {
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
     public static func isValid(level: Decimal) -> Bool {
-        return Deal.Limit.isValid(level: level)
+        return level.isFinite
     }
     
     /// Checks that the given level is finite and lower than the base level on a `.buy` direction and greater than the base level on a `.sell` direction.
@@ -195,7 +192,7 @@ extension Deal.Stop {
     /// - parameter distance: A number reflecting a relative distance.
     /// - Boolean indicating whether the argument will work as a *distance* level.
     public static func isValid(distance: Decimal) -> Bool {
-        return Deal.Limit.isValid(distance: distance)
+        return distance.isFinite
     }
 }
 
@@ -299,8 +296,7 @@ extension KeyedDecodingContainer {
     /// - returns: A decoded value of deal stop type, or `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
     internal func decodeIfPresent(_ type: IG.Deal.Stop.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?,
                                   riskKey: (isGuaranteed: KeyedDecodingContainer<K>.Key, premium: KeyedDecodingContainer<K>.Key?),
-                                  trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?),
-                                  referencing: (direction: IG.Deal.Direction, base: Decimal)?) throws -> IG.Deal.Stop? {
+                                  trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?)) throws -> IG.Deal.Stop? {
         typealias S = IG.Deal.Stop
         
         let stop: (level: Decimal?, distance: Decimal?) = (
@@ -342,36 +338,29 @@ extension KeyedDecodingContainer {
             }
         }()
         
-        let error: (distance: (Decimal)->DecodingError, level: (Decimal)->DecodingError) = (
-            { .dataCorruptedError(forKey: distanceKey!, in: self, debugDescription: #"The stop distance "\#($0)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)"."#)},
-            { .dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The stop level "\#($0)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)"."#) }
-        )
-        
         switch stop {
         case (.none, let distance?):
-            return try S.distance(distance, risk: risk, trailing: trailing) ?! error.distance(distance)
+            return try S.distance(distance, risk: risk, trailing: trailing)
+                ?! DecodingError.dataCorruptedError(forKey: distanceKey!, in: self, debugDescription: #"The stop distance "\#(distance)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)"."#)
         case (let level?, .none):
-            if let reference = referencing {
-                return try S.position(level: level, risk: risk, trailing: trailing, reference.direction, from: reference.base) ?! error.level(level)
-            } else {
-                return try S.position(level: level, risk: risk, trailing: trailing) ?! error.level(level)
-            }
+            return try S.position(level: level, risk: risk, trailing: trailing)
+                ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The stop level "\#(level)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)"."#)
         case (let level?, let distance?):
             var possibleStop: S? = nil
             // Whole numbers are prefered as distances.
             if let stop = S.distance(distance, risk: risk, trailing: trailing) {
-                if distance.isWhole { return stop }
+                if distance.isWhole {
+                    return stop
+                }
                 possibleStop = stop
             }
             
-            if let reference = referencing {
-                if let stop = S.position(level: level, risk: risk, trailing: trailing, reference.direction, from: reference.base) { return stop }
-            } else {
-                if let stop = S.position(level: level, risk: risk, trailing: trailing) { return stop }
+            if let stop = S.position(level: level, risk: risk, trailing: trailing) {
+                return stop
             }
             
             guard let stop = possibleStop else {
-                let msg = #"Both the stop level "\#(level)" and the stop distance "\#(distance)" decoded were invalid."#
+                let msg = #"The stop level "\#(level)" and/or the stop distance "\#(distance)" decoded were invalid."#
                 throw DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: msg)
             }
             return stop

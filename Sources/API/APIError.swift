@@ -182,12 +182,12 @@ extension API.Error: ErrorPrintable {
             result.append("\(Self.prefix)Response data: \(representation)")
         }
         
-        if let underlyingString = self.printableUnderlyingError {
-            result.append(underlyingString)
-        }
-        
         if let contextString = self.printableContext {
             result.append(contextString)
+        }
+        
+        if let underlyingString = self.printableUnderlyingError {
+            result.append(underlyingString)
         }
         
         result.append("\n")
