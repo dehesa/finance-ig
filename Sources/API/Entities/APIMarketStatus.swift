@@ -14,7 +14,9 @@ extension API.Market {
         /// The market is suspended for trading temporarily.
         case suspended = "SUSPENDED"
     }
-    
+}
+
+extension API.Market {
     /// Market's price at a snapshot's time.
     public struct Price {
         /// The price being offered (to buy an asset).
@@ -35,16 +37,13 @@ extension API.Market {
             let lowest = try container.decodeIfPresent(Decimal.self, forKey: .lowest)
             let highest = try container.decodeIfPresent(Decimal.self, forKey: .highest)
             guard case .some = self.bid, case .some = self.ask,
-                case .some(let low) = lowest, case .some(let high) = highest else {
+                  case .some(let low) = lowest, case .some(let high) = highest else {
                     return nil
             }
             self.lowest = low
             self.highest = high
-            
-            self.change = (
-                try container.decode(Decimal.self, forKey: .netChange),
-                try container.decode(Decimal.self, forKey: .percentageChange)
-            )
+            self.change = (try container.decode(Decimal.self, forKey: .netChange),
+                           try container.decode(Decimal.self, forKey: .percentageChange))
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -52,6 +51,13 @@ extension API.Market {
             case lowest = "low"
             case highest = "high"
             case netChange, percentageChange
+        }
+        
+        /// The middle price between the *bid* and the *ask* price.
+        public var mid: Decimal? {
+            guard case .some(let bid) = self.bid,
+                  case .some(let ask) = self.ask else { return nil }
+            return bid + 0.5 * (ask - bid)
         }
     }
 }

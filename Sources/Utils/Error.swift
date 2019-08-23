@@ -1,6 +1,6 @@
 import Foundation
 
-/// Errors thrown by this framework follow this protocol.
+/// Errors thrown by the IG framework.
 public protocol Error: Swift.Error, CustomDebugStringConvertible {
     /// The error subtype within this errors domain.
     associatedtype Kind: CaseIterable
@@ -44,7 +44,7 @@ extension Error where Self: ErrorPrintable {
             result.append("encoding error: ")
             switch encodingError {
             case .invalidValue(let value, let ctx):
-                result.append(#"Invalid value at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append(#"Invalid value at coding path "\#(ctx.codingPath.printableString)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 result.append("\(Self.prefix)\t\(String(describing: value))")
                 attachedError = ctx.underlyingError
@@ -55,23 +55,29 @@ extension Error where Self: ErrorPrintable {
             result.append("decoding error: ")
             switch decodingError {
             case .keyNotFound(let key, let ctx):
-                result.append(#"Key "\#(key.printable)" not found at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append(#"Key "\#(key.printableString)" not found at coding path "\#(ctx.codingPath.printableString)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 attachedError = ctx.underlyingError
             case .valueNotFound(let type, let ctx):
-                result.append(#"Value of type "\#(type.self)" not found at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append(#"Value of type "\#(type.self)" not found at coding path "\#(ctx.codingPath.printableString)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 attachedError = ctx.underlyingError
             case .typeMismatch(let type, let ctx):
-                result.append(#"Mismatch of expected value type "\#(type.self)" at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append(#"Mismatch of expected value type "\#(type.self)" at coding path "\#(ctx.codingPath.printableString)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 attachedError = ctx.underlyingError
             case .dataCorrupted(let ctx):
-                result.append(#"Data corrupted at coding path "\#(ctx.codingPath.printable)"."#)
+                result.append(#"Data corrupted at coding path "\#(ctx.codingPath.printableString)"."#)
                 result.append("\(Self.prefix)\t\(ctx.debugDescription)")
                 attachedError = ctx.underlyingError
             @unknown default:
                 result.append("Non-identifyiable.")
+            }
+        } else if let error = subError as? Streamer.Subscription.Error {
+            result.append("Subscription error (code \(error.code)): \(String(describing: error.kind))")
+            if let message = error.message {
+                result.append(" -- ")
+                result.append(message)
             }
         } else if let error = subError as? API.Error {
             result.append("API error: \(error.type) \(error.message) \(error.suggestion)")
@@ -81,11 +87,11 @@ extension Error where Self: ErrorPrintable {
             attachedError = error.underlyingError
         } else {
             result.append("unknown error: ")
-            result.append(Self.excerpt(of: subError, maximumCharacters: 50))
+            result.append(Self.excerpt(of: subError, maximumCharacters: 100))
         }
         
         if let sourceError = attachedError {
-            result.append("\(Self.prefix)\tSource error: \(Self.excerpt(of: sourceError, maximumCharacters: 50))")
+            result.append("\(Self.prefix)\tSource error: \(Self.excerpt(of: sourceError, maximumCharacters: 100))")
         }
         return result
     }
@@ -103,7 +109,7 @@ extension Error where Self: ErrorPrintable {
             case let update as [String:Streamer.Subscription.Update]:
                 result.append("[")
                 result.append(update.map { (key, value) in
-                    let u = (value.isUpdated) ? "(↓) " : ""
+                    let u = (value.isUpdated) ? "(not updated) " : ""
                     let v = value.value ?? "nil"
                     return "\(key): \(u)\(v)"
                 }.joined(separator: ", "))
@@ -162,9 +168,11 @@ extension Error where Self: ErrorPrintable {
     }
     
     /// Returns a `String` representation of the given instance with a maximum of `max` characters.
+    /// - parameter instance: The instance to represent as a `String`.
+    /// - parameter max: The maximum amount of characters in the string.
     private static func excerpt(of instance: Any, maximumCharacters max: Int) -> String {
         let string = String(describing: instance)
-        let end = string.index(string.startIndex, offsetBy: 50, limitedBy: string.endIndex) ?? string.endIndex
+        let end = string.index(string.startIndex, offsetBy: max, limitedBy: string.endIndex) ?? string.endIndex
         return String(string[..<end])
     }
 }
@@ -173,7 +181,7 @@ extension Error where Self: ErrorPrintable {
 
 extension CodingKey {
     /// Human readable print version of the coding key.
-    fileprivate var printable: String {
+    fileprivate var printableString: String {
         if let number = self.intValue {
             return String(number)
         } else {
@@ -183,7 +191,7 @@ extension CodingKey {
 }
 
 extension Array where Array.Element == CodingKey {
-    fileprivate var printable: String {
-        return self.map { $0.printable }.joined(separator: "/")
+    fileprivate var printableString: String {
+        return self.map { $0.printableString }.joined(separator: "/")
     }
 }

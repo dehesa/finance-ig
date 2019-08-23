@@ -10,7 +10,9 @@ final class APISessionTests: XCTestCase {
         
         let key = Test.account.api.key
         let account = Test.account.identifier
-        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
+        guard case .user(let user) = Test.account.api.credentials else {
+            return XCTFail("Session (OAuth) tests can't be performed without username and password.")
+        }
         
         try! api.session.login(type: .oauth, key: key, user: user).single()!.get()
         let session = try! api.session.get().single()!.get()

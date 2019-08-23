@@ -70,14 +70,6 @@ extension API.Request.Applications {
         /// Per account trading request per minute allowance.
         let tradingAccountAllowance: UInt
         
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
-            try container.encode(self.key, forKey: .key)
-            try container.encodeIfPresent(self.status, forKey: .status)
-            try container.encodeIfPresent(self.overallAccountAllowance, forKey: .overallAccountAllowance)
-            try container.encodeIfPresent(self.tradingAccountAllowance, forKey: .tradingAccountAllowance)
-        }
-        
         private enum CodingKeys: String, CodingKey {
             case key = "apiKey", status
             case overallAccountAllowance = "allowanceAccountOverall"

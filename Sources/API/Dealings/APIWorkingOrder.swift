@@ -52,7 +52,7 @@ extension API {
         /// Instrument epic identifier.
         public let epic: IG.Epic
         /// Currency ISO code.
-        public let currency: Currency.Code
+        public let currency: IG.Currency.Code
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// The working order type.
@@ -80,7 +80,7 @@ extension API {
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
             self.epic = try container.decode(IG.Epic.self, forKey: .epic)
-            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)

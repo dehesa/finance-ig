@@ -43,9 +43,9 @@ extension API.Deal {
         /// The actual profit value (it can be negative).
         public let value: Decimal
         /// The profit currency.
-        public let currency: Currency.Code
+        public let currency: IG.Currency.Code
         /// Designated initializer
-        internal init(value: Decimal, currency: Currency.Code) {
+        internal init(value: Decimal, currency: IG.Currency.Code) {
             self.value = value
             self.currency = currency
         }

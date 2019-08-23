@@ -158,9 +158,9 @@ extension KeyedDecodingContainer {
         case (.none, .none):
             return nil
         case (.none, let distance?):
-            return try L.distance(distance) ?! DecodingError.dataCorruptedError(forKey: distanceKey!, in: self, debugDescription: #"The limit distance "\#(distance)" decoded is not valid."#)
+            return .distance(distance)
         case (let level?, .none):
-            return try L.position(level: level) ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The limit level "\#(level)" decoded is not valid."#)
+            return .position(level: level)
         case (let level?, let distance?):
             var possibleLimit: L? = nil
             // Whole numbers are prefered as distances.
@@ -181,5 +181,19 @@ extension KeyedDecodingContainer {
             }
             return limit
         }
+    }
+}
+
+extension Deal.Limit: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = "Limit "
+        
+        switch self.type {
+        case .position(let level): result.append("position at \(level)")
+        case .distance(let dista): result.append("distance of \(dista) pips")
+        }
+        
+        result.append(".")
+        return result
     }
 }

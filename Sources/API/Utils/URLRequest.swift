@@ -87,7 +87,7 @@ extension URLRequest {
 
 extension URLRequest {
     internal var debugDescription: String {
-        var result = "\(self.httpMethod ?? "nil") \(self.description)\n"
+        var result = "\(self.httpMethod ?? "XXX") \(self.url?.absoluteString ?? "...")\n"
         if let headers = self.allHTTPHeaderFields {
             for header in headers {
                 result.append("\t\(header.key): \(header.value)\n")

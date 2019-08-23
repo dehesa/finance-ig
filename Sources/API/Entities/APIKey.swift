@@ -5,14 +5,14 @@ extension API {
     public struct Key: RawRepresentable, ExpressibleByStringLiteral, Codable, Hashable, CustomStringConvertible {
         public let rawValue: String
         
-        public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The API key provided is not in a valid format.") }
-            self.rawValue = value
-        }
-        
         public init?(rawValue: String) {
             guard Self.validate(rawValue) else { return nil }
             self.rawValue = rawValue
+        }
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError("The API key provided is not in a valid format.") }
+            self.rawValue = value
         }
         
         public init(from decoder: Decoder) throws {

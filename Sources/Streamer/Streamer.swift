@@ -17,7 +17,7 @@ public final class Streamer {
     /// Hold functionality related to accounts.
     public var accounts: Streamer.Request.Accounts { return .init(streamer: self) }
     /// Hold functionality related to deals (positions, working orders, and confirmations).
-    public var deals: Streamer.Request.Deals { return .init(streamer: self) }
+    public var confirmations: Streamer.Request.Confirmations { return .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///

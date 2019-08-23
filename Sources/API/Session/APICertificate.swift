@@ -25,7 +25,7 @@ extension API.Request.Session {
             .decodeJSON()
             .map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
             }
     }
     
@@ -121,41 +121,83 @@ extension API.Request.Session {
 extension API.Session {
     /// CST credentials used to access the IG platform.
     fileprivate struct Certificate: Decodable {
-        /// Client identifier.
-        let clientId: IG.Client.Identifier
+        /// Logged session
+        let session: Self.Session
         /// Active account identifier.
-        let accountId: IG.Account.Identifier
-        /// Lightstreamer endpoint for subscribing to account and price updates.
-        let streamerURL: URL
-        /// Timezone of the active account.
-        let timezone: TimeZone
+        let account: Self.Account
         /// The certificate tokens granting access to the platform.
         let tokens: Self.Token
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            
-            self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
-            self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
-            self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
-            
-            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
-            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
+            self.session = try .init(from: decoder)
+            self.account = try .init(from: decoder)
             
             guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let tokens = Self.Token(headerFields: headerFields) else {
-                let errorContext = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
                 throw DecodingError.dataCorrupted(errorContext)
             }
             self.tokens = tokens
         }
+    }
+}
+
+extension API.Session.Certificate {
+    /// Representation of a dealing session.
+    fileprivate struct Session: Decodable {
+        /// Client identifier.
+        let client: IG.Client.Identifier
+        /// Lightstreamer endpoint for subscribing to account and price updates.
+        let streamerURL: URL
+        /// Timezone of the active account.
+        let timezone: TimeZone
+        /// The settings for the current account.
+        let settings: API.Session.Settings
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            
+            self.client = try container.decode(IG.Client.Identifier.self, forKey: .client)
+            self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
+            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
+            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
+            self.settings = try .init(from: decoder)
+        }
         
         private enum CodingKeys: String, CodingKey {
-            case clientId
-            case accountId = "currentAccountId"
+            case client = "clientId"
             case timezoneOffset
             case streamerURL = "lightstreamerEndpoint"
+        }
+    }
+}
+
+extension API.Session.Certificate {
+    /// Information about an account.
+    fileprivate struct Account {
+        /// Account identifier.
+        let identifier: IG.Account.Identifier
+        /// Account type.
+        let type: API.Account.Kind
+        /// The default currency used in this session.
+        let currency: IG.Currency.Code
+        /// Account balance
+        let balance: API.Account.Balance
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .account)
+            self.type = try container.decode(API.Account.Kind.self, forKey: .type)
+            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.balance = try container.decode(API.Account.Balance.self, forKey: .balance)
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case account = "currentAccountId"
+            case type = "accountType"
+            case currency = "currencyIsoCode"
+            case balance = "accountInfo"
         }
     }
 }
@@ -169,17 +211,19 @@ extension API.Session.Certificate {
         let accessToken: String
         /// Account session security access token.
         let securityToken: String
-        
+        /// Designated initializer assigning all values from the given header fields.
         init?(headerFields: [String:Any]) {
-            guard let access = headerFields[API.HTTP.Header.Key.clientSessionToken.rawValue] as? String,
-                  let security = headerFields[API.HTTP.Header.Key.securityToken.rawValue] as? String else { return nil }
+            typealias Key = API.HTTP.Header.Key
+            
+            guard let access = headerFields[Key.clientSessionToken.rawValue] as? String,
+                let security = headerFields[Key.securityToken.rawValue] as? String else { return nil }
             self.accessToken = access
             self.securityToken = security
             
             // Default token duration (in seconds): 6 hours
             let timeInterval: TimeInterval = 6 * 60 * 60
-            if let dateString = headerFields[API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = API.Formatter.humanReadableLong.date(from: dateString) {
+            if let dateString = headerFields[Key.date.rawValue] as? String,
+                let date = API.Formatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(timeInterval)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: timeInterval)
@@ -221,7 +265,7 @@ extension API.Session {
             guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let token = API.Session.Certificate.Token(headerFields: headerFields) else {
-                let errorContext = DecodingError.Context(codingPath: [], debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
                 throw DecodingError.dataCorrupted(errorContext)
             }
             self.token = token

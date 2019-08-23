@@ -129,7 +129,7 @@ extension Streamer.Error: ErrorPrintable {
             result.append(underlyingString)
         }
         
-        result.append("\n")
+        result.append("\n\n")
         return result
     }
 }
