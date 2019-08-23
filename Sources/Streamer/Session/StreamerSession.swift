@@ -44,7 +44,9 @@ extension Streamer.Request.Session {
                         generator.sendCompleted()
                     case .disconnected(isRetrying: false):
                         guard statuses.count > 1 else { return }
-                        fallthrough
+                        var error: Streamer.Error = .init(.invalidResponse, #"The streamer disconnected after trying to connect. It is not trying any longer."#, suggestion: "Disconnect it manually and connect it back again.")
+                        error.context.append(("Status cycle", statuses))
+                        generator.send(error: error)
                     case .stalled:
                         var error: Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status."#, suggestion: "Disconnect it and connect it back again.")
                         error.context.append(("Status cycle", statuses))

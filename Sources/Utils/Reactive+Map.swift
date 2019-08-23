@@ -35,3 +35,16 @@ extension SignalProducer {
         }
     }
 }
+
+extension SignalProducer {
+    /// `shouldIgnore` gets executed for every value received and when it returns `true`, the value is not forwarded.
+    /// - parameter shouldIgnore: Closure indicating whether the received value should be ignore.
+    internal func ignore(_ shouldIgnore: @escaping(_ received: Value)->Bool) -> SignalProducer<Value,Error> {
+        return .init { [source = self] (resultGenerator, resultLifetime) in
+            resultLifetime += source.start { (event) in
+                if case .value(let v) = event, shouldIgnore(v) { return }
+                resultGenerator.send(event)
+            }
+        }
+    }
+}

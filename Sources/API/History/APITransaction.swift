@@ -241,10 +241,12 @@ extension API.Transaction {
     
     /// Transform the currency initial given into  a proper ISO currency.
     /// - todo: Figure out other currencies. Currently there is only €.
-    private static func currency(from initial: String)-> Currency.Code? {
+    private static func currency(from initial: String)-> IG.Currency.Code? {
         switch initial {
         case "E": return .eur
-        default:  return nil
+        default:
+            #warning("Enumerate more currency initials.")
+            return nil
         }
     }
 }

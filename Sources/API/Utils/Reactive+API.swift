@@ -312,7 +312,7 @@ extension SignalProducer where Value==API.Response.Wrapper, Error==API.Error {
 extension SignalProducer where Value==API.Response.WrapperData, Error==API.Error {
     /// Decodes the JSON payload with a given `JSONDecoder`.
     /// - parameter decoderGenerator: Callback receiving the url request and HTTP header. It must return the JSON decoder to actually decode the data.
-    /// - attention: The JSON decoder used (whether the defaul or the provided one) will attach the response header to the decoder's `userInfo`.
+    /// - attention: The JSON decoder used (whether the defaul or the provided one) will get the response header (`HTTPURLResponse`) attached to the decoder's `userInfo` (key `API.JSON.DecoderKey.responseHeader`).
     internal func decodeJSON<T:Decodable>(with decoderGenerator: API.Request.Generator.Decoder? = nil) -> SignalProducer<T,API.Error> {
         return self.attemptMap { (request, header, data) -> Result<T,API.Error> in
             do {

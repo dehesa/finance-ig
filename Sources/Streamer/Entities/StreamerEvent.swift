@@ -46,7 +46,7 @@ extension Streamer.Subscription {
 
 extension Streamer.Subscription {
     /// Error that can occur during the lifetime of a subscription.
-    internal struct Error: Swift.Error, Equatable, CustomDebugStringConvertible {
+    internal struct Error: Swift.Error, Equatable {
         /// The type of subscription error.
         let kind: Self.Kind
         /// The integer error code.
@@ -62,14 +62,6 @@ extension Streamer.Subscription {
         
         static func == (lhs: Streamer.Subscription.Error, rhs: Streamer.Subscription.Error) -> Bool {
             return lhs.code == rhs.code
-        }
-        
-        var debugDescription: String {
-//            var result = ErrorPrint(domain: "Streamer Subscription Error", title: "Code \(self.code) - \(self.kind.debugDescription)")
-//            result.append(details: self.message)
-//            return result.debugDescription
-            #warning("Implement Streamer.Subscription.Error CustomDebugStringConvertible")
-            fatalError()
         }
     }
 }

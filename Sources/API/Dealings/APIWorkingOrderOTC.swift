@@ -19,7 +19,7 @@ extension API.Request.WorkingOrders {
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func create(epic: IG.Epic, expiry: IG.Deal.Expiry = .none, currency: Currency.Code, direction: IG.Deal.Direction,
+    public func create(epic: IG.Epic, expiry: IG.Deal.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
                        type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool = true,
                        expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
@@ -76,7 +76,7 @@ extension API.Request.WorkingOrders {
     private struct PayloadCreation: Encodable {
         let epic: IG.Epic
         let expiry: IG.Deal.Expiry
-        let currency: Currency.Code
+        let currency: IG.Currency.Code
         let direction: IG.Deal.Direction
         let type: API.WorkingOrder.Kind
         let level: Decimal
@@ -87,7 +87,7 @@ extension API.Request.WorkingOrders {
         let expiration: API.WorkingOrder.Expiration
         let reference: IG.Deal.Reference?
         
-        init(epic: IG.Epic, expiry: IG.Deal.Expiry, currency: Currency.Code, direction: IG.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
+        init(epic: IG.Epic, expiry: IG.Deal.Expiry, currency: IG.Currency.Code, direction: IG.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
             self.epic = epic
             self.expiry = expiry
             self.currency = currency

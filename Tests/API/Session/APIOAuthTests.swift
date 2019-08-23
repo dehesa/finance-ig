@@ -9,7 +9,9 @@ final class APIOAuthTests: XCTestCase {
         let api = Test.makeAPI(credentials: nil)
         let account = Test.account.identifier
         let key = Test.account.api.key
-        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
+        guard case .user(let user) = Test.account.api.credentials else {
+            return XCTFail("OAuth tests can't be performed without username and password.")
+        }
         
         let credentials = try! api.session.loginOAuth(key: key, user: user).single()!.get()
         XCTAssertFalse(credentials.client.rawValue.isEmpty)

@@ -11,7 +11,9 @@ extension Test {
         case .https:
             return .init(rootURL: rootURL, credentials: credentials)
         case .file:
-            return .init(rootURL: rootURL, credentials: credentials, channel: APIFileChannel())
+            let configuration = API.defaultSessionConfigurations
+            configuration.protocolClasses = [APIFileProtocol.self]
+            return .init(rootURL: rootURL, credentials: credentials, configuration: configuration)
         }
     }
 }

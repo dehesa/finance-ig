@@ -26,7 +26,7 @@ extension API.Request.Positions {
     ///         - Setting a limit or a stop requires `force` open to be `true`. If not, an error will be returned.
     ///         - If a trailing stop is chosen, the trailing behavior must be set.
     ///         - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
-    public func create(epic: IG.Epic, expiry: IG.Deal.Expiry = .none, currency: Currency.Code, direction: IG.Deal.Direction,
+    public func create(epic: IG.Epic, expiry: IG.Deal.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
                        order: API.Position.Order, strategy: API.Position.Order.Strategy,
                        size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?,
                        forceOpen: Bool = true, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,API.Error> {
@@ -93,7 +93,7 @@ extension API.Request.Positions {
     private struct PayloadCreation: Encodable {
         let epic: IG.Epic
         let expiry: IG.Deal.Expiry
-        let currency: Currency.Code
+        let currency: IG.Currency.Code
         let direction: IG.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
@@ -103,7 +103,7 @@ extension API.Request.Positions {
         let forceOpen: Bool
         let reference: IG.Deal.Reference?
         
-        init(epic: IG.Epic, expiry: IG.Deal.Expiry, currency: Currency.Code, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?, forceOpen: Bool, reference: IG.Deal.Reference?) throws {
+        init(epic: IG.Epic, expiry: IG.Deal.Expiry, currency: IG.Currency.Code, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?, forceOpen: Bool, reference: IG.Deal.Reference?) throws {
             self.epic = epic
             self.expiry = expiry
             self.currency = currency

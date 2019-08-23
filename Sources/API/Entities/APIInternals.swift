@@ -1,5 +1,5 @@
-import Foundation
 import ReactiveSwift
+import Foundation
 
 extension API {
     /// Domain namespace retaining anything related to API requests.

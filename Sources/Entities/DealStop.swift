@@ -369,3 +369,28 @@ extension KeyedDecodingContainer {
         }
     }
 }
+
+extension Deal.Stop: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = "Stop "
+        
+        switch self.type {
+        case .position(let level): result.append("position at \(level)")
+        case .distance(let dista): result.append("distance of \(dista) pips")
+        }
+        
+        switch self.risk {
+        case .exposed: result.append(" exposed to closing risk")
+        case .limited(let premium?): result.append(" with limited closing risk exposure (premium: \(premium)")
+        case .limited(premium: nil): result.append(" with limited closing risk exposure")
+        }
+        
+        switch self.trailing {
+        case .static: result.append(".")
+        case .dynamic(let settings?): result.append(" and trailing (distance: \(settings.distance), increment: \(settings.increment)).")
+        case .dynamic(nil): result.append(" and trailing.")
+        }
+        
+        return result
+    }
+}

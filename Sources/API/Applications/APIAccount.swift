@@ -83,14 +83,14 @@ extension API {
         public let name: String
         /// Account alias.
         public let alias: String?
-        /// Account type
+        /// Account type.
         public let type: Self.Kind
-        /// Account status
+        /// Account status.
         public let status: Self.Status
         /// Default/Preferred login account.
         public let isDefault: Bool
         /// Account currency.
-        public let currency: Currency.Code
+        public let currency: IG.Currency.Code
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
@@ -103,7 +103,7 @@ extension API {
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
             self.isDefault = try container.decode(Bool.self, forKey: .preferred)
-            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
             self.transfersAllowed = (
                 try container.decode(Bool.self, forKey: .transfersIn),
                 try container.decode(Bool.self, forKey: .transfersOut)

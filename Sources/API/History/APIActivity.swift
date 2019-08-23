@@ -225,11 +225,11 @@ extension API.Activity {
         /// Transient deal reference for an unconfirmed trade.
         public let reference : IG.Deal.Reference?
         /// Deal affected by an activity.
-        public let actions: [Self.Action]
+        public let actions: [API.Activity.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination.
-        public let currency: Currency.Code
+        public let currency: IG.Currency.Code
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Deal size.
@@ -248,9 +248,9 @@ extension API.Activity {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.reference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .reference)
-            self.actions = try container.decode([Action].self, forKey: .actions)
+            self.actions = try container.decode([API.Activity.Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
-            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
@@ -282,7 +282,7 @@ extension API.Activity {
     }
 }
 
-extension API.Activity.Details {
+extension API.Activity {
     /// Deal affected by an activity.
     public struct Action: Decodable {
         /// Action type.
@@ -291,38 +291,71 @@ extension API.Activity.Details {
         public let dealIdentifier: IG.Deal.Identifier
         
         /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
+            
+            let type = try container.decode(String.self, forKey: .type)
+            switch type {
+            case "STOP_LIMIT_AMENDED":  self.type = .dealStopLimitAmended
+            case "POSITION_OPENED":     self.type = .position(status: .opened)
+            case "POSITION_ROLLED":     self.type = .position(status: .rolled)
+            case "POSITION_PARTIALLY_CLOSED": self.type = .position(status: .partiallyClosed)
+            case "POSITION_CLOSED":     self.type = .position(status: .closed)
+            case "POSITION_DELETED":    self.type = .position(status: .deleted)
+            case "LIMIT_ORDER_OPENED":  self.type = .workingOrder(status: .opened, type: .limit)
+            case "LIMIT_ORDER_FILLED":  self.type = .workingOrder(status: .filled, type: .limit)
+            case "LIMIT_ORDER_AMENDED": self.type = .workingOrder(status: .amended, type: .limit)
+            case "LIMIT_ORDER_ROLLED":  self.type = .workingOrder(status: .rolled, type: .limit)
+            case "LIMIT_ORDER_DELETED": self.type = .workingOrder(status: .deleted, type: .limit)
+            case "STOP_ORDER_OPENED":   self.type = .workingOrder(status: .opened, type: .stop)
+            case "STOP_ORDER_FILLED":   self.type = .workingOrder(status: .filled, type: .stop)
+            case "STOP_ORDER_AMENDED":  self.type = .workingOrder(status: .amended, type: .stop)
+            case "STOP_ORDER_ROLLED":   self.type = .workingOrder(status: .rolled, type: .stop)
+            case "STOP_ORDER_DELETED":  self.type = .workingOrder(status: .deleted, type: .stop)
+            case "WORKING_ORDER_DELETED": self.type = .workingOrder(status: .deleted, type: nil)
+            case "UNKNOWN":             self.type = .unknown
+            default:
+                let description = #"The action type "\#(type)" couldn't be identified."#
+                throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: description)
+            }
+        }
         
         private enum CodingKeys: String, CodingKey {
             case type = "actionType"
             case dealIdentifier = "affectedDealId"
         }
         
-        /// Type of action.
-        public enum Kind: String, Decodable {
-            case limitOrderOpened = "LIMIT_ORDER_OPENED"
-            case limitOrderFilled = "LIMIT_ORDER_FILLED"
-            case limitOrderAmended = "LIMIT_ORDER_AMENDED"
-            case limitOrderRolled = "LIMIT_ORDER_ROLLED"
-            case limitOrderDeleted = "LIMIT_ORDER_DELETED"
-            
-            case positionOpenend = "POSITION_OPENED"
-            case positionRolled = "POSITION_ROLLED"
-            case positionPartiallyClosed = "POSITION_PARTIALLY_CLOSED"
-            case positionClosed = "POSITION_CLOSED"
-            case positionDeleted = "POSITION_DELETED"
-            
-            case stopLimitAmended = "STOP_LIMIT_AMENDED"
-            
-            case stopOrderOpened = "STOP_ORDER_OPENED"
-            case stopOrderFilled = "STOP_ORDER_FILLED"
-            case stopOrderAmended = "STOP_ORDER_AMENDED"
-            case stopOrderRolled = "STOP_ORDER_ROLLED"
-            case stopOrderDeleted = "STOP_ORDER_DELETED"
-            
-            case workingOrderDeleted = "WORKING_ORDER_DELETED"
-            
-            case unknown = "UNKNOWN"
+        /// The action type.
+        ///
+        /// Refects who is the receiver of the action on what status has been changed to.
+        public enum Kind {
+            /// The action affects a position and its status has been modified to the one given here.
+            case position(status: API.Activity.Action.PositionStatus)
+            /// The action affects a working order and its status has been modified to the one given here.
+            case workingOrder(status: API.Activity.Action.WorkingOrderStatus, type: API.WorkingOrder.Kind?)
+            /// A deal's stop and/or limit has been amended.
+            case dealStopLimitAmended
+            /// The action is of unknown character.
+            case unknown
+        }
+        
+        /// Position's action status.
+        public enum PositionStatus {
+            case opened
+            case rolled
+            case partiallyClosed
+            case closed
+            case deleted
+        }
+        
+        /// Working order's action status.
+        public enum WorkingOrderStatus {
+            case opened
+            case filled
+            case amended
+            case rolled
+            case deleted
         }
     }
 }

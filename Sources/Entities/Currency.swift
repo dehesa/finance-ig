@@ -3,7 +3,7 @@ import Foundation
 /// Base for all monetary units
 public protocol CurrencyType {
     /// Three letter code standardize by ISO 4217.
-    static var code: Currency.Code { get }
+    static var code: IG.Currency.Code { get }
     /// The standard name for the currency.
     static var name: String { get }
     /// The number of decimal places used to express any minor units for the currency.

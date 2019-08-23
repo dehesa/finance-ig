@@ -14,12 +14,9 @@ extension API.Request.Session {
     /// - returns: `SignalProducer` indicating whether the endpoint was successful.
     public func login(type: Self.Kind, key: API.Key, user: API.User) -> SignalProducer<Void,API.Error> {
         let result: SignalProducer<API.Credentials,API.Error>
-        
         switch type {
-        case .certificate:
-            result = self.loginCertificate(key: key, user: user, encryptPassword: false)
-        case .oauth:
-            result = self.loginOAuth(key: key, user: user)
+        case .certificate: result = self.loginCertificate(key: key, user: user, encryptPassword: false)
+        case .oauth:       result = self.loginOAuth(key: key, user: user)
         }
         
         return result.attemptMap { [weak weakAPI = self.api] (credentials) -> Result<Void,API.Error> in
@@ -72,7 +69,7 @@ extension API.Request.Session {
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<API.Session.Switch,API.Error> {
+    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<API.Session.Settings,API.Error> {
         var stored: (request: URLRequest, response: HTTPURLResponse)! = nil
         return SignalProducer(api: self.api)
             .request(.put, "session", version: 1, credentials: true, body: { (_,_) in
@@ -85,7 +82,7 @@ extension API.Request.Session {
                 stored = (request, response)
                 return JSONDecoder()
             }
-            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Switch) -> Result<API.Session.Switch,API.Error> in
+            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings) -> Result<API.Session.Settings,API.Error> in
                 guard let api = weakAPI else {
                     return .failure(.sessionExpired())
                 }
@@ -204,11 +201,10 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currency: Currency.Code
+        public let currency: IG.Currency.Code
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            
             self.client = try container.decode(IG.Client.Identifier.self, forKey: .client)
             self.account = try container.decode(IG.Account.Identifier.self, forKey: .account)
             let offset = try container.decode(Int.self, forKey: .timezoneOffset)
@@ -216,7 +212,7 @@ extension API {
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -230,7 +226,7 @@ extension API {
 
 extension API.Session {
     /// Payload received when accounts are switched.
-    public struct Switch: Decodable {
+    public struct Settings: Decodable {
         /// Boolean indicating whether trailing stops are currently enabled for the given account.
         public let isTrailingStopEnabled: Bool
         /// Boolean indicating whether it is possible to make "deals" on the given account.
