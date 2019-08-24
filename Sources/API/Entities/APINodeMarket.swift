@@ -19,15 +19,15 @@ extension API.Node.Market {
     /// Market's instrument properties.
     public struct Instrument: Decodable {
         /// Instrument epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// Exchange identifier for the instrument.
         public let exchangeIdentifier: String?
         /// Instrument name.
         public let name: String
         /// Instrument type.
-        public let type: API.Instrument
+        public let type: IG.Market.Instrument.Kind
         /// Instrument expiry period.
-        public let expiry: IG.Deal.Expiry
+        public let expiry: IG.Market.Instrument.Expiry
         /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
         /// - note: This property is set when querying nodes, but `nil` when querying markets.
         public let lotSize: UInt?
@@ -39,11 +39,11 @@ extension API.Node.Market {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
+            self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.exchangeIdentifier = try container.decodeIfPresent(String.self, forKey: .exchangeId)
             self.name = try container.decode(String.self, forKey: .name)
-            self.type = try container.decode(API.Instrument.self, forKey: .type)
-            self.expiry = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .expiry) ?? .none
+            self.type = try container.decode(IG.Market.Instrument.Kind.self, forKey: .type)
+            self.expiry = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .expiry) ?? .none
             self.lotSize = try container.decodeIfPresent(UInt.self, forKey: .lotSize)
             self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.isOTCTradeable = try container.decodeIfPresent(Bool.self, forKey: .isOTCTradeable)

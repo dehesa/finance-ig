@@ -11,19 +11,52 @@ extension API.Request.Session {
     /// - note: No credentials are needed for this endpoint.
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
-    /// - returns: `SignalProducer` indicating whether the endpoint was successful.
-    public func login(type: Self.Kind, key: API.Key, user: API.User) -> SignalProducer<Void,API.Error> {
-        let result: SignalProducer<API.Credentials,API.Error>
+    /// - returns: `SignalProducer` indicating whether the endpoint was successful. If the login is of `.certificate` type, extra information on the session settings is forwarded to the result. The `.oauth` login type will have this *settings* result set to `nil`.
+    public func login(type: Self.Kind, key: API.Key, user: API.User) -> SignalProducer<API.Session.Settings?,API.Error> {
         switch type {
-        case .certificate: result = self.loginCertificate(key: key, user: user, encryptPassword: false)
-        case .oauth:       result = self.loginOAuth(key: key, user: user)
+        case .certificate:
+            return self.loginCertificate(key: key, user: user, encryptPassword: false)
+                .attemptMap { [weak weakAPI = self.api] (credentials, settings) -> Result<API.Session.Settings?,API.Error> in
+                    guard let api = weakAPI else { return .failure(.sessionExpired()) }
+                    api.session.credentials = credentials
+                    return .success(settings)
+            }
+        case .oauth:
+            return self.loginOAuth(key: key, user: user)
+                .attemptMap { [weak weakAPI = self.api] (credentials) -> Result<API.Session.Settings?,API.Error> in
+                    guard let api = weakAPI else { return .failure(.sessionExpired()) }
+                    api.session.credentials = credentials
+                    return .success(.none)
+            }
         }
-        
-        return result.attemptMap { [weak weakAPI = self.api] (credentials) -> Result<Void,API.Error> in
+    }
+    
+    /// Refreshes the underlying secret token so the session can remain longer connected.
+    ///
+    /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials). Please note, that OAuth refresh are intended to happen often, while cretificate refresh should happen quite infrequently).
+    /// - note: If there is no credentials (i.e. the session gets logged out)  before, or during this endpoint an error is forwarded.
+    public func refresh() -> SignalProducer<Void,API.Error> {
+        return SignalProducer(api: self.api) { (api) -> API.Credentials in
+            guard let credentials = api.session.credentials else {
+                throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+            }
+            return credentials
+        }.flatMap(.latest) { (api, credentials) -> SignalProducer<API.Credentials.Token,API.Error> in
+            switch credentials.token.value {
+            case .certificate: return api.session.refreshCertificate()
+            case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
+            }
+        }.attemptMap { [weak weakAPI = self.api] (token) -> Result<Void,API.Error> in
             guard let api = weakAPI else { return .failure(.sessionExpired()) }
+            guard var credentials = api.session.credentials else {
+                let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time."
+                return .failure(.sessionExpired(message: API.Error.Message.noCredentials, suggestion: suggestion))
+            }
+            credentials.token = token
             api.session.credentials = credentials
             return .success(())
         }
+        
     }
 
     // MARK: GET /session
@@ -39,7 +72,7 @@ extension API.Request.Session {
     }
     
     /// Returns the user's session details for the given credentials.
-    /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
+    /// - note: No credentials needed (besides the provided ones as parameter). That is the API instance doesn't need to be logged in.
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: `SignalProducer` returning information about the current user's session.
@@ -164,6 +197,19 @@ extension API.Request {
             self.pointer = nil
             self.credentials = credentials
         }
+        
+        /// Returns the API application key of the session being used (or logged in).
+        public var key: API.Key? {
+            return self.credentials?.key
+        }
+        /// Returns the client identifier of the session being used (or logged in).
+        public var client: IG.Client.Identifier? {
+            return self.credentials?.client
+        }
+        /// Returns the account identifier of the session being used (or logged in).
+        public var account: IG.Account.Identifier? {
+            return self.credentials?.account
+        }
     }
 }
 
@@ -201,7 +247,7 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currency: IG.Currency.Code
+        public let currencyCode: IG.Currency.Code
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -212,13 +258,14 @@ extension API {
                 ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
         }
         
         private enum CodingKeys: String, CodingKey {
             case client = "clientId"
             case account = "accountId"
-            case timezoneOffset, locale, currency
+            case timezoneOffset, locale
+            case currencyCode = "currency"
             case streamerURL = "lightstreamerEndpoint"
         }
     }

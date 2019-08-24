@@ -50,9 +50,9 @@ extension API {
         /// Date when the order was created.
         public let date: Date
         /// Instrument epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// Currency ISO code.
-        public let currency: IG.Currency.Code
+        public let currencyCode: IG.Currency.Code
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// The working order type.
@@ -79,8 +79,8 @@ extension API {
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
-            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
-            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)
@@ -104,9 +104,7 @@ extension API {
             enum WorkingOrderKeys: String, CodingKey {
                 case identifier = "dealId"
                 case date = "createdDateUTC"
-                case epic
-                case currency = "currencyCode"
-                case direction
+                case epic, currencyCode, direction
                 case type = "orderType"
                 case size = "orderSize"
                 case level = "orderLevel"

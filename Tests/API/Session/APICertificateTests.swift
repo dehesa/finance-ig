@@ -13,18 +13,19 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("Certificate tests can't be performed without username and password.")
         }
         
-        let credentials = try! api.session.loginCertificate(key: key, user: user).single()!.get()
-        XCTAssertFalse(credentials.client.rawValue.isEmpty)
-        XCTAssertEqual(credentials.key, key)
-        XCTAssertEqual(credentials.account, account)
-        XCTAssertGreaterThan(credentials.token.expirationDate, Date())
-        guard case .certificate(let access, let security) = credentials.token.value else {
-            return XCTFail("Credentials were expected to be CST. Credentials received: \(credentials)")
+        let returned = try! api.session.loginCertificate(key: key, user: user).single()!.get()
+        XCTAssertNotNil(returned.settings)
+        XCTAssertFalse(returned.credentials.client.rawValue.isEmpty)
+        XCTAssertEqual(returned.credentials.key, key)
+        XCTAssertEqual(returned.credentials.account, account)
+        XCTAssertGreaterThan(returned.credentials.token.expirationDate, Date())
+        guard case .certificate(let access, let security) = returned.credentials.token.value else {
+            return XCTFail("Credentials were expected to be CST. Credentials received: \(returned.credentials)")
         }
         XCTAssertFalse(access.isEmpty)
         XCTAssertFalse(security.isEmpty)
 
-        let headers = credentials.requestHeaders
+        let headers = returned.credentials.requestHeaders
         XCTAssertEqual(headers[.clientSessionToken], access)
         XCTAssertEqual(headers[.securityToken], security)
 

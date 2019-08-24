@@ -10,7 +10,7 @@ extension Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Tick,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Tick,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         
@@ -79,7 +79,7 @@ extension Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Tick {
         /// The market epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// The date of the information.
         public let date: Date?
         /// The tick bid price.
@@ -91,7 +91,7 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Epic, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, item: String, update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             

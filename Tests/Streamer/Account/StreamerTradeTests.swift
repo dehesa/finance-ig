@@ -34,7 +34,7 @@ final class StreamerTradeTests: XCTestCase {
             switch $0 {
             case .success(let update):
                 print(update)
-                dealId = update.confirmation.identifier
+                dealId = update.confirmation.dealIdentifier
             case .failure(let error):
                 print(error)
             }
@@ -43,7 +43,7 @@ final class StreamerTradeTests: XCTestCase {
         try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
         print("\n------- 1. Subscription to confirmations established. -------\n")
         
-        let epic: IG.Epic = "CS.D.EURUSD.MINI.IP"
+        let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let market = try! api.markets.get(epic: epic).single()!.get()
         let level = market.snapshot.price!.lowest - (0.0001 * 30)
         print("\n\nMarket level: \(market.snapshot.price!.mid!)\nWorking order level: \(level)\n\n")

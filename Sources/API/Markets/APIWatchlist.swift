@@ -9,7 +9,7 @@ extension API.Request.Watchlists {
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: SignalProducer with the watchlist identifier as its value.
-    public func create(name: String, epics: [IG.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),API.Error> {
+    public func create(name: String, epics: [IG.Market.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     let message = "The watchlist name cannot be empty"
@@ -60,7 +60,7 @@ extension API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, addingEpic epic: IG.Epic) -> SignalProducer<Void,API.Error> {
+    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> SignalProducer<Void,API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !identifier.isEmpty else {
                     throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
@@ -82,7 +82,7 @@ extension API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, removingEpic epic: IG.Epic) -> SignalProducer<Void,API.Error> {
+    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> SignalProducer<Void,API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !identifier.isEmpty else {
                     throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
@@ -141,7 +141,7 @@ extension API.Error.Suggestion {
 extension API.Request.Watchlists {
     private struct PayloadCreation: Encodable {
         let name: String
-        let epics: [IG.Epic]
+        let epics: [IG.Market.Epic]
     }
 }
 

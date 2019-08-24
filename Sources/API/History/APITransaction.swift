@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Transactions {
+extension API.Request.History {
     
     // MARK: GET /history/transactions
     
@@ -12,7 +12,7 @@ extension API.Request.Transactions {
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received (`0` means paging is disabled).
-    public func get(from: Date, to: Date? = nil, type: Self.Kind = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
@@ -56,25 +56,11 @@ extension API.Request.Transactions {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
-    /// Contains all functionality related to user's transactions.
-    public struct Transactions {
-        /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
-            self.api = api
-        }
-    }
-}
-
 // MARK: Request Entities
 
-extension API.Request.Transactions {
+extension API.Request.History {
     /// Transaction type.
-    public enum Kind: String {
+    public enum Transaction: String {
         case all = "ALL"
         case deal = "ALL_DEAL"
         case deposit = "DEPOSIT"
@@ -92,7 +78,7 @@ extension API.Request.Transactions {
 
 // MARK: Response Entities
 
-extension API.Request.Transactions {
+extension API.Request.History {
     /// A single Page of transactions request.
     private struct PagedTransactions: Decodable {
         let transactions: [API.Transaction]
@@ -144,9 +130,11 @@ extension API {
         /// - note: It seems to be a substring of the actual `dealId`.
         public let reference: String
         /// Instrument name.
-        public let description: String
+        ///
+        /// For example: `EUR/USD Mini converted at 0.902239755`
+        public let title: String
         /// Instrument expiry period.
-        public let period: IG.Deal.Expiry
+        public let period: IG.Market.Instrument.Expiry
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
         public let size: (direction: IG.Deal.Direction, amount: Decimal)?
         /// Open position level/price and date.
@@ -163,8 +151,8 @@ extension API {
             
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.reference = try container.decode(String.self, forKey: .reference)
-            self.description = try container.decode(String.self, forKey: .description)
-            self.period = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .period) ?? .none
+            self.title = try container.decode(String.self, forKey: .title)
+            self.period = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .period) ?? .none
             
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {
@@ -219,7 +207,7 @@ extension API {
         private enum CodingKeys: String, CodingKey {
             case type = "transactionType"
             case reference
-            case description = "instrumentName"
+            case title = "instrumentName"
             case period, size
             case openDate = "openDateUtc"
             case openLevel
@@ -244,6 +232,8 @@ extension API.Transaction {
     private static func currency(from initial: String)-> IG.Currency.Code? {
         switch initial {
         case "E": return .eur
+        case "$": return .usd
+        case "¥": return .jpy
         default:
             #warning("Enumerate more currency initials.")
             return nil

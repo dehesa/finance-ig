@@ -34,18 +34,16 @@ public enum Client {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
         }
+        
+        /// Returns a Boolean indicating whether the raw value can represent a client identifier.
+        private static func validate(_ value: String) -> Bool {
+            let allowedRange = 8...10
+            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        }
+        
+        /// The allowed character set for the client identifier. It is used on validation.
+        private static let allowedSet: CharacterSet = {
+            return CharacterSet.decimalDigits
+        }()
     }
-}
-
-extension Client.Identifier {
-    /// Returns a Boolean indicating whether the raw value can represent a client identifier.
-    private static func validate(_ value: String) -> Bool {
-        let allowedRange = 8...10
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
-    }
-    
-    /// The allowed character set for the client identifier. It is used on validation.
-    private static let allowedSet: CharacterSet = {
-        return CharacterSet.decimalDigits
-    }()
 }

@@ -22,12 +22,8 @@ public final class API {
     public var applications: API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
     public var accounts: API.Request.Accounts { return .init(api: self) }
-    /// It holds functionality related to the user's activity.
-    public var activity: API.Request.Activity { return .init(api: self) }
-    /// It holds functionality related to the user's transactions.
-    public var transactions: API.Request.Transactions { return .init(api: self) }
-    /// It holds functionality related to price history queries.
-    public var prices: API.Request.Price { return .init(api: self) }
+    /// It holds functionality related to the user's activity & transactions, and market prices..
+    public var history: API.Request.History { return .init(api: self) }
     /// It holds functionality related to market navigation nodes.
     public var nodes: API.Request.Nodes { return .init(api: self) }
     /// It holds functionality related to platform market.

@@ -43,7 +43,7 @@ extension Test {
             
             switch Test.account.api.credentials {
             case .user(let user):
-                result = api.session.loginCertificate(key: key, user: user).single()!
+                result = api.session.loginCertificate(key: key, user: user).single()!.map { (creds, settings) in creds }
             case .certificate(let access, let security):
                 let token = API.Credentials.Token(.certificate(access: access, security: security), expiresIn: 6 * 60 * 60)
                 result = api.session.get(key: key, token: token).map {

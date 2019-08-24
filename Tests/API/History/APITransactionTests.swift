@@ -14,8 +14,8 @@ final class APITransactionTests: XCTestCase {
             ($0.hour, $0.minute) = (0, 0)
         })!
         
-        let transactions = (try! api.transactions.get(from: date).collect().single()!.get()).flatMap { $0 }
+        let transactions = (try! api.history.getTransactions(from: date).collect().single()!.get()).flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
-        XCTAssertNil(transactions.first(where: { $0.description.isEmpty || $0.reference.isEmpty }))
+        XCTAssertNil(transactions.first(where: { $0.title.isEmpty || $0.reference.isEmpty }))
     }
 }

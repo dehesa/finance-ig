@@ -23,14 +23,14 @@ final class APIWorkingOrderTests: XCTestCase {
         
         let reference = try! api.workingOrders.create(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: .distance(limitDistance), stop: (.distance(stopDistance), .exposed), forceOpen: forceOpen, expiration: expiration, reference: nil).single()!.get()
         let confirmation = try! api.confirm(reference: reference).single()!.get()
-        let identifier = confirmation.identifier
-        XCTAssertEqual(confirmation.reference, reference)
+        let identifier = confirmation.dealIdentifier
+        XCTAssertEqual(confirmation.dealReference, reference)
         XCTAssertTrue(confirmation.isAccepted)
         
         let orders = try! api.workingOrders.getAll().single()!.get()
         XCTAssertNotNil(orders.first { $0.identifier == identifier })
 
-        let deleteReference = try! api.workingOrders.delete(identifier: confirmation.identifier).single()!.get()
+        let deleteReference = try! api.workingOrders.delete(identifier: confirmation.dealIdentifier).single()!.get()
         XCTAssertEqual(deleteReference, reference)
         let deleteConfirmation = try! api.confirm(reference: deleteReference).single()!.get()
         XCTAssertTrue(deleteConfirmation.isAccepted)

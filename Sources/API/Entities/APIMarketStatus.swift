@@ -61,29 +61,3 @@ extension API.Market {
         }
     }
 }
-
-extension API {
-    /// Instrument related entities.
-    public enum Instrument: String, Codable {
-        /// A binary allows you to take a view on whether a specific outcome will or won't occur. For example, 'Will Wall Street be up at the close of the day?' If the answer is 'yes', the binary settles at 100. If the answer is 'no', the binary settles at 0. Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
-        case binary = "BINARY"
-        case bungeeCapped  = "BUNGEE_CAPPED"
-        case bungeeCommodities  = "BUNGEE_COMMODITIES"
-        case bungeeCurrencies = "BUNGEE_CURRENCIES"
-        case bungeeIndices = "BUNGEE_INDICES"
-        case commodities = "COMMODITIES"
-        case currencies = "CURRENCIES"
-        case indices = "INDICES"
-        case optCommodities = "OPT_COMMODITIES"
-        case optCurrencies = "OPT_CURRENCIES"
-        case optIndices = "OPT_INDICES"
-        case optRates = "OPT_RATES"
-        case optShares = "OPT_SHARES"
-        case rates = "RATES"
-        case sectors = "SECTORS"
-        case shares = "SHARES"
-        case sprintMarket = "SPRINT_MARKET"
-        case testMarket = "TEST_MARKET"
-        case unknown = "UNKNOWN"
-    }
-}

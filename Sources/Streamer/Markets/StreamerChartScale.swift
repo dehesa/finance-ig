@@ -13,7 +13,7 @@ extension Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -152,7 +152,7 @@ extension Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Aggregated {
         /// The market epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// The aggregation interval chosen on subscription.
         public let interval: Self.Interval
         /// The candle for the ongoing time interval.
@@ -160,7 +160,7 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             

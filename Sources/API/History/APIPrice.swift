@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Price {
+extension API.Request.History {
     
     // MARK: GET /prices/{epic}
     
@@ -14,7 +14,7 @@ extension API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func get(epic: IG.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
         return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: DateFormatter) in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
@@ -56,23 +56,9 @@ extension API.Request.Price {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
-    /// Contains all functionality related to price history.
-    public struct Price {
-        /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
-            self.api = api
-        }
-    }
-}
-
 // MARK: Request Entities
 
-extension API.Request.Price {
+extension API.Request.History {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
         case second = "SECOND"
@@ -121,10 +107,10 @@ extension API.Request.Price {
 
 // MARK: Response Entities
 
-extension API.Request.Price {
+extension API.Request.History {
     /// Single page of prices request.
     private struct PagedPrices: Decodable {
-        let instrumentType: API.Instrument
+        let instrumentType: IG.Market.Instrument.Kind
         let prices: [API.Price]
         let metadata: Self.Metadata
         
@@ -160,19 +146,19 @@ extension API {
     /// Historical market price snapshot.
     public struct Price: Decodable {
         /// Snapshot date.
-        let date: Date
+        public let date: Date
         /// Open session price.
-        let open: Self.Point
+        public let open: Self.Point
         /// Close session price.
-        let close: Self.Point
+        public let close: Self.Point
         /// Lowest price.
-        let lowest: Self.Point
+        public let lowest: Self.Point
         /// Highest price.
-        let highest: Self.Point
+        public let highest: Self.Point
         /// Last traded volume.
         ///
         /// This will generally be `nil` for non exchange traded instrument.
-        let volume: UInt?
+        public let volume: UInt?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)

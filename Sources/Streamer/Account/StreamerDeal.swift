@@ -72,9 +72,9 @@ extension Streamer {
     /// A deal confirmation update.
     public struct Deal {
         /// Account identifier.
-        let account: IG.Account.Identifier
+        public let account: IG.Account.Identifier
         /// Confirmation update.
-        let confirmation: IG.Confirmation
+        public let confirmation: IG.Confirmation
         
         internal init(account: IG.Account.Identifier, item: String, update: [String:Streamer.Subscription.Update]) throws {
             self.account = account
