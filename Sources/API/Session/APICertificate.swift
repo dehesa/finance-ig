@@ -14,7 +14,7 @@ extension API.Request.Session {
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> SignalProducer<API.Credentials,API.Error> {
+    internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> SignalProducer<(credentials: API.Credentials, settings: API.Session.Settings),API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
@@ -25,7 +25,8 @@ extension API.Request.Session {
             .decodeJSON()
             .map { (r: API.Session.Certificate) in
                 let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                return API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
+                let credentials = API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
+                return (credentials, r.session.settings)
             }
     }
     
@@ -181,7 +182,7 @@ extension API.Session.Certificate {
         /// Account type.
         let type: API.Account.Kind
         /// The default currency used in this session.
-        let currency: IG.Currency.Code
+        let currencyCode: IG.Currency.Code
         /// Account balance
         let balance: API.Account.Balance
         
@@ -189,14 +190,14 @@ extension API.Session.Certificate {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .account)
             self.type = try container.decode(API.Account.Kind.self, forKey: .type)
-            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.balance = try container.decode(API.Account.Balance.self, forKey: .balance)
         }
         
         private enum CodingKeys: String, CodingKey {
             case account = "currentAccountId"
             case type = "accountType"
-            case currency = "currencyIsoCode"
+            case currencyCode = "currencyIsoCode"
             case balance = "accountInfo"
         }
     }

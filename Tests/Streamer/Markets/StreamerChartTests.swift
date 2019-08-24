@@ -8,7 +8,7 @@ final class StreamerChartTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
-        let epic: IG.Epic = "CS.D.EURGBP.MINI.IP"
+        let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.charts.subscribe(to: epic, interval: .second, fields: .all, snapshot: true), value: { (second) in
             XCTAssertEqual(second.epic, epic)
             XCTAssertEqual(second.interval, .second)
@@ -41,7 +41,7 @@ final class StreamerChartTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
-        let epic: IG.Epic = "CS.D.EURGBP.MINI.IP"
+        let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.charts.subscribe(to: epic, fields: .all, snapshot: true), value: { (tick) in
             XCTAssertEqual(tick.epic, epic)
             // Some values can be `nil` on updates (such as `.ask`)

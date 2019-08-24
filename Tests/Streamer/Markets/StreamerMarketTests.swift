@@ -8,7 +8,7 @@ final class StreamerMarketTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
 
-        let epic: IG.Epic = "CS.D.EURGBP.MINI.IP"
+        let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.markets.subscribe(to: epic, fields: .all), value: { (market) in
             XCTAssertEqual(market.epic, epic)
             XCTAssertNotNil(market.status)

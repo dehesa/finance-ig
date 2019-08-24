@@ -19,8 +19,8 @@ final class APIWatchlistTests: XCTestCase {
     func testWatchlistLifecycle() {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         /// Epics to be added to the watchlist.
-        let startEpics: [IG.Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0.rawValue > $1.rawValue }
-        let addedEpic: IG.Epic = "CS.D.GBPEUR.CFD.IP"
+        let startEpics: [IG.Market.Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0.rawValue > $1.rawValue }
+        let addedEpic: IG.Market.Epic = "CS.D.GBPEUR.CFD.IP"
         let endEpics = (startEpics + [addedEpic]).sorted { $0.rawValue > $1.rawValue }
 
         // 1. Creates a watchlist.

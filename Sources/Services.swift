@@ -19,13 +19,13 @@ public final class Services {
     /// Factory method for all services, which are log into with the provided user credentials.
     /// - parameter rootURL: The base/root URL for all HTTP endpoint calls. The default URL points to IG's production environment.
     /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
-    /// - parameter user: User name and password to log in into an IG account.
+    /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(rootURL: URL = API.rootURL, key: API.Key, user: API.User) -> SignalProducer<Services,Services.Error> {
         let api = API(rootURL: rootURL, credentials: nil)
         return api.session.login(type: .certificate, key: key, user: user)
             .mapError(Self.Error.api)
-            .flatMap(.merge) { Self.make(with: api) }
+            .flatMap(.merge) { _ in Self.make(with: api) }
     }
     
     /// Factory method for all services, which are log into with the provided user token (whether OAuth or Certificate).

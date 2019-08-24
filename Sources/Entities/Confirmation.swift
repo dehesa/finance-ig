@@ -2,27 +2,27 @@ import Foundation
 
 /// Confirmation data returned just after opening a position or a working order.
 public struct Confirmation: Decodable {
-    /// Permanent deal reference for a confirmed trade.
-    public let identifier: IG.Deal.Identifier
-    /// Transient deal reference for an unconfirmed trade.
-    public let reference: IG.Deal.Reference
     /// Date the position was created.
     public let date: Date
+    /// Permanent deal reference for a confirmed trade.
+    public let dealIdentifier: IG.Deal.Identifier
+    /// Transient deal reference for an unconfirmed trade.
+    public let dealReference: IG.Deal.Reference
     /// Instrument epic identifier.
-    public let epic: IG.Epic
+    public let epic: IG.Market.Epic
     /// Instrument expiration period.
-    public let expiry: IG.Deal.Expiry
+    public let expiry: IG.Market.Instrument.Expiry
     /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
     public let status: Self.Status
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-        self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
-        self.reference = try container.decode(IG.Deal.Reference.self, forKey: .reference)
+        self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
+        self.dealReference = try container.decode(IG.Deal.Reference.self, forKey: .dealReference)
         self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601miliseconds)
         
-        self.epic = try container.decode(IG.Epic.self, forKey: .epic)
-        self.expiry = try container.decode(IG.Deal.Expiry.self, forKey: .expiry)
+        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+        self.expiry = try container.decode(IG.Market.Instrument.Expiry.self, forKey: .expiry)
         
         let status = try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status)
         guard case .accepted = status else {
@@ -31,10 +31,10 @@ public struct Confirmation: Decodable {
             return
         }
         
-        let details = try Self.Deal(from: decoder)
+        let details = try Self.Details(from: decoder)
         self.status = .accepted(details: details)
     }
-    
+    /// Returns Boolean indicating whether the receiving confirmation has been accepted.
     public var isAccepted: Bool {
         switch self.status {
         case .accepted(_): return true
@@ -43,9 +43,10 @@ public struct Confirmation: Decodable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case identifier = "dealId"
-        case reference = "dealReference"
-        case date, epic, expiry
+        case date
+        case dealIdentifier = "dealId"
+        case dealReference = "dealReference"
+        case epic, expiry
         case status = "dealStatus"
         case reason
         
@@ -58,7 +59,7 @@ public struct Confirmation: Decodable {
     /// The operation confirmation status.
     public enum Status {
         /// The operation has been confirmed successfully.
-        case accepted(details: IG.Confirmation.Deal)
+        case accepted(details: IG.Confirmation.Details)
         /// The operation has been rejected due to the reason given as an associated value.
         case rejected(reason: IG.Confirmation.RejectionReason)
     }
@@ -66,9 +67,9 @@ public struct Confirmation: Decodable {
 
 extension Confirmation {
     /// The confirmation details if it has been accepted.
-    public struct Deal: Decodable {
+    public struct Details: Decodable {
         /// Deal status.
-        public let status: API.Deal.Status
+        public let dealStatus: API.Deal.Status
         /// Affected deals.
         public let affectedDeals: [IG.Confirmation.AffectedDeal]
         /// Deal direction.
@@ -86,7 +87,7 @@ extension Confirmation {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.status = try container.decode(API.Deal.Status.self, forKey: .status)
+            self.dealStatus = try container.decode(API.Deal.Status.self, forKey: .dealStatus)
             self.affectedDeals = try container.decode([IG.Confirmation.AffectedDeal].self, forKey: .affectedDeals)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
@@ -106,7 +107,7 @@ extension Confirmation {
         }
         
         private enum CodingKeys: String, CodingKey {
-            case status, affectedDeals
+            case dealStatus = "status", affectedDeals
             case direction, size, level
             case limitLevel, limitDistance
             case stopLevel, stopDistance
@@ -261,8 +262,8 @@ extension Confirmation: CustomDebugStringConvertible {
         let prefix = "\n\t"
         
         var beginning = String()
-        beginning.append(prefix: prefix, name: "Identifier", ": ", self.identifier)
-        beginning.append(prefix: prefix, name: "Reference", ": ", self.reference)
+        beginning.append(prefix: prefix, name: "Identifier", ": ", self.dealIdentifier)
+        beginning.append(prefix: prefix, name: "Reference", ": ", self.dealReference)
         beginning.append(prefix: prefix, name: "Date", ": ", API.Formatter.humanReadable.string(from: self.date))
         beginning.append(prefix: prefix, name: "Epic", ": ", self.epic)
         beginning.append(prefix: prefix, name: "Expiry", ": ", self.expiry)
@@ -275,7 +276,7 @@ extension Confirmation: CustomDebugStringConvertible {
             result.append("accepted:")
             result.append(beginning)
             
-            result.append(prefix: prefix, name: "Deal Status", ": ", details.status)
+            result.append(prefix: prefix, name: "Deal Status", ": ", details.dealStatus)
             let affected = details.affectedDeals.map { "\($0.identifier) \($0.status)" }.joined(separator: ",")
             result.append(prefix: prefix, name: "Affected deals", ": ", "[\(affected)]")
             result.append(prefix: prefix, name: "Direction", ": ", details.direction)

@@ -90,7 +90,7 @@ extension API {
         /// Default/Preferred login account.
         public let isDefault: Bool
         /// Account currency.
-        public let currency: IG.Currency.Code
+        public let currencyCode: IG.Currency.Code
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
@@ -103,7 +103,7 @@ extension API {
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
             self.isDefault = try container.decode(Bool.self, forKey: .preferred)
-            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.transfersAllowed = (
                 try container.decode(Bool.self, forKey: .transfersIn),
                 try container.decode(Bool.self, forKey: .transfersOut)
@@ -116,7 +116,8 @@ extension API {
             case identifier = "accountId"
             case name = "accountName"
             case alias = "accountAlias"
-            case status, preferred, currency
+            case status, preferred
+            case currencyCode = "currency"
             case transfersIn = "canTransferFrom"
             case transfersOut = "canTransferTo"
             case type = "accountType"

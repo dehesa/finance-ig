@@ -8,7 +8,7 @@ extension API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Epic) -> SignalProducer<API.Market,API.Error> {
+    public func get(epic: IG.Market.Epic) -> SignalProducer<API.Market,API.Error> {
         let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds.deepCopy
         
         return SignalProducer(api: self.api) { (api) in
@@ -38,7 +38,7 @@ extension API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<Epic>) -> SignalProducer<[API.Market],API.Error> {
+    public func get(epics: Set<IG.Market.Epic>) -> SignalProducer<[API.Market],API.Error> {
         let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds
         
         return SignalProducer(api: self.api) { (api) in
@@ -146,11 +146,11 @@ extension API.Market {
     /// Instrument details.
     public struct Instrument: Decodable {
         /// Instrument identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// Instrument name.
         public let name: String
         /// Instrument type.
-        public let type: API.Instrument
+        public let type: IG.Market.Instrument.Kind
         /// Market expiration date details.
         public let expiration: Self.Expiration
         /// Country.
@@ -201,9 +201,9 @@ extension API.Market {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
+            self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
-            self.type = try container.decode(API.Instrument.self, forKey: .type)
+            self.type = try container.decode(IG.Market.Instrument.Kind.self, forKey: .type)
             self.expiration = try .init(from: decoder)
             self.country = try container.decodeIfPresent(String.self, forKey: .country)
             self.currencies = try container.decodeIfPresent(Array<Self.Currency>.self, forKey: .currencies) ?? []
@@ -272,7 +272,7 @@ extension API.Market.Instrument {
     /// Expiration date details.
     public struct Expiration: Decodable {
         /// Expiration date. The date (and sometimes time) at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire, and have an expiry of '-'. eg DEC-14, or DFB for daily funded bets.
-        public let expiry: IG.Deal.Expiry
+        public let expiry: IG.Market.Instrument.Expiry
         /// The last dealing date.
         public let lastDealingDate: Date?
         /// Settlement information.
@@ -281,7 +281,7 @@ extension API.Market.Instrument {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
 
-            self.expiry = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .expirationDate) ?? .none
+            self.expiry = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
                 self.settlementInfo = nil
                 self.lastDealingDate = nil; return
@@ -367,15 +367,22 @@ extension API.Market.Instrument {
 
         public struct Band: Decodable {
             /// The currency for this currency band factor calculation.
-            public let currency: IG.Currency.Code
+            public let currencyCode: IG.Currency.Code
             /// Margin percentage.
             public let margin: Decimal
             /// Band minimum.
-            public let min: Decimal
+            public let minimum: Decimal
             /// Band maximum.
-            public let max: Decimal?
+            public let maximum: Decimal?
             /// Do not call! The only way to initialize is through `Decodable`.
             private init?() { fatalError("Unaccessible initializer") }
+            
+            private enum CodingKeys: String, CodingKey {
+                case currencyCode = "currency"
+                case margin
+                case minimum = "min"
+                case maximum = "max"
+            }
         }
     }
     

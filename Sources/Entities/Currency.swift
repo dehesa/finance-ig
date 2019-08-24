@@ -8,6 +8,8 @@ public protocol CurrencyType {
     static var name: String { get }
     /// The number of decimal places used to express any minor units for the currency.
     static var minorUnit: Int { get }
+    /// The country where this currency is minted.
+    static var country: String { get }
 }
 
 /// Namespace for currencies.
@@ -72,6 +74,7 @@ extension Currency {
         public static var code: Currency.Code { .cad }
         public static var name: String { "Canadian Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Canada" }
     }
     
     /// United States Dollar.
@@ -79,6 +82,7 @@ extension Currency {
         public static var code: Currency.Code { .usd }
         public static var name: String { "US Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "United States" }
     }
     
     /// Mexican Peso.
@@ -86,6 +90,7 @@ extension Currency {
         public static var code: Currency.Code { .mxn }
         public static var name: String { "Mexican Peso" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Mexico" }
     }
     
     /// Brazilian Real.
@@ -93,6 +98,7 @@ extension Currency {
         public static var code: Currency.Code { .brl }
         public static var name: String { "Brazilian Real" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Brazil" }
     }
     
     /// British Pound Sterling.
@@ -100,6 +106,7 @@ extension Currency {
         public static var code: Currency.Code { .gbp }
         public static var name: String { "Pound Sterling" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Great Britian" }
     }
     
     /// Norwegian Krone.
@@ -107,6 +114,7 @@ extension Currency {
         public static var code: Currency.Code { .nok }
         public static var name: String { "Norwegian Krone" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Norway" }
     }
     
     /// Swedish Krona.
@@ -114,6 +122,7 @@ extension Currency {
         public static var code: Currency.Code { .sek }
         public static var name: String { "Swedish Krona" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Sweden" }
     }
     
     /// Danish Krone.
@@ -121,6 +130,7 @@ extension Currency {
         public static var code: Currency.Code { .dkk }
         public static var name: String { "Danish Krone" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Denmark" }
     }
     
     /// European Union Euro.
@@ -128,6 +138,7 @@ extension Currency {
         public static var code: Currency.Code { .eur }
         public static var name: String { "Euro" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Europe" }
     }
     
     /// Swiss Franc.
@@ -135,6 +146,7 @@ extension Currency {
         public static var code: Currency.Code { .chf }
         public static var name: String { "Swiss Franc" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Switzerland" }
     }
     
     /// Czech Koruna.
@@ -142,6 +154,7 @@ extension Currency {
         public static var code: Currency.Code { .czk }
         public static var name: String { "Czech Koruna" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Czech Republic" }
     }
     
     /// Hungarian Forint.
@@ -149,6 +162,7 @@ extension Currency {
         public static var code: Currency.Code { .huf }
         public static var name: String { "Forint" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Hungary" }
     }
     
     /// Polish Zloty.
@@ -156,6 +170,7 @@ extension Currency {
         public static var code: Currency.Code { .pln }
         public static var name: String { "Zloty" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Poland" }
     }
     
     /// Russian Ruble.
@@ -163,6 +178,7 @@ extension Currency {
         public static var code: Currency.Code { .rub }
         public static var name: String { "Russian Ruble" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Russia" }
     }
     
     /// Turkish Lira.
@@ -170,6 +186,7 @@ extension Currency {
         public static var code: Currency.Code { .try }
         public static var name: String { "Turkish Lira" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Turkey" }
     }
     
     /// South African Rand.
@@ -177,13 +194,15 @@ extension Currency {
         public static var code: Currency.Code { .zar }
         public static var name: String { "Rand" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "South Africa" }
     }
     
     /// Indian Rupee.
     public enum INR: CurrencyType {
         public static var code: Currency.Code { .inr }
         public static var name: String { "Indian Rupee" }
-        public static var minorUnit: Int { return 2 }
+        public static var minorUnit: Int { 2 }
+        public static var country: String { "India" }
     }
     
     /// Singapore Dollar.
@@ -191,6 +210,7 @@ extension Currency {
         public static var code: Currency.Code { .sgd }
         public static var name: String { "Singapore Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Singapore" }
     }
     
     /// Chinese Yuan Renminbi
@@ -198,6 +218,7 @@ extension Currency {
         public static var code: Currency.Code { .cny }
         public static var name: String { "Yuan Renminbi" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "China" }
     }
     
     /// New Taiwan Dollar.
@@ -205,6 +226,7 @@ extension Currency {
         public static var code: Currency.Code { .twd }
         public static var name: String { "New Taiwan Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "New Taiwan" }
     }
     
     /// South Korean Won.
@@ -212,6 +234,7 @@ extension Currency {
         public static var code: Currency.Code { .krw }
         public static var name: String { "Won" }
         public static var minorUnit: Int { 0 }
+        public static var country: String { "Korea" }
     }
     
     /// Japanese Yen.
@@ -219,6 +242,7 @@ extension Currency {
         public static var code: Currency.Code { .jpy }
         public static var name: String { "Yen" }
         public static var minorUnit: Int { 0 }
+        public static var country: String { "Japan" }
     }
     
     /// Philippine Piso.
@@ -226,6 +250,7 @@ extension Currency {
         public static var code: Currency.Code { .php }
         public static var name: String { "Philippine Piso" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Philippines" }
     }
     
     /// Indonesian Rupiah.
@@ -233,6 +258,7 @@ extension Currency {
         public static var code: Currency.Code { .idr }
         public static var name: String { "Rupiah" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Indonesia" }
     }
     
     /// Australian Dollar.
@@ -240,6 +266,7 @@ extension Currency {
         public static var code: Currency.Code { .aud }
         public static var name: String { "Australian Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "Australia" }
     }
     
     /// New Zealand Dollar.
@@ -247,5 +274,6 @@ extension Currency {
         public static var code: Currency.Code { .nzd }
         public static var name: String { "New Zealand Dollar" }
         public static var minorUnit: Int { 2 }
+        public static var country: String { "New Zealand" }
     }
 }

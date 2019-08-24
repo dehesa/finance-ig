@@ -78,11 +78,11 @@ extension API.Market {
         ///
         /// It typically represents the underlying 'real-world' market. For example, `VOD-UK` represents Vodafone Group PLC (UK).
         /// This identifier is primarily used in the our market research services, such as client sentiment, and may be found on the /market/{epic} service
-        let marketIdentifier: String
+        public let marketIdentifier: String
         /// Percentage long positions (over 100%).
-        let longs: Decimal
+        public let longs: Decimal
         /// Percentage short positions (over 100%).
-        let shorts: Decimal
+        public let shorts: Decimal
         
         private enum CodingKeys: String, CodingKey {
             case marketIdentifier = "marketId"

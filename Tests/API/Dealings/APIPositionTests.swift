@@ -7,8 +7,8 @@ final class APIPositionTests: XCTestCase {
     func testPositionLifecycle() {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         
-        let epic: IG.Epic = "CS.D.EURUSD.MINI.IP"
-        let expiry: IG.Deal.Expiry = nil
+        let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
+        let expiry: IG.Market.Instrument.Expiry = nil
         let currency: IG.Currency.Code = "USD"
         let direction: IG.Deal.Direction = .sell
         let order: API.Position.Order = .market
@@ -20,14 +20,14 @@ final class APIPositionTests: XCTestCase {
         
         let reference = try! api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop).single()!.get()
         let creationConfirmation = try! api.confirm(reference: reference).single()!.get()
-        XCTAssertEqual(reference, creationConfirmation.reference)
+        XCTAssertEqual(reference, creationConfirmation.dealReference)
         XCTAssertLessThan(creationConfirmation.date, Date())
         XCTAssertEqual(epic, creationConfirmation.epic)
         XCTAssertEqual(expiry, creationConfirmation.expiry)
-        let identifier = creationConfirmation.identifier
+        let identifier = creationConfirmation.dealIdentifier
         
         guard case .accepted(let details) = creationConfirmation.status else {
-            return XCTFail("The position confirmation failed.\n\tReference: \(creationConfirmation.reference)\n\tIdentifier: \(creationConfirmation.identifier)")
+            return XCTFail("The position confirmation failed.\n\tReference: \(creationConfirmation.dealReference)\n\tIdentifier: \(creationConfirmation.dealIdentifier)")
         }
         XCTAssertEqual(direction, details.direction)
         XCTAssertEqual(size, details.size)

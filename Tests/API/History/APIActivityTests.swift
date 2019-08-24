@@ -14,7 +14,7 @@ final class APIActivityTests: XCTestCase {
             ($0.hour, $0.minute) = (0, 0)
         })!
         
-        let activities = (try! api.activity.get(from: date, detailed: true).collect().single()!.get()).flatMap { $0 }
+        let activities = (try! api.history.getActivity(from: date, detailed: true).collect().single()!.get()).flatMap { $0 }
         XCTAssertFalse(activities.isEmpty)
         XCTAssertNil(activities.first(where: { $0.title.isEmpty || $0.details == nil }))
     }

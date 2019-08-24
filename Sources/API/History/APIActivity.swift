@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Activity {
+extension API.Request.History {
     
     // MARK: GET /history/activity
     
@@ -15,7 +15,7 @@ extension API.Request.Activity {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func get(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = Self.PageSize.default) -> SignalProducer<[API.Activity],API.Error> {
+    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> SignalProducer<[API.Activity],API.Error> {
         let dateFormatter: DateFormatter = API.Formatter.iso8601.deepCopy
         
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
@@ -43,8 +43,8 @@ extension API.Request.Activity {
                     queries.append(URLQueryItem(name: "filter", value: filter))
                 }
                 
-                let size: UInt = (pageSize < Self.PageSize.minimum) ? Self.PageSize.minimum :
-                                 (pageSize > Self.PageSize.maximum) ? Self.PageSize.maximum : pageSize
+                let size: UInt = (pageSize < 500) ? 500 :
+                                 (pageSize > 10)  ? 10  : pageSize
                 queries.append(URLQueryItem(name: "pageSize", value: String(size)))
                 return queries
             }).paginate(request: { (api, initialRequest, previous) in
@@ -88,9 +88,9 @@ extension API.Request.Activity {
 
 extension API.Request {
     /// Contains all functionality related to a user's activity.
-    public struct Activity {
+    public struct History {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: API
+        internal unowned let api: API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
@@ -100,23 +100,9 @@ extension API.Request {
     }
 }
 
-// MARK: Request Entities
-
-extension API.Request.Activity {
-    /// Variables related to the paging responses.
-    public enum PageSize {
-        /// The minimum amount of pages that can be asked for.
-        public static var minimum: UInt { return 10 }
-        /// The default amount of transactions received in a page.
-        public static var `default`: UInt { return 50 }
-        /// The maximum amount of pages that can be asked for.
-        public static var maximum: UInt { return 500 }
-    }
-}
-
 // MARK: Response Entities
 
-extension API.Request.Activity {
+extension API.Request.History {
     /// A single page of activity requests.
     private struct PagedActivities: Decodable {
         let activities: [API.Activity]
@@ -138,22 +124,22 @@ extension API.Request.Activity {
 extension API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
-        /// Deal identifier.
-        public let identifier: IG.Deal.Identifier
+        /// The date of the activity item.
+        public let date: Date
+        /// Activity description.
+        public let title: String
         /// Activity type.
         public let type: Self.Kind
         /// Action status.
         public let status: Self.Status
-        /// The date of the activity item.
-        public let date: Date
         /// The channel which triggered the activity.
         public let channel: Self.Channel
+        /// Deal identifier.
+        public let dealIdentifier: IG.Deal.Identifier
         /// Instrument epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// The period of the activity item.
-        public let expiry: IG.Deal.Expiry
-        /// Activity description.
-        public let title: String
+        public let expiry: IG.Market.Instrument.Expiry
         /// Activity details.
         public let details: Self.Details?
         
@@ -162,21 +148,22 @@ extension API {
             let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
-            self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
+            self.title = try container.decode(String.self, forKey: .title)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.status = try container.decode(Self.Status.self, forKey: .status)
             self.channel = try container.decode(Self.Channel.self, forKey: .channel)
-            self.title = try container.decode(String.self, forKey: .title)
-            self.epic = try container.decode(IG.Epic.self, forKey: .epic)
-            self.expiry = try container.decodeIfPresent(IG.Deal.Expiry.self, forKey: .expiry) ?? .none
+            self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
+            self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+            self.expiry = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .expiry) ?? .none
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case identifier = "dealId"
-            case type, status, date, channel
+            case date, title = "description"
+            case type, status, channel
+            case dealIdentifier = "dealId"
             case epic, expiry = "period"
-            case title = "description", details
+            case details
         }
     }
 }
@@ -206,30 +193,30 @@ extension API.Activity {
     
     /// Trigger channel.
     public enum Channel: String, Decodable {
-        /// Activity performed through an outside dealer.
-        case dealer = "DEALER"
-        /// Activity performed through the mobile app.
-        case mobile = "MOBILE"
-        /// Activity performed through the financial FIX system.
-        case fix = "PUBLIC_FIX_API"
         /// Activity performed through the platform's internal system.
         case system = "SYSTEM"
         /// Activity performed through the platform's website.
         case web = "WEB"
+        /// Activity performed through the mobile app.
+        case mobile = "MOBILE"
         /// Activity performed through the API.
-        case webAPI = "PUBLIC_WEB_API"
+        case api = "PUBLIC_WEB_API"
+        /// Activity performed through an outside dealer.
+        case dealer = "DEALER"
+        /// Activity performed through the financial FIX system.
+        case fix = "PUBLIC_FIX_API"
     }
 
     /// Further details of the targeted activity.
     public struct Details: Decodable {
         /// Transient deal reference for an unconfirmed trade.
-        public let reference : IG.Deal.Reference?
+        public let dealReference : IG.Deal.Reference?
         /// Deal affected by an activity.
         public let actions: [API.Activity.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination.
-        public let currency: IG.Currency.Code
+        public let currencyCode: IG.Currency.Code
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Deal size.
@@ -243,20 +230,20 @@ extension API.Activity {
         /// Working order expiration.
         ///
         /// If the activity doesn't reference a working order, this property will be `nil`.
-        public let expiration: API.WorkingOrder.Expiration?
+        public let workingOrderExpiration: API.WorkingOrder.Expiration?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.reference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .reference)
+            self.dealReference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .dealReference)
             self.actions = try container.decode([API.Activity.Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
-            self.currency = try container.decode(IG.Currency.Code.self, forKey: .currency)
+            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
             self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance)
             self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement))
-            self.expiration = try {
+            self.workingOrderExpiration = try {
                 switch try container.decodeIfPresent(String.self, forKey: .expiration) {
                 case .none: return nil
                 case "GTC": return .tillCancelled
@@ -271,9 +258,9 @@ extension API.Activity {
         }
         
         private enum CodingKeys: String, CodingKey {
-            case reference = "dealReference"
-            case actions, currency, direction
-            case marketName, size
+            case dealReference, actions
+            case currencyCode = "currency"
+            case direction, marketName, size
             case level, limitLevel, limitDistance
             case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
             case stopTrailingDistance = "trailingStopDistance", stopTrailingIncrement = "trailingStep"

@@ -11,7 +11,7 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: IG.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = Streamer.Formatter.time
@@ -97,7 +97,7 @@ extension Streamer {
     /// Displays the latests information from a given market.
     public struct Market {
         /// The market epic identifier.
-        public let epic: IG.Epic
+        public let epic: IG.Market.Epic
         /// The current market status.
         public let status: Self.Status?
         
@@ -115,7 +115,7 @@ extension Streamer {
         public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: IG.Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
+        fileprivate init(epic: IG.Market.Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
             typealias U = Streamer.Formatter.Update
             self.epic = epic
