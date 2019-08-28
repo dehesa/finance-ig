@@ -66,6 +66,7 @@ extension API {
     /// Default configuration for the underlying URLSession
     internal static var defaultSessionConfigurations: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
+//        configuration.identifier = Bundle(for: API.self).bundleIdentifier! + ".api"
         configuration.networkServiceType = .default
         configuration.allowsCellularAccess = true
         configuration.httpCookieAcceptPolicy = .never

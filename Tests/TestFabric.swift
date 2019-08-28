@@ -31,7 +31,7 @@ extension Test {
     /// - parameter rootURL: The streamer server root URL. This indicates whether it will be a file channel or a URL channel.
     /// - parameter credentials: The credentials to use to authenticate on the server.
     /// - parameter autoconnect: Whether the connection shall be performed automatically within this function.
-    static func makeStreamer(rootURL: URL, credentials: IG.Streamer.Credentials, autoconnect: Self.Autoconnection) -> IG.Streamer {
+    private static func makeStreamer(rootURL: URL, credentials: IG.Streamer.Credentials, autoconnect: Self.Autoconnection) -> IG.Streamer {
         let streamer: IG.Streamer
         
         switch Self.Account.SupportedScheme(url: rootURL) {
@@ -61,6 +61,17 @@ extension Test {
         case yes(timeout: TimeInterval, queue: DateScheduler)
         /// The connection will be performed manually later on.
         case no
+    }
+}
+
+extension Test {
+    /// Creates a database from the
+    static func makeDatabase() -> IG.Database {
+        do {
+            return try .init(rootURL: Self.account.database?.rootURL)
+        } catch let error {
+            fatalError(String(describing: error))
+        }
     }
 }
 

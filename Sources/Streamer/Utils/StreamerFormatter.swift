@@ -70,9 +70,11 @@ extension Streamer.Formatter {
         
         /// Represents an error that happen when transforming an updated value from a `String` to a type `T` representation.
         internal struct Error: Swift.Error {
+            /// The value to be transformed from.
             let value: String
+            /// The type of the result of the transformation.
             let type: String
-            
+            /// Designated initializer.
             init<T>(value: String, to type: T.Type) {
                 self.value = value
                 self.type = String(describing: type)

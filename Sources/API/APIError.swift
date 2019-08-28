@@ -3,22 +3,17 @@ import Foundation
 extension API {
     /// List of errors that can be generated through the API.
     public struct Error: IG.Error {
-        /// The type of API error.
         public let type: Self.Kind
-        /// A message accompaigning the error explaining what happened.
         public internal(set) var message: String
-        /// Possible solutions for the problem.
         public internal(set) var suggestion: String
+        public internal(set) var underlyingError: Swift.Error?
+        public internal(set) var context: [(title: String, value: Any)] = []
         /// The URL request that generated the error.
         public internal(set) var request: URLRequest?
         /// The URL response generated when the error occurred.
         public internal(set) var response: HTTPURLResponse?
         /// The data received from the server.
         public internal(set) var responseData: Data?
-        /// Any underlying error that was raised right before this hosting error.
-        public internal(set) var underlyingError: Swift.Error?
-        /// Store values/objects that gives context to the hosting error.
-        public internal(set) var context: [(title: String, value: Any)] = []
         
         /// Designated initializer, filling all required error fields.
         /// - parameter type: The error type.
@@ -31,11 +26,11 @@ extension API {
         internal init(_ type: Self.Kind, _ message: String, suggestion: String, request: URLRequest? = nil, response: HTTPURLResponse? = nil, data: Data? = nil, underlying error: Swift.Error? = nil) {
             self.type = type
             self.message = message
+            self.suggestion = suggestion
+            self.underlyingError = error
             self.request = request
             self.response = response
             self.responseData = data
-            self.underlyingError = error
-            self.suggestion = suggestion
         }
         
         /// A factory function for `.sessionExpired` API errors.
@@ -109,7 +104,7 @@ extension API.Error {
     }
 
     /// A typical server error payload.
-    internal struct Payload: Decodable {
+    private struct Payload: Decodable {
         /// The server error code.
         let code: String
 

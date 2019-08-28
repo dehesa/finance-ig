@@ -10,16 +10,19 @@ extension Test {
         let api: Self.APIData
         /// List of variables required to connect to the Streamer.
         let streamer: Self.StreamerData?
+        /// List of variables required to open the underlying database file.
+        let database: Self.DatabaseData?
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.api = try container.decode(Self.APIData.self, forKey: .api)
             self.streamer = try container.decodeIfPresent(Self.StreamerData.self, forKey: .streamer)
+            self.database = try container.decodeIfPresent(Self.DatabaseData.self, forKey: .database)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case accountId, api, streamer
+            case accountId, api, streamer, database
         }
     }
 }
@@ -148,6 +151,38 @@ extension Test.Account {
             enum NestedKeys: String, CodingKey {
                 case identifier, password, access, security
             }
+        }
+    }
+}
+
+// MARK: - Database Data
+
+extension Test.Account {
+    /// Account test environment Database information.
+    struct DatabaseData: Decodable {
+        /// The file URL where the database file is located.
+        ///
+        /// If `nil` an "in memory" database will be opened.
+        let rootURL: URL?
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            
+            if var url = try container.decodeIfPresent(URL.self, forKey: .rootURL) {
+                guard url.isFileURL else { throw Test.Account.Error.invalidURL(url.path) }
+                
+                if let host = url.host, host == "~" {
+                    let absolutePath = url.absoluteString.replacingOccurrences(of: "~", with: FileManager.default.homeDirectoryForCurrentUser.path)
+                    url = URL(string: absolutePath)!
+                }
+                self.rootURL = url.standardizedFileURL
+            } else {
+                self.rootURL = nil
+            }
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case rootURL = "url"
         }
     }
 }

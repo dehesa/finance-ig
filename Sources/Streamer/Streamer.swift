@@ -5,7 +5,7 @@ import Foundation
 public final class Streamer {
     /// URL root address.
     public let rootURL: URL
-    /// The session (whether real or mocked) managing the streaming connections.
+    /// The underlying instance (whether real or mocked) managing the streaming connections.
     internal let channel: StreamerMockableChannel
     
     /// Holds functionality related to the current streamer session.
