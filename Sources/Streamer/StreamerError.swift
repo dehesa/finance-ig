@@ -3,20 +3,15 @@ import Foundation
 extension Streamer {
     /// List of errors that can be generated throught the Streamer class.
     public struct Error: IG.Error {
-        /// The type of Streamer error.
         public let type: Self.Kind
-        /// A message accompaigning the error explaining what happened.
         public internal(set) var message: String
-        /// Possible solutions for the problem.
         public internal(set) var suggestion: String
+        public internal(set) var underlyingError: Swift.Error?
+        public internal(set) var context: [(title: String, value: Any)] = []
         /// The subscription item.
         public internal(set) var item: String?
         /// The subscription fields.
         public internal(set) var fields: [String]?
-        /// Any underlying error that was raised right before this hosting error.
-        public internal(set) var underlyingError: Swift.Error?
-        /// Store values/objects that gives context to the hosting error.
-        public internal(set) var context: [(title: String, value: Any)] = []
         
         /// Designated initializer, filling all required error fields.
         /// - parameter type: The error type.

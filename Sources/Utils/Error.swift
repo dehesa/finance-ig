@@ -1,3 +1,4 @@
+import GRDB
 import Foundation
 
 /// Errors thrown by the IG framework.
@@ -40,6 +41,7 @@ extension Error where Self: ErrorPrintable {
         var attachedError: Swift.Error? = nil
         
         var result = "\(Self.prefix)Underlying "
+        // MARK: Foundation.EncodingError
         if let encodingError = subError as? EncodingError {
             result.append("encoding error: ")
             switch encodingError {
@@ -51,6 +53,7 @@ extension Error where Self: ErrorPrintable {
             @unknown default:
                 result.append("Non-identifyiable.")
             }
+        // MARK: Foundation.DecodingError
         } else if let decodingError = subError as? DecodingError {
             result.append("decoding error: ")
             switch decodingError {
@@ -73,18 +76,41 @@ extension Error where Self: ErrorPrintable {
             @unknown default:
                 result.append("Non-identifyiable.")
             }
-        } else if let error = subError as? Streamer.Subscription.Error {
-            result.append("Subscription error (code \(error.code)): \(String(describing: error.kind))")
-            if let message = error.message {
-                result.append(" -- ")
-                result.append(message)
-            }
-        } else if let error = subError as? API.Error {
+        // MARK: IG.API.Error
+        } else if let error = subError as? IG.API.Error {
             result.append("API error: \(error.type) \(error.message) \(error.suggestion)")
             attachedError = error.underlyingError
-        } else if let error = subError as? Streamer.Error {
-            result.append("Streamer error: \(error.type) \(error.message) \(error.suggestion))")
+        // MARK: IG.Streamer.Error
+        } else if let error = subError as? IG.Streamer.Error {
+            result.append("Streamer error: \(error.type) \(error.message) \(error.suggestion)")
             attachedError = error.underlyingError
+        // MARK: IG.Streamer.Subscription.Error
+        } else if let error = subError as? Streamer.Subscription.Error {
+            result.append("subscription error (code \(error.code)): \(String(describing: error.kind))")
+            if let message = error.message {
+                result.append("\(Self.prefix)\tMessage: \(message)")
+            }
+        // MARK: IG.Streamer.Formatter.Update.Error
+        } else if let error = subError as? IG.Streamer.Formatter.Update.Error {
+            result.append("transformation error:")
+            result.append("\(Self.prefix)\tResult type: \(error.type)")
+            result.append("\(Self.prefix)\tValue received: \(error.value)")
+        // MARK: IG.Database.Error
+        } else if let error = subError as? IG.Database.Error {
+            result.append("Database error: \(error.type) \(error.message) \(error.suggestion)")
+            attachedError = error.underlyingError
+        // MARK: GRDB.DatabaseError
+        } else if let error = subError as? GRDB.DatabaseError {
+            result.append("SQLite error:")
+            result.append("\(Self.prefix)\tPrimary: \(error.resultCode)")
+            result.append("\(Self.prefix)\tExtended: \(error.extendedResultCode)")
+            if let message = error.message {
+                result.append("\(Self.prefix)\tMessage: \(message)")
+            }
+            if let sql = error.sql {
+                result.append("\(Self.prefix)\tSQL query: \(sql)")
+            }
+        // MARK: Unknown error
         } else {
             result.append("unknown error: ")
             result.append(Self.excerpt(of: subError, maximumCharacters: 100))

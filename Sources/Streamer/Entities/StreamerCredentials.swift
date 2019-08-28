@@ -18,6 +18,7 @@ extension Streamer {
         
         /// Creates the `Streamer` credentials from the received `API` credentials.
         /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
+        /// - throws: `Streamer.Error.invalidRequest`
         public init(credentials: API.Credentials) throws {
             guard case .certificate(let access, let security) = credentials.token.value else {
                 throw Streamer.Error.invalidRequest("No Certificate credentials were found.", suggestion: #"Set the API log in as "certificate" type."#)

@@ -57,6 +57,10 @@
 		8D819E1822F2E3420031A9D5 /* Reactive+Timeout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1622F2E3100031A9D5 /* Reactive+Timeout.swift */; };
 		8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */; };
 		8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D911F6422ECF4CA0038E899 /* Decimal.swift */; };
+		8D94BA93231656DE00AFBA1E /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 8D94BA92231656DE00AFBA1E /* GRDB */; };
+		8D94BA962316575500AFBA1E /* DB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA952316575500AFBA1E /* DB.swift */; };
+		8D94BA9823165DB500AFBA1E /* DBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9723165DB500AFBA1E /* DBError.swift */; };
+		8D94BA9B2316A6E600AFBA1E /* DBSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */; };
 		8D987E7C22F950A4003F85D9 /* XCTestCase+Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D987E7A22F950A0003F85D9 /* XCTestCase+Streamer.swift */; };
 		8D987E7F22F95661003F85D9 /* StreamerAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */; };
 		8DAEF08022F9914C005AB34C /* StreamerTradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */; };
@@ -164,6 +168,9 @@
 		8D89F7F522F0EB7E00AF7698 /* StreamerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSession.swift; sourceTree = "<group>"; };
 		8D8B3AB92299E91800611153 /* General.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = General.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		8D911F6422ECF4CA0038E899 /* Decimal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decimal.swift; sourceTree = "<group>"; };
+		8D94BA952316575500AFBA1E /* DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DB.swift; sourceTree = "<group>"; };
+		8D94BA9723165DB500AFBA1E /* DBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBError.swift; sourceTree = "<group>"; };
+		8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSessionTests.swift; sourceTree = "<group>"; };
 		8D987E7A22F950A0003F85D9 /* XCTestCase+Streamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCTestCase+Streamer.swift"; sourceTree = "<group>"; };
 		8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerAccountTests.swift; sourceTree = "<group>"; };
 		8DAEF08122F9994F005AB34C /* TestFabric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFabric.swift; sourceTree = "<group>"; };
@@ -256,6 +263,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D94BA93231656DE00AFBA1E /* GRDB in Frameworks */,
 				8DC4CC042149ACA200344CBF /* Lightstreamer_macOS_Client.framework in Frameworks */,
 				8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */,
 			);
@@ -361,6 +369,23 @@
 			path = Playground;
 			sourceTree = "<group>";
 		};
+		8D94BA942316573900AFBA1E /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				8D94BA952316575500AFBA1E /* DB.swift */,
+				8D94BA9723165DB500AFBA1E /* DBError.swift */,
+			);
+			path = Database;
+			sourceTree = "<group>";
+		};
+		8D94BA992316A69A00AFBA1E /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */,
+			);
+			path = Database;
+			sourceTree = "<group>";
+		};
 		8DC4CA332149A60900344CBF = {
 			isa = PBXGroup;
 			children = (
@@ -410,6 +435,7 @@
 				8DC4CA452149A6CE00344CBF /* Entities */,
 				8DC4CA622149A6CE00344CBF /* API */,
 				8DC4CA4C2149A6CE00344CBF /* Streamer */,
+				8D94BA942316573900AFBA1E /* Database */,
 				8DC4CA482149A6CE00344CBF /* Utils */,
 			);
 			path = Sources;
@@ -574,6 +600,7 @@
 				8DC4CAA62149A6CE00344CBF /* Data */,
 				8DC4CA912149A6CE00344CBF /* API */,
 				8DC4CA892149A6CE00344CBF /* Streamer */,
+				8D94BA992316A69A00AFBA1E /* Database */,
 				8DC4CA832149A6CE00344CBF /* Utils */,
 			);
 			path = Tests;
@@ -741,6 +768,7 @@
 			name = "IG [macOS]";
 			packageProductDependencies = (
 				8D23A90622C1E41E00518EC9 /* ReactiveSwift */,
+				8D94BA92231656DE00AFBA1E /* GRDB */,
 			);
 			productName = IG;
 			productReference = 8DC4CBE12149A78700344CBF /* IG.framework */;
@@ -793,6 +821,7 @@
 			mainGroup = 8DC4CA332149A60900344CBF;
 			packageReferences = (
 				8D23A90522C1E41E00518EC9 /* XCRemoteSwiftPackageReference "ReactiveSwift" */,
+				8D94BA91231656DE00AFBA1E /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 			);
 			productRefGroup = 8DC4CBE22149A78700344CBF /* Products */;
 			projectDirPath = "";
@@ -890,6 +919,8 @@
 				8D222CD622F55FFC00AF98E0 /* StreamerChartScale.swift in Sources */,
 				8D222CD822F5600700AF98E0 /* StreamerChartTick.swift in Sources */,
 				8D222CD922F5601200AF98E0 /* StreamerDeal.swift in Sources */,
+				8D94BA962316575500AFBA1E /* DB.swift in Sources */,
+				8D94BA9823165DB500AFBA1E /* DBError.swift in Sources */,
 				8D0D48A022F09CB7000579CF /* Services.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -926,6 +957,7 @@
 				8D4B972422F21BED002B267F /* APIPositionTests.swift in Sources */,
 				8D4B972322F21939002B267F /* APIWorkingOrderTests.swift in Sources */,
 				8D987E7C22F950A4003F85D9 /* XCTestCase+Streamer.swift in Sources */,
+				8D94BA9B2316A6E600AFBA1E /* DBSessionTests.swift in Sources */,
 				8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */,
 				8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */,
 				8D44B3D722F8BDBD0080F17E /* StreamerChartTests.swift in Sources */,
@@ -1218,6 +1250,14 @@
 				minimumVersion = 6.1.0;
 			};
 		};
+		8D94BA91231656DE00AFBA1E /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:groue/GRDB.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1225,6 +1265,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8D23A90522C1E41E00518EC9 /* XCRemoteSwiftPackageReference "ReactiveSwift" */;
 			productName = ReactiveSwift;
+		};
+		8D94BA92231656DE00AFBA1E /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D94BA91231656DE00AFBA1E /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
