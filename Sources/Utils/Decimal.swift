@@ -1,18 +1,51 @@
 import Foundation
 
-#if canImport(Darwin)
 extension Decimal {
     /// Boolean indicating whether the number has no decimals (is whole).
     var isWhole: Bool {
         var original = self.magnitude
         var rounded = Decimal()
+        #if canImport(Darwin)
         NSDecimalRound(&rounded, &original, 0, .down)
         return original - rounded == 0
+        #else
+        #error("Decimal rounding is not supported by non-Darwin platforms.")
+        #endif
+    }
+    
+    /// Convenience initializer to transformed the given value to a `Decimal` and then multiply it by the given power of 10.
+    ///
+    /// The operation is: `Decimal(value) * (10^power)`
+    /// - parameter value: The integer value being transformed to a `Decimal`.
+    /// - parameter power: The power which ten is being raised to (i.e. `10^power`).
+    init(_ value: Int, divingByPowerOf10 power: Int) {
+        var tenthPower = power
+        tenthPower.negate()
+        
+        let lhs: Decimal = .init(value)
+        let rhs: Decimal = pow(10 as Decimal, tenthPower)
+        self = lhs * rhs
     }
 }
-#else
-#error("Decimal rounding is not supported by non-Darwin platforms.")
-#endif
+
+extension Int {
+    /// Convenience initializer to clamp a `Decimal` to an integer.
+    /// - parameter source: The argument will lose all decimal places.
+    init(clamping source: Decimal) {
+        #if canImport(Darwin)
+        self = (source as NSDecimalNumber).intValue
+        #else
+        #error("NSDecimalNumber is not supported on non Darwin platforms")
+        #endif
+    }
+    /// Convenience initializer to multiply a `Decimal` by `10^power` and then clamp all decimal places.
+    /// - parameter source: The decimal value from where the transformations will take place.
+    /// - parameter power: The power to raise 10 to.
+    init(clamping source: Decimal, multiplyingByPowerOf10 power: Int) {
+        let rhs = pow(10 as Decimal, power)
+        self = .init(clamping: source * rhs)
+    }
+}
 
 // MARK: - Decoder
 

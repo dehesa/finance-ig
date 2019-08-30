@@ -1,8 +1,9 @@
+import GRDB
 import Foundation
 
 extension API {
     /// API development key.
-    public struct Key: RawRepresentable, ExpressibleByStringLiteral, Codable, Hashable, CustomStringConvertible {
+    public struct Key: RawRepresentable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
         public let rawValue: String
         
         public init?(rawValue: String) {
@@ -15,28 +16,30 @@ extension API {
             self.rawValue = value
         }
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let name = try container.decode(String.self)
-            guard Self.validate(name) else {
-                let reason = "The API key being decoded doesn't conform to the validation function."
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
-            }
-            self.rawValue = name
-        }
-        
         public var description: String {
             return self.rawValue
-        }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            try container.encode(self.rawValue)
         }
     }
 }
 
-extension API.Key {
+extension API.Key: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let name = try container.decode(String.self)
+        guard Self.validate(name) else {
+            let reason = "The API key being decoded doesn't conform to the validation function."
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
+        }
+        self.rawValue = name
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
+    }
+}
+
+extension API.Key: GRDB.DatabaseValueConvertible {
     /// Returns a Boolean indicating whether the raw value can represent an API key.
     private static func validate(_ value: String) -> Bool {
         return value.count == 40 && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }

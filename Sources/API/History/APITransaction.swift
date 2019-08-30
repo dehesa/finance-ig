@@ -235,7 +235,7 @@ extension API.Transaction {
         case "$": return .usd
         case "¥": return .jpy
         default:
-            #warning("Enumerate more currency initials.")
+            #warning("Look for more in: market.intrument.currencies.symbol")
             return nil
         }
     }

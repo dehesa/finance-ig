@@ -19,8 +19,8 @@ extension API.Request.Applications {
     /// Alters the details of a given user application.
     /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
-    /// - parameter accountAllowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(key: API.Key? = nil, status: API.Application.Status, accountAllowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
+    /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
+    public func update(key: API.Key? = nil, status: API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
         return SignalProducer(api: self.api) { (api) -> Self.PayloadUpdate in
                 let apiKey: API.Key
                 if let key = key {
@@ -30,7 +30,7 @@ extension API.Request.Applications {
                 } else {
                     throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
                 }
-                return .init(key: apiKey, status: status, overallAccountAllowance: accountAllowance.overall, tradingAccountAllowance: accountAllowance.trading)
+                return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
                 let data = try JSONEncoder().encode(payload)
                 return (.json, data)
@@ -66,14 +66,14 @@ extension API.Request.Applications {
         /// Desired application status.
         let status: API.Application.Status
         /// Per account request per minute allowance.
-        let overallAccountAllowance: UInt
+        let overallAccountRequests: UInt
         /// Per account trading request per minute allowance.
-        let tradingAccountAllowance: UInt
+        let tradingAccountRequests: UInt
         
         private enum CodingKeys: String, CodingKey {
             case key = "apiKey", status
-            case overallAccountAllowance = "allowanceAccountOverall"
-            case tradingAccountAllowance = "allowanceAccountTrading"
+            case overallAccountRequests = "allowanceAccountOverall"
+            case tradingAccountRequests = "allowanceAccountTrading"
         }
     }
 }
@@ -83,27 +83,30 @@ extension API.Request.Applications {
 extension API {
     /// Client application.
     public struct Application: Decodable {
-        /// Application name given by the developer.
-        public let name: String
         /// Application API key identifying the application and the developer.
         public let key: API.Key
-        ///  Application status.
-        public let status: Self.Status
         /// Application creation date (referencing UTC dates, although no time data is stored).
         public let creationDate: Date
+        /// Application name given by the developer.
+        public let name: String
+        ///  Application status.
+        public let status: Self.Status
         /// What the platform allows the application or account to do (e.g. requests per minute).
+        public let permission: Self.Permission
+        /// The limits at which the receiving application is constrained to.
         public let allowance: Self.Allowance
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.name = try container.decode(String.self, forKey: .name)
             self.key = try container.decode(API.Key.self, forKey: .key)
-            self.status = try container.decode(API.Application.Status.self, forKey: .status)
             self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.Formatter.yearMonthDay)
-            self.allowance = try Allowance(from: decoder)
+            self.name = try container.decode(String.self, forKey: .name)
+            self.status = try container.decode(API.Application.Status.self, forKey: .status)
+            self.permission = try Self.Permission(from: decoder)
+            self.allowance = try Self.Allowance(from: decoder)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        internal enum CodingKeys: String, CodingKey {
             case name, key = "apiKey"
             case status, creationDate = "createdDate"
         }
@@ -124,73 +127,63 @@ extension API.Application {
 
 extension API.Application {
     /// The platform allowance to the application's and account's allowances (e.g. requests per minute).
-    public struct Allowance: Decodable {
+    public struct Permission: Decodable {
         /// Boolean indicating if access to equity prices is permitted.
-        public let equities: Bool
+        public let accessToEquityPrices: Bool
         /// Boolean indicating if quote orders are permitted.
-        public let quoteOrders: Bool
-        /// Requests limits and allowances.
-        public let requests: Self.Requests
-        /// Limits for the lightStreamer connections.
-        public let lightStreamer: Self.LightStreamer
+        public let areQuoteOrdersAllowed: Bool
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.equities = try container.decode(Bool.self, forKey: .equitiesAllowance)
-            self.quoteOrders = try container.decode(Bool.self, forKey: .quoteOrdersAllowance)
-            self.requests = try Requests(from: decoder)
-            self.lightStreamer = try LightStreamer(from: decoder)
+            self.accessToEquityPrices = try container.decode(Bool.self, forKey: .equities)
+            self.areQuoteOrdersAllowed = try container.decode(Bool.self, forKey: .quoteOrders)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case equitiesAllowance = "allowEquities"
-            case quoteOrdersAllowance = "allowQuoteOrders"
+            case equities = "allowEquities"
+            case quoteOrders = "allowQuoteOrders"
         }
     }
 }
 
-extension API.Application.Allowance {
-    /// The requests (per minute) that the application or account can perform.
-    public struct Requests: Decodable {
+extension API.Application {
+    /// The limits constraining an API application.
+    public struct Allowance: Decodable {
         /// Overal application request per minute allowance.
-        public let application: UInt
+        public let overallRequests: Int
         /// Account related requests per minute allowance.
         public let account: Self.Account
+        /// Concurrent subscriptioon limit per lightstreamer connection.
+        public let subscriptionsLimit: Int
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.application = try container.decode(UInt.self, forKey: .application)
+            self.overallRequests = try container.decode(Int.self, forKey: .requests)
+            self.subscriptionsLimit = try container.decode(Int.self, forKey: .subscriptions)
             self.account = try Account(from: decoder)
         }
         
         private enum CodingKeys: String, CodingKey {
-            case application = "allowanceApplicationOverall"
-        }
-    }
-}
-
-extension API.Application.Allowance.Requests {
-    // Limit and allowances for the targeted account.
-    public struct Account: Decodable {
-        /// Per account request per minute allowance.
-        public let overall: UInt
-        /// Per account trading request per minute allowance.
-        public let trading: UInt
-        /// Historical price data data points per minute allowance.
-        public let historicalData: UInt
-        
-        private enum CodingKeys: String, CodingKey {
-            case overall = "allowanceAccountOverall"
-            case trading = "allowanceAccountTrading"
-            case historicalData = "allowanceAccountHistoricalData"
+            case requests = "allowanceApplicationOverall"
+            case subscriptions = "concurrentSubscriptionsLimit"
         }
     }
 }
 
 extension API.Application.Allowance {
-    /// Limits and allowances for lightstreamer connections.
-    public struct LightStreamer: Decodable {
-        /// Concurrent subscriptioon limit per lightstreamer connection.
-        public let concurrentSubscriptionsLimit: UInt
+    /// Limit and allowances for the targeted account.
+    public struct Account: Decodable {
+        /// Per account request per minute allowance.
+        public let overallRequests: Int
+        /// Per account trading request per minute allowance.
+        public let tradingRequests: Int
+        /// Historical price data data points per minute allowance.
+        public let historicalDataRequests: Int
+        
+        private enum CodingKeys: String, CodingKey {
+            case overallRequests = "allowanceAccountOverall"
+            case tradingRequests = "allowanceAccountTrading"
+            case historicalDataRequests = "allowanceAccountHistoricalData"
+        }
     }
 }

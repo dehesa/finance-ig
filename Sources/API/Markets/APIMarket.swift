@@ -105,7 +105,7 @@ extension API {
         /// The name of a natural grouping of a set of IG markets
         ///
         /// It typically represents the underlying 'real-world' market. For example, `VOD-UK` represents Vodafone Group PLC (UK).
-        /// This identifier is primarily used in the our market research services, such as client sentiment, and may be found on the /market/{epic} service
+        /// This identifier is primarily used in our market research services, such as client sentiment, and may be found on the /market/{epic} service
         public let identifier: String
         /// IG tradeable financial instrument (market), typically based on some underlying financial market instrument.
         ///
@@ -176,7 +176,7 @@ extension API.Market {
         /// Boolean indicating whether stops and limits are allowed.
         public let isStopLimitAllowed: Bool
         /// Are controlled risk trades allowed.
-        public let isControlledRiskAllowed: Bool
+        public let isLimitedRiskAllowed: Bool
         /// Deposit bands.
         public let margin: Self.Margin
         /// Slippage factor details for the given market.
@@ -235,7 +235,7 @@ extension API.Market {
                 self.contractSize = nil
             }
             self.isForceOpenAllowed = try container.decode(Bool.self, forKey: .isForceOpenAllowed)
-            self.isControlledRiskAllowed = try container.decode(Bool.self, forKey: .isControlledRiskAllowed)
+            self.isLimitedRiskAllowed = try container.decode(Bool.self, forKey: .isLimitedRiskAllowed)
             self.isStopLimitAllowed = try container.decode(Bool.self, forKey: .isStopLimitAllowed)
             self.margin = try .init(from: decoder)
             self.slippageFactor = try container.decode(Self.SlippageFactor.self, forKey: .slippageFactor)
@@ -256,7 +256,7 @@ extension API.Market {
             case pipValue = "valueOfOnePip"
             case lotSize, contractSize, slippageFactor
             case isForceOpenAllowed = "forceOpenAllowed"
-            case isControlledRiskAllowed = "controlledRiskAllowed"
+            case isLimitedRiskAllowed = "controlledRiskAllowed"
             case isStopLimitAllowed = "stopsLimitsAllowed"
             case rollover = "rolloverDetails"
             case limitedRiskPremium
@@ -507,7 +507,7 @@ extension API.Market {
             /// Minimum normal stop distance.
             public let mininumDistance: API.Market.Distance
             /// Minimum controller risk stop distance.
-            public let minimumControlledRiskDistance: API.Market.Distance
+            public let minimumLimitedRiskDistance: API.Market.Distance
             /// Maximum stop distance.
             public let maximumDistance: API.Market.Distance
             /// Trailing stops' settings.
@@ -516,14 +516,14 @@ extension API.Market {
             public init(from decoder: Decoder) throws {
                 let container = try decoder.container(keyedBy: Self.CodingKeys.self)
                 self.mininumDistance = try container.decode(API.Market.Distance.self, forKey: .mininumDistance)
-                self.minimumControlledRiskDistance = try container.decode(API.Market.Distance.self, forKey: .minimumControlledRiskDistance)
+                self.minimumLimitedRiskDistance = try container.decode(API.Market.Distance.self, forKey: .limitedRisk)
                 self.maximumDistance = try container.decode(API.Market.Distance.self, forKey: .maximumDistance)
                 self.trailing = try .init(from: decoder)
             }
             
             private enum CodingKeys: String, CodingKey {
                 case mininumDistance = "minNormalStopOrLimitDistance"
-                case minimumControlledRiskDistance = "minControlledRiskStopDistance"
+                case limitedRisk = "minControlledRiskStopDistance"
                 case maximumDistance = "maxStopOrLimitDistance"
             }
             
