@@ -1,9 +1,10 @@
+import GRDB
 import Foundation
 
 /// Namespace for market information.
 public enum Market {
     /// An epic represents a unique tradeable market.
-    public struct Epic: RawRepresentable, Codable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
+    public struct Epic: RawRepresentable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
@@ -16,47 +17,52 @@ public enum Market {
             self.rawValue = rawValue
         }
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
-            }
-            self.rawValue = rawValue
-        }
-        
         public var description: String {
             return self.rawValue
         }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            try container.encode(self.rawValue)
-        }
-        
-        private static func validate(_ value: String) -> Bool {
-            let allowedRange = 6...30
-            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
-        }
-        
-        /// The allowed character set for epics.
-        ///
-        /// It is used on validation.
-        private static let allowedSet: CharacterSet = {
-            var result = CharacterSet(arrayLiteral: ".", "_")
-            result.formUnion(CharacterSet.IG.lowercaseANSI)
-            result.formUnion(CharacterSet.IG.uppercaseANSI)
-            result.formUnion(CharacterSet.decimalDigits)
-            return result
-        }()
     }
+}
+
+extension Market.Epic: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        guard Self.validate(rawValue) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
+        }
+        self.rawValue = rawValue
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
+    }
+}
+
+extension Market.Epic: GRDB.DatabaseValueConvertible {
+    /// Returns a Boolean indicating whether the raw value can represent a market epic.
+    private static func validate(_ value: String) -> Bool {
+        let allowedRange = 6...30
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+    }
+    
+    /// The allowed character set for epics.
+    ///
+    /// It is used on validation.
+    private static let allowedSet: CharacterSet = {
+        var result = CharacterSet(arrayLiteral: ".", "_")
+        result.formUnion(CharacterSet.IG.lowercaseANSI)
+        result.formUnion(CharacterSet.IG.uppercaseANSI)
+        result.formUnion(CharacterSet.decimalDigits)
+        return result
+    }()
 }
 
 extension Market {
     /// The underlying financial instrument being traded in the market.
     public enum Instrument {
         /// Instrument related entities.
-        public enum Kind: Decodable {
+        public enum Kind {
             /// A binary allows you to take a view on whether a specific outcome will or won't occur.
             ///
             /// For example, Will Wall Street be up at the close of the day?
@@ -82,49 +88,44 @@ extension Market {
             case testMarket
             case unknown
             
-            public init(from decoder: Decoder) throws {
-                let container = try decoder.singleValueContainer()
-                let string = try container.decode(String.self)
-                switch string {
-                case "BINARY": self = .binary
-                case "COMMODITIES": self = .commodities
-                case "CURRENCIES": self = .currencies
-                case "INDICES": self = .indices
-                case "OPT_COMMODITIES": self = .options(.commodities)
-                case "OPT_CURRENCIES": self = .options(.currencies)
-                case "OPT_INDICES": self = .options(.indices)
-                case "OPT_RATES": self = .options(.rates)
-                case "OPT_SHARES": self = .options(.shares)
-                case "RATES": self = .rates
-                case "SECTORS": self = .sectors
-                case "SHARES": self = .shares
-                case "SPRINT_MARKET": self = .sprintMarket
-                case "TEST_MARKET": self = .testMarket
-                case "UNKNOWN": self = .unknown
-                case "BUNGEE_CAPPED": self = .bungee(.capped)
-                case "BUNGEE_COMMODITIES": self = .bungee(.commodities)
-                case "BUNGEE_CURRENCIES": self = .bungee(.currencies)
-                case "BUNGEE_INDICES": self = .bungee(.indices)
-                default:
-                    let message = #"The instrument type "\#(string)" couldn't be mapped to a proper type"#
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: message)
-                }
-            }
-            
             public enum Bungee: String {
-                case capped  = "BUNGEE_CAPPED"
-                case commodities  = "BUNGEE_COMMODITIES"
-                case currencies = "BUNGEE_CURRENCIES"
-                case indices = "BUNGEE_INDICES"
+                case capped, commodities, currencies, indices
             }
             
             public enum Options: String {
-                case commodities = "OPT_COMMODITIES"
-                case currencies = "OPT_CURRENCIES"
-                case indices = "OPT_INDICES"
-                case rates = "OPT_RATES"
-                case shares = "OPT_SHARES"
+                case commodities, currencies, indices, rates, shares
             }
+        }
+    }
+}
+
+extension Market.Instrument.Kind: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        switch string {
+        case "BINARY": self = .binary
+        case "COMMODITIES": self = .commodities
+        case "CURRENCIES": self = .currencies
+        case "INDICES": self = .indices
+        case "OPT_COMMODITIES": self = .options(.commodities)
+        case "OPT_CURRENCIES": self = .options(.currencies)
+        case "OPT_INDICES": self = .options(.indices)
+        case "OPT_RATES": self = .options(.rates)
+        case "OPT_SHARES": self = .options(.shares)
+        case "RATES": self = .rates
+        case "SECTORS": self = .sectors
+        case "SHARES": self = .shares
+        case "SPRINT_MARKET": self = .sprintMarket
+        case "TEST_MARKET": self = .testMarket
+        case "UNKNOWN": self = .unknown
+        case "BUNGEE_CAPPED": self = .bungee(.capped)
+        case "BUNGEE_COMMODITIES": self = .bungee(.commodities)
+        case "BUNGEE_CURRENCIES": self = .bungee(.currencies)
+        case "BUNGEE_INDICES": self = .bungee(.indices)
+        default:
+            let message = #"The instrument type "\#(string)" couldn't be mapped to a proper type"#
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: message)
         }
     }
 }
@@ -133,7 +134,7 @@ extension Market.Instrument {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
-    public enum Expiry: ExpressibleByNilLiteral, Codable, Equatable {
+    public enum Expiry: ExpressibleByNilLiteral, Equatable {
         /// DFBs (i.e. "Daily Funded Bets") run for as long as you choose to keep them open, with a default expiry some way off in the future.
         ///
         /// The cost of maintaining your DFB position is levied on your account each day: hence daily funded bet. You would generally use a daily funded bet to speculate on short-term market movements.
@@ -146,48 +147,50 @@ extension Market.Instrument {
         public init(nilLiteral: ()) {
             self = .none
         }
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            guard !container.decodeNil() else {
-                self = .none; return
-            }
-            
-            let string = try container.decode(String.self)
-            switch string {
-            case Self.CodingKeys.none.rawValue:
-                self = .none
-            case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
-                self = .dailyFunded
-            default:
-                if let date = API.Formatter.dayMonthYear.date(from: string) {
-                    self = .forward(date)
-                } else if let date = API.Formatter.monthYear.date(from: string) {
-                    self = .forward(date.lastDayOfMonth)
-                } else if let date = API.Formatter.iso8601.date(from: string) {
-                    self = .forward(date)
-                } else {
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: API.Formatter.dayMonthYear.parseErrorLine(date: string))
-                }
-            }
+    }
+}
+
+extension Market.Instrument.Expiry: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        guard !container.decodeNil() else {
+            self = .none; return
         }
         
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .none:
-                try container.encode(Self.CodingKeys.none.rawValue)
-            case .dailyFunded:
-                try container.encode(Self.CodingKeys.dfb.rawValue)
-            case .forward(let date):
-                let formatter = (date.isLastDayOfMonth) ? API.Formatter.monthYear : API.Formatter.dayMonthYear
-                try container.encode(formatter.string(from: date))
+        let string = try container.decode(String.self)
+        switch string {
+        case Self.CodingKeys.none.rawValue:
+            self = .none
+        case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
+            self = .dailyFunded
+        default:
+            if let date = API.Formatter.dayMonthYear.date(from: string) {
+                self = .forward(date)
+            } else if let date = API.Formatter.monthYear.date(from: string) {
+                self = .forward(date.lastDayOfMonth)
+            } else if let date = API.Formatter.iso8601.date(from: string) {
+                self = .forward(date)
+            } else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: API.Formatter.dayMonthYear.parseErrorLine(date: string))
             }
         }
-        
-        private enum CodingKeys: String, CodingKey {
-            case dfb = "DFB"
-            case none = "-"
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .none:
+            try container.encode(Self.CodingKeys.none.rawValue)
+        case .dailyFunded:
+            try container.encode(Self.CodingKeys.dfb.rawValue)
+        case .forward(let date):
+            let formatter = (date.isLastDayOfMonth) ? API.Formatter.monthYear : API.Formatter.dayMonthYear
+            try container.encode(formatter.string(from: date))
         }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case dfb = "DFB"
+        case none = "-"
     }
 }

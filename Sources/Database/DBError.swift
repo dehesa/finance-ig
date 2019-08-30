@@ -50,6 +50,7 @@ extension IG.Database.Error {
     /// Namespace for suggestions reused over the framework.
     internal enum Suggestion {
         static var keepSession: String { "The \(IG.Database.self) functionality is asynchronous; keep around the \(IG.Database.self) instance while a response hasn't been received." }
+        static var bug: String { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print." }
     }
 }
 

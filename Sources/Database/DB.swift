@@ -11,6 +11,7 @@ public final class Database {
     internal let channel: GRDB.DatabaseQueue
     
     /// Creates a database instance fetching and storing values from/to the given location.
+    /// 
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.
     /// - throws: `IG.Database.Error`
     public convenience init(rootURL: URL?) throws {
@@ -51,7 +52,7 @@ public final class Database {
 
 extension IG.Database {
     /// The root address for the underlying database file.
-    public static let rootURL: URL = {
+    public static var rootURL: URL {
         let result: URL
         do {
             result = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
@@ -59,7 +60,7 @@ extension IG.Database {
             fatalError(#"The "documents" folder in the user domain couldn't be retrieved in this system.\nUnderlying error: \#(error)"#)
         }
         return result.appendingPathComponent("IG.sqlite")
-    }()
+    }
     
     /// Default configuration for the underlying SQLite database.
     internal static var defaultConfiguration: GRDB.Configuration {

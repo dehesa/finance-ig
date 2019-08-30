@@ -1,3 +1,4 @@
+import GRDB
 import Foundation
 
 /// Base for all monetary units
@@ -15,7 +16,7 @@ public protocol CurrencyType {
 /// Namespace for currencies.
 public enum Currency {
     /// ISO 4217 currency codes.
-    public enum Code: String, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+    public enum Code: String, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable, GRDB.DatabaseValueConvertible {
         case cad = "CAD"
         case usd = "USD"
         case mxn = "MXN"
