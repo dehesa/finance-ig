@@ -1,6 +1,6 @@
 import Foundation
 
-extension IG.Database {
+extension IG.DB {
     ///
     public enum Market {}
 }

@@ -2,7 +2,7 @@ import GRDB
 import Foundation
 
 /// The Database instance is the bridge between the internal SQLite storage
-public final class Database {
+public final class DB {
     /// File URL where the database is found.
     ///
     /// If `nil` the database is created "in memory".
@@ -32,7 +32,7 @@ public final class Database {
         
         guard url.isFileURL else {
             let message = #"The database url given for the database location "\#(url)" is not a valid file URL."#
-            var error: IG.Database.Error = .invalidRequest(message, suggestion: #"Make sure that the URL is of the "file://" domain."#)
+            var error: IG.DB.Error = .invalidRequest(message, suggestion: #"Make sure that the URL is of the "file://" domain."#)
             error.context.append(("rootURL", url))
             throw error
         }
@@ -45,12 +45,12 @@ public final class Database {
             
             self.channel = try .init(path: url.path, configuration: configuration)
         } catch let error {
-            throw IG.Database.Error.invalidRequest("The SQLite file couldn't be opened (or created).", underlying: error, suggestion: "Make sure the rootURL is a valid and try again")
+            throw IG.DB.Error.invalidRequest("The SQLite file couldn't be opened (or created).", underlying: error, suggestion: "Make sure the rootURL is a valid and try again")
         }
     }
 }
 
-extension IG.Database {
+extension IG.DB {
     /// The root address for the underlying database file.
     public static var rootURL: URL {
         let result: URL
@@ -65,7 +65,7 @@ extension IG.Database {
     /// Default configuration for the underlying SQLite database.
     internal static var defaultConfiguration: GRDB.Configuration {
         var configuration = GRDB.Configuration()
-        configuration.label = Bundle(for: Database.self).bundleIdentifier! + ".db"
+        configuration.label = Bundle(for: DB.self).bundleIdentifier! + ".db"
         return configuration
     }
 }

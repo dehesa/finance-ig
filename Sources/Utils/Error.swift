@@ -96,7 +96,7 @@ extension Error where Self: ErrorPrintable {
             result.append("\(Self.prefix)\tResult type: \(error.type)")
             result.append("\(Self.prefix)\tValue received: \(error.value)")
         // MARK: IG.Database.Error
-        } else if let error = subError as? IG.Database.Error {
+        } else if let error = subError as? IG.DB.Error {
             result.append("Database error: \(error.type) \(error.message) \(error.suggestion)")
             attachedError = error.underlyingError
         // MARK: GRDB.DatabaseError

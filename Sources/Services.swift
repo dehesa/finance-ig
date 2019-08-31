@@ -8,13 +8,13 @@ public final class Services {
     /// Instance letting you subscribe to lightsreamer events.
     public let streamer: Streamer
     /// Instance letting you query a databse for caching purposes.
-    public let database: Database
+    public let database: DB
     
     /// Designated initializer specifying every single service.
     /// - parameter api: The HTTP API manager.
     /// - parameter streamer: The Lightstreamer event manager.
     /// - parameter database: The Database manager.
-    private init(api: API, streamer: Streamer, database: Database) {
+    private init(api: API, streamer: Streamer, database: DB) {
         self.api = api
         self.streamer = streamer
         self.database = database
@@ -27,7 +27,7 @@ public final class Services {
     /// - parameter user: User name and password to log into an IG account.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called on the `Streamer` instance right away, or whether it shall be called later on by the user.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = Database.rootURL, key: API.Key, user: API.User, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
+    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = DB.rootURL, key: API.Key, user: API.User, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
         let api = API(rootURL: serverURL, credentials: nil)
         return api.session.login(type: .certificate, key: key, user: user)
             .mapError(Self.Error.api)
@@ -41,7 +41,7 @@ public final class Services {
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called on the `Streamer` instance right away, or whether it shall be called later on by the user.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = Database.rootURL, key: API.Key, token: API.Credentials.Token, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
+    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = DB.rootURL, key: API.Key, token: API.Credentials.Token, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
         
         let api = API(rootURL: serverURL, credentials: nil)
         
@@ -94,17 +94,17 @@ public final class Services {
         let subServicesGenerator: ()->Result<Services,Services.Error> = {
             do {
                 let secret = try Streamer.Credentials(credentials: apiCredentials)
-                let database = try Database(rootURL: databaseURL)
+                let database = try DB(rootURL: databaseURL)
                 let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, autoconnect: autoconnect)
                 return .success(.init(api: api, streamer: streamer, database: database))
-            } catch let error as Database.Error {
+            } catch let error as DB.Error {
                 return .failure(.database(error: error))
             } catch let error as Streamer.Error {
                 return .failure(.streamer(error: error))
             } catch let error as API.Error {
                 return .failure(.api(error: error))
             } catch let underlyingError {
-                let msg = "An unknown error appeared while creating the \(Streamer.self) and \(Database.self) instance."
+                let msg = "An unknown error appeared while creating the \(Streamer.self) and \(DB.self) instance."
                 var error: Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.bug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))
@@ -133,7 +133,7 @@ extension Services {
         /// Error produced by the Lightstreamer subservice.
         case streamer(error: Streamer.Error)
         /// Error produced by the Database subservice.
-        case database(error: Database.Error)
+        case database(error: DB.Error)
         
         public var debugDescription: String {
             switch self {
