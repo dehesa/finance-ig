@@ -165,8 +165,11 @@ extension API.Request {
 extension API.Request.Nodes {
     /// Express the depth of a computed tree.
     public enum Depth: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral {
+        /// No depth (outside the targeted node).
         case none
+        /// Number of subnodes layers under the targeted node will be queried.
         case layers(UInt)
+        /// All nodes under the targeted node will be queried.
         case all
         
         public init(nilLiteral: ()) {

@@ -66,7 +66,7 @@ extension Test {
 
 extension Test {
     /// Creates a database from the
-    static func makeDatabase() -> IG.Database {
+    static func makeDatabase() -> IG.DB {
         do {
             return try .init(rootURL: Self.account.database?.rootURL)
         } catch let error {

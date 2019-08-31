@@ -1,7 +1,7 @@
 import GRDB
 import Foundation
 
-extension IG.Database {
+extension IG.DB {
     /// All migrations described in this database.
     enum Migration {
         /// The number of versions currently supported
@@ -15,15 +15,18 @@ extension IG.Database {
             }
         }
         
-        ///
+        /// Registers all table on the SQLite database.
         static func register(on migrator: inout GRDB.DatabaseMigrator) {
-            typealias DB = IG.Database
             var migrations = Self.Version.allCases.makeIterator()
             let errorMessage = "The migrator encountered an error."
             
             guard case .v0 = migrations.next() else { fatalError(errorMessage) }
             migrator.registerMigration("v0") { (db) in
-                try DB.Application.tableCreation(in: db)
+                try IG.DB.Application.tableCreation(in: db)
+                try IG.DB.Market.Forex.tableCreation(in: db)
+                try IG.DB.Node.tableCreation(in: db)
+                try IG.DB.Node.AssociativeMarket.tableCreation(in: db)
+                try IG.DB.Node.AssociativeSubnode.tableCreation(in: db)
             }
             
             guard case .none = migrations.next() else { fatalError("More migration awaited to be registered.") }

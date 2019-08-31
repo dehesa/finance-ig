@@ -1,7 +1,7 @@
 import GRDB
 import Foundation
 
-extension IG.Database {
+extension IG.DB {
     /// Client application
     public struct Application: GRDB.FetchableRecord {
         /// Application API key identifying the application and the developer.
@@ -31,7 +31,7 @@ extension IG.Database {
     }
 }
 
-extension IG.Database.Application {
+extension IG.DB.Application {
     /// Application status in the platform.
     public enum Status: Int, GRDB.DatabaseValueConvertible {
         /// The application is enabled and thus ready to receive/send data.
@@ -90,7 +90,7 @@ extension IG.Database.Application {
 
 // MARK: - GRDB functionality
 
-extension IG.Database.Application {
+extension IG.DB.Application {
     /// Creates a SQLite table for API applications.
     static func tableCreation(in db: GRDB.Database) throws {
         try db.create(table: "applications", ifNotExists: false, withoutRowID: true) { (t) in
@@ -110,7 +110,7 @@ extension IG.Database.Application {
     }
 }
 
-extension IG.Database.Application: GRDB.TableRecord {
+extension IG.DB.Application: GRDB.TableRecord {
     /// The table columns
     private enum Columns: String, GRDB.ColumnExpression {
         case key = "key"
@@ -134,7 +134,7 @@ extension IG.Database.Application: GRDB.TableRecord {
     //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
 }
 
-extension IG.Database.Application: GRDB.PersistableRecord {
+extension IG.DB.Application: GRDB.PersistableRecord {
     public func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.key] = self.key
         container[Columns.created] = self.created

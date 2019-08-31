@@ -14,11 +14,11 @@ final class APIApplicationTests: XCTestCase {
         XCTAssertEqual(app.key, api.session.credentials!.key)
         XCTAssertEqual(app.status, .enabled)
         XCTAssertLessThan(app.creationDate, Date())
-        XCTAssertGreaterThan(app.limits.overallRequests, 0)
-        XCTAssertGreaterThan(app.limits.account.overallRequests, 0)
-        XCTAssertGreaterThan(app.limits.account.tradingRequests, 0)
-        XCTAssertGreaterThan(app.limits.account.historicalDataRequests, 0)
-        XCTAssertGreaterThan(app.limits.subscriptionsLimit, 0)
+        XCTAssertGreaterThan(app.allowance.overallRequests, 0)
+        XCTAssertGreaterThan(app.allowance.account.overallRequests, 0)
+        XCTAssertGreaterThan(app.allowance.account.tradingRequests, 0)
+        XCTAssertGreaterThan(app.allowance.account.historicalDataRequests, 0)
+        XCTAssertGreaterThan(app.allowance.subscriptionsLimit, 0)
         XCTAssertLessThan(app.creationDate, Date())
     }
     
@@ -33,7 +33,7 @@ final class APIApplicationTests: XCTestCase {
         let app = try! api.applications.update(key: key, status: status, accountAllowance: allowance).single()!.get()
         XCTAssertEqual(app.key, key)
         XCTAssertEqual(app.status, status)
-        XCTAssertEqual(app.limits.account.overallRequests, Int(allowance.overall))
-        XCTAssertEqual(app.limits.account.tradingRequests, Int(allowance.trading))
+        XCTAssertEqual(app.allowance.account.overallRequests, Int(allowance.overall))
+        XCTAssertEqual(app.allowance.account.tradingRequests, Int(allowance.trading))
     }
 }

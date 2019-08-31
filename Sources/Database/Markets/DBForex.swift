@@ -1,8 +1,8 @@
 import GRDB
 import Foundation
 
-extension IG.Database.Market {
-    ///
+extension IG.DB.Market {
+    /// Database representation of a Foreign Exchange market.
     public struct Forex: GRDB.FetchableRecord {
         /// Instrument identifier.
         public let epic: IG.Market.Epic
@@ -47,7 +47,7 @@ extension IG.Database.Market {
     }
 }
 
-extension IG.Database.Market.Forex {
+extension IG.DB.Market.Forex {
     /// Identifiers for a Forex markets.
     public struct Identifiers {
         /// Instrument name.
@@ -96,7 +96,7 @@ extension IG.Database.Market.Forex {
             self.pipDecimalPlaces = pipPlaces
             self.levelDecimalPlaces = levelPlaces
             
-            let power = IG.Database.Market.Forex.Power.factor
+            let power = IG.DB.Market.Forex.Power.factor
             self.slippageFactor = Decimal(slippage, divingByPowerOf10: power)
             self.guaranteedStopPremium = Decimal(premium, divingByPowerOf10: power)
             self.guaranteedStopExtraSpread = Decimal(extra, divingByPowerOf10: power)
@@ -113,7 +113,7 @@ extension IG.Database.Market.Forex {
         public let depositBands: Bands
         /// Designated initializer
         fileprivate init(factor: Int, band: String) {
-            let power = IG.Database.Market.Forex.Power.factor
+            let power = IG.DB.Market.Forex.Power.factor
             self.factor = Decimal(factor, divingByPowerOf10: power)
             self.depositBands = .init(underlying: band)
         }
@@ -131,16 +131,17 @@ extension IG.Database.Market.Forex {
             fileprivate init(underlying: String) {
                 self.storage = underlying.split(separator: Self.separator.elements).map {
                     let strings = $0.split(separator: Self.separator.numbers)
-                    guard strings.count == 2 else { fatalError() }
-                    #warning("Better throw an error.")
+                    guard strings.count == 2 else {
+                        let msg = #"The given forex margin band "\#(String($0))" is invalid since it contains \#(strings.count) elements. Only 2 are expected."#
+                        fatalError(msg)
+                    }
                     guard let lowerBound = Decimal(string: String(strings[0])) else { fatalError() }
                     guard let factor = Decimal(string: String(strings[1])) else { fatalError() }
                     return (lowerBound, factor)
                 }
 
                 guard !self.storage.isEmpty else {
-                    #warning("Better throw an error.")
-                    fatalError()
+                    fatalError("The given forex market since to have no margin bands. This behavior is not expected.")
                 }
             }
             
@@ -171,7 +172,7 @@ extension IG.Database.Market.Forex {
         public let minimumTrailingStopIncrement: Decimal
         /// Designated initializer
         fileprivate init(size: Int, normalDistance: Int, limitedRiskDistance: Int, maxDistance: Int, minStep: Int) {
-            let power = IG.Database.Market.Forex.Power.restrictions
+            let power = IG.DB.Market.Forex.Power.restrictions
             self.minimumSize = Decimal(size, divingByPowerOf10: power)
             
             let minNormal = Decimal(normalDistance, divingByPowerOf10: power)
@@ -203,7 +204,7 @@ extension IG.Database.Market.Forex {
 
 // MARK: - GRDB functionality
 
-extension IG.Database.Market.Forex {
+extension IG.DB.Market.Forex {
     /// Creates a SQLite table for Forex markets.
     static func tableCreation(in db: GRDB.Database) throws {
         let greaterThanZero: (Column) -> SQLExpressible = { $0 > 0 }
@@ -237,9 +238,9 @@ extension IG.Database.Market.Forex {
     }
 }
 
-extension IG.Database.Market.Forex: GRDB.TableRecord {
+extension IG.DB.Market.Forex: GRDB.TableRecord {
     /// The table columns
-    private enum Columns: String, GRDB.ColumnExpression {
+    internal enum Columns: String, GRDB.ColumnExpression {
         case epic = "epic"
         case currencyBase = "base"
         case currencyCounter = "counter"
@@ -274,7 +275,7 @@ extension IG.Database.Market.Forex: GRDB.TableRecord {
     //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
 }
 
-extension IG.Database.Market.Forex: GRDB.PersistableRecord {
+extension IG.DB.Market.Forex: GRDB.PersistableRecord {
     public func encode(to container: inout PersistenceContainer) {
         container[Columns.epic] = self.epic
         container[Columns.currencyBase] = self.currency.base
@@ -313,12 +314,45 @@ extension IG.Database.Market.Forex: GRDB.PersistableRecord {
     }
 }
 
-extension IG.Database.Market.Forex.Margin.Bands {
+// MARK: - Extra functionality
+
+extension IG.DB.Market.Forex {
+    /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
+    ///
+    /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
+    /// - parameter dealSize: The size of a given position.
+    public func margin(forDealSize dealSize: Decimal, price: Decimal, stop: IG.Deal.Stop?) -> Decimal {
+        let marginFactor = self.margin.factor
+        let contractSize = Decimal(self.information.contractSize)
+        
+        guard let stop = stop else {
+            return dealSize * contractSize * price * marginFactor
+        }
+        
+        let stopDistance: Decimal
+        switch stop.type {
+        case .distance(let distance): stopDistance = distance
+        case .position(let level):    stopDistance = (level - price).magnitude
+        }
+        
+        switch stop.risk {
+        case .exposed:
+            let marginNoStop = dealSize * contractSize * price * marginFactor
+            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (dealSize * contractSize * stopDistance)
+            return min(marginNoStop, marginWithStop)
+        case .limited(let premium):
+            return (dealSize * contractSize * stopDistance) + (premium ?? self.information.guaranteedStopPremium)
+        }
+    }
+}
+
+extension IG.DB.Market.Forex.Margin.Bands {
     /// Returns the deposit factor (expressed as a percentage `%`).
-    public func depositFactor(forPositionSize positionSize: Decimal) -> Decimal {
+    /// - parameter dealSize: The size of a given position.
+    public func depositFactor(forDealSize dealSize: Decimal) -> Decimal {
         var result = self.storage[0].factor
         for element in self.storage {
-            guard positionSize >= element.lowerBound else { return result }
+            guard dealSize >= element.lowerBound else { return result }
             result = element.factor
         }
         return result
@@ -332,7 +366,7 @@ extension IG.Database.Market.Forex.Margin.Bands {
     }
 }
 
-extension IG.Database.Market.Forex.Margin.Bands {
+extension IG.DB.Market.Forex.Margin.Bands {
     public typealias Element = (range: Any, depositFactor: Decimal)
     public typealias Index = Int
     
