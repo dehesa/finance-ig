@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
+extension IG.API {
     /// Domain namespace retaining anything related to API requests.
     public enum Request {}
     /// Domain namespace retaining anything related to API responses.
@@ -10,12 +10,12 @@ extension API {
 
 // MARK: - Request types
 
-extension API.Request {
+extension IG.API.Request {
     /// Wrapper around a `URLRequest` and the API instance that will (most probably) execute such request.
     /// - returns: A `URLRequest` and an `API` instance.
-    internal typealias Wrapper = (api: API, request: URLRequest)
+    internal typealias Wrapper = (api: IG.API, request: URLRequest)
     /// Request values that have been verified/validated.
-    internal typealias WrapperValid<T> = (api: API, values: T)
+    internal typealias WrapperValid<T> = (api: IG.API, values: T)
     /// Wrapper around the request for a paginated endpoint.
     internal typealias WrapperPage<M> = (request: URLRequest, meta: M)
     
@@ -24,32 +24,32 @@ extension API.Request {
         /// Closure receiving a valid API session and returning validated values.
         /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
         /// - returns: The validated values.
-        typealias Validation<T> = (_ api: API) throws -> T
+        typealias Validation<T> = (_ api: IG.API) throws -> T
         /// Closure which returns a newly created `URLRequest` and provides with it an API instance.
         /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: A newly created `URLRequest`.
-        typealias Request<T> = (_ api: API, _ values: T) throws -> URLRequest
+        typealias Request<T> = (_ api: IG.API, _ values: T) throws -> URLRequest
         /// Closure executed before each page to determine if the request must be performed and if so, which shape does it take.
         /// - parameter api: The API instance from where credentials and other temporal priviled information is being retrieved.
         /// - parameter initialRequest: The base request for all pages.
         /// - parameter previous: The request and (typically) metadata for the previous page.
-        typealias RequestPage<M> = (_ api: API, _ initialRequest: URLRequest, _ previous: API.Request.WrapperPage<M>?) throws -> URLRequest?
+        typealias RequestPage<M> = (_ api: IG.API, _ initialRequest: URLRequest, _ previous: IG.API.Request.WrapperPage<M>?) throws -> URLRequest?
         /// Closure which returns a bunch of query items to be used in a `URLRequest`.
         /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: Array of `URLQueryItem`s to be added to a `URLRequest`.
-        typealias Query<T> = (_ api: API, _ values: T) throws -> [URLQueryItem]
+        typealias Query<T> = (_ api: IG.API, _ values: T) throws -> [URLQueryItem]
         /// Closure which returns a bunch of header key-values to be used in a `URLRequest`.
         /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: Key-value pairs to be added to a `URLRequest`.
-        typealias Header<T> = (_ api: API, _ values: T) throws -> [API.HTTP.Header.Key:String]
+        typealias Header<T> = (_ api: IG.API, _ values: T) throws -> [IG.API.HTTP.Header.Key:String]
         /// Closure which returns a body to be appended to a `URLRequest`.
         /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
         /// - parameter values: Values that have been validated in a previous step.
         /// - returns: Tuple containing information about what type of body has been compiled and its data.
-        typealias Body<T>  = (_ api: API, _ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data)
+        typealias Body<T>  = (_ api: IG.API, _ values: T) throws -> (contentType: IG.API.HTTP.Header.Value.ContentType, data: Data)
         /// Closure which given a request and its actual response, generates a JSON decoder (typically to decode the responses payload).
         /// - parameter request: The URL request that returned the `response`.
         /// - parameter response: The HTTP response received from the execution of `request`.
@@ -58,13 +58,13 @@ extension API.Request {
         /// Closure which receives a `SignalProducer` with an already formatted page request and it is suppose to send it and decode the data into a value `V` (which will be pass along) and a metadata `M` (which will be retrofeed into the following page request generation.
         /// - parameter requestSignal: The signal to be send and value decoded.
         /// - returns: The signal returing the response value and metadata.
-        typealias SignalPage<M,V> = (_ requestSignal: SignalProducer<API.Request.Wrapper,API.Error>) -> SignalProducer<(M,V),API.Error>
+        typealias SignalPage<M,V> = (_ requestSignal: SignalProducer<IG.API.Request.Wrapper,IG.API.Error>) -> SignalProducer<(M,V),IG.API.Error>
     }
 }
 
 // MARK: - Response Types
 
-extension API.Response {
+extension IG.API.Response {
     /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
     internal typealias Wrapper = (request: URLRequest, header: HTTPURLResponse, data: Data?)
     /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and a data payload.
@@ -73,7 +73,7 @@ extension API.Response {
 
 // MARK: - Constant Types
 
-extension API {
+extension IG.API {
     /// Namespace for all JSON related constants (pertaining the API).
     internal enum JSON {
         /// Namesapce for JSON decoding keys.

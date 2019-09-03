@@ -25,7 +25,7 @@ internal protocol ErrorPrintable {
     var printableType: String { get }
 }
 
-extension Error where Self: ErrorPrintable {
+extension IG.Error where Self: IG.ErrorPrintable {
     /// Prefix to append before any new line when making a human readable version of the error.
     internal static var prefix: String { "\n\t" }
     /// Header to be appended to any human readable version of the error.
@@ -85,8 +85,8 @@ extension Error where Self: ErrorPrintable {
             result.append("Streamer error: \(error.type) \(error.message) \(error.suggestion)")
             attachedError = error.underlyingError
         // MARK: IG.Streamer.Subscription.Error
-        } else if let error = subError as? Streamer.Subscription.Error {
-            result.append("subscription error (code \(error.code)): \(String(describing: error.kind))")
+        } else if let error = subError as? IG.Streamer.Subscription.Error {
+            result.append("subscription error (code \(error.code)): \(String(describing: error.type))")
             if let message = error.message {
                 result.append("\(Self.prefix)\tMessage: \(message)")
             }
@@ -132,7 +132,7 @@ extension Error where Self: ErrorPrintable {
             switch element.value {
             case let string as String:
                 result.append(string)
-            case let update as [String:Streamer.Subscription.Update]:
+            case let update as [String:IG.Streamer.Subscription.Update]:
                 result.append("[")
                 result.append(update.map { (key, value) in
                     let u = (value.isUpdated) ? "(not updated) " : ""
@@ -173,10 +173,10 @@ extension Error where Self: ErrorPrintable {
                     result.append(headers.map { "\($0): \($1)" }.joined(separator: ", "))
                     result.append("]")
                 }
-            case let statuses as [Streamer.Session.Status]:
+            case let statuses as [IG.Streamer.Session.Status]:
                 let representation = statuses.map { $0.debugDescription }.joined(separator: ", ")
                 result.append("[\(representation)]")
-            case let errors as [Streamer.Error]:
+            case let errors as [IG.Streamer.Error]:
                 let representation = errors.map { "\($0.type)" }.joined(separator: ", ")
                 result.append("[\(representation)]")
             default:
@@ -188,7 +188,7 @@ extension Error where Self: ErrorPrintable {
     
     /// The date formatter to use when representing dates on errors.
     private var dateFormatter: DateFormatter {
-        let result = API.Formatter.humanReadableLong.deepCopy
+        let result = IG.API.Formatter.humanReadableLong.deepCopy
         result.timeZone = TimeZone.current
         return result
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-extension Streamer {
+extension IG.Streamer {
     /// List of errors that can be generated throught the Streamer class.
     public struct Error: IG.Error {
         public let type: Self.Kind
@@ -51,7 +51,7 @@ extension Streamer {
         /// A factory function for `.invalidResponse` API errors.
         /// - parameter message: A brief explanation on what happened.
         /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-        internal static func invalidResponse(_ message: String, item: String, update: [String:Streamer.Subscription.Update], underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+        internal static func invalidResponse(_ message: String, item: String, update: [String:IG.Streamer.Subscription.Update], underlying error: Swift.Error? = nil, suggestion: String) -> Self {
             let fields = update.keys.map { $0 }
             var error = self.init(.invalidResponse, message, suggestion: suggestion, item: item, fields: fields, underlying: error)
             error.context.append(("Update", update))
@@ -60,7 +60,7 @@ extension Streamer {
     }
 }
 
-extension Streamer.Error {
+extension IG.Streamer.Error {
     /// The type of Streamer error raised.
     public enum Kind: CaseIterable {
         /// The streaming session has expired
@@ -78,7 +78,7 @@ extension Streamer.Error {
         static var sessionExpired: String { "The Streamer instance was not found." }
         static var noCredentials: String { "No credentials were found on the Streamer instance." }
         static var unknownParsing: String { "An unknown error occur while parsing a subscription update." }
-        static func parsing(update error: Streamer.Formatter.Update.Error) -> String {
+        static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> String {
             #"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type."#
         }
     }
@@ -86,12 +86,12 @@ extension Streamer.Error {
     /// Namespace for suggestions reused over the framework.
     internal enum Suggestion {
         static var keepSession: String { "The Streamer functionality is asynchronous; keep around the Streamer instance while a response hasn't been received." }
-        static var bug: String { API.Error.Suggestion.bug }
+        static var bug: String { IG.API.Error.Suggestion.bug }
         static var reviewError: String { "Review the returned error and try to fix the problem." }
     }
 }
 
-extension Streamer.Error: ErrorPrintable {
+extension IG.Streamer.Error: IG.ErrorPrintable {
     var printableDomain: String {
         return "Streamer Error"
     }

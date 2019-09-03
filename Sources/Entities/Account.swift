@@ -37,7 +37,7 @@ public enum Account {
     }
 }
 
-extension Account.Identifier {
+extension IG.Account.Identifier {
     /// Returns a Boolean indicating whether the raw value can represent an account identifier.
     private static func validate(_ value: String) -> Bool {
         let allowedRange = 3...6
@@ -47,7 +47,7 @@ extension Account.Identifier {
     /// The allowed character set for the account identifier. It is used on validation.
     private static let allowedSet: CharacterSet = {
         var result = CharacterSet.decimalDigits
-        result.formUnion(CharacterSet.IG.uppercaseANSI)
+        result.formUnion(CharacterSet.uppercaseANSI)
         return result
     }()
 }

@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.History {
+extension IG.API.Request.History {
     
     // MARK: GET /history/transactions
     
@@ -12,12 +12,12 @@ extension API.Request.History {
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received (`0` means paging is disabled).
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[API.Transaction],API.Error> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all, page: (size: UInt, number: UInt) = (20, 1)) -> SignalProducer<[IG.API.Transaction],IG.API.Error> {
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
-                return API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
+                return IG.API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
             }.request(.get, "history/transactions", version: 2, credentials: true, queries: { (_, formatter) in
                 var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
@@ -43,7 +43,7 @@ extension API.Request.History {
                 var request = initialRequest
                 try request.addQueries([URLQueryItem(name: "pageNumber", value: String(nextPage))])
                 return request
-            }, endpoint: { (producer) -> SignalProducer<(Self.PagedTransactions.Metadata.Page,[API.Transaction]), API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedTransactions.Metadata.Page,[IG.API.Transaction]), IG.API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON()
@@ -58,7 +58,7 @@ extension API.Request.History {
 
 // MARK: Request Entities
 
-extension API.Request.History {
+extension IG.API.Request.History {
     /// Transaction type.
     public enum Transaction: String {
         case all = "ALL"
@@ -66,7 +66,7 @@ extension API.Request.History {
         case deposit = "DEPOSIT"
         case withdrawal = "WITHDRAWAL"
         
-        public init(_ type: API.Transaction.Kind) {
+        public init(_ type: IG.API.Transaction.Kind) {
             switch type {
             case .deal: self = .deal
             case .deposit: self = .deposit
@@ -78,10 +78,10 @@ extension API.Request.History {
 
 // MARK: Response Entities
 
-extension API.Request.History {
+extension IG.API.Request.History {
     /// A single Page of transactions request.
     private struct PagedTransactions: Decodable {
-        let transactions: [API.Transaction]
+        let transactions: [IG.API.Transaction]
         let metadata: Self.Metadata
         
         struct Metadata: Decodable {
@@ -121,7 +121,7 @@ extension API.Request.History {
     }
 }
 
-extension API {
+extension IG.API {
     /// A financial transaction between accounts.
     public struct Transaction: Decodable {
         /// The type of transaction.
@@ -134,7 +134,7 @@ extension API {
         /// For example: `EUR/USD Mini converted at 0.902239755`
         public let title: String
         /// Instrument expiry period.
-        public let period: IG.Market.Instrument.Expiry
+        public let period: IG.Market.Expiry
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
         public let size: (direction: IG.Deal.Direction, amount: Decimal)?
         /// Open position level/price and date.
@@ -142,7 +142,7 @@ extension API {
         /// Close position level/price and date.
         public let close: (date: Date, level: Decimal?)
         /// Realised profit and loss is the amount of money you have made or lost on a bet once the bet has been closed. Realised profit or loss will add or subtract from your cash balance.
-        public let profitLoss: API.Deal.ProfitLoss
+        public let profitLoss: IG.API.Deal.ProfitLoss
         /// Boolean indicating whether this was a cash transaction.
         public let isCash: Bool
         
@@ -152,7 +152,7 @@ extension API {
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.reference = try container.decode(String.self, forKey: .reference)
             self.title = try container.decode(String.self, forKey: .title)
-            self.period = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .period) ?? .none
+            self.period = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .period) ?? .none
             
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {
@@ -166,7 +166,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string \"\(sizeString)\" couldn't be parsed into a number")
             }
             
-            let openDate = try container.decode(Date.self, forKey: .openDate, with: API.Formatter.iso8601)
+            let openDate = try container.decode(Date.self, forKey: .openDate, with: IG.API.Formatter.iso8601)
             let openString = try container.decode(String.self, forKey: .openLevel)
             if openString == "-" {
                 self.open = (openDate, nil)
@@ -176,7 +176,7 @@ extension API {
                 throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level \"\(openString)\" couldn't be parsed into a number.")
             }
             
-            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: API.Formatter.iso8601)
+            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: IG.API.Formatter.iso8601)
             let closeString = try container.decode(String.self, forKey: .closeLevel)
             if let closeLevel = Decimal(string: closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
@@ -219,7 +219,7 @@ extension API {
     }
 }
 
-extension API.Transaction {
+extension IG.API.Transaction {
     /// Transaction type.
     public enum Kind: String, Decodable {
         case deal = "DEAL"

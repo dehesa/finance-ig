@@ -1,15 +1,15 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Session {
+extension IG.Streamer.Request.Session {
     /// Returns the current streamer status.
-    public var status: Property<Streamer.Session.Status> {
+    public var status: Property<IG.Streamer.Session.Status> {
         return self.streamer.channel.status
     }
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
     /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
-    public func connect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
+    public func connect() -> SignalProducer<IG.Streamer.Session.Status,IG.Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
             guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
@@ -17,7 +17,7 @@ extension Streamer.Request.Session {
             let initialStatus = channel.status.value
             
             guard initialStatus != .stalled else {
-                let error: Streamer.Error = .invalidRequest(#"The streamer seems to be "stalled"."#, suggestion: "Disconnect it and connect it back again.")
+                let error: IG.Streamer.Error = .invalidRequest(#"The streamer seems to be "stalled"."#, suggestion: "Disconnect it and connect it back again.")
                 return generator.send(error: error)
             }
             guard case .disconnected(isRetrying: false) = initialStatus else {
@@ -27,7 +27,7 @@ extension Streamer.Request.Session {
             /// Stops the observation from `producer` when triggered.
             var detacher: Disposable? = nil
             /// It holds all the statues that this function has seen.
-            var statuses: [Streamer.Session.Status] = []
+            var statuses: [IG.Streamer.Session.Status] = []
             // Let's do the actual connection
             channel.connect()
             
@@ -44,11 +44,11 @@ extension Streamer.Request.Session {
                         generator.sendCompleted()
                     case .disconnected(isRetrying: false):
                         guard statuses.count > 1 else { return }
-                        var error: Streamer.Error = .init(.invalidResponse, #"The streamer disconnected after trying to connect. It is not trying any longer."#, suggestion: "Disconnect it manually and connect it back again.")
+                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer disconnected after trying to connect. It is not trying any longer."#, suggestion: "Disconnect it manually and connect it back again.")
                         error.context.append(("Status cycle", statuses))
                         generator.send(error: error)
                     case .stalled:
-                        var error: Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status."#, suggestion: "Disconnect it and connect it back again.")
+                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status."#, suggestion: "Disconnect it and connect it back again.")
                         error.context.append(("Status cycle", statuses))
                         generator.send(error: error)
                     }
@@ -67,7 +67,7 @@ extension Streamer.Request.Session {
     
     /// Disconnects to the Lightstreamer server.
     /// - returns: Forwards all statuses till it reliably disconnects from the server (in which case the status is sent and then the signal completes). If the connection is not possible or the session has expired, an error is thrown.
-    @discardableResult public func disconnect() -> SignalProducer<Streamer.Session.Status,Streamer.Error> {
+    @discardableResult public func disconnect() -> SignalProducer<IG.Streamer.Session.Status,IG.Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
             guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
@@ -107,7 +107,7 @@ extension Streamer.Request.Session {
     /// - Send an error if any of the unsubscription encounter any error (but only at the end of the subscription process).
     /// - Send a complete event once everything is unsubscribed.
     /// - returns: Forwards all "items" that have been successfully unsubscribed, till there are no more, in which case it sends a *complete* event.
-    public func unsubscribeAll() -> SignalProducer<String,Streamer.Error> {
+    public func unsubscribeAll() -> SignalProducer<String,IG.Streamer.Error> {
         return .init { [weak streamer = self.streamer] (generator, lifetime) in
             guard let streamer = streamer else { return generator.send(error: .sessionExpired()) }
             
@@ -116,7 +116,7 @@ extension Streamer.Request.Session {
             guard !iterator.isEmpty else { return generator.sendCompleted() }
             
             var storage: Set<Self.UnsubWrapper> = .init(iterator)
-            var errors: [Streamer.Error] = []
+            var errors: [IG.Streamer.Error] = []
             
             for wrapper in iterator {
                 // Start listening to every single subscription status changes
@@ -133,7 +133,7 @@ extension Streamer.Request.Session {
                             storage.remove(wrapper)
                             let message = "An unknown problem occurred when unsubscribing."
                             let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
-                            let error: Streamer.Error = .subscriptionFailed(message, item: wrapper.subscription.item, fields: wrapper.subscription.fields, underlying: underlyingError, suggestion: suggestion)
+                            let error: IG.Streamer.Error = .subscriptionFailed(message, item: wrapper.subscription.item, fields: wrapper.subscription.fields, underlying: underlyingError, suggestion: suggestion)
                             errors.append(error)
                         }
                     case .completed: // The producer shall only complete when the channel is deinitialized
@@ -152,9 +152,9 @@ extension Streamer.Request.Session {
                         return generator.sendCompleted()
                         
                     } else {
-                        let message = "\(errors.count) were encountered when trying to unsubscribe all current \(Streamer.self) subscriptions."
+                        let message = "\(errors.count) were encountered when trying to unsubscribe all current \(IG.Streamer.self) subscriptions."
                         let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
-                        var error: Streamer.Error = .init(.subscriptionFailed, message, suggestion: suggestion)
+                        var error: IG.Streamer.Error = .init(.subscriptionFailed, message, suggestion: suggestion)
                         error.context.append(("Unsubscription errors", errors))
                         return generator.send(error: error)
                     }
@@ -168,15 +168,15 @@ extension Streamer.Request.Session {
 
 // MARK: - Supporting Entities
 
-extension Streamer.Request {
+extension IG.Streamer.Request {
     /// Contains all functionality related to the Streamer session.
     public struct Session {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let streamer: Streamer
+        fileprivate unowned let streamer: IG.Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: Streamer) {
+        init(streamer: IG.Streamer) {
             self.streamer = streamer
         }
     }
@@ -184,15 +184,15 @@ extension Streamer.Request {
 
 // MARK: Request Entities
 
-extension Streamer.Request.Session {
+extension IG.Streamer.Request.Session {
     /// Wrapper for the unsubscription process.
     fileprivate class UnsubWrapper: Hashable {
         /// The instance gathering the subscription data (including the underlying Lighstreamer subscription).
-        let subscription: Streamer.Subscription
+        let subscription: IG.Streamer.Subscription
         /// Disposable to stop listening for the subscription status.
         var detacher: Disposable?
         
-        init(_ subscription: Streamer.Subscription) {
+        init(_ subscription: IG.Streamer.Subscription) {
             self.subscription = subscription
             self.detacher = nil
         }
@@ -201,7 +201,7 @@ extension Streamer.Request.Session {
             hasher.combine(self.subscription)
         }
         
-        static func == (lhs: Streamer.Request.Session.UnsubWrapper, rhs: Streamer.Request.Session.UnsubWrapper) -> Bool {
+        static func == (lhs: IG.Streamer.Request.Session.UnsubWrapper, rhs: IG.Streamer.Request.Session.UnsubWrapper) -> Bool {
             return lhs.subscription == rhs.subscription
         }
     }
@@ -209,11 +209,11 @@ extension Streamer.Request.Session {
 
 // MARK: Response Entities
 
-extension Streamer {
+extension IG.Streamer {
     public enum Session {}
 }
 
-extension Streamer.Session {
+extension IG.Streamer.Session {
     /// The status at which the streamer can find itself at.
     public enum Status: RawRepresentable, Equatable {
         /// A connection has been attempted. The client is waiting for a server answer.
@@ -286,7 +286,7 @@ extension Streamer.Session {
     }
 }
 
-extension Streamer.Session.Status {
+extension IG.Streamer.Session.Status {
     /// The type of connection established between the client and server.
     public enum Connection: Equatable {
         /// The client has received a first response from the server and is evaluating if a streaming connection can be established.
@@ -313,7 +313,7 @@ extension Streamer.Session.Status {
     }
 }
 
-extension Streamer.Session.Status: CustomDebugStringConvertible {
+extension IG.Streamer.Session.Status: CustomDebugStringConvertible {
     public var debugDescription: String {
         switch self {
         case .connecting: return "Connecting"
@@ -347,7 +347,7 @@ extension Streamer.Session.Status: CustomDebugStringConvertible {
     }
 }
 
-extension Array where Element == Streamer.Session.Status {
+extension Array where Element == IG.Streamer.Session.Status {
     internal var debugDescription: String {
         return self.enumerated().map { (index, status) in
             "\t\(index + 1). \(status.debugDescription)"

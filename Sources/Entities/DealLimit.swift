@@ -1,6 +1,6 @@
 import Foundation
 
-extension Deal {
+extension IG.Deal {
     /// The limit at which the user is taking profit.
     public struct Limit {
         /// The type of limit being defined.
@@ -15,7 +15,7 @@ extension Deal {
     }
 }
 
-extension Deal.Limit {
+extension IG.Deal.Limit {
     /// Check whether the receiving limit is valid in reference to the given base level and direction.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
@@ -71,7 +71,7 @@ extension Deal.Limit {
 
 // MARK: - Factories
 
-extension Deal.Limit {
+extension IG.Deal.Limit {
     /// Factory function creating a limit of *position* type.
     /// - parameter level: A finite number reflecting an absolute level.
     public static func position(level: Decimal) -> Self? {
@@ -98,7 +98,7 @@ extension Deal.Limit {
 
 // MARK: - Validation
 
-extension Deal.Limit {
+extension IG.Deal.Limit {
     /// Checks that the absolute level is finite.
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
@@ -128,7 +128,7 @@ extension Deal.Limit {
 
 // MARK: - Supporting Entities
 
-extension Deal.Limit {
+extension IG.Deal.Limit {
     /// The type of limit level.
     public enum Kind {
         /// Specifies the limit as a given absolute level.
@@ -184,7 +184,7 @@ extension KeyedDecodingContainer {
     }
 }
 
-extension Deal.Limit: CustomDebugStringConvertible {
+extension IG.Deal.Limit: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = "Limit "
         

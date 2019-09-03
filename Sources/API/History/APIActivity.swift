@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.History {
+extension IG.API.Request.History {
     
     // MARK: GET /history/activity
     
@@ -15,12 +15,12 @@ extension API.Request.History {
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
     /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> SignalProducer<[API.Activity],API.Error> {
-        let dateFormatter: DateFormatter = API.Formatter.iso8601.deepCopy
+    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> SignalProducer<[IG.API.Activity],IG.API.Error> {
+        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601.deepCopy
         
         return SignalProducer(api: self.api) { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 dateFormatter.timeZone = timezone
                 return dateFormatter
@@ -58,24 +58,24 @@ extension API.Request.History {
                 
                 guard let queries = URLComponents(string: next)?.queryItems else {
                     let message = #"The paginated request for activities couldn't be processed because there were no "next" queries."#
-                    throw API.Error.invalidRequest(message, request: previous.request, suggestion: API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
                     let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found."#
-                    throw API.Error.invalidRequest(message, request: previous.request, suggestion: API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 var nextRequest = initialRequest
                 try nextRequest.addQueries([from, to])
                 return nextRequest
-            }, endpoint: { (producer) -> SignalProducer<(Self.PagedActivities.Metadata.Page,[API.Activity]),API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedActivities.Metadata.Page,[IG.API.Activity]),IG.API.Error> in
                 return producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON { (_,_) -> JSONDecoder in
                         let decoder = JSONDecoder()
-                        decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
+                        decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
                         return decoder
                     }.map { (response: Self.PagedActivities) in
                         (response.metadata.paging, response.activities)
@@ -86,15 +86,15 @@ extension API.Request.History {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to a user's activity.
     public struct History {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        internal unowned let api: API
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -102,10 +102,10 @@ extension API.Request {
 
 // MARK: Response Entities
 
-extension API.Request.History {
+extension IG.API.Request.History {
     /// A single page of activity requests.
     private struct PagedActivities: Decodable {
-        let activities: [API.Activity]
+        let activities: [IG.API.Activity]
         let metadata: Metadata
         
         struct Metadata: Decodable {
@@ -121,7 +121,7 @@ extension API.Request.History {
     }
 }
 
-extension API {
+extension IG.API {
     /// A trading activity on the given account.
     public struct Activity: Decodable {
         /// The date of the activity item.
@@ -139,13 +139,13 @@ extension API {
         /// Instrument epic identifier.
         public let epic: IG.Market.Epic
         /// The period of the activity item.
-        public let expiry: IG.Market.Instrument.Expiry
+        public let expiry: IG.Market.Expiry
         /// Activity details.
         public let details: Self.Details?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.title = try container.decode(String.self, forKey: .title)
@@ -154,7 +154,7 @@ extension API {
             self.channel = try container.decode(Self.Channel.self, forKey: .channel)
             self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-            self.expiry = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .expiry) ?? .none
+            self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expiry) ?? .none
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
@@ -168,7 +168,7 @@ extension API {
     }
 }
 
-extension API.Activity {
+extension IG.API.Activity {
     /// Activity Type.
     public enum Kind: String, Decodable {
         /// System generated activity.
@@ -212,7 +212,7 @@ extension API.Activity {
         /// Transient deal reference for an unconfirmed trade.
         public let dealReference : IG.Deal.Reference?
         /// Deal affected by an activity.
-        public let actions: [API.Activity.Action]
+        public let actions: [IG.API.Activity.Action]
         /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
         public let marketName: String
         /// The currency denomination.
@@ -230,12 +230,12 @@ extension API.Activity {
         /// Working order expiration.
         ///
         /// If the activity doesn't reference a working order, this property will be `nil`.
-        public let workingOrderExpiration: API.WorkingOrder.Expiration?
+        public let workingOrderExpiration: IG.API.WorkingOrder.Expiration?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.dealReference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .dealReference)
-            self.actions = try container.decode([API.Activity.Action].self, forKey: .actions)
+            self.actions = try container.decode([IG.API.Activity.Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
@@ -248,7 +248,7 @@ extension API.Activity {
                 case .none: return nil
                 case "GTC": return .tillCancelled
                 case let dateString?:
-                    guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
+                    guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
                         throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
                     }
                     let date = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
@@ -269,7 +269,7 @@ extension API.Activity {
     }
 }
 
-extension API.Activity {
+extension IG.API.Activity {
     /// Deal affected by an activity.
     public struct Action: Decodable {
         /// Action type.
@@ -318,9 +318,9 @@ extension API.Activity {
         /// Refects who is the receiver of the action on what status has been changed to.
         public enum Kind {
             /// The action affects a position and its status has been modified to the one given here.
-            case position(status: API.Activity.Action.PositionStatus)
+            case position(status: IG.API.Activity.Action.PositionStatus)
             /// The action affects a working order and its status has been modified to the one given here.
-            case workingOrder(status: API.Activity.Action.WorkingOrderStatus, type: API.WorkingOrder.Kind?)
+            case workingOrder(status: IG.API.Activity.Action.WorkingOrderStatus, type: IG.API.WorkingOrder.Kind?)
             /// A deal's stop and/or limit has been amended.
             case dealStopLimitAmended
             /// The action is of unknown character.

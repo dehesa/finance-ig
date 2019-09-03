@@ -1,6 +1,6 @@
 import Foundation
 
-extension Streamer {
+extension IG.Streamer {
     /// List of request data needed to make subscriptions.
     public enum Request {}
 }
@@ -10,7 +10,7 @@ extension DispatchQoS {
     internal static let realTimeMessaging = DispatchQoS(qosClass: .userInitiated, relativePriority: 0)
 }
 
-extension Streamer {
+extension IG.Streamer {
     /// Possible Lightstreamer modes.
     internal enum Mode: String {
         /// Lightstreamer MERGE mode.

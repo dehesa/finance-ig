@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Charts {
+extension IG.Streamer.Request.Charts {
     
     // MARK: CHART:EPIC:TICK
     
@@ -10,7 +10,9 @@ extension Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Tick,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Chart.Tick,IG.Streamer.Error> {
+        typealias E = IG.Streamer.Error
+        
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         
@@ -19,12 +21,12 @@ extension Streamer.Request.Charts {
             .attemptMap { (update) in
                 do {
                     return .success(try .init(epic: epic, item: item, update: update))
-                } catch var error as Streamer.Error {
+                } catch var error as E {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     return .failure(error)
                 } catch let underlyingError {
-                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
                     return .failure(error)
                 }
         }
@@ -35,7 +37,7 @@ extension Streamer.Request.Charts {
 
 // MARK: Request Entities
 
-extension Streamer.Chart.Tick {
+extension IG.Streamer.Chart.Tick {
     /// Possible fields to subscribe to when querying market data.
     public enum Field: String, CaseIterable {
         /// Update time.
@@ -63,7 +65,7 @@ extension Streamer.Chart.Tick {
     }
 }
 
-extension Set where Element == Streamer.Chart.Tick.Field {
+extension Set where Element == IG.Streamer.Chart.Tick.Field {
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
         return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
@@ -75,7 +77,7 @@ extension Set where Element == Streamer.Chart.Tick.Field {
     }
 }
 
-extension Streamer.Chart {
+extension IG.Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Tick {
         /// The market epic identifier.
@@ -91,9 +93,10 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
-            typealias U = Streamer.Formatter.Update
+            typealias U = IG.Streamer.Formatter.Update
+            typealias E = IG.Streamer.Error
             
             self.epic = epic
             
@@ -104,15 +107,15 @@ extension Streamer.Chart {
                 self.volume = try update[F.volume.rawValue]?.value.map(U.toDecimal)
                 self.day = try .init(update: update)
             } catch let error as U.Error {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
             } catch let underlyingError {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
+                throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }
         }
     }
 }
 
-extension Streamer.Chart.Tick {
+extension IG.Streamer.Chart.Tick {
     /// Dayly statistics.
     public struct Day {
         /// The lowest price of the day.
@@ -126,9 +129,9 @@ extension Streamer.Chart.Tick {
         /// Daily percentage change.
         public let changePercentage: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Chart.Tick.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Chart.Tick.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -139,10 +142,10 @@ extension Streamer.Chart.Tick {
     }
 }
 
-extension Streamer.Chart.Tick: CustomDebugStringConvertible {
+extension IG.Streamer.Chart.Tick: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: String = self.epic.rawValue
-        result.append(prefix: "\n\t", name: "date", ": ", self.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t", name: "date", ": ", self.date.map { IG.Streamer.Formatter.time.string(from: $0) })
         result.append(prefix: "\n\t", name: "bid", ": ", self.bid)
         result.append(prefix: "\n\t", name: "ask", ": ", self.ask)
         result.append(prefix: "\n\t", name: "volume", ": ", self.volume)

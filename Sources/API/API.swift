@@ -17,28 +17,28 @@ public final class API {
     internal let channel: URLSession
     
     /// It holds data and functionality related to the user's session.
-    public internal(set) var session: API.Request.Session
+    public internal(set) var session: IG.API.Request.Session
     /// It holds functionality related to the user's applications.
-    public var applications: API.Request.Applications { return .init(api: self) }
+    public var applications: IG.API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
-    public var accounts: API.Request.Accounts { return .init(api: self) }
+    public var accounts: IG.API.Request.Accounts { return .init(api: self) }
     /// It holds functionality related to the user's activity & transactions, and market prices..
-    public var history: API.Request.History { return .init(api: self) }
+    public var history: IG.API.Request.History { return .init(api: self) }
     /// It holds functionality related to market navigation nodes.
-    public var nodes: API.Request.Nodes { return .init(api: self) }
+    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
     /// It holds functionality related to platform market.
-    public var markets: API.Request.Markets { return .init(api: self) }
+    public var markets: IG.API.Request.Markets { return .init(api: self) }
     /// It holds functionality related to watchlists.
-    public var watchlists: API.Request.Watchlists { return .init(api: self) }
+    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
     /// It holds functionality related to positions.
-    public var positions: API.Request.Positions { return .init(api: self) }
+    public var positions: IG.API.Request.Positions { return .init(api: self) }
     /// It holds functionality related to working orders.
-    public var workingOrders: API.Request.WorkingOrders { return .init(api: self) }
+    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    public convenience init(rootURL: URL, credentials: API.Credentials?) {
+    public convenience init(rootURL: URL, credentials: IG.API.Credentials?) {
         self.init(rootURL: rootURL, credentials: credentials, configuration: API.defaultSessionConfigurations)
     }
     
@@ -46,7 +46,7 @@ public final class API {
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter configuration: URL session configuration properties. By default, you get a non-cached, non-cookies, pipeline and secure URL session configuration.
-    internal init(rootURL: URL, credentials: API.Credentials?, configuration: URLSessionConfiguration) {
+    internal init(rootURL: URL, credentials: IG.API.Credentials?, configuration: URLSessionConfiguration) {
         self.rootURL = rootURL
         (self.lifetime, self.lifetimeToken) = Lifetime.make()
         self.channel = URLSession(configuration: configuration)
@@ -59,7 +59,7 @@ public final class API {
     }
 }
 
-extension API {
+extension IG.API {
     /// The root address for the IG endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     

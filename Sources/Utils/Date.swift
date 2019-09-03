@@ -4,7 +4,7 @@ import Foundation
 internal enum UTC {
     /// The default calendar to be used in the API date formatters.
     static let calendar = Calendar(identifier: .iso8601).set {
-        $0.timeZone = UTC.timezone
+        $0.timeZone = IG.UTC.timezone
         // The locale is not added here on purpose.
     }
     /// The default timezone to be used in the API date formatters.
@@ -15,7 +15,7 @@ internal enum UTC {
 
 extension Date {
     /// Convenience initializer for dates grounded in UTC.
-    internal init?(year: Int, month: Int, day: Int? = nil, hour: Int? = nil, minute: Int? = nil, second: Int? = nil, calendar: Calendar = UTC.calendar, timezone: TimeZone = UTC.timezone) {
+    internal init?(year: Int, month: Int, day: Int? = nil, hour: Int? = nil, minute: Int? = nil, second: Int? = nil, calendar: Calendar = IG.UTC.calendar, timezone: TimeZone = IG.UTC.timezone) {
         let components = DateComponents(calendar: calendar, timeZone: timezone, year: year, month: month, day: day, hour: hour, minute: minute, second: second)
         guard let date = components.date else { return nil }
         self = date
@@ -23,7 +23,7 @@ extension Date {
     
     /// Returns the date for the last day, hour, minute, and second of the month.
     internal var lastDayOfMonth: Date {
-        let (calendar, timezone) = (UTC.calendar, UTC.timezone)
+        let (calendar, timezone) = (IG.UTC.calendar, IG.UTC.timezone)
         
         var components = calendar.dateComponents(in: timezone, from: self)
         components.timeZone = timezone
@@ -37,7 +37,7 @@ extension Date {
     
     /// Checks whether the receiving date is the last day of the month.
     internal var isLastDayOfMonth: Bool {
-        let calendar = UTC.calendar
+        let calendar = IG.UTC.calendar
         let selfDay = calendar.component(.day, from: self)
         let lastDay = calendar.component(.day, from: self.lastDayOfMonth)
         return selfDay == lastDay

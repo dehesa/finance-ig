@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Watchlists {
+extension IG.API.Request.Watchlists {
     
     // MARK: POST /watchlists
     
@@ -9,11 +9,11 @@ extension API.Request.Watchlists {
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: SignalProducer with the watchlist identifier as its value.
-    public func create(name: String, epics: [IG.Market.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),API.Error> {
+    public func create(name: String, epics: [IG.Market.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     let message = "The watchlist name cannot be empty"
-                    throw API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character.")
+                    throw IG.API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character.")
                 }
                 return .init(name: name, epics: epics.uniqueElements)
             }.request(.post, "watchlists", version: 1, credentials: true, body: { (_, payload) in
@@ -29,7 +29,7 @@ extension API.Request.Watchlists {
     // MARK: GET /watchlists
     
     /// Returns all watchlists belonging to the active account.
-    public func getAll() -> SignalProducer<[API.Watchlist],API.Error> {
+    public func getAll() -> SignalProducer<[IG.API.Watchlist],IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "watchlists", version: 1, credentials: true)
             .send(expecting: .json)
@@ -42,10 +42,10 @@ extension API.Request.Watchlists {
     
     /// Returns the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
-    public func getMarkets(from identifier: String) -> SignalProducer<[API.Node.Market],API.Error> {
+    public func getMarkets(from identifier: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> Void in
                 guard !identifier.isEmpty else {
-                    throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
                 }
             }.request(.get, "watchlists/\(identifier)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -60,10 +60,10 @@ extension API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> SignalProducer<Void,API.Error> {
+    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> SignalProducer<Void,IG.API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !identifier.isEmpty else {
-                    throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
                 }
             }.request(.put, "watchlists/\(identifier)", version: 1, credentials: true, body: { (_,_) in
                 let payload = ["epic": epic]
@@ -82,10 +82,10 @@ extension API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> SignalProducer<Void,API.Error> {
+    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> SignalProducer<Void,IG.API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !identifier.isEmpty else {
-                    throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
                 }
             }.request(.delete, "watchlists/\(identifier)/\(epic.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -99,10 +99,10 @@ extension API.Request.Watchlists {
     /// Deletes the targeted watchlist.
     /// - parameter id: The identifier for the watchlist being targeted.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func delete(identifier watchlistIdentifier: String) -> SignalProducer<Void,API.Error> {
+    public func delete(identifier watchlistIdentifier: String) -> SignalProducer<Void,IG.API.Error> {
         return SignalProducer(api: self.api) { _ in
                 guard !watchlistIdentifier.isEmpty else {
-                    throw API.Error.invalidRequest(API.Error.Message.emptyWatchlistIdentifier, suggestion: API.Error.Suggestion.emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
                 }
             }.request(.delete, "watchlists/\(watchlistIdentifier)", version: 1, credentials: true)
             .send(expecting: .json)
@@ -114,15 +114,15 @@ extension API.Request.Watchlists {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to API watchlists.
     public struct Watchlists {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: API
+        fileprivate unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -130,15 +130,15 @@ extension API.Request {
 
 // MARK: Request Entities
 
-extension API.Error.Message {
+extension IG.API.Error.Message {
     fileprivate static var emptyWatchlistIdentifier: String { "The watchlist identifier cannot be empty" }
 }
 
-extension API.Error.Suggestion {
+extension IG.API.Error.Suggestion {
     fileprivate static var emptyWatchlistIdentifier: String { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier." }
 }
 
-extension API.Request.Watchlists {
+extension IG.API.Request.Watchlists {
     private struct PayloadCreation: Encodable {
         let name: String
         let epics: [IG.Market.Epic]
@@ -147,7 +147,7 @@ extension API.Request.Watchlists {
 
 // MARK: Response Entities
 
-extension API.Request.Watchlists {
+extension IG.API.Request.Watchlists {
     private struct WrapperCreation: Decodable {
         let identifier: String
         let areAllInstrumentsAdded: Bool
@@ -171,11 +171,11 @@ extension API.Request.Watchlists {
     }
     
     private struct WrapperWatchlist: Decodable {
-        let markets: [API.Node.Market]
+        let markets: [IG.API.Node.Market]
     }
     
     private struct WrapperList: Decodable {
-        let watchlists: [API.Watchlist]
+        let watchlists: [IG.API.Watchlist]
     }
     
     private struct WrapperUpdate: Decodable {
@@ -187,7 +187,7 @@ extension API.Request.Watchlists {
     }
 }
 
-extension API {
+extension IG.API {
     /// Watchlist data.
     public struct Watchlist: Decodable {
         /// Watchlist identifier.

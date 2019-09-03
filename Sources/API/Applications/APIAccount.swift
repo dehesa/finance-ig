@@ -1,12 +1,12 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Accounts {
+extension IG.API.Request.Accounts {
     
     // MARK:  GET /accounts
     
     /// Returns a list of accounts belonging to the logged-in client.
-    public func getAll() -> SignalProducer<[API.Account],API.Error> {
+    public func getAll() -> SignalProducer<[IG.API.Account],IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json)
@@ -18,7 +18,7 @@ extension API.Request.Accounts {
     // MARK:  GET /accounts/preferences
     
     /// Returns the targeted account preferences.
-    public func preferences() -> SignalProducer<API.Account.Preferences,API.Error> {
+    public func preferences() -> SignalProducer<IG.API.Account.Preferences,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json)
@@ -31,7 +31,7 @@ extension API.Request.Accounts {
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,API.Error> {
+    public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadPreferences in
                 return .init(trailingStopsEnabled: trailingStops)
             }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
@@ -44,15 +44,15 @@ extension API.Request.Accounts {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: API
+        fileprivate unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -60,7 +60,7 @@ extension API.Request {
 
 // MARK: Request Entities
 
-extension API.Request.Accounts {
+extension IG.API.Request.Accounts {
     private struct PayloadPreferences: Encodable {
         let trailingStopsEnabled: Bool
     }
@@ -68,13 +68,13 @@ extension API.Request.Accounts {
 
 // MARK: Response Entities
 
-extension API.Request.Accounts {
+extension IG.API.Request.Accounts {
     private struct WrapperList: Decodable {
-        let accounts: [API.Account]
+        let accounts: [IG.API.Account]
     }
 }
 
-extension API {
+extension IG.API {
     /// Client account.
     public struct Account: Decodable {
         /// Account identifier.
@@ -126,7 +126,7 @@ extension API {
     }
 }
 
-extension API.Account {
+extension IG.API.Account {
     /// Account status
     public enum Status: String, Decodable {
         case disable = "DISABLED"

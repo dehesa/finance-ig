@@ -21,12 +21,13 @@ extension IG.DB {
             let errorMessage = "The migrator encountered an error."
             
             guard case .v0 = migrations.next() else { fatalError(errorMessage) }
-            migrator.registerMigration("v0") { (db) in
+            migrator.registerMigration(Self.Version.v0.rawValue) { (db) in
                 try IG.DB.Application.tableCreation(in: db)
+                try IG.DB.Market.tableCreation(in: db)
                 try IG.DB.Market.Forex.tableCreation(in: db)
-                try IG.DB.Node.tableCreation(in: db)
-                try IG.DB.Node.AssociativeMarket.tableCreation(in: db)
-                try IG.DB.Node.AssociativeSubnode.tableCreation(in: db)
+//                try IG.DB.Node.tableCreation(in: db)
+//                try IG.DB.Node.AssociativeMarket.tableCreation(in: db)
+//                try IG.DB.Node.AssociativeSubnode.tableCreation(in: db)
             }
             
             guard case .none = migrations.next() else { fatalError("More migration awaited to be registered.") }

@@ -1,6 +1,6 @@
 import Foundation
 
-extension Deal {
+extension IG.Deal {
     /// The level/price at which the user doesn't want to incur more lose.
     public struct Stop {
         /// The type of stop (whether absolute level or relative distance).
@@ -23,7 +23,7 @@ extension Deal {
     }
 }
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// Check whether the receiving stop is valid in reference to the given base level and direction.
     /// - parameter reference. The reference level and deal direction.
     /// - returns: Boolean indicating whether the stop is in the right side of the deal and the number is valid.
@@ -85,7 +85,7 @@ extension Deal.Stop {
 
 // MARK: - Factories
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// Creates a stop level based on an absolute level value.
     ///
     /// A guaranteed stop pays an extra premium (indicated by the server).
@@ -168,7 +168,7 @@ extension Deal.Stop {
 
 // MARK: - Validation
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// Checks that the absolute level is finite.
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
@@ -198,7 +198,7 @@ extension Deal.Stop {
 
 // MARK: - Supporting Entities
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// Available types of stops.
     public enum Kind {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
@@ -209,7 +209,7 @@ extension Deal.Stop {
     }
 }
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// Defines the amount of risk being exposed while closing the stop loss.
     public enum Risk: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral {
         /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
@@ -233,7 +233,7 @@ extension Deal.Stop {
     }
 }
 
-extension Deal.Stop {
+extension IG.Deal.Stop {
     /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
     public enum Trailing: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral {
         /// A static (non-movable) stop.
@@ -370,7 +370,7 @@ extension KeyedDecodingContainer {
     }
 }
 
-extension Deal.Stop: CustomDebugStringConvertible {
+extension IG.Deal.Stop: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = "Stop "
         

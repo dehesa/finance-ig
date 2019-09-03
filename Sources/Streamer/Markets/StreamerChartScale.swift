@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Charts {
+extension IG.Streamer.Request.Charts {
     
     // MARK: CHART:EPIC:SCALE
     
@@ -13,7 +13,9 @@ extension Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Chart.Aggregated,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Chart.Aggregated,IG.Streamer.Error> {
+        typealias E = IG.Streamer.Error
+        
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -22,12 +24,12 @@ extension Streamer.Request.Charts {
             .attemptMap { (update) in
                 do {
                     return .success(try .init(epic: epic, interval: interval, item: item, update: update))
-                } catch var error as Streamer.Error {
+                } catch var error as E {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     return .failure(error)
                 } catch let underlyingError {
-                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
                     return .failure(error)
                 }
             }
@@ -36,15 +38,15 @@ extension Streamer.Request.Charts {
 
 // MARK: - Supporting Entities
 
-extension Streamer.Request {
+extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer markets.
     public struct Charts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: Streamer
+        internal unowned let streamer: IG.Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: Streamer) {
+        init(streamer: IG.Streamer) {
             self.streamer = streamer
         }
     }
@@ -52,7 +54,7 @@ extension Streamer.Request {
 
 // MARK: Request Entities
 
-extension Streamer.Chart.Aggregated {
+extension IG.Streamer.Chart.Aggregated {
     /// The time interval used for aggregation.
     public enum Interval: String {
         case second = "SECOND"
@@ -71,7 +73,7 @@ extension Streamer.Chart.Aggregated {
     }
 }
 
-extension Streamer.Chart.Aggregated {
+extension IG.Streamer.Chart.Aggregated {
     /// Possible fields to subscribe to when querying market candle data.
     public enum Field: String, CaseIterable {
         /// Update time.
@@ -122,7 +124,7 @@ extension Streamer.Chart.Aggregated {
     }
 }
 
-extension Set where Element == Streamer.Chart.Aggregated.Field {
+extension Set where Element == IG.Streamer.Chart.Aggregated.Field {
     /// Returns a set with all the candle related fields.
     public static var candle: Self {
         return Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
@@ -143,12 +145,12 @@ extension Set where Element == Streamer.Chart.Aggregated.Field {
 
 // MARK: Response Entities
 
-extension Streamer {
+extension IG.Streamer {
     /// Namespace for all Streamer chart functionality.
     public enum Chart {}
 }
 
-extension Streamer.Chart {
+extension IG.Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Aggregated {
         /// The market epic identifier.
@@ -160,9 +162,10 @@ extension Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
             typealias F = Self.Field
-            typealias U = Streamer.Formatter.Update
+            typealias U = IG.Streamer.Formatter.Update
+            typealias E = IG.Streamer.Error
             
             self.epic = epic
             self.interval = interval
@@ -171,15 +174,15 @@ extension Streamer.Chart {
                 self.candle = try .init(update: update)
                 self.day = try .init(update: update)
             } catch let error as U.Error {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
             } catch let underlyingError {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
+                throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }
         }
     }
 }
 
-extension Streamer.Chart.Aggregated {
+extension IG.Streamer.Chart.Aggregated {
     /// Buy/Sell prices at a point in time.
     public struct Candle {
         /// The date of the information.
@@ -197,9 +200,9 @@ extension Streamer.Chart.Aggregated {
         /// The highest bid/ask price for the receiving candle.
         public let highest: Self.Point
 
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Chart.Aggregated.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Chart.Aggregated.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.date = try update[F.date.rawValue]?.value.map(U.toEpochDate)
             self.numTicks = try update[F.numTicks.rawValue]?.value.map(U.toInt)
@@ -250,9 +253,9 @@ extension Streamer.Chart.Aggregated {
         /// Daily percentage change.
         public let changePercentage: Decimal?
 
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Chart.Aggregated.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Chart.Aggregated.Field
+            typealias U = IG.Streamer.Formatter.Update
 
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -263,11 +266,11 @@ extension Streamer.Chart.Aggregated {
     }
 }
 
-extension Streamer.Chart.Aggregated: CustomDebugStringConvertible {
+extension IG.Streamer.Chart.Aggregated: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: String = self.epic.rawValue
         result.append(prefix: "\n\t", name: "Candle", ":", " ")
-        result.append(prefix: "\n\t\t", name: "date", ": ", self.candle.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t\t", name: "date", ": ", self.candle.date.map { IG.Streamer.Formatter.time.string(from: $0) })
         result.append(prefix: "\n\t\t", name: "ticks", ": ", self.candle.numTicks)
         result.append(prefix: "\n\t\t", name: "done", "? ", self.candle.isFinished)
         result.append(prefix: "\n\t\t", name: "open (bid)", ": ", self.candle.open.bid)

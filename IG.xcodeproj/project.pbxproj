@@ -69,7 +69,11 @@
 		8DA8F89723181E7200F1A2C0 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBForex.swift */; };
 		8DAEF08022F9914C005AB34C /* StreamerTradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */; };
 		8DAEF08222F9994F005AB34C /* TestFabric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEF08122F9994F005AB34C /* TestFabric.swift */; };
+		8DB22F90231EB5C5001FCF6C /* DBApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */; };
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
+		8DB90A7F231E729F004204B8 /* DBMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A7E231E729F004204B8 /* DBMarketTests.swift */; };
+		8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A80231E79BE004204B8 /* DBInternals.swift */; };
+		8DB90A83231E91AA004204B8 /* Reactive+DB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A82231E91AA004204B8 /* Reactive+DB.swift */; };
 		8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB682822F30E7F00D04867 /* Reactive+Map.swift */; };
 		8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */; };
 		8DC158A322F08A8100012A19 /* Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5C2149A6CE00344CBF /* Streamer.swift */; };
@@ -186,7 +190,11 @@
 		8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMigration.swift; sourceTree = "<group>"; };
 		8DA8F89623181E7200F1A2C0 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
 		8DAEF08122F9994F005AB34C /* TestFabric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFabric.swift; sourceTree = "<group>"; };
+		8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplicationTests.swift; sourceTree = "<group>"; };
 		8DB560F7214A6F6200DA980E /* SetUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetUp.swift; sourceTree = "<group>"; };
+		8DB90A7E231E729F004204B8 /* DBMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarketTests.swift; sourceTree = "<group>"; };
+		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
+		8DB90A82231E91AA004204B8 /* Reactive+DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+DB.swift"; sourceTree = "<group>"; };
 		8DBB682822F30E7F00D04867 /* Reactive+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Map.swift"; sourceTree = "<group>"; };
 		8DC20A6F231AF3B000760FA4 /* DBNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNode.swift; sourceTree = "<group>"; };
 		8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodeTests.swift; sourceTree = "<group>"; };
@@ -401,6 +409,7 @@
 			isa = PBXGroup;
 			children = (
 				8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */,
+				8DB22F8D231EB533001FCF6C /* Applications */,
 				8DC20A71231AF76600760FA4 /* Markets */,
 			);
 			path = Database;
@@ -417,7 +426,9 @@
 		8DA8F8932317EAB800F1A2C0 /* Entities */ = {
 			isa = PBXGroup;
 			children = (
+				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
+				8DB90A82231E91AA004204B8 /* Reactive+DB.swift */,
 			);
 			path = Entities;
 			sourceTree = "<group>";
@@ -434,9 +445,18 @@
 			path = Markets;
 			sourceTree = "<group>";
 		};
+		8DB22F8D231EB533001FCF6C /* Applications */ = {
+			isa = PBXGroup;
+			children = (
+				8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */,
+			);
+			path = Applications;
+			sourceTree = "<group>";
+		};
 		8DC20A71231AF76600760FA4 /* Markets */ = {
 			isa = PBXGroup;
 			children = (
+				8DB90A7E231E729F004204B8 /* DBMarketTests.swift */,
 				8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */,
 			);
 			path = Markets;
@@ -979,6 +999,8 @@
 				8D222CD922F5601200AF98E0 /* StreamerDeal.swift in Sources */,
 				8D94BA962316575500AFBA1E /* DB.swift in Sources */,
 				8D94BA9823165DB500AFBA1E /* DBError.swift in Sources */,
+				8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */,
+				8DB90A83231E91AA004204B8 /* Reactive+DB.swift in Sources */,
 				8D10BBF02318E91700557960 /* DBMarket.swift in Sources */,
 				8DA8F89723181E7200F1A2C0 /* DBForex.swift in Sources */,
 				8DC20A70231AF3B000760FA4 /* DBNode.swift in Sources */,
@@ -992,7 +1014,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC20A73231AF77E00760FA4 /* DBNodeTests.swift in Sources */,
 				8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */,
 				8D819E1822F2E3420031A9D5 /* Reactive+Timeout.swift in Sources */,
 				8D1CC97B2299EE88009AB4D3 /* AnyEncodable.swift in Sources */,
@@ -1021,12 +1042,15 @@
 				8D4B972422F21BED002B267F /* APIPositionTests.swift in Sources */,
 				8D4B972322F21939002B267F /* APIWorkingOrderTests.swift in Sources */,
 				8D987E7C22F950A4003F85D9 /* XCTestCase+Streamer.swift in Sources */,
-				8D94BA9B2316A6E600AFBA1E /* DBSessionTests.swift in Sources */,
 				8D819E1522F2BAEE0031A9D5 /* StreamerSessionTests.swift in Sources */,
 				8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */,
 				8D44B3D722F8BDBD0080F17E /* StreamerChartTests.swift in Sources */,
 				8D987E7F22F95661003F85D9 /* StreamerAccountTests.swift in Sources */,
 				8DAEF08022F9914C005AB34C /* StreamerTradeTests.swift in Sources */,
+				8D94BA9B2316A6E600AFBA1E /* DBSessionTests.swift in Sources */,
+				8DB22F90231EB5C5001FCF6C /* DBApplicationTests.swift in Sources */,
+				8DB90A7F231E729F004204B8 /* DBMarketTests.swift in Sources */,
+				8DC20A73231AF77E00760FA4 /* DBNodeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

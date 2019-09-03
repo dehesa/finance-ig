@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Markets {
+extension IG.Streamer.Request.Markets {
     
     // MARK: MARKET:EPIC
     
@@ -11,22 +11,24 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Market,Streamer.Error> {
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Market,IG.Streamer.Error> {
+        typealias E = IG.Streamer.Error
+        
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
-        let timeFormatter = Streamer.Formatter.time
+        let timeFormatter = IG.Streamer.Formatter.time
         
         return self.streamer.channel
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
                     return .success(try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter))
-                } catch var error as Streamer.Error {
+                } catch var error as E {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     return .failure(error)
                 } catch let underlyingError {
-                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
                     return .failure(error)
                 }
             }
@@ -35,15 +37,15 @@ extension Streamer.Request.Markets {
 
 // MARK: - Supporting Entities
 
-extension Streamer.Request {
+extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer markets.
     public struct Markets {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: Streamer
+        internal unowned let streamer: IG.Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: Streamer) {
+        init(streamer: IG.Streamer) {
             self.streamer = streamer
         }
     }
@@ -51,7 +53,7 @@ extension Streamer.Request {
 
 // MARK: Request Entities
 
-extension Streamer.Market {
+extension IG.Streamer.Market {
     /// All available fields/properties to query data from a given market.
     public enum Field: String, CaseIterable {
         /// The current market status.
@@ -79,7 +81,7 @@ extension Streamer.Market {
     }
 }
 
-extension Set where Element == Streamer.Market.Field {
+extension Set where Element == IG.Streamer.Market.Field {
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
         return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
@@ -93,7 +95,7 @@ extension Set where Element == Streamer.Market.Field {
 
 // MARK: Response Entities
 
-extension Streamer {
+extension IG.Streamer {
     /// Displays the latests information from a given market.
     public struct Market {
         /// The market epic identifier.
@@ -115,9 +117,11 @@ extension Streamer {
         public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: IG.Market.Epic, item: String, update: [String:Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
+        fileprivate init(epic: IG.Market.Epic, item: String, update: [String:IG.Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
-            typealias U = Streamer.Formatter.Update
+            typealias U = IG.Streamer.Formatter.Update
+            typealias E = IG.Streamer.Error
+            
             self.epic = epic
             
             do {
@@ -130,15 +134,15 @@ extension Streamer {
                 
                 self.day = try .init(update: update)
             } catch let error as U.Error {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
             } catch let underlyingError {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
+                throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }
         }
     }
 }
 
-extension Streamer.Market: CustomDebugStringConvertible {
+extension IG.Streamer.Market: CustomDebugStringConvertible {
     /// The current status of the market.
     public enum Status: String, Codable {
         /// The market is open for trading.
@@ -166,9 +170,9 @@ extension Streamer.Market: CustomDebugStringConvertible {
         /// Daily percentage change.
         public let changePercentage: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Market.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Market.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -181,7 +185,7 @@ extension Streamer.Market: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: String = "Market (epic): \(self.epic.rawValue)"
         result.append(prefix: "\n\t", name: "Status", ": ", self.status)
-        result.append(prefix: "\n\t", name: "Date", ": ", self.date.map { Streamer.Formatter.time.string(from: $0) })
+        result.append(prefix: "\n\t", name: "Date", ": ", self.date.map { IG.Streamer.Formatter.time.string(from: $0) })
         result.append(prefix: "\n\t", name: "Are prices delayed?", " ", self.isDelayed)
         result.append(prefix: "\n\t", name: "Price (bid)", ": ", self.bid)
         result.append(prefix: "\n\t", name: "Price (ask)", ": ", self.ask)

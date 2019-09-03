@@ -1,11 +1,54 @@
 import GRDB
+import ReactiveSwift
 import Foundation
+
+extension IG.DB.Request.Applications {
+    /// Returns all applications stored in the database.
+    public func getAll() -> SignalProducer<[IG.DB.Application],IG.DB.Error> {
+        SignalProducer(database: self.database)
+            .read { (db, _, _) in
+                try IG.DB.Application.fetchAll(db)
+            }
+    }
+    
+    /// Updates the database with the information received from the server.
+    /// - parameter applications: Information returned from the server.
+    /// - throws: `Database.Error` exclusively.
+    public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
+        SignalProducer(database: self.database) { _ in
+                applications.map { IG.DB.Application(with: $0) }
+            }.write { (db, applications, shallContinue) -> Void in
+                for app in applications {
+                    guard case .continue = shallContinue() else { return }
+                    try app.save(db)
+                }
+            }
+    }
+}
+
+// MARK: - Supporting Entities
+
+extension IG.DB.Request {
+    /// Contains all functionality related to API applications.
+    public struct Applications {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        fileprivate unowned let database: IG.DB
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoints.
+        init(database: IG.DB) {
+            self.database = database
+        }
+    }
+}
+
+// MARK: Request Entities
 
 extension IG.DB {
     /// Client application
-    public struct Application: GRDB.FetchableRecord {
+    public struct Application {
         /// Application API key identifying the application and the developer.
-        public let key: API.Key
+        public let key: IG.API.Key
         /// Application creation date (referencing UTC dates, although no time data is stored).
         public let created: Date
         /// Application name given by the developer.
@@ -19,14 +62,24 @@ extension IG.DB {
         /// The date at which this entity was inserted in the database with factual information.
         public let updated: Date
         
-        public init(row: GRDB.Row) {
-            self.key = row[0]
-            self.created = row[1]
-            self.name = row[2]
-            self.status = row[3]
-            self.permission = .init(equities: row[4], quoteOrders: row[5])
-            self.allowance = Self.Allowance(overall: row[6], account: row[7], trading: row[8], history: row[9], subscriptions: row[10])
-            self.updated = row[11]
+        fileprivate init(with app: IG.API.Application) {
+            self.key = app.key
+            self.created = app.creationDate
+            self.name = app.name
+            
+            switch app.status {
+            case .enabled:  self.status = .enabled
+            case .disabled: self.status = .disabled
+            case .revoked:  self.status = .revoked
+            }
+            
+            self.permission = .init(equities: app.permission.accessToEquityPrices, quoteOrders: app.permission.areQuoteOrdersAllowed)
+            self.allowance = .init(overall: app.allowance.overallRequests,
+                                   account: app.allowance.account.overallRequests,
+                                   trading: app.allowance.account.tradingRequests,
+                                   history: app.allowance.account.tradingRequests,
+                                   subscriptions: app.allowance.subscriptionsLimit)
+            self.updated = Date()
         }
     }
 }
@@ -88,7 +141,7 @@ extension IG.DB.Application {
     }
 }
 
-// MARK: - GRDB functionality
+// MARK: GRDB functionality
 
 extension IG.DB.Application {
     /// Creates a SQLite table for API applications.
@@ -110,7 +163,7 @@ extension IG.DB.Application {
     }
 }
 
-extension IG.DB.Application: GRDB.TableRecord {
+extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.PersistableRecord {
     /// The table columns
     private enum Columns: String, GRDB.ColumnExpression {
         case key = "key"
@@ -127,14 +180,22 @@ extension IG.DB.Application: GRDB.TableRecord {
         case updated = "updated"
     }
     
+    public init(row: GRDB.Row) {
+        self.key = row[0]
+        self.created = row[1]
+        self.name = row[2]
+        self.status = row[3]
+        self.permission = .init(equities: row[4], quoteOrders: row[5])
+        self.allowance = Self.Allowance(overall: row[6], account: row[7], trading: row[8], history: row[9], subscriptions: row[10])
+        self.updated = row[11]
+    }
+    
     public static var databaseTableName: String {
         return "applications"
     }
     
     //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
-}
 
-extension IG.DB.Application: GRDB.PersistableRecord {
     public func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.key] = self.key
         container[Columns.created] = self.created

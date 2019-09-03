@@ -11,7 +11,7 @@ public struct Confirmation: Decodable {
     /// Instrument epic identifier.
     public let epic: IG.Market.Epic
     /// Instrument expiration period.
-    public let expiry: IG.Market.Instrument.Expiry
+    public let expiry: IG.Market.Expiry
     /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
     public let status: Self.Status
     
@@ -19,10 +19,10 @@ public struct Confirmation: Decodable {
         let container = try decoder.container(keyedBy: Self.CodingKeys.self)
         self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
         self.dealReference = try container.decode(IG.Deal.Reference.self, forKey: .dealReference)
-        self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601miliseconds)
+        self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601miliseconds)
         
         self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-        self.expiry = try container.decode(IG.Market.Instrument.Expiry.self, forKey: .expiry)
+        self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
         
         let status = try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status)
         guard case .accepted = status else {
@@ -65,11 +65,11 @@ public struct Confirmation: Decodable {
     }
 }
 
-extension Confirmation {
+extension IG.Confirmation {
     /// The confirmation details if it has been accepted.
     public struct Details: Decodable {
         /// Deal status.
-        public let dealStatus: API.Deal.Status
+        public let dealStatus: IG.API.Deal.Status
         /// Affected deals.
         public let affectedDeals: [IG.Confirmation.AffectedDeal]
         /// Deal direction.
@@ -83,11 +83,11 @@ extension Confirmation {
         /// The level at which the user doesn't want to incur more losses.
         public let stop: IG.Deal.Stop?
         /// Profit (value and currency).
-        public let profit: API.Deal.ProfitLoss?
+        public let profit: IG.API.Deal.ProfitLoss?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.dealStatus = try container.decode(API.Deal.Status.self, forKey: .dealStatus)
+            self.dealStatus = try container.decode(IG.API.Deal.Status.self, forKey: .dealStatus)
             self.affectedDeals = try container.decode([IG.Confirmation.AffectedDeal].self, forKey: .affectedDeals)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
@@ -123,7 +123,7 @@ extension Confirmation {
         /// Deal identifier.
         public let identifier: String
         /// Deal current status.
-        public let status: API.Deal.Status
+        public let status: IG.API.Deal.Status
         
         private enum CodingKeys: String, CodingKey {
             case identifier = "dealId"
@@ -256,7 +256,7 @@ extension Confirmation {
     }
 }
 
-extension Confirmation: CustomDebugStringConvertible {
+extension IG.Confirmation: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = "Confirmation "
         let prefix = "\n\t"
@@ -264,7 +264,7 @@ extension Confirmation: CustomDebugStringConvertible {
         var beginning = String()
         beginning.append(prefix: prefix, name: "Identifier", ": ", self.dealIdentifier)
         beginning.append(prefix: prefix, name: "Reference", ": ", self.dealReference)
-        beginning.append(prefix: prefix, name: "Date", ": ", API.Formatter.humanReadable.string(from: self.date))
+        beginning.append(prefix: prefix, name: "Date", ": ", IG.API.Formatter.humanReadable.string(from: self.date))
         beginning.append(prefix: prefix, name: "Epic", ": ", self.epic)
         beginning.append(prefix: prefix, name: "Expiry", ": ", self.expiry)
         

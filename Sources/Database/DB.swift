@@ -10,6 +10,9 @@ public final class DB {
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
     internal let channel: GRDB.DatabaseQueue
     
+    /// It holds data and functionality related to the user's applications.
+    public var applications: IG.DB.Request.Applications { return .init(database: self) }
+    
     /// Creates a database instance fetching and storing values from/to the given location.
     /// 
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.

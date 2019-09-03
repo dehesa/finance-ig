@@ -1,34 +1,34 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Markets {
+extension IG.API.Request.Markets {
     
     // MARK: GET /markets/{epic}
     
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> SignalProducer<API.Market,API.Error> {
-        let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds.deepCopy
+    public func get(epic: IG.Market.Epic) -> SignalProducer<IG.API.Market,IG.API.Error> {
+        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601noSeconds.deepCopy
         
         return SignalProducer(api: self.api) { (api) in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 dateFormatter.timeZone = timezone
             }.request(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
             .send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                     let message = "The response date couldn't be extracted from the response header."
-                    throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
-                decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
+                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
                 return decoder
             }
     }
@@ -38,19 +38,19 @@ extension API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> SignalProducer<[API.Market],API.Error> {
-        let dateFormatter: DateFormatter = API.Formatter.iso8601noSeconds
+    public func get(epics: Set<IG.Market.Epic>) -> SignalProducer<[IG.API.Market],IG.API.Error> {
+        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601noSeconds
         
         return SignalProducer(api: self.api) { (api) in
             let epicRange = 1...50
             guard epicRange.contains(epics.count) else {
                 let message = "Only between 1 to 50 markets can be queried at the same time."
                 let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
-                throw API.Error.invalidRequest(message, suggestion: suggestion)
+                throw IG.API.Error.invalidRequest(message, suggestion: suggestion)
             }
             
             guard let timezone = api.session.credentials?.timezone else {
-                throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
             }
             dateFormatter.timeZone = timezone
         }.request(.get, "markets", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
@@ -59,15 +59,15 @@ extension API.Request.Markets {
         }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                    let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                    let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                         let message = "The response date couldn't be extracted from the response header."
-                        throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
+                        throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
-                decoder.userInfo[API.JSON.DecoderKey.dateFormatter] = dateFormatter
+                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
                 return decoder
             }.map { (list: Self.WrapperList) in list.marketDetails }
     }
@@ -75,15 +75,15 @@ extension API.Request.Markets {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to API markets.
     public struct Markets {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -91,13 +91,13 @@ extension API.Request {
 
 // MARK: Response Entities
 
-extension API.Request.Markets {
+extension IG.API.Request.Markets {
     private struct WrapperList: Decodable {
-        let marketDetails: [API.Market]
+        let marketDetails: [IG.API.Market]
     }
 }
 
-extension API {
+extension IG.API {
     /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument.
     ///
     /// IG instruments are organised in the form a navigable market hierarchy
@@ -142,7 +142,7 @@ extension API {
     }
 }
 
-extension API.Market {
+extension IG.API.Market {
     /// Instrument details.
     public struct Instrument: Decodable {
         /// Instrument identifier.
@@ -150,7 +150,7 @@ extension API.Market {
         /// Instrument name.
         public let name: String
         /// Instrument type.
-        public let type: IG.Market.Instrument.Kind
+        public let type: Self.Kind
         /// Market expiration date details.
         public let expiration: Self.Expiration
         /// Country.
@@ -187,7 +187,7 @@ extension API.Market {
         /// Where a trade or bet approaching expiry is closed and a position of the same size and direction is opened for the next period, thereby prolonging the exposure to a particular market
         public let rollover: Self.Rollover?
         /// The limited risk premium.
-        public let limitedRiskPremium: API.Market.Distance
+        public let limitedRiskPremium: IG.API.Market.Distance
         /// Boolean indicating whether prices are available through streaming communications.
         public let isAvailableByStreaming: Bool
         /// Chart code.
@@ -203,7 +203,7 @@ extension API.Market {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
-            self.type = try container.decode(IG.Market.Instrument.Kind.self, forKey: .type)
+            self.type = try container.decode(IG.API.Market.Instrument.Kind.self, forKey: .type)
             self.expiration = try .init(from: decoder)
             self.country = try container.decodeIfPresent(String.self, forKey: .country)
             self.currencies = try container.decodeIfPresent(Array<Self.Currency>.self, forKey: .currencies) ?? []
@@ -240,7 +240,7 @@ extension API.Market {
             self.margin = try .init(from: decoder)
             self.slippageFactor = try container.decode(Self.SlippageFactor.self, forKey: .slippageFactor)
             self.rollover = try container.decodeIfPresent(Self.Rollover.self, forKey: .rollover)
-            self.limitedRiskPremium = try container.decode(API.Market.Distance.self, forKey: .limitedRiskPremium)
+            self.limitedRiskPremium = try container.decode(IG.API.Market.Distance.self, forKey: .limitedRiskPremium)
             self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.chartCode = try container.decode(String.self, forKey: .chartCode)
             self.newsCode = try container.decode(String.self, forKey: .newsCode)
@@ -268,11 +268,78 @@ extension API.Market {
     }
 }
 
-extension API.Market.Instrument {
+extension IG.API.Market.Instrument {
+    /// Instrument related entities.
+    public enum Kind: Decodable {
+        /// A binary allows you to take a view on whether a specific outcome will or won't occur.
+        ///
+        /// For example, Will Wall Street be up at the close of the day?
+        /// - If the answer is 'yes', the binary settles at 100.
+        /// - If the answer is 'no', the binary settles at 0.
+        ///
+        /// Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
+        case binary
+        case bungee(Self.Bungee)
+        /// Commodities are hard assets ranging from wheat to gold to oil.
+        case commodities
+        /// Currencies are medium of exchange.
+        case currencies
+        /// An index is an statistical measure of change in a securities market.
+        case indices
+        /// An option is a contract which gives the buyer the right, but not the obligation, to buy or sell an underlying asset or instrument at a specified strike price prior to or on a specified date, depending on the form of the option.
+        case options(Self.Options)
+        /// Bonds, money markets, etc.
+        case rates
+        case sectors
+        /// Shares are unit of ownership interest in a corporation or financial asset that provide for an equal distribution in any profits, if any are declared, in the form of dividends.
+        case shares
+        case sprintMarket
+        case testMarket
+        case unknown
+        
+        public enum Bungee: String {
+            case capped, commodities, currencies, indices
+        }
+        
+        public enum Options: String {
+            case commodities, currencies, indices, rates, shares
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            
+            switch string {
+            case "BINARY": self = .binary
+            case "COMMODITIES": self = .commodities
+            case "CURRENCIES": self = .currencies
+            case "INDICES": self = .indices
+            case "OPT_COMMODITIES": self = .options(.commodities)
+            case "OPT_CURRENCIES": self = .options(.currencies)
+            case "OPT_INDICES": self = .options(.indices)
+            case "OPT_RATES": self = .options(.rates)
+            case "OPT_SHARES": self = .options(.shares)
+            case "RATES": self = .rates
+            case "SECTORS": self = .sectors
+            case "SHARES": self = .shares
+            case "SPRINT_MARKET": self = .sprintMarket
+            case "TEST_MARKET": self = .testMarket
+            case "BUNGEE_CAPPED": self = .bungee(.capped)
+            case "BUNGEE_COMMODITIES": self = .bungee(.commodities)
+            case "BUNGEE_CURRENCIES": self = .bungee(.currencies)
+            case "BUNGEE_INDICES": self = .bungee(.indices)
+            case "UNKNOWN": self = .unknown
+            default:
+                let message = #"The instrument type "\#(string)" couldn't be mapped to a proper type"#
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: message)
+            }
+        }
+    }
+    
     /// Expiration date details.
     public struct Expiration: Decodable {
         /// Expiration date. The date (and sometimes time) at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire, and have an expiry of '-'. eg DEC-14, or DFB for daily funded bets.
-        public let expiry: IG.Market.Instrument.Expiry
+        public let expiry: IG.Market.Expiry
         /// The last dealing date.
         public let lastDealingDate: Date?
         /// Settlement information.
@@ -281,7 +348,7 @@ extension API.Market.Instrument {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
 
-            self.expiry = try container.decodeIfPresent(IG.Market.Instrument.Expiry.self, forKey: .expirationDate) ?? .none
+            self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
                 self.settlementInfo = nil
                 self.lastDealingDate = nil; return
@@ -290,7 +357,7 @@ extension API.Market.Instrument {
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .expirationDetails)
             self.settlementInfo = try nestedContainer.decodeIfPresent(String.self, forKey: .settlementInfo)
             
-            let formatter = try decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             self.lastDealingDate = try nestedContainer.decodeIfPresent(Date.self, forKey: .lastDealingDate, with: formatter)
         }
@@ -353,7 +420,7 @@ extension API.Market.Instrument {
     /// Margin requirements and deposit bands.
     public struct Margin: Decodable {
         /// The dimension for a dealing rule value.
-        public let unit: API.Market.Distance.Unit
+        public let unit: IG.API.Market.Distance.Unit
         /// Margin requirement factor.
         public let factor: Decimal
         /// Deposit bands.
@@ -399,7 +466,7 @@ extension API.Market.Instrument {
 
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            guard let formatter = decoder.userInfo[API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
+            guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .lastDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
             }
             
@@ -428,8 +495,8 @@ extension API.Market.Instrument {
             guard hasMin == hasMax else { throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range.") }
             guard hasMin == false else { return nil }
 
-            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: API.Formatter.monthYear)
-            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: API.Formatter.monthYear)
+            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.monthYear)
+            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.monthYear)
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -439,7 +506,7 @@ extension API.Market.Instrument {
     }
 }
 
-extension API.Market {
+extension IG.API.Market {
     /// Dealing rule preferences.
     public struct Rules: Decodable {
         /// Client's market order trading preference.
@@ -448,7 +515,7 @@ extension API.Market {
         /// This ensures we will fill your order as quickly as possible, even if the price indicated on the deal ticket is not available for your requested order size
         public let marketOrder: Self.Order
         /// Minimum deal size.
-        public let minimumDealSize: API.Market.Distance
+        public let minimumDealSize: IG.API.Market.Distance
         /// Rules for setting postions' limits.
         public let limit: Self.Limit
         /// Rules for setting positions' stops.
@@ -458,7 +525,7 @@ extension API.Market {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.marketOrder = try container.decode(Self.Order.self, forKey: .marketOrder)
-            self.minimumDealSize = try container.decode(API.Market.Distance.self, forKey: .minimumDealSize)
+            self.minimumDealSize = try container.decode(IG.API.Market.Distance.self, forKey: .minimumDealSize)
             self.limit = try .init(from: decoder)
             self.stop = try .init(from: decoder)
         }
@@ -492,9 +559,9 @@ extension API.Market {
         /// Settings for positions' limits.
         public struct Limit: Decodable {
             /// Minimum normal limit distance.
-            public let mininumDistance: API.Market.Distance
+            public let mininumDistance: IG.API.Market.Distance
             /// Maximum limit distance.
-            public let maximumDistance: API.Market.Distance
+            public let maximumDistance: IG.API.Market.Distance
             
             private enum CodingKeys: String, CodingKey {
                 case mininumDistance = "minNormalStopOrLimitDistance"
@@ -505,19 +572,19 @@ extension API.Market {
         /// Settings for positions' stops.
         public struct Stop: Decodable {
             /// Minimum normal stop distance.
-            public let mininumDistance: API.Market.Distance
+            public let mininumDistance: IG.API.Market.Distance
             /// Minimum controller risk stop distance.
-            public let minimumLimitedRiskDistance: API.Market.Distance
+            public let minimumLimitedRiskDistance: IG.API.Market.Distance
             /// Maximum stop distance.
-            public let maximumDistance: API.Market.Distance
+            public let maximumDistance: IG.API.Market.Distance
             /// Trailing stops' settings.
             public let trailing: Self.Trailing
             
             public init(from decoder: Decoder) throws {
                 let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-                self.mininumDistance = try container.decode(API.Market.Distance.self, forKey: .mininumDistance)
-                self.minimumLimitedRiskDistance = try container.decode(API.Market.Distance.self, forKey: .limitedRisk)
-                self.maximumDistance = try container.decode(API.Market.Distance.self, forKey: .maximumDistance)
+                self.mininumDistance = try container.decode(IG.API.Market.Distance.self, forKey: .mininumDistance)
+                self.minimumLimitedRiskDistance = try container.decode(IG.API.Market.Distance.self, forKey: .limitedRisk)
+                self.maximumDistance = try container.decode(IG.API.Market.Distance.self, forKey: .maximumDistance)
                 self.trailing = try .init(from: decoder)
             }
             
@@ -532,11 +599,11 @@ extension API.Market {
                 /// Trailing stops trading preference.
                 public let areAvailable: Bool
                 /// Minimum step distance.
-                public let minimumIncrement: API.Market.Distance
+                public let minimumIncrement: IG.API.Market.Distance
                 
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-                    self.minimumIncrement = try container.decode(API.Market.Distance.self, forKey: .minimumIncrement)
+                    self.minimumIncrement = try container.decode(IG.API.Market.Distance.self, forKey: .minimumIncrement)
                     let trailingStops = try container.decode(Self.Availability.self, forKey: .areTrailingStopsAvailable)
                     self.areAvailable = trailingStops == .available
                 }
@@ -555,7 +622,7 @@ extension API.Market {
     }
 }
 
-extension API.Market {
+extension IG.API.Market {
     /// Market snapshot data.
     public struct Snapshot: Decodable {
         /// Time of the last price update.
@@ -564,9 +631,9 @@ extension API.Market {
         /// Pirce delay marked in minutes.
         public let delay: TimeInterval
         /// The current status of a given market
-        public let status: API.Market.Status
+        public let status: IG.API.Market.Status
         /// The state of the market price at the time of the snapshot.
-        public let price: API.Market.Price?
+        public let price: IG.API.Market.Price?
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
         public let scalingFactor: Decimal
         /// Number of decimal positions for market levels.
@@ -579,18 +646,18 @@ extension API.Market {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            guard let responseDate = decoder.userInfo[API.JSON.DecoderKey.responseDate] as? Date else {
+            guard let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date else {
                 let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The response date wasn't found on JSONDecoder "userInfo""#)
                 throw DecodingError.valueNotFound(Date.self, ctx)
             }
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: API.Formatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
             
-            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: UTC.calendar, timezone: UTC.timezone) else {
+            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) else {
                 throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
             }
             
             if update > responseDate {
-                guard let newDate = UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
+                guard let newDate = IG.UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
                     throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
                 }
                 self.date = newDate
@@ -599,8 +666,8 @@ extension API.Market {
             }
             
             self.delay = try container.decode(TimeInterval.self, forKey: .delay)
-            self.status = try container.decode(API.Market.Status.self, forKey: .status)
-            self.price = try API.Market.Price(from: decoder)
+            self.status = try container.decode(IG.API.Market.Status.self, forKey: .status)
+            self.price = try IG.API.Market.Price(from: decoder)
             self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
             self.decimalPlacesFactor = try container.decode(Int.self, forKey: .decimalPlacesFactor)
             self.extraSpreadForControlledRisk = try container.decode(Decimal.self, forKey: .extraSpreadForControlledRisk)
@@ -621,7 +688,7 @@ extension API.Market {
     }
 }
 
-extension API.Market {
+extension IG.API.Market {
     /// Distance/Size preference.
     public struct Distance: Decodable {
         /// The distance value.

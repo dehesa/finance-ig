@@ -1,13 +1,13 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     
     // MARK: GET /workingorders
     
     /// Returns all open working orders for the active account.
     /// - returns: A `SignalProducer` delivering in its value a list of all open working orders.
-    public func getAll() -> SignalProducer<[API.WorkingOrder],API.Error> {
+    public func getAll() -> SignalProducer<[IG.API.WorkingOrder],IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json)
@@ -20,15 +20,15 @@ extension API.Request.WorkingOrders {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to API working orders.
     public struct WorkingOrders {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -36,13 +36,13 @@ extension API.Request {
 
 // MARK: Response Entity
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     private struct WrapperList: Decodable {
-        let workingOrders: [API.WorkingOrder]
+        let workingOrders: [IG.API.WorkingOrder]
     }
 }
 
-extension API {
+extension IG.API {
     /// Working order awaiting for its trigger to be met.
     public struct WorkingOrder: Decodable {
         /// Permanent deal reference for a confirmed trade.
@@ -70,19 +70,19 @@ extension API {
         /// Indicates when the working order expires if its triggers hasn't been met.
         public let expiration: Self.Expiration
         /// The market basic information and snapshot.
-        public let market: API.Node.Market
+        public let market: IG.API.Node.Market
         
         public init(from decoder: Decoder) throws {
             let topContainer = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.market = try topContainer.decode(API.Node.Market.self, forKey: .market)
+            self.market = try topContainer.decode(IG.API.Node.Market.self, forKey: .market)
             
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
-            self.type = try container.decode(API.WorkingOrder.Kind.self, forKey: .type)
+            self.type = try container.decode(IG.API.WorkingOrder.Kind.self, forKey: .type)
             self.size = try container.decode(Decimal.self, forKey: .size)
             self.level = try container.decode(Decimal.self, forKey: .level)
             self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: nil, distanceKey: .limitDistance)
@@ -91,7 +91,7 @@ extension API {
             self.expiration = try {
                 switch $0 {
                 case Self.Expiration.CodingKeys.tillCancelled.rawValue: return .tillCancelled
-                case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: API.Formatter.iso8601noSeconds))
+                case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: IG.API.Formatter.iso8601noSeconds))
                 default: throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\($0)\" couldn't be processed.")
                 }
             }(try container.decode(String.self, forKey: .expiration))

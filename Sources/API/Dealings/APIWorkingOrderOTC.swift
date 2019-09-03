@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     
     // MARK: POST /workingorders/otc
     
@@ -19,9 +19,9 @@ extension API.Request.WorkingOrders {
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func create(epic: IG.Market.Epic, expiry: IG.Market.Instrument.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
-                       type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool = true,
-                       expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,API.Error> {
+    public func create(epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
+                       type: IG.API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool = true,
+                       expiration: IG.API.WorkingOrder.Expiration, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
                 return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.request(.post, "workingorders/otc", version: 2, credentials: true, body: { (_, payload) in
@@ -43,7 +43,7 @@ extension API.Request.WorkingOrders {
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: IG.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) -> SignalProducer<IG.Deal.Reference,API.Error> {
+    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> Self.PayloadUpdate in
                 return try .init(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.request(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
@@ -59,7 +59,7 @@ extension API.Request.WorkingOrders {
     
     /// Deletes an OTC working order.
     /// - parameter identifier: A permanent deal reference for a confirmed working order.
-    public func delete(identifier: IG.Deal.Identifier) -> SignalProducer<IG.Deal.Reference,API.Error> {
+    public func delete(identifier: IG.Deal.Identifier) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json)
@@ -72,22 +72,22 @@ extension API.Request.WorkingOrders {
 
 // MARK: - Supporting Entities
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     private struct PayloadCreation: Encodable {
         let epic: IG.Market.Epic
-        let expiry: IG.Market.Instrument.Expiry
+        let expiry: IG.Market.Expiry
         let currency: IG.Currency.Code
         let direction: IG.Deal.Direction
-        let type: API.WorkingOrder.Kind
+        let type: IG.API.WorkingOrder.Kind
         let level: Decimal
         let size: Decimal
         let limit: IG.Deal.Limit?
         let stop: IG.Deal.Stop?
         let forceOpen: Bool
-        let expiration: API.WorkingOrder.Expiration
+        let expiration: IG.API.WorkingOrder.Expiration
         let reference: IG.Deal.Reference?
         
-        init(epic: IG.Market.Epic, expiry: IG.Market.Instrument.Expiry, currency: IG.Currency.Code, direction: IG.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
+        init(epic: IG.Market.Epic, expiry: IG.Market.Expiry, currency: IG.Currency.Code, direction: IG.Deal.Direction, type: IG.API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool, expiration: IG.API.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
             self.epic = epic
             self.expiry = expiry
             self.currency = currency
@@ -95,19 +95,19 @@ extension API.Request.WorkingOrders {
             self.type = type
             self.size = try {
                 guard size.isNormal, case .plus = size.sign else {
-                    throw API.Error.invalidRequest("The position size number is invalid", suggestion: "The position size must be a positive valid number greater than zero").set { $0.context.append(("Working order size", size)) }
+                    throw IG.API.Error.invalidRequest("The position size number is invalid", suggestion: "The position size must be a positive valid number greater than zero").set { $0.context.append(("Working order size", size)) }
                 }
                 return size
             }()
             self.level = try {
                 guard level.isFinite else {
-                    throw API.Error.invalidRequest("The given working order level is invalid.", suggestion: "Input a valid number as level.").set { $0.context.append(("Working order level", level)) }
+                    throw IG.API.Error.invalidRequest("The given working order level is invalid.", suggestion: "Input a valid number as level.").set { $0.context.append(("Working order level", level)) }
                 }
                 return level
             }()
             self.limit = try limit.map { (limit) in
                 guard limit.isValid(on: direction, from: level) else {
-                    throw API.Error.invalidRequest("The given limit is invalid.", suggestion: API.Error.Suggestion.validLimit).set { $0.context.append(("Working order limit", limit)) }
+                    throw IG.API.Error.invalidRequest("The given limit is invalid.", suggestion: IG.API.Error.Suggestion.validLimit).set { $0.context.append(("Working order limit", limit)) }
                 }
                 return limit
             }
@@ -119,11 +119,11 @@ extension API.Request.WorkingOrders {
                 }
                 
                 guard let result = entity else {
-                    throw API.Error.invalidRequest("The given stop is invalid", suggestion: API.Error.Suggestion.validStop)
+                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: IG.API.Error.Suggestion.validStop)
                 }
                 
                 if case .limited = stop.risk, case .position = stop.type {
-                    throw API.Error.invalidRequest("The given stop is invalid.", suggestion: #"Only working order's stop distances may be "guaranteed stops" (or limited risk)."#).set { $0.context.append(("Working order stop", stop)) }
+                    throw IG.API.Error.invalidRequest("The given stop is invalid.", suggestion: #"Only working order's stop distances may be "guaranteed stops" (or limited risk)."#).set { $0.context.append(("Working order stop", stop)) }
                 }
                 
                 return result
@@ -131,7 +131,7 @@ extension API.Request.WorkingOrders {
             self.forceOpen = forceOpen
             self.expiration = try { // Check that the expiration date is at least one second later than now.
                 if case .tillDate(let date) = expiration, date <= Date(timeIntervalSinceNow: 1) {
-                    throw API.Error.invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.").set { $0.context.append(("Working order expiration", date)) }
+                    throw IG.API.Error.invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.").set { $0.context.append(("Working order expiration", date)) }
                 }
                 return expiration
             }()
@@ -172,10 +172,10 @@ extension API.Request.WorkingOrders {
             
             switch self.expiration {
             case .tillCancelled:
-                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
+                try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
-                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: API.Formatter.humanReadable)
+                try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
+                try container.encode(date, forKey: .expirationDate, with: IG.API.Formatter.humanReadable)
             }
             try container.encodeIfPresent(self.reference, forKey: .reference)
         }
@@ -194,19 +194,19 @@ extension API.Request.WorkingOrders {
     }
 }
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     private struct PayloadUpdate: Encodable {
-        let type: API.WorkingOrder.Kind
+        let type: IG.API.WorkingOrder.Kind
         let level: Decimal
         let limit: IG.Deal.Limit?
         let stop: IG.Deal.Stop?
-        let expiration: API.WorkingOrder.Expiration
+        let expiration: IG.API.WorkingOrder.Expiration
         
-        init(type: API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) throws {
+        init(type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) throws {
             // Check that the stop distance is a positive number (if it is set).
             if case .distance(let distance) = stop {
                 guard distance.isNormal, case .plus = distance.sign else {
-                    var error: API.Error = .invalidRequest("The given stop is invalid.", suggestion: "The stop distance must be a valid number and greater than zero.")
+                    var error: IG.API.Error = .invalidRequest("The given stop is invalid.", suggestion: "The stop distance must be a valid number and greater than zero.")
                     error.context.append(("Position stop distance", distance))
                     throw error
                 }
@@ -214,7 +214,7 @@ extension API.Request.WorkingOrders {
             // Check that the expiration date is at least one second later than now.
             if case .tillDate(let date) = expiration {
                 guard date > Date(timeIntervalSinceNow: 1) else {
-                    var error: API.Error = .invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.")
+                    var error: IG.API.Error = .invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.")
                     error.context.append(("Working order expiration", date))
                     throw error
                 }
@@ -228,7 +228,7 @@ extension API.Request.WorkingOrders {
                 case .position(let l): result = .position(level: l)
                 case .distance(let d): result = .distance(d)
                 }
-                return try result ?! API.Error.invalidRequest("The given stop is invalid.", suggestion: API.Error.Suggestion.validStop).set { $0.context.append(("Working order stop", type)) }
+                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid.", suggestion: IG.API.Error.Suggestion.validStop).set { $0.context.append(("Working order stop", type)) }
             }
             self.expiration = expiration
         }
@@ -252,10 +252,10 @@ extension API.Request.WorkingOrders {
             
             switch self.expiration {
             case .tillCancelled:
-                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
+                try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
-                try container.encode(API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: API.Formatter.humanReadable)
+                try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
+                try container.encode(date, forKey: .expirationDate, with: IG.API.Formatter.humanReadable)
             }
         }
         
@@ -271,7 +271,7 @@ extension API.Request.WorkingOrders {
 
 // MARK: Response Entities
 
-extension API.Request.WorkingOrders {
+extension IG.API.Request.WorkingOrders {
     private struct WrapperReference: Decodable {
         let dealReference: IG.Deal.Reference
     }

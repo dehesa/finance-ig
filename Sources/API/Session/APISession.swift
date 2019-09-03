@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Session {
+extension IG.API.Request.Session {
     
     // MARK: POST /session
     
@@ -12,18 +12,18 @@ extension API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: `SignalProducer` indicating whether the endpoint was successful. If the login is of `.certificate` type, extra information on the session settings is forwarded to the result. The `.oauth` login type will have this *settings* result set to `nil`.
-    public func login(type: Self.Kind, key: API.Key, user: API.User) -> SignalProducer<API.Session.Settings?,API.Error> {
+    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> SignalProducer<IG.API.Session.Settings?,IG.API.Error> {
         switch type {
         case .certificate:
             return self.loginCertificate(key: key, user: user, encryptPassword: false)
-                .attemptMap { [weak weakAPI = self.api] (credentials, settings) -> Result<API.Session.Settings?,API.Error> in
+                .attemptMap { [weak weakAPI = self.api] (credentials, settings) -> Result<IG.API.Session.Settings?,IG.API.Error> in
                     guard let api = weakAPI else { return .failure(.sessionExpired()) }
                     api.session.credentials = credentials
                     return .success(settings)
             }
         case .oauth:
             return self.loginOAuth(key: key, user: user)
-                .attemptMap { [weak weakAPI = self.api] (credentials) -> Result<API.Session.Settings?,API.Error> in
+                .attemptMap { [weak weakAPI = self.api] (credentials) -> Result<IG.API.Session.Settings?,IG.API.Error> in
                     guard let api = weakAPI else { return .failure(.sessionExpired()) }
                     api.session.credentials = credentials
                     return .success(.none)
@@ -35,22 +35,22 @@ extension API.Request.Session {
     ///
     /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials). Please note, that OAuth refresh are intended to happen often, while cretificate refresh should happen quite infrequently).
     /// - note: If there is no credentials (i.e. the session gets logged out)  before, or during this endpoint an error is forwarded.
-    public func refresh() -> SignalProducer<Void,API.Error> {
-        return SignalProducer(api: self.api) { (api) -> API.Credentials in
+    public func refresh() -> SignalProducer<Void,IG.API.Error> {
+        return SignalProducer(api: self.api) { (api) -> IG.API.Credentials in
             guard let credentials = api.session.credentials else {
-                throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
             }
             return credentials
-        }.flatMap(.latest) { (api, credentials) -> SignalProducer<API.Credentials.Token,API.Error> in
+        }.flatMap(.latest) { (api, credentials) -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> in
             switch credentials.token.value {
             case .certificate: return api.session.refreshCertificate()
             case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
             }
-        }.attemptMap { [weak weakAPI = self.api] (token) -> Result<Void,API.Error> in
+        }.attemptMap { [weak weakAPI = self.api] (token) -> Result<Void,IG.API.Error> in
             guard let api = weakAPI else { return .failure(.sessionExpired()) }
             guard var credentials = api.session.credentials else {
                 let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time."
-                return .failure(.sessionExpired(message: API.Error.Message.noCredentials, suggestion: suggestion))
+                return .failure(.sessionExpired(message: IG.API.Error.Message.noCredentials, suggestion: suggestion))
             }
             credentials.token = token
             api.session.credentials = credentials
@@ -63,7 +63,7 @@ extension API.Request.Session {
 
     /// Returns the user's session details.
     /// - returns: `SignalProducer` returning information about the current user's session.
-    public func get() -> SignalProducer<API.Session,API.Error> {
+    public func get() -> SignalProducer<IG.API.Session,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: true)
             .send(expecting: .json)
@@ -76,10 +76,10 @@ extension API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: `SignalProducer` returning information about the current user's session.
-    public func get(key: API.Key, token: API.Credentials.Token) -> SignalProducer<API.Session,API.Error> {
+    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> SignalProducer<IG.API.Session,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: false, headers: { (_,_) in
-                var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
+                var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -102,7 +102,7 @@ extension API.Request.Session {
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<API.Session.Settings,API.Error> {
+    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<IG.API.Session.Settings,IG.API.Error> {
         var stored: (request: URLRequest, response: HTTPURLResponse)! = nil
         return SignalProducer(api: self.api)
             .request(.put, "session", version: 1, credentials: true, body: { (_,_) in
@@ -115,13 +115,13 @@ extension API.Request.Session {
                 stored = (request, response)
                 return JSONDecoder()
             }
-            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings) -> Result<API.Session.Settings,API.Error> in
+            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings) -> Result<IG.API.Session.Settings,IG.API.Error> in
                 guard let api = weakAPI else {
                     return .failure(.sessionExpired())
                 }
                 
                 guard var credentials = api.session.credentials else {
-                    let error: API.Error = .invalidResponse(message: API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation.")
+                    let error: IG.API.Error = .invalidResponse(message: IG.API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation.")
                     return .failure(error)
                 }
                 credentials.account = accountId
@@ -138,7 +138,7 @@ extension API.Request.Session {
     /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
     /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
     /// - returns: `SignalProducer` indicating the success of the operation.
-    public func logout() -> SignalProducer<Void,API.Error> {
+    public func logout() -> SignalProducer<Void,IG.API.Error> {
         return SignalProducer { [weak weakAPI = self.api] (input, lifetime) in
             guard let api = weakAPI else {
                 return input.send(error: .sessionExpired())
@@ -151,11 +151,11 @@ extension API.Request.Session {
             
             let url = api.rootURL.appendingPathComponent("session")
             let request = URLRequest(url: url).set {
-                $0.httpMethod = API.HTTP.Method.delete.rawValue
+                $0.httpMethod = IG.API.HTTP.Method.delete.rawValue
                 $0.addHeaders(version: 1, credentials: creds)
             }
             
-            let disposable = SignalProducer<API.Request.Wrapper,API.Error>(value: (api,request))
+            let disposable = SignalProducer<IG.API.Request.Wrapper,IG.API.Error>(value: (api,request))
                 .send()
                 .validate(statusCodes: 204)
                 .start {
@@ -175,31 +175,31 @@ extension API.Request.Session {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to the API session.
     public struct Session {
         /// Pointer to the API instance in charge of calling the session endpoints.
-        private var pointer: Unmanaged<API>?
+        private var pointer: Unmanaged<IG.API>?
         /// The credentials used to call API endpoints.
-        internal var credentials: API.Credentials?
+        internal var credentials: IG.API.Credentials?
         
         /// Pointer to the actual API instance in charge of calling the endpoint.
         /// - important: Before using the getter, be sure to have set this property or the application will crash.
-        internal var api: API {
+        internal var api: IG.API {
             get { return pointer!.takeUnretainedValue() }
-            set { self.pointer = Unmanaged<API>.passUnretained(newValue) }
+            set { self.pointer = Unmanaged<IG.API>.passUnretained(newValue) }
         }
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the session endpoints.
         /// - parameter credentials: The credentials to be stored within this API session.
-        internal init(credentials: API.Credentials?) {
+        internal init(credentials: IG.API.Credentials?) {
             self.pointer = nil
             self.credentials = credentials
         }
         
         /// Returns the API application key of the session being used (or logged in).
-        public var key: API.Key? {
+        public var key: IG.API.Key? {
             return self.credentials?.key
         }
         /// Returns the client identifier of the session being used (or logged in).
@@ -215,7 +215,7 @@ extension API.Request {
 
 // MARK: Request Entities
 
-extension API.Request.Session {
+extension IG.API.Request.Session {
     /// Type of sessions available
     public enum Kind {
         /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
@@ -233,7 +233,7 @@ extension API.Request.Session {
 
 // MARK: Response Entities
 
-extension API {
+extension IG.API {
     /// Representation of a dealing session.
     public struct Session: Decodable {
         /// Client identifier.
@@ -271,7 +271,7 @@ extension API {
     }
 }
 
-extension API.Session {
+extension IG.API.Session {
     /// Payload received when accounts are switched.
     public struct Settings: Decodable {
         /// Boolean indicating whether trailing stops are currently enabled for the given account.

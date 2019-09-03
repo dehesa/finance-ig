@@ -31,13 +31,13 @@ extension IG.DB.Node.AssociativeSubnode {
 }
 
 extension IG.DB.Node.AssociativeSubnode: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
-    public init(row: Row) {
+    public init(row: GRDB.Row) {
         self.identifier = row[0]
         self.parentIdentifier = row[1]
         self.childIdentifier = row[2]
     }
     
-    func encode(to container: inout PersistenceContainer) {
+    func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.identifier] = self.identifier
         container[Columns.parentIdentifier] = self.parentIdentifier
         container[Columns.childIdentifier] = self.childIdentifier

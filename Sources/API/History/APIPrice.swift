@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.History {
+extension IG.API.Request.History {
     
     // MARK: GET /prices/{epic}
     
@@ -14,13 +14,13 @@ extension API.Request.History {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
     /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
         return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: DateFormatter) in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
             
-                let formatter = API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
+                let formatter = IG.API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
                 guard let page = page else { return (0, 1, formatter) }
                 let pageNumber = (page.number > 0) ? page.number : 1
                 return (page.size, pageNumber, formatter)
@@ -42,7 +42,7 @@ extension API.Request.History {
                 var request = initialRequest
                 try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
                 return request
-            }, endpoint: { (producer) -> SignalProducer<(Self.PagedPrices.Metadata.Page, (prices: [API.Price], allowance: API.Price.Allowance)), API.Error> in
+            }, endpoint: { (producer) -> SignalProducer<(Self.PagedPrices.Metadata.Page, (prices: [IG.API.Price], allowance: IG.API.Price.Allowance)), IG.API.Error> in
                 producer.send(expecting: .json)
                     .validateLadenData(statusCodes: 200)
                     .decodeJSON()
@@ -58,7 +58,7 @@ extension API.Request.History {
 
 // MARK: Request Entities
 
-extension API.Request.History {
+extension IG.API.Request.History {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
         case second = "SECOND"
@@ -107,15 +107,15 @@ extension API.Request.History {
 
 // MARK: Response Entities
 
-extension API.Request.History {
+extension IG.API.Request.History {
     /// Single page of prices request.
     private struct PagedPrices: Decodable {
-        let instrumentType: IG.Market.Instrument.Kind
-        let prices: [API.Price]
+        let instrumentType: IG.API.Market.Instrument.Kind
+        let prices: [IG.API.Price]
         let metadata: Self.Metadata
         
         struct Metadata: Decodable {
-            let allowance: API.Price.Allowance
+            let allowance: IG.API.Price.Allowance
             let page: Self.Page
             /// The total amount of price points after all pages have been loaded.
             let totalCount: UInt
@@ -142,7 +142,7 @@ extension API.Request.History {
     }
 }
 
-extension API {
+extension IG.API {
     /// Historical market price snapshot.
     public struct Price: Decodable {
         /// Snapshot date.
@@ -162,7 +162,7 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)
@@ -181,7 +181,7 @@ extension API {
     }
 }
 
-extension API.Price {
+extension IG.API.Price {
     /// Price Snap.
     public struct Point: Decodable {
         /// Bid price (i.e. the price being offered  to buy an asset).
@@ -200,7 +200,7 @@ extension API.Price {
     }
 }
 
-extension API.Price {
+extension IG.API.Price {
     /// Request allowance for prices.
     public struct Allowance: Decodable {
         /// The date in which the current allowance period will end and the remaining allowance field is reset.
@@ -213,13 +213,13 @@ extension API.Price {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
+            guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
                 let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The request/response values stored in the JSONDecoder "userInfo" couldn't be found"#)
                 throw DecodingError.valueNotFound(HTTPURLResponse.self, ctx)
             }
             
-            guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                  let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+            guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                  let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                 let message = "The date on the response header couldn't be processed."
                 throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: message)
             }
