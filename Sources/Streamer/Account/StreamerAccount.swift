@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension Streamer.Request.Accounts {
+extension IG.Streamer.Request.Accounts {
     
     // MARK: ACCOUNT:ACCID
     
@@ -12,7 +12,9 @@ extension Streamer.Request.Accounts {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<Streamer.Account,Streamer.Error> {
+    public func subscribe(to account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Account,IG.Streamer.Error> {
+        typealias E = IG.Streamer.Error
+        
         let item = "ACCOUNT:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         
@@ -20,14 +22,14 @@ extension Streamer.Request.Accounts {
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .attemptMap { (update) in
                 do {
-                    let account = try Streamer.Account(identifier: account, item: item, update: update)
+                    let account = try IG.Streamer.Account(identifier: account, item: item, update: update)
                     return .success(account)
-                } catch var error as Streamer.Error {
+                } catch var error as E {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     return .failure(error)
                 } catch let underlyingError {
-                    let error = Streamer.Error(.invalidResponse, Streamer.Error.Message.unknownParsing, suggestion: Streamer.Error.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
+                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
                     return .failure(error)
                 }
             }
@@ -36,15 +38,15 @@ extension Streamer.Request.Accounts {
 
 // MARK: - Supporting Entities
 
-extension Streamer.Request {
+extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer accounts.
     public struct Accounts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let streamer: Streamer
+        fileprivate unowned let streamer: IG.Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: Streamer) {
+        init(streamer: IG.Streamer) {
             self.streamer = streamer
         }
     }
@@ -52,7 +54,7 @@ extension Streamer.Request {
 
 // MARK: Request Entities
     
-extension Streamer.Account {
+extension IG.Streamer.Account {
     /// Possible fields to subscribe to when querying account data.
     public enum Field: String, CaseIterable {
         /// Funds
@@ -87,7 +89,7 @@ extension Streamer.Account {
     }
 }
 
-extension Set where Element == Streamer.Account.Field {
+extension Set where Element == IG.Streamer.Account.Field {
     /// Returns all queryable fields.
     public static var all: Self {
         return .init(Element.allCases)
@@ -96,7 +98,7 @@ extension Set where Element == Streamer.Account.Field {
 
 // MARK: Response Entities
 
-extension Streamer {
+extension IG.Streamer {
     /// Latest information from a user account.
     public struct Account {
         /// Account identifier.
@@ -110,23 +112,25 @@ extension Streamer {
         /// Account Profit and Loss values.
         public let profitLoss: Self.ProfitLoss
         
-        internal init(identifier: IG.Account.Identifier, item: String, update: [String:Streamer.Subscription.Update]) throws {
+        internal init(identifier: IG.Account.Identifier, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias E = IG.Streamer.Error
+            
             self.identifier = identifier
             do {
                 self.equity = try .init(update: update)
                 self.funds = try .init(update: update)
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
-            } catch let error as Streamer.Formatter.Update.Error {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: Streamer.Error.Suggestion.bug)
+            } catch let error as IG.Streamer.Formatter.Update.Error {
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
             } catch let underlyingError {
-                throw Streamer.Error.invalidResponse(Streamer.Error.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: Streamer.Error.Suggestion.reviewError)
+                throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }
         }
     }
 }
 
-extension Streamer.Account {
+extension IG.Streamer.Account {
     /// Account equity.
     public struct Equity {
         /// The real account equity.
@@ -134,9 +138,9 @@ extension Streamer.Account {
         /// The equity used.
         public let used: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Account.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Account.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.value = try update[F.equity.rawValue]?.value.map(U.toDecimal)
             self.used = try update[F.equityUsed.rawValue]?.value.map(U.toDecimal)
@@ -154,9 +158,9 @@ extension Streamer.Account {
         /// Account minimum deposit value required for margins.
         public let deposit: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Account.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Account.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.value = try update[F.funds.rawValue]?.value.map(U.toDecimal)
             self.cashAvailable = try update[F.cashAvailable.rawValue]?.value.map(U.toDecimal)
@@ -174,9 +178,9 @@ extension Streamer.Account {
         /// Non-limited risk margin.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Account.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Account.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.value = try update[F.margin.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.marginLimitedRisk.rawValue]?.value.map(U.toDecimal)
@@ -193,9 +197,9 @@ extension Streamer.Account {
         /// Non-limited risk PNL value.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:Streamer.Subscription.Update]) throws {
-            typealias F = Streamer.Account.Field
-            typealias U = Streamer.Formatter.Update
+        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+            typealias F = IG.Streamer.Account.Field
+            typealias U = IG.Streamer.Formatter.Update
             
             self.value = try update[F.profitLoss.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.profitLossLimitedRisk.rawValue]?.value.map(U.toDecimal)
@@ -204,7 +208,7 @@ extension Streamer.Account {
     }
 }
 
-extension Streamer.Account: CustomDebugStringConvertible {
+extension IG.Streamer.Account: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: String = self.identifier.rawValue
         result.append(prefix: "\n\t", name: "Equity", ":", " ")

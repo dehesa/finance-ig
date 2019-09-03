@@ -6,18 +6,18 @@ public final class Streamer {
     /// URL root address.
     public let rootURL: URL
     /// The underlying instance (whether real or mocked) managing the streaming connections.
-    internal let channel: StreamerMockableChannel
+    internal let channel: IG.StreamerMockableChannel
     
     /// Holds functionality related to the current streamer session.
-    public var session: Streamer.Request.Session { return .init(streamer: self) }
+    public var session: IG.Streamer.Request.Session { return .init(streamer: self) }
     /// Holds functionality related to markets.
-    public var markets: Streamer.Request.Markets { return .init(streamer: self) }
+    public var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
     /// Holds functionality related to charts.
-    public var charts: Streamer.Request.Charts { return .init(streamer: self) }
+    public var charts: IG.Streamer.Request.Charts { return .init(streamer: self) }
     /// Hold functionality related to accounts.
-    public var accounts: Streamer.Request.Accounts { return .init(streamer: self) }
+    public var accounts: IG.Streamer.Request.Accounts { return .init(streamer: self) }
     /// Hold functionality related to deals (positions, working orders, and confirmations).
-    public var confirmations: Streamer.Request.Confirmations { return .init(streamer: self) }
+    public var confirmations: IG.Streamer.Request.Confirmations { return .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
@@ -25,7 +25,7 @@ public final class Streamer {
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
-    public convenience init(rootURL: URL, credentials: Streamer.Credentials, autoconnect: Bool = true) {
+    public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, autoconnect: Bool = true) {
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, autoconnect: autoconnect)
     }
@@ -34,7 +34,7 @@ public final class Streamer {
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter session: Real or mocked session managing the streaming connections.
     /// - parameter autoconnect: Booleain indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
-    internal init<S:StreamerMockableChannel>(rootURL: URL, channel: S, autoconnect: Bool) {
+    internal init<S:IG.StreamerMockableChannel>(rootURL: URL, channel: S, autoconnect: Bool) {
         self.rootURL = rootURL
         self.channel = channel
         

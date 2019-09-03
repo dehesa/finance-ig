@@ -1,5 +1,5 @@
-import XCTest
 @testable import IG
+import XCTest
 
 class DBSessionTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.

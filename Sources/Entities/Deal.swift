@@ -42,7 +42,7 @@ public enum Deal {
     }
 }
 
-extension Deal {
+extension IG.Deal {
     /// Transient deal identifier (for an unconfirmed trade).
     public struct Reference: RawRepresentable, ExpressibleByStringLiteral, Codable, CustomStringConvertible, Hashable {
         public let rawValue: String
@@ -77,8 +77,8 @@ extension Deal {
         /// The allowed character set used on validation.
         private static let allowedSet: CharacterSet = {
             var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
-            result.formUnion(CharacterSet.IG.lowercaseANSI)
-            result.formUnion(CharacterSet.IG.uppercaseANSI)
+            result.formUnion(CharacterSet.lowercaseANSI)
+            result.formUnion(CharacterSet.uppercaseANSI)
             result.formUnion(CharacterSet.decimalDigits)
             return result
         }()
@@ -92,7 +92,7 @@ extension Deal {
     }
 }
 
-extension Deal {
+extension IG.Deal {
     /// Deal direction.
     public enum Direction: String, Equatable, Codable {
         /// Going "long"

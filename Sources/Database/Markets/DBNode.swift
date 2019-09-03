@@ -26,12 +26,12 @@ extension IG.DB.Node {
 }
 
 extension IG.DB.Node: GRDB.FetchableRecord, GRDB.PersistableRecord {
-    public init(row: Row) {
+    public init(row: GRDB.Row) {
         self.identifier = row[0]
         self.name = row[1]
     }
     
-    public func encode(to container: inout PersistenceContainer) {
+    public func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.identifier] = self.identifier
         container[Columns.name] = self.name
     }

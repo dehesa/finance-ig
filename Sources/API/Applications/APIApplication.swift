@@ -1,12 +1,12 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Applications {
+extension IG.API.Request.Applications {
     
     // MARK: GET /operations/application
     
     /// Returns a list of client-owned applications.
-    public func getAll() -> SignalProducer<[API.Application],API.Error> {
+    public func getAll() -> SignalProducer<[IG.API.Application],IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json)
@@ -20,15 +20,15 @@ extension API.Request.Applications {
     /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(key: API.Key? = nil, status: API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> SignalProducer<API.Application,API.Error> {
+    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> SignalProducer<IG.API.Application,IG.API.Error> {
         return SignalProducer(api: self.api) { (api) -> Self.PayloadUpdate in
-                let apiKey: API.Key
+                let apiKey: IG.API.Key
                 if let key = key {
                     apiKey = key
                 } else if let key = api.session.credentials?.key {
                     apiKey = key
                 } else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
@@ -42,15 +42,15 @@ extension API.Request.Applications {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to API applications.
     public struct Applications {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: API
+        fileprivate unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -58,13 +58,13 @@ extension API.Request {
 
 // MARK: Request Entities
 
-extension API.Request.Applications {
+extension IG.API.Request.Applications {
     /// Let the user updates one parameter of its application.
     private struct PayloadUpdate: Encodable {
-        /// API key to be added to the request.
-        let key: API.Key
+        ///.API key to be added to the request.
+        let key: IG.API.Key
         /// Desired application status.
-        let status: API.Application.Status
+        let status: IG.API.Application.Status
         /// Per account request per minute allowance.
         let overallAccountRequests: UInt
         /// Per account trading request per minute allowance.
@@ -80,11 +80,11 @@ extension API.Request.Applications {
 
 // MARK: Response Entities
 
-extension API {
+extension IG.API {
     /// Client application.
     public struct Application: Decodable {
         /// Application API key identifying the application and the developer.
-        public let key: API.Key
+        public let key: IG.API.Key
         /// Application creation date (referencing UTC dates, although no time data is stored).
         public let creationDate: Date
         /// Application name given by the developer.
@@ -98,10 +98,10 @@ extension API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.key = try container.decode(API.Key.self, forKey: .key)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: API.Formatter.yearMonthDay)
+            self.key = try container.decode(IG.API.Key.self, forKey: .key)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.API.Formatter.yearMonthDay)
             self.name = try container.decode(String.self, forKey: .name)
-            self.status = try container.decode(API.Application.Status.self, forKey: .status)
+            self.status = try container.decode(IG.API.Application.Status.self, forKey: .status)
             self.permission = try Self.Permission(from: decoder)
             self.allowance = try Self.Allowance(from: decoder)
         }
@@ -113,7 +113,7 @@ extension API {
     }
 }
 
-extension API.Application {
+extension IG.API.Application {
     /// Application status in the platform.
     public enum Status: String, Codable {
         /// The application is enabled and thus ready to receive/send data.
@@ -125,7 +125,7 @@ extension API.Application {
     }
 }
 
-extension API.Application {
+extension IG.API.Application {
     /// The platform allowance to the application's and account's allowances (e.g. requests per minute).
     public struct Permission: Decodable {
         /// Boolean indicating if access to equity prices is permitted.
@@ -146,7 +146,7 @@ extension API.Application {
     }
 }
 
-extension API.Application {
+extension IG.API.Application {
     /// The limits constraining an API application.
     public struct Allowance: Decodable {
         /// Overal application request per minute allowance.
@@ -170,7 +170,7 @@ extension API.Application {
     }
 }
 
-extension API.Application.Allowance {
+extension IG.API.Application.Allowance {
     /// Limit and allowances for the targeted account.
     public struct Account: Decodable {
         /// Per account request per minute allowance.

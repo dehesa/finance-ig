@@ -1,7 +1,7 @@
 import GRDB
 import Foundation
 
-extension API {
+extension IG.API {
     /// API development key.
     public struct Key: RawRepresentable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
         public let rawValue: String
@@ -22,7 +22,7 @@ extension API {
     }
 }
 
-extension API.Key: Codable {
+extension IG.API.Key: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let name = try container.decode(String.self)
@@ -39,7 +39,7 @@ extension API.Key: Codable {
     }
 }
 
-extension API.Key: GRDB.DatabaseValueConvertible {
+extension IG.API.Key: GRDB.DatabaseValueConvertible {
     /// Returns a Boolean indicating whether the raw value can represent an API key.
     private static func validate(_ value: String) -> Bool {
         return value.count == 40 && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
@@ -48,7 +48,7 @@ extension API.Key: GRDB.DatabaseValueConvertible {
     /// The allowed character set for the API key. It is used on validation.
     private static let allowedSet: CharacterSet = {
         var result = CharacterSet.decimalDigits
-        result.formUnion(CharacterSet.IG.lowercaseANSI)
+        result.formUnion(CharacterSet.lowercaseANSI)
         return result
     }()
 }

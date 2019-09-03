@@ -4,17 +4,17 @@ import Foundation
 /// High-level instance containing all services that can communicate with the IG platform.
 public final class Services {
     /// Instance letting you query any API endpoint.
-    public let api: API
+    public let api: IG.API
     /// Instance letting you subscribe to lightsreamer events.
-    public let streamer: Streamer
+    public let streamer: IG.Streamer
     /// Instance letting you query a databse for caching purposes.
-    public let database: DB
+    public let database: IG.DB
     
     /// Designated initializer specifying every single service.
     /// - parameter api: The HTTP API manager.
     /// - parameter streamer: The Lightstreamer event manager.
     /// - parameter database: The Database manager.
-    private init(api: API, streamer: Streamer, database: DB) {
+    private init(api: IG.API, streamer: IG.Streamer, database: IG.DB) {
         self.api = api
         self.streamer = streamer
         self.database = database
@@ -27,8 +27,8 @@ public final class Services {
     /// - parameter user: User name and password to log into an IG account.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called on the `Streamer` instance right away, or whether it shall be called later on by the user.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = DB.rootURL, key: API.Key, user: API.User, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
-        let api = API(rootURL: serverURL, credentials: nil)
+    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, user: IG.API.User, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
+        let api = IG.API(rootURL: serverURL, credentials: nil)
         return api.session.login(type: .certificate, key: key, user: user)
             .mapError(Self.Error.api)
             .flatMap(.merge) { _ in Self.make(with: api, databaseURL: databaseURL, autoconnect: autoconnect) }
@@ -41,17 +41,17 @@ public final class Services {
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called on the `Streamer` instance right away, or whether it shall be called later on by the user.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = API.rootURL, databaseURL: URL? = DB.rootURL, key: API.Key, token: API.Credentials.Token, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
+    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Credentials.Token, autoconnect: Bool = true) -> SignalProducer<Services,Services.Error> {
         
-        let api = API(rootURL: serverURL, credentials: nil)
+        let api = IG.API(rootURL: serverURL, credentials: nil)
         
         /// This closure  creates  the othe subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: API.Credentials.Token) -> SignalProducer<Services,Services.Error> = { (token) in
+        let signal: (_ token: IG.API.Credentials.Token) -> SignalProducer<Services,Services.Error> = { (token) in
             return api.session.get(key: key, token: token)
                 .mapError(Self.Error.api)
                 .flatMap(.merge) { (session) -> SignalProducer<Services,Services.Error> in
-                    let credentials = API.Credentials(client: session.client, account: session.account, key: key, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
+                    let credentials = IG.API.Credentials(client: session.client, account: session.account, key: key, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
                     api.session.credentials = credentials
                     return Self.make(with: api, databaseURL: databaseURL, autoconnect: autoconnect)
             }
@@ -61,7 +61,7 @@ public final class Services {
             switch token.value {
             case .certificate:
                 let message = "The given certificate token has expired and it cannot be refreshed."
-                let error: API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
+                let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
                 return .init(error: .api(error: error))
             case .oauth(_, let refreshToken, _,_):
                 return api.session.refreshOAuth(token: refreshToken, key: key)
@@ -78,34 +78,34 @@ public final class Services {
     /// - parameter databaseURL: The file URL indicating the location of the caching database.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called on the `Streamer` instance right away, or whether it shall be called later on by the user.
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
-    private static func make(with api: API, databaseURL: URL?, autoconnect: Bool) -> SignalProducer<Services,Services.Error> {
+    private static func make(with api: IG.API, databaseURL: URL?, autoconnect: Bool) -> SignalProducer<Services,Services.Error> {
         // Check that there is API credentials.
         guard var apiCredentials = api.session.credentials else {
-            let error: API.Error = .invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+            let error: IG.API.Error = .invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
             return .init(error: .api(error: error))
         }
         // Check that they haven't expired.
         guard apiCredentials.token.expirationDate > Date() else {
             let message = "The given credentials have expired."
-            let error: API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
+            let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
             return .init(error: .api(error: error))
         }
         
         let subServicesGenerator: ()->Result<Services,Services.Error> = {
             do {
-                let secret = try Streamer.Credentials(credentials: apiCredentials)
+                let secret = try IG.Streamer.Credentials(credentials: apiCredentials)
                 let database = try DB(rootURL: databaseURL)
                 let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, autoconnect: autoconnect)
                 return .success(.init(api: api, streamer: streamer, database: database))
-            } catch let error as DB.Error {
+            } catch let error as IG.DB.Error {
                 return .failure(.database(error: error))
-            } catch let error as Streamer.Error {
+            } catch let error as IG.Streamer.Error {
                 return .failure(.streamer(error: error))
-            } catch let error as API.Error {
+            } catch let error as IG.API.Error {
                 return .failure(.api(error: error))
             } catch let underlyingError {
-                let msg = "An unknown error appeared while creating the \(Streamer.self) and \(DB.self) instance."
-                var error: Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.bug)
+                let msg = "An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.DB.self) instance."
+                var error: IG.Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.bug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))
             }
@@ -129,11 +129,11 @@ extension Services {
     /// Wrapper for errors generated in one of the IG services.
     public enum Error: Swift.Error, CustomDebugStringConvertible {
         /// Error produced by the HTTP API subservice.
-        case api(error: API.Error)
+        case api(error: IG.API.Error)
         /// Error produced by the Lightstreamer subservice.
-        case streamer(error: Streamer.Error)
+        case streamer(error: IG.Streamer.Error)
         /// Error produced by the Database subservice.
-        case database(error: DB.Error)
+        case database(error: IG.DB.Error)
         
         public var debugDescription: String {
             switch self {

@@ -1,11 +1,11 @@
 import Foundation
 
-extension API {
+extension IG.API {
     /// Namespace for commonly used value/class types related to deals.
     public enum Deal {}
 }
 
-extension API.Deal {
+extension IG.API.Deal {
     /// Position status.
     public enum Status: Decodable {
         case open
@@ -37,7 +37,7 @@ extension API.Deal {
     }
 }
 
-extension API.Deal {
+extension IG.API.Deal {
     /// Profit value and currency.
     public struct ProfitLoss: CustomStringConvertible {
         /// The actual profit value (it can be negative).
@@ -56,7 +56,7 @@ extension API.Deal {
     }
 }
 
-extension API.Position {
+extension IG.API.Position {
     /// Describes how the user's order must be executed.
     public enum Order {
         /// A market order is an instruction to buy or sell at the best available price for the size of your order.
@@ -99,7 +99,7 @@ extension API.Position {
     }
 }
 
-extension API.WorkingOrder {
+extension IG.API.WorkingOrder {
     /// Working order type.
     public enum Kind: String, Codable {
         /// An instruction to deal if the price moves to a more favourable level.

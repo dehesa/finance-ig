@@ -1,14 +1,14 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Positions {
+extension IG.API.Request.Positions {
     
     // MARK: GET /positions
     
     /// Returns all open positions for the active account.
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
-    public func getAll() -> SignalProducer<[API.Position],API.Error> {
+    public func getAll() -> SignalProducer<[IG.API.Position],IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json)
@@ -21,7 +21,7 @@ extension API.Request.Positions {
     
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
-    public func get(identifier: IG.Deal.Identifier) -> SignalProducer<API.Position,API.Error> {
+    public func get(identifier: IG.Deal.Identifier) -> SignalProducer<IG.API.Position,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json)
@@ -32,15 +32,15 @@ extension API.Request.Positions {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to API positions.
     public struct Positions {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -48,13 +48,13 @@ extension API.Request {
 
 // MARK: Response Entities
 
-extension API.Request.Positions {
+extension IG.API.Request.Positions {
     private struct WrapperList: Decodable {
-        let positions: [API.Position]
+        let positions: [IG.API.Position]
     }
 }
 
-extension API {
+extension IG.API {
     /// Open position data.
     public struct Position: Decodable {
         /// Permanent deal reference for a confirmed trade.
@@ -78,16 +78,16 @@ extension API {
         /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
         public let stop: IG.Deal.Stop?
         /// The market basic information and current state (i.e. snapshot).
-        public let market: API.Node.Market
+        public let market: IG.API.Node.Market
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.market = try container.decode(API.Node.Market.self, forKey: .market)
+            self.market = try container.decode(IG.API.Node.Market.self, forKey: .market)
             
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
             self.identifier = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
-            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: API.Formatter.iso8601)
+            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
             self.currencyCode = try nestedContainer.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try nestedContainer.decode(IG.Deal.Direction.self, forKey: .direction)
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)

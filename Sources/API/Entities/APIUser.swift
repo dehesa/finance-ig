@@ -1,6 +1,6 @@
 import Foundation
 
-extension API {
+extension IG.API {
     /// A user within the platform.
     public struct User: ExpressibleByArrayLiteral {
         /// Platform's username.
@@ -35,7 +35,7 @@ extension API {
     }
 }
 
-extension API.User {
+extension IG.API.User {
     /// The user identifier within the platform.
     public struct Name: RawRepresentable, ExpressibleByStringLiteral, Codable, Hashable, CustomStringConvertible {
         public let rawValue: String
@@ -77,15 +77,15 @@ extension API.User {
         /// The allowed character set for username. It is used on validation.
         private static let allowedSet: CharacterSet = {
             var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
-            result.formUnion(CharacterSet.IG.lowercaseANSI)
-            result.formUnion(CharacterSet.IG.uppercaseANSI)
+            result.formUnion(CharacterSet.lowercaseANSI)
+            result.formUnion(CharacterSet.uppercaseANSI)
             result.formUnion(CharacterSet.decimalDigits)
             return result
         }()
     }
 }
 
-extension API.User {
+extension IG.API.User {
     /// The user's password within the platform.
     public struct Password: ExpressibleByStringLiteral, Codable {
         private let rawValue: String

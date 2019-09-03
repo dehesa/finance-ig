@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API {
+extension IG.API {
     
     // MARK: - GET /confirms/{dealReference}
     
@@ -13,7 +13,7 @@ extension API {
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay.
     /// - note: the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: IG.Deal.Reference) -> SignalProducer<IG.Confirmation,API.Error> {
+    public func confirm(reference: IG.Deal.Reference) -> SignalProducer<IG.Confirmation,IG.API.Error> {
         return SignalProducer(api: self)
             .request(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json)

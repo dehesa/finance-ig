@@ -1,6 +1,6 @@
 import Foundation
 
-extension API.Market {
+extension IG.API.Market {
     /// The current status of the market.
     public enum Status: String, Codable {
         /// The market is open for trading.
@@ -16,7 +16,7 @@ extension API.Market {
     }
 }
 
-extension API.Market {
+extension IG.API.Market {
     /// Market's price at a snapshot's time.
     public struct Price {
         /// The price being offered (to buy an asset).

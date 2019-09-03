@@ -23,7 +23,7 @@ public enum Market {
     }
 }
 
-extension Market.Epic: Codable {
+extension IG.Market.Epic: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
@@ -39,7 +39,7 @@ extension Market.Epic: Codable {
     }
 }
 
-extension Market.Epic: GRDB.DatabaseValueConvertible {
+extension IG.Market.Epic: GRDB.DatabaseValueConvertible {
     /// Returns a Boolean indicating whether the raw value can represent a market epic.
     private static func validate(_ value: String) -> Bool {
         let allowedRange = 6...30
@@ -51,86 +51,14 @@ extension Market.Epic: GRDB.DatabaseValueConvertible {
     /// It is used on validation.
     private static let allowedSet: CharacterSet = {
         var result = CharacterSet(arrayLiteral: ".", "_")
-        result.formUnion(CharacterSet.IG.lowercaseANSI)
-        result.formUnion(CharacterSet.IG.uppercaseANSI)
+        result.formUnion(CharacterSet.lowercaseANSI)
+        result.formUnion(CharacterSet.uppercaseANSI)
         result.formUnion(CharacterSet.decimalDigits)
         return result
     }()
 }
 
-extension Market {
-    /// The underlying financial instrument being traded in the market.
-    public enum Instrument {
-        /// Instrument related entities.
-        public enum Kind {
-            /// A binary allows you to take a view on whether a specific outcome will or won't occur.
-            ///
-            /// For example, Will Wall Street be up at the close of the day?
-            /// - If the answer is 'yes', the binary settles at 100.
-            /// - If the answer is 'no', the binary settles at 0.
-            ///
-            /// Your profit or loss is the difference between 100 (if the event occurs) or zero (if the event doesn't occur) and the level at which you 'bought' or 'sold'. Binary prices can be extremely volatile even when the underlying market is relatively static. A small movement in the underlying can make all the difference between the binary settling at 0 or 100.
-            case binary
-            case bungee(Self.Bungee)
-            /// Commodities are hard assets ranging from wheat to gold to oil.
-            case commodities
-            /// Currencies are medium of exchange.
-            case currencies
-            /// An index is an statistical measure of change in a securities market.
-            case indices
-            /// An option is a contract which gives the buyer the right, but not the obligation, to guy or sell an underlying asset or instrument at a specified strike price prior to or on a specified date, depending on the form of the option.
-            case options(Self.Options)
-            case rates
-            case sectors
-            /// Shares are unit of ownership interest in a corporation or financial asset that provide for an equal distribution in any profits, if any are declared, in the form of dividends.
-            case shares
-            case sprintMarket
-            case testMarket
-            case unknown
-            
-            public enum Bungee: String {
-                case capped, commodities, currencies, indices
-            }
-            
-            public enum Options: String {
-                case commodities, currencies, indices, rates, shares
-            }
-        }
-    }
-}
-
-extension Market.Instrument.Kind: Decodable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let string = try container.decode(String.self)
-        switch string {
-        case "BINARY": self = .binary
-        case "COMMODITIES": self = .commodities
-        case "CURRENCIES": self = .currencies
-        case "INDICES": self = .indices
-        case "OPT_COMMODITIES": self = .options(.commodities)
-        case "OPT_CURRENCIES": self = .options(.currencies)
-        case "OPT_INDICES": self = .options(.indices)
-        case "OPT_RATES": self = .options(.rates)
-        case "OPT_SHARES": self = .options(.shares)
-        case "RATES": self = .rates
-        case "SECTORS": self = .sectors
-        case "SHARES": self = .shares
-        case "SPRINT_MARKET": self = .sprintMarket
-        case "TEST_MARKET": self = .testMarket
-        case "UNKNOWN": self = .unknown
-        case "BUNGEE_CAPPED": self = .bungee(.capped)
-        case "BUNGEE_COMMODITIES": self = .bungee(.commodities)
-        case "BUNGEE_CURRENCIES": self = .bungee(.currencies)
-        case "BUNGEE_INDICES": self = .bungee(.indices)
-        default:
-            let message = #"The instrument type "\#(string)" couldn't be mapped to a proper type"#
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: message)
-        }
-    }
-}
-
-extension Market.Instrument {
+extension IG.Market {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
@@ -150,7 +78,7 @@ extension Market.Instrument {
     }
 }
 
-extension Market.Instrument.Expiry: Codable {
+extension IG.Market.Expiry: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         guard !container.decodeNil() else {
@@ -164,14 +92,14 @@ extension Market.Instrument.Expiry: Codable {
         case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
             self = .dailyFunded
         default:
-            if let date = API.Formatter.dayMonthYear.date(from: string) {
+            if let date = IG.API.Formatter.dayMonthYear.date(from: string) {
                 self = .forward(date)
-            } else if let date = API.Formatter.monthYear.date(from: string) {
+            } else if let date = IG.API.Formatter.monthYear.date(from: string) {
                 self = .forward(date.lastDayOfMonth)
-            } else if let date = API.Formatter.iso8601.date(from: string) {
+            } else if let date = IG.API.Formatter.iso8601.date(from: string) {
                 self = .forward(date)
             } else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: API.Formatter.dayMonthYear.parseErrorLine(date: string))
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: IG.API.Formatter.dayMonthYear.parseErrorLine(date: string))
             }
         }
     }
@@ -184,7 +112,7 @@ extension Market.Instrument.Expiry: Codable {
         case .dailyFunded:
             try container.encode(Self.CodingKeys.dfb.rawValue)
         case .forward(let date):
-            let formatter = (date.isLastDayOfMonth) ? API.Formatter.monthYear : API.Formatter.dayMonthYear
+            let formatter = (date.isLastDayOfMonth) ? IG.API.Formatter.monthYear : IG.API.Formatter.dayMonthYear
             try container.encode(formatter.string(from: date))
         }
     }

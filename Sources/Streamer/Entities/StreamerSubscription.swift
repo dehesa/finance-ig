@@ -2,7 +2,7 @@ import Lightstreamer_macOS_Client
 import ReactiveSwift
 import Foundation
 
-extension Streamer {
+extension IG.Streamer {
     /// Holds information about an ongoing subscription.
     internal final class Subscription: NSObject {
         /// The item being subscribed to.
@@ -14,9 +14,9 @@ extension Streamer {
         /// The dispatch queue processing the events and data.
         @nonobjc private let queue: DispatchQueue
         /// It forwards the lowlevel lightstreamer subscription events.
-        @nonobjc private let events: MutableProperty<Streamer.Subscription.Event>
+        @nonobjc private let events: MutableProperty<IG.Streamer.Subscription.Event>
         /// Interface for the subscription state.
-        @nonobjc internal let status: Property<Streamer.Subscription.Event>
+        @nonobjc internal let status: Property<IG.Streamer.Subscription.Event>
         
         /// Initializes a subscription which is not yet connected to the server.
         /// - parameter mode: The Lightstreamer mode to use on subscription.
@@ -24,7 +24,7 @@ extension Streamer {
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        @nonobjc init(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool, target: DispatchQueue) {
+        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool, target: DispatchQueue) {
             self.events = .init(.unsubscribed)
             self.status = self.events.skipRepeats { (lhs, rhs) -> Bool in
                 switch (lhs, rhs) {
@@ -53,7 +53,7 @@ extension Streamer {
     }
 }
 
-extension Streamer.Subscription: LSSubscriptionDelegate {
+extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
         self.queue.async { [property = self.events] in
             property.value = .subscribed
@@ -74,7 +74,7 @@ extension Streamer.Subscription: LSSubscriptionDelegate {
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
         self.queue.async { [property = self.events, fields = self.fields] in
-            var result: [String:Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
+            var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
             for field in fields {
                 let value = itemUpdate.value(withFieldName: field)
                 result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))

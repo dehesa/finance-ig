@@ -1,6 +1,7 @@
-import XCTest
-import GRDB
 @testable import IG
+import ReactiveSwift
+import GRDB
+import XCTest
 
 class DBNodeTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.

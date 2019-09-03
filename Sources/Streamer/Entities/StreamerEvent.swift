@@ -1,7 +1,7 @@
 import Lightstreamer_macOS_Client
 import Foundation
 
-extension Streamer.Subscription {
+extension IG.Streamer.Subscription {
     /// Events that can occur within a Streamer subscription.
     internal enum Event: Equatable {
         /// A successful subscription is established.
@@ -9,13 +9,13 @@ extension Streamer.Subscription {
         /// The subscription was shut down successfully.
         case unsubscribed
         /// An update has been received.
-        case updateReceived([String:Streamer.Subscription.Update])
+        case updateReceived([String:IG.Streamer.Subscription.Update])
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
         /// There was an error during the subscription/unsubscription process.
-        case error(Streamer.Subscription.Error)
+        case error(IG.Streamer.Subscription.Error)
         
-        static func == (lhs: Streamer.Subscription.Event, rhs: Streamer.Subscription.Event) -> Bool {
+        static func == (lhs: Self, rhs: Self) -> Bool {
             switch (lhs, rhs) {
             case (.subscribed, .subscribed), (.unsubscribed, .unsubscribed):
                 return true
@@ -29,7 +29,7 @@ extension Streamer.Subscription {
     }
 }
 
-extension Streamer.Subscription {
+extension IG.Streamer.Subscription {
     /// A single field update.
     internal struct Update {
         /// Whether the field has been updated since the last udpate.
@@ -44,11 +44,11 @@ extension Streamer.Subscription {
     }
 }
 
-extension Streamer.Subscription {
+extension IG.Streamer.Subscription {
     /// Error that can occur during the lifetime of a subscription.
     internal struct Error: Swift.Error, Equatable {
         /// The type of subscription error.
-        let kind: Self.Kind
+        let type: Self.Kind
         /// The integer error code.
         let code: Int
         /// Optional explanation of what happened.
@@ -57,16 +57,16 @@ extension Streamer.Subscription {
         init(code: Int, message: String?) {
             self.code = code
             self.message = message
-            self.kind = .init(rawValue: code)
+            self.type = .init(rawValue: code)
         }
         
-        static func == (lhs: Streamer.Subscription.Error, rhs: Streamer.Subscription.Error) -> Bool {
+        static func == (lhs: Self, rhs: Self) -> Bool {
             return lhs.code == rhs.code
         }
     }
 }
 
-extension Streamer.Subscription.Error {
+extension IG.Streamer.Subscription.Error {
     /// The type of a subscription error.
     internal enum Kind: CustomDebugStringConvertible {
         /// Unknown error (check error code for more information.

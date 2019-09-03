@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Session {
+extension IG.API.Request.Session {
     
     // MARK: POST /session
 
@@ -14,7 +14,7 @@ extension API.Request.Session {
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> SignalProducer<(credentials: API.Credentials, settings: API.Session.Settings),API.Error> {
+    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> SignalProducer<(credentials: IG.API.Credentials, settings: IG.API.Session.Settings),IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
@@ -23,9 +23,9 @@ extension API.Request.Session {
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (r: API.Session.Certificate) in
-                let token = API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                let credentials = API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
+            .map { (r: IG.API.Session.Certificate) in
+                let token = IG.API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
+                let credentials = IG.API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
                 return (credentials, r.session.settings)
             }
     }
@@ -34,14 +34,14 @@ extension API.Request.Session {
     
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
     /// - returns: `API.Credentials.Token` always returning a `.certificate`.
-    internal func refreshCertificate() -> SignalProducer<API.Credentials.Token,API.Error> {
+    internal func refreshCertificate() -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: true, queries: { (_,_) in
                 [URLQueryItem(name: "fetchSessionTokens", value: "true")]
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (r: API.Session.WrapperCertificate) in
+            .map { (r: IG.API.Session.WrapperCertificate) in
                 .init(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
             }
     }
@@ -51,12 +51,12 @@ extension API.Request.Session {
     /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: The session data and `API.Credentials.Token` always set up to `.certificate`.
-    internal func refreshCertificate(apiKey: String, token: API.Credentials.Token) -> SignalProducer<(API.Session,API.Credentials.Token),API.Error> {
+    internal func refreshCertificate(apiKey: String, token: IG.API.Credentials.Token) -> SignalProducer<(IG.API.Session,IG.API.Credentials.Token),IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session", version: 1, credentials: false, queries: { (_,_) in
                 [URLQueryItem(name: "fetchSessionTokens", value: "true")]
             }, headers: { (_,_) in
-                var result = [API.HTTP.Header.Key.apiKey: apiKey]
+                var result = [IG.API.HTTP.Header.Key.apiKey: apiKey]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -68,8 +68,8 @@ extension API.Request.Session {
             }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON()
-            .map { (r: API.Session.WrapperCertificate) in
-                let token = API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
+            .map { (r: IG.API.Session.WrapperCertificate) in
+                let token = IG.API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
             }
     }
@@ -85,7 +85,7 @@ extension API.Request.Session {
     /// - parameter key: The API key which the encryption key will be associated to.
     /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
-    fileprivate func generateEncryptionKey(key: API.Key) -> SignalProducer<API.Session.EncryptionKey,API.Error> {
+    fileprivate func generateEncryptionKey(key: IG.API.Key) -> SignalProducer<IG.API.Session.EncryptionKey,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] })
             .send(expecting: .json)
@@ -98,10 +98,10 @@ extension API.Request.Session {
 
 // MARK: Request Entities
 
-extension API.Request.Session {
+extension IG.API.Request.Session {
     /// Log-in through certificate required payload.
     private struct PayloadCertificate: Encodable {
-        let user: API.User
+        let user: IG.API.User
         let encryptedPassword: Bool
         
         func encode(to encoder: Encoder) throws {
@@ -119,7 +119,7 @@ extension API.Request.Session {
 
 // MARK: Response Entities
 
-extension API.Session {
+extension IG.API.Session {
     /// CST credentials used to access the IG platform.
     fileprivate struct Certificate: Decodable {
         /// Logged session
@@ -133,7 +133,7 @@ extension API.Session {
             self.session = try .init(from: decoder)
             self.account = try .init(from: decoder)
             
-            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
+            guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let tokens = Self.Token(headerFields: headerFields) else {
                 let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
@@ -144,7 +144,7 @@ extension API.Session {
     }
 }
 
-extension API.Session.Certificate {
+extension IG.API.Session.Certificate {
     /// Representation of a dealing session.
     fileprivate struct Session: Decodable {
         /// Client identifier.
@@ -154,7 +154,7 @@ extension API.Session.Certificate {
         /// Timezone of the active account.
         let timezone: TimeZone
         /// The settings for the current account.
-        let settings: API.Session.Settings
+        let settings: IG.API.Session.Settings
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
@@ -174,24 +174,24 @@ extension API.Session.Certificate {
     }
 }
 
-extension API.Session.Certificate {
+extension IG.API.Session.Certificate {
     /// Information about an account.
     fileprivate struct Account {
         /// Account identifier.
         let identifier: IG.Account.Identifier
         /// Account type.
-        let type: API.Account.Kind
+        let type: IG.API.Account.Kind
         /// The default currency used in this session.
         let currencyCode: IG.Currency.Code
         /// Account balance
-        let balance: API.Account.Balance
+        let balance: IG.API.Account.Balance
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .account)
-            self.type = try container.decode(API.Account.Kind.self, forKey: .type)
+            self.type = try container.decode(IG.API.Account.Kind.self, forKey: .type)
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
-            self.balance = try container.decode(API.Account.Balance.self, forKey: .balance)
+            self.balance = try container.decode(IG.API.Account.Balance.self, forKey: .balance)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -203,7 +203,7 @@ extension API.Session.Certificate {
     }
 }
 
-extension API.Session.Certificate {
+extension IG.API.Session.Certificate {
     /// Certificate (CST) token with metadata information such as expiration date.
     fileprivate struct Token {
         /// Acess token expiration date.
@@ -214,7 +214,7 @@ extension API.Session.Certificate {
         let securityToken: String
         /// Designated initializer assigning all values from the given header fields.
         init?(headerFields: [String:Any]) {
-            typealias Key = API.HTTP.Header.Key
+            typealias Key = IG.API.HTTP.Header.Key
             
             guard let access = headerFields[Key.clientSessionToken.rawValue] as? String,
                 let security = headerFields[Key.securityToken.rawValue] as? String else { return nil }
@@ -224,7 +224,7 @@ extension API.Session.Certificate {
             // Default token duration (in seconds): 6 hours
             let timeInterval: TimeInterval = 6 * 60 * 60
             if let dateString = headerFields[Key.date.rawValue] as? String,
-                let date = API.Formatter.humanReadableLong.date(from: dateString) {
+                let date = IG.API.Formatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(timeInterval)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: timeInterval)
@@ -233,7 +233,7 @@ extension API.Session.Certificate {
     }
 }
 
-extension API.Session {
+extension IG.API.Session {
     /// Encryption key message returned from the server.
     fileprivate struct EncryptionKey: Decodable {
         /// The key (in base 64) to be used on encryption.
@@ -254,18 +254,18 @@ extension API.Session {
     }
 }
 
-extension API.Session {
+extension IG.API.Session {
     /// Wrapper for the session data and certificate token.
     fileprivate struct WrapperCertificate: Decodable {
-        let session: API.Session
-        let token: API.Session.Certificate.Token
+        let session: IG.API.Session
+        let token: IG.API.Session.Certificate.Token
         
         init(from decoder: Decoder) throws {
             self.session = try .init(from: decoder)
             
-            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
+            guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
-                  let token = API.Session.Certificate.Token(headerFields: headerFields) else {
+                  let token = IG.API.Session.Certificate.Token(headerFields: headerFields) else {
                 let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
                 throw DecodingError.dataCorrupted(errorContext)
             }

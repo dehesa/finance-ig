@@ -8,7 +8,7 @@ final class APIPositionTests: XCTestCase {
         let api = Test.makeAPI(credentials: Test.credentials.api)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
-        let expiry: IG.Market.Instrument.Expiry = nil
+        let expiry: IG.Market.Expiry = nil
         let currency: IG.Currency.Code = "USD"
         let direction: IG.Deal.Direction = .sell
         let order: API.Position.Order = .market

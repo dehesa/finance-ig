@@ -17,7 +17,7 @@ extension IG.DB.Market {
         /// Margin information and requirements.
         public let margin: Self.Margin
         
-        public init(row: Row) {
+        public init(row: GRDB.Row) {
             self.epic = row[0]
             self.currency = (base: row[1],
                              counter: row[2])
@@ -110,7 +110,7 @@ extension IG.DB.Market.Forex {
         /// Deposit bands.
         ///
         /// Its value is always expressed on the *counter* currency.
-        public let depositBands: Bands
+        public let depositBands: Self.Bands
         /// Designated initializer
         fileprivate init(factor: Int, band: String) {
             let power = IG.DB.Market.Forex.Power.factor

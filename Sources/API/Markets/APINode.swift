@@ -1,7 +1,7 @@
 import ReactiveSwift
 import Foundation
 
-extension API.Request.Nodes {
+extension IG.API.Request.Nodes {
     
     // MARK: GET Aggregator
     
@@ -11,7 +11,7 @@ extension API.Request.Nodes {
     /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: Signal giving the nodes and/or markets directly under the navigation node given as the parameter.
-    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> SignalProducer<API.Node,API.Error> {
+    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> SignalProducer<IG.API.Node,IG.API.Error> {
         let layers = depth.value
         guard layers > 0 else {
             return self.get(node: .init(identifier: identifier, name: name))
@@ -26,11 +26,11 @@ extension API.Request.Nodes {
     ///
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
-    public func getMarkets(matching searchTerm: String) -> SignalProducer<[API.Node.Market],API.Error> {
+    public func getMarkets(matching searchTerm: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
         return SignalProducer(api: self.api) { (_) -> String in
             guard !searchTerm.isEmpty else {
                 let message = "Search for markets failed! The search term cannot be empty."
-                throw API.Error.invalidRequest(message, suggestion: API.Error.Suggestion.readDocumentation)
+                throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocumentation)
             }
             return searchTerm
         }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) in
@@ -38,14 +38,14 @@ extension API.Request.Nodes {
         }).send(expecting: .json)
             .validateLadenData(statusCodes: 200)
             .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = API.Formatter.humanReadableLong.date(from: dateString) else {
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                     let message = "The response date couldn't be extracted from the response header."
-                    throw API.Error.invalidResponse(message: message, request: request, response: response, suggestion: API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 let decoder = JSONDecoder()
-                decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
+                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
                 return decoder
             }
             .map { (w: Self.WrapperSearch) in w.markets }
@@ -56,7 +56,7 @@ extension API.Request.Nodes {
     /// Returns the navigation node described by the given entity.
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - returns: Signal returning the node as a value and completing right after that.
-    private func get(node: API.Node) -> SignalProducer<API.Node,API.Error> {
+    private func get(node: IG.API.Node) -> SignalProducer<IG.API.Node,IG.API.Error> {
         return SignalProducer(api: self.api)
             .request(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
             .send(expecting: .json)
@@ -65,10 +65,10 @@ extension API.Request.Nodes {
                 let decoder = JSONDecoder()
                 
                 if let identifier = node.identifier {
-                    decoder.userInfo[API.JSON.DecoderKey.nodeIdentifier] = identifier
+                    decoder.userInfo[IG.API.JSON.DecoderKey.nodeIdentifier] = identifier
                 }
                 if let name = node.name {
-                    decoder.userInfo[API.JSON.DecoderKey.nodeName] = name
+                    decoder.userInfo[IG.API.JSON.DecoderKey.nodeName] = name
                 }
                 
                 return decoder
@@ -81,11 +81,10 @@ extension API.Request.Nodes {
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: Signal returning the node as a value and completing right after that.
-    private func iterate(node: API.Node, depth: Int) -> SignalProducer<API.Node,API.Error> {
+    private func iterate(node: IG.API.Node, depth: Int) -> SignalProducer<IG.API.Node,IG.API.Error> {
         return SignalProducer { (generator, lifetime) in
             var parent = node
             var detacher: Disposable? = nil
-            
             var childrenIterator: ((_ index: Int, _ depth: Int) -> ())! = nil
             
             detacher = lifetime += self.get(node: node).start { (event) in
@@ -146,15 +145,15 @@ extension API.Request.Nodes {
 
 // MARK: - Supporting Entities
 
-extension API.Request {
+extension IG.API.Request {
     /// Contains all functionality related to navigation nodes.
     public struct Nodes {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: API
+        fileprivate unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: API) {
+        init(api: IG.API) {
             self.api = api
         }
     }
@@ -162,7 +161,7 @@ extension API.Request {
 
 // MARK: Request Entities
 
-extension API.Request.Nodes {
+extension IG.API.Request.Nodes {
     /// Express the depth of a computed tree.
     public enum Depth: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral {
         /// No depth (outside the targeted node).
@@ -199,20 +198,20 @@ extension API.Request.Nodes {
 
 // MARK: Response Entities
 
-extension API.Request.Nodes {
+extension IG.API.Request.Nodes {
     private struct WrapperSearch: Decodable {
-        let markets: [API.Node.Market]
+        let markets: [IG.API.Node.Market]
     }
 }
 
-extension API.JSON.DecoderKey {
+extension IG.API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node identifier will be stored.
     fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "APINodeId")!
     /// Key for JSON decoders under which a node name will be stored.
     fileprivate static let nodeName = CodingUserInfoKey(rawValue: "APINodeName")!
 }
 
-extension API {
+extension IG.API {
     /// Node within the Broker platform markets organization.
     public struct Node: Decodable {
         /// Node identifier.
@@ -243,12 +242,12 @@ extension API {
         }
         
         public init(from decoder: Decoder) throws {
-            self.identifier = decoder.userInfo[API.JSON.DecoderKey.nodeIdentifier] as? String
-            self.name = decoder.userInfo[API.JSON.DecoderKey.nodeName] as? String
+            self.identifier = decoder.userInfo[IG.API.JSON.DecoderKey.nodeIdentifier] as? String
+            self.name = decoder.userInfo[IG.API.JSON.DecoderKey.nodeName] as? String
             
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             
-            var subnodes: [API.Node] = []
+            var subnodes: [IG.API.Node] = []
             if container.contains(.nodes), try !container.decodeNil(forKey: .nodes) {
                 var array = try container.nestedUnkeyedContainer(forKey: .nodes)
                 while !array.isAtEnd {

@@ -11,12 +11,12 @@ extension URLRequest {
         
         guard let previousURL = self.url else {
             let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty."
-            throw API.Error.invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
             let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents"."#
-            throw API.Error.invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         
         if let previousQueries = components.queryItems {
@@ -36,7 +36,7 @@ extension URLRequest {
             let message = "A new URL from the previous request and the given queries couldn't be formed."
             let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
             
-            var error: API.Error = .invalidRequest(message, request: self, suggestion: API.Error.Suggestion.readDocumentation)
+            var error: IG.API.Error = .invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
             error.context.append(("Queries", representation))
             throw error
         }
@@ -47,9 +47,9 @@ extension URLRequest {
     /// - parameter version: The versioning number of the API endpoint being called.
     /// - parameter credentials: Credentials to access priviledge endpoints.
     /// - parameter headers: key/value pairs to be added as URL request headers.
-    internal mutating func addHeaders(version: Int? = nil, credentials: API.Credentials? = nil, _ headers: [API.HTTP.Header.Key:String]? = nil) {
+    internal mutating func addHeaders(version: Int? = nil, credentials: IG.API.Credentials? = nil, _ headers: [IG.API.HTTP.Header.Key:String]? = nil) {
         if let version = version {
-            self.addValue(String(version), forHTTPHeaderField: API.HTTP.Header.Key.version.rawValue)
+            self.addValue(String(version), forHTTPHeaderField: IG.API.HTTP.Header.Key.version.rawValue)
         }
         
         if let credentials = credentials {
@@ -76,10 +76,10 @@ extension URLRequest {
             self.httpBody = try encoder.encode(body)
         } catch let error {
             let message = #"The provided body (of type "\#(T.self)") for the request couldn't be serialized."#
-            throw API.Error.invalidRequest(message, request: self, underlying: error, suggestion: API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, underlying: error, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         
-        self.addValue(API.HTTP.Header.Value.ContentType.json.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
+        self.addValue(IG.API.HTTP.Header.Value.ContentType.json.rawValue, forHTTPHeaderField: IG.API.HTTP.Header.Key.requestType.rawValue)
     }
 }
 

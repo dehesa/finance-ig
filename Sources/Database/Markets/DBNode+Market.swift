@@ -29,13 +29,13 @@ extension IG.DB.Node.AssociativeMarket {
 }
 
 extension IG.DB.Node.AssociativeMarket: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
-    public init(row: Row) {
+    public init(row: GRDB.Row) {
         self.identifier = row[0]
         self.nodeIdentifier = row[1]
         self.marketEpic = row[2]
     }
     
-    func encode(to container: inout PersistenceContainer) {
+    func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.identifier] = self.identifier
         container[Columns.nodeIdentifier] = self.nodeIdentifier
         container[Columns.marketEpic] = self.marketEpic

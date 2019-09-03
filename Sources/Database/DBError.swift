@@ -32,6 +32,13 @@ extension IG.DB {
         internal static func invalidRequest(_ message: String, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
             self.init(.invalidRequest, message, suggestion: suggestion, underlying: error)
         }
+        
+        /// A factory function for `.callFailed` database errors.
+        /// - parameter message: A brief explanation on what happened.
+        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        internal static func callFailed(_ message: String, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+            self.init(.callFailed, message, suggestion: suggestion, underlying: error)
+        }
     }
 }
 
@@ -42,6 +49,8 @@ extension IG.DB.Error {
         case sessionExpired
         /// The request parameters given are invalid.
         case invalidRequest
+        /// A database request was executed, but an error was returned by low-level layers.
+        case callFailed
     }
     
     /// Namespace for messages reused over the framework.
@@ -52,11 +61,13 @@ extension IG.DB.Error {
     /// Namespace for suggestions reused over the framework.
     internal enum Suggestion {
         static var keepSession: String { "The \(IG.DB.self) functionality is asynchronous; keep around the \(IG.DB.self) instance while a response hasn't been received." }
+        static var readDocumentation: String { "Read the request documentation and be sure to follow all requirements." }
         static var bug: String { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print." }
+        static var reviewError: String { "Review the returned error and try to fix the problem." }
     }
 }
 
-extension IG.DB.Error: ErrorPrintable {
+extension IG.DB.Error: IG.ErrorPrintable {
     var printableDomain: String {
         return "Database Error"
     }
@@ -65,6 +76,7 @@ extension IG.DB.Error: ErrorPrintable {
         switch self.type {
         case .sessionExpired: return "Session expired"
         case .invalidRequest: return "Invalid request"
+        case .callFailed:     return "Database call failed"
         }
     }
     

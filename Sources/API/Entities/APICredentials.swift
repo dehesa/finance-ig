@@ -1,6 +1,6 @@
 import Foundation
 
-extension API {
+extension IG.API {
     /// Credentials used within the API session.
     public struct Credentials {
         /// Client identifier.
@@ -12,12 +12,12 @@ extension API {
         /// Timezone of the active account.
         public let timezone: TimeZone
         /// API key given by the IG platform identifying the usage of the IG endpoints.
-        public let key: API.Key
+        public let key: IG.API.Key
         /// The actual token values/headers.
         public internal(set) var token: Self.Token
         
         /// Creates a credentials structure from hardcoded data.
-        public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: API.Key, token: Self.Token, streamerURL: URL, timezone: TimeZone) {
+        public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: IG.API.Key, token: Self.Token, streamerURL: URL, timezone: TimeZone) {
             self.client = client
             self.account = account
             self.streamerURL = streamerURL
@@ -28,8 +28,8 @@ extension API {
         
         /// Key-value pairs to be added to the request headers.
         /// - returns: The key-value pairs of the underlying credentials.
-        internal var requestHeaders: [API.HTTP.Header.Key:String] {
-            var result: [API.HTTP.Header.Key:String] = [.apiKey: self.key.rawValue]
+        internal var requestHeaders: [IG.API.HTTP.Header.Key:String] {
+            var result: [IG.API.HTTP.Header.Key:String] = [.apiKey: self.key.rawValue]
             switch self.token.value {
             case .certificate(let access, let security):
                 result[.clientSessionToken] = access
@@ -43,7 +43,7 @@ extension API {
     }
 }
 
-extension API.Credentials {
+extension IG.API.Credentials {
     /// Storage for one of the login types supported by the servers.
     public struct Token {
         /// Expiration date for the underlying token (only references the access token).
@@ -69,7 +69,7 @@ extension API.Credentials {
     }
 }
 
-extension API.Credentials.Token {
+extension IG.API.Credentials.Token {
     /// The type of token stored.
     public enum Kind {
         /// Session token (v2) with a CST and Security tokens.
@@ -81,7 +81,7 @@ extension API.Credentials.Token {
 
 // MARK: - Debug helpers
 
-extension API.Credentials: CustomDebugStringConvertible {
+extension IG.API.Credentials: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = """
         API credentials
@@ -107,7 +107,7 @@ extension API.Credentials: CustomDebugStringConvertible {
     }
 }
 
-extension API.Credentials.Token.Kind: CustomDebugStringConvertible {
+extension IG.API.Credentials.Token.Kind: CustomDebugStringConvertible {
     public var debugDescription: String {
         switch self {
         case .certificate(let access, let security):

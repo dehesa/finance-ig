@@ -2,27 +2,27 @@ import Lightstreamer_macOS_Client
 import ReactiveSwift
 import Foundation
 
-extension Streamer {
+extension IG.Streamer {
     /// Contains all functionality related to the Streamer session.
     internal final class Channel: NSObject {
         /// Streamer credentials used to access the trading platform.
-        @nonobjc private let credentials: Streamer.Credentials
+        @nonobjc private let credentials: IG.Streamer.Credentials
         /// The central queue handling all events within the Streamer flow.
         @nonobjc private let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let client: LSLightstreamerClient
         /// All ongoing/active subscriptions.
-        @nonobjc private var subscriptions: Set<Streamer.Subscription> = .init()
+        @nonobjc private var subscriptions: Set<IG.Streamer.Subscription> = .init()
         
-        @nonobjc internal let status: Property<Streamer.Session.Status>
+        @nonobjc internal let status: Property<IG.Streamer.Session.Status>
         /// Returns the current streamer status.
-        @nonobjc private let mutableStatus: MutableProperty<Streamer.Session.Status>
+        @nonobjc private let mutableStatus: MutableProperty<IG.Streamer.Session.Status>
         
-        @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
+        @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials) {
             self.credentials = credentials
             
-            let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
+            let label = Bundle(for: IG.Streamer.self).bundleIdentifier! + ".streamer"
             self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
             
             self.client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
@@ -42,7 +42,7 @@ extension Streamer {
     }
 }
 
-extension Streamer.Channel: StreamerMockableChannel {
+extension IG.Streamer.Channel: StreamerMockableChannel {
     @nonobjc func connect() {
         self.client.connect()
     }
@@ -51,11 +51,11 @@ extension Streamer.Channel: StreamerMockableChannel {
         self.client.disconnect()
     }
     
-    @nonobjc func subscribe(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:Streamer.Subscription.Update],Streamer.Error> {
+    @nonobjc func subscribe(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> SignalProducer<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error> {
         return .init { [weak self] (generator, lifetime) in
             guard let self = self else { return generator.send(error: .sessionExpired()) }
             
-            let subscription = Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, target: self.queue)
+            let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, target: self.queue)
             self.subscriptions.insert(subscription)
             /// When triggered, it stops listening to the subscription's statuses.
             var detacher: Disposable? = nil
@@ -80,7 +80,7 @@ extension Streamer.Channel: StreamerMockableChannel {
                         return
                     case .error(let error):
                         let message = "The subscription couldn't be established."
-                        let error: Streamer.Error = .subscriptionFailed(message, item: item, fields: fields, underlying: error, suggestion: Streamer.Error.Suggestion.reviewError)
+                        let error: IG.Streamer.Error = .subscriptionFailed(message, item: item, fields: fields, underlying: error, suggestion: IG.Streamer.Error.Suggestion.reviewError)
                         generator.send(error: error)
                     case .subscribed, .unsubscribed: // Subscription and unsubscription may happen for temporary loss of connection.
                         return
@@ -100,7 +100,7 @@ extension Streamer.Channel: StreamerMockableChannel {
         }
     }
     
-    @nonobjc func unsubscribeAll() -> [Streamer.Subscription] {
+    @nonobjc func unsubscribeAll() -> [IG.Streamer.Subscription] {
         let subscriptions = self.subscriptions
         self.subscriptions.removeAll()
         
@@ -114,9 +114,9 @@ extension Streamer.Channel: StreamerMockableChannel {
 
 // MARK: - Lightstreamer Delegate
 
-extension Streamer.Channel: LSClientDelegate {
+extension IG.Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
-        guard let result = Streamer.Session.Status(rawValue: status) else {
+        guard let result = IG.Streamer.Session.Status(rawValue: status) else {
             fatalError("Lightstreamer client status \"\(status)\" was not recognized.")
         }
         

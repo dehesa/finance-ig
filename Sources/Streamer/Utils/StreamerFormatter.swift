@@ -1,6 +1,6 @@
 import Foundation
 
-extension Streamer {
+extension IG.Streamer {
     /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `Streamer` instance context.
     internal enum Formatter {
         /// Time formatter (e.g. 17:30:29) for a date on London (including summer time if need be).
@@ -13,12 +13,12 @@ extension Streamer {
         /// - Format: `yyyy-MM-dd'T'HH:mm:ss.SSS`
         /// - Example: `2019-11-25T22:33:11.100`
         static var iso8601miliseconds: DateFormatter {
-            return API.Formatter.iso8601miliseconds
+            return IG.API.Formatter.iso8601miliseconds
         }
     }
 }
 
-extension Streamer.Formatter {
+extension IG.Streamer.Formatter {
     /// Functionality related to updates brought by the `Streamer`.
     internal enum Update {
         /// Transform a `String` representing a Boolean value into an actual `Bool`.
@@ -44,7 +44,7 @@ extension Streamer.Formatter {
         /// - returns: The time given in `value` of today.
         static func toTime(_ value: String, timeFormatter: DateFormatter) throws -> Date {
             let now = Date()
-            let formatter = Streamer.Formatter.time
+            let formatter = IG.Streamer.Formatter.time
             guard let cal = formatter.calendar, let zone = formatter.timeZone,
                 let timeDate = formatter.date(from: value),
                 let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
