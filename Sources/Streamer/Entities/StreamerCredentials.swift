@@ -55,11 +55,9 @@ extension Streamer {
 
 extension IG.Streamer.Credentials: CustomDebugStringConvertible {
     public var debugDescription: String {
-        return """
-        Streamer credentials {
-            Identifier: \(self.identifier)
-            Password:   \(self.password)
-        }
-        """
+        var result = IG.DebugDescription("Streamer Credentials")
+        result.append("identifier", self.identifier)
+        result.append("password", self.password)
+        return result.generate()
     }
 }

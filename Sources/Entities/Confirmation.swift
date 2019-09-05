@@ -258,34 +258,26 @@ extension IG.Confirmation {
 
 extension IG.Confirmation: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result = "Confirmation "
-        let prefix = "\n\t"
-        
-        var beginning = String()
-        beginning.append(prefix: prefix, name: "Identifier", ": ", self.dealIdentifier)
-        beginning.append(prefix: prefix, name: "Reference", ": ", self.dealReference)
-        beginning.append(prefix: prefix, name: "Date", ": ", IG.API.Formatter.humanReadable.string(from: self.date))
-        beginning.append(prefix: prefix, name: "Epic", ": ", self.epic)
-        beginning.append(prefix: prefix, name: "Expiry", ": ", self.expiry)
+        var result = IG.DebugDescription("Confirmation")
+        result.append("deal ID", self.dealIdentifier)
+        result.append("deal reference", self.dealReference)
+        result.append("date", self.date, formatter: IG.Formatter.date(localize: true))
+        result.append("epic", self.epic)
+        result.append("expiry", self.expiry.debugDescription)
         
         switch self.status {
         case .rejected(let reason):
-            result.append("rejected: \(reason.rawValue)")
-            result.append(beginning)
+            result.append("rejected", reason.rawValue)
         case .accepted(let details):
-            result.append("accepted:")
-            result.append(beginning)
-            
-            result.append(prefix: prefix, name: "Deal Status", ": ", details.dealStatus)
-            let affected = details.affectedDeals.map { "\($0.identifier) \($0.status)" }.joined(separator: ",")
-            result.append(prefix: prefix, name: "Affected deals", ": ", "[\(affected)]")
-            result.append(prefix: prefix, name: "Direction", ": ", details.direction)
-            result.append(prefix: prefix, name: "Size", ": ", details.size)
-            result.append(prefix: prefix, name: "level", ": ", details.level)
-            result.append(prefix: prefix, name: "Limit", ": ", details.limit)
-            result.append(prefix: prefix, name: "Stop", ": ", details.stop)
-            result.append(prefix: prefix, name: "Profit", ": ", details.profit)
+            result.append("deal status", details.dealStatus.debugDescription)
+            result.append("affected deals", details.affectedDeals.map { "\($0.identifier) \($0.status)" })
+            result.append("direction", details.direction)
+            result.append("size", details.size)
+            result.append("level", details.level)
+            result.append("limit", details.limit?.debugDescription)
+            result.append("stop", details.stop?.debugDescription)
+            result.append("profit", details.profit?.description)
         }
-        return result
+        return result.generate()
     }
 }

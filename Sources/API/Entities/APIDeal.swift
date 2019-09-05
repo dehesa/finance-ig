@@ -7,7 +7,7 @@ extension IG.API {
 
 extension IG.API.Deal {
     /// Position status.
-    public enum Status: Decodable {
+    public enum Status: Decodable, CustomDebugStringConvertible {
         case open
         case amended
         case partiallyClosed
@@ -33,6 +33,16 @@ extension IG.API.Deal {
             case partiallyClosed = "PARTIALLY_CLOSED"
             case closedA = "FULLY_CLOSED", closedB = "CLOSED"
             case deleted = "DELETED"
+        }
+        
+        public var debugDescription: String {
+            switch self {
+            case .open: return "opened"
+            case .amended: return "amended"
+            case .partiallyClosed: return "closed (partially)"
+            case .closed: return "closed (fully)"
+            case .deleted: return "deleted"
+            }
         }
     }
 }

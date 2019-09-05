@@ -83,46 +83,43 @@ extension IG.API.Credentials.Token {
 
 extension IG.API.Credentials: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result = """
-        API credentials
-            Client ID:       \(self.client.rawValue)
-            Account ID:      \(self.account.rawValue)
-            API key:         \(self.key.rawValue)
-            Streamer URL:    \(self.streamerURL)
-            Timezone:        \(self.timezone)
-        """
-        
-        switch self.token.value {
-        case .certificate(let access, let security):
-            result.append("\n    CST token:       \(access)")
-            result.append("\n    Security header: \(security)")
-        case .oauth(let access, let refresh, let scope, let type):
-            result.append("\n    OAuth token:     \(access)")
-            result.append("\n    OAuth scope:     \(scope)")
-            result.append("\n    OAuth type:      \(type)")
-            result.append("\n    Refresh token:   \(refresh)")
+        var result = IG.DebugDescription("API Credentials")
+        result.append("client ID", self.client)
+        result.append("account ID", self.account)
+        result.append("API key", self.key)
+        result.append("streamer URL", self.streamerURL.path)
+        result.append("timezone", self.timezone.description)
+        result.append("token", self.token.value) {
+            switch $1 {
+            case .certificate(let access, let security):
+                $0.append("cst", access)
+                $0.append("security", security)
+            case .oauth(let access, let refresh, let scope, let type):
+                $0.append("access", access)
+                $0.append("refresh", refresh)
+                $0.append("scope", scope)
+                $0.append("type", type)
+            }
         }
-        
-        return result
+        return result.generate()
     }
 }
 
 extension IG.API.Credentials.Token.Kind: CustomDebugStringConvertible {
     public var debugDescription: String {
+        var result: IG.DebugDescription
         switch self {
         case .certificate(let access, let security):
-            return """
-            Token CST
-                Access: \(access)
-                Security: \(security)
-            """
-        case .oauth(let access, let refresh, _, let type):
-            return """
-            Token OAuth {
-                Access: \(type) \(access)
-                Refresh: \(refresh)
-            }
-            """
+            result = .init("API CST Token")
+            result.append("cst", access)
+            result.append("security", security)
+        case .oauth(let access, let refresh, let scope, let type):
+            result = .init("API OAuth Token")
+            result.append("access", access)
+            result.append("refresh", refresh)
+            result.append("scope", scope)
+            result.append("type", type)
         }
+        return result.generate()
     }
 }

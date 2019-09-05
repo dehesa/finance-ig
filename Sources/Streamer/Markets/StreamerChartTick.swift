@@ -144,17 +144,16 @@ extension IG.Streamer.Chart.Tick {
 
 extension IG.Streamer.Chart.Tick: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = self.epic.rawValue
-        result.append(prefix: "\n\t", name: "date", ": ", self.date.map { IG.Streamer.Formatter.time.string(from: $0) })
-        result.append(prefix: "\n\t", name: "bid", ": ", self.bid)
-        result.append(prefix: "\n\t", name: "ask", ": ", self.ask)
-        result.append(prefix: "\n\t", name: "volume", ": ", self.volume)
-        result.append(prefix: "\n\t", name: "Dayly statistics", ":", " ")
-        result.append(prefix: "\n\t\t", name: "lowest", ": ", self.day.lowest)
-        result.append(prefix: "\n\t\t", name: "mid", ": ", self.day.mid)
-        result.append(prefix: "\n\t\t", name: "highest", ": ", self.day.highest)
-        result.append(prefix: "\n\t\t", name: "change (net)", ": ", self.day.changeNet)
-        result.append(prefix: "\n\t\t", name: "change (%)", ": ", self.day.changePercentage)
-        return result
+        var result = IG.DebugDescription("Streamer Chart Tick (\(self.epic))")
+        result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
+        result.append("volume", self.volume)
+        result.append("price (ask)", self.ask)
+        result.append("price (bid)", self.bid)
+        result.append("range (high)", self.day.highest)
+        result.append("range (mid)", self.day.mid)
+        result.append("range (low)", self.day.lowest)
+        result.append("change (net)", self.day.changeNet)
+        result.append("change (%)", self.day.changePercentage)
+        return result.generate()
     }
 }

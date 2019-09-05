@@ -85,8 +85,6 @@ extension IG.API {
     public struct Application: Decodable {
         /// Application API key identifying the application and the developer.
         public let key: IG.API.Key
-        /// Application creation date (referencing UTC dates, although no time data is stored).
-        public let creationDate: Date
         /// Application name given by the developer.
         public let name: String
         ///  Application status.
@@ -95,15 +93,17 @@ extension IG.API {
         public let permission: Self.Permission
         /// The limits at which the receiving application is constrained to.
         public let allowance: Self.Allowance
+        /// Application creation date (referencing UTC dates, although no time data is stored).
+        public let creationDate: Date
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.key = try container.decode(IG.API.Key.self, forKey: .key)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.API.Formatter.yearMonthDay)
             self.name = try container.decode(String.self, forKey: .name)
             self.status = try container.decode(IG.API.Application.Status.self, forKey: .status)
             self.permission = try Self.Permission(from: decoder)
             self.allowance = try Self.Allowance(from: decoder)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.API.Formatter.yearMonthDay)
         }
         
         internal enum CodingKeys: String, CodingKey {
@@ -185,5 +185,29 @@ extension IG.API.Application.Allowance {
             case tradingRequests = "allowanceAccountTrading"
             case historicalDataRequests = "allowanceAccountHistoricalData"
         }
+    }
+}
+
+extension IG.API.Application: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Application")
+        result.append("key", self.key)
+        result.append("name", self.name)
+        result.append("status", self.status)
+        result.append("permission", self.permission) {
+            $0.append("access to equities", $1.accessToEquityPrices)
+            $0.append("quote orders allowed", $1.areQuoteOrdersAllowed)
+        }
+        result.append("allowance", self.allowance) {
+            $0.append("overall requests", $1.overallRequests)
+            $0.append("account", $1.account) {
+                $0.append("overall requests", $1.overallRequests)
+                $0.append("trading requests", $1.tradingRequests)
+                $0.append("price requests", $1.historicalDataRequests)
+            }
+            $0.append("concurrent subscription limit", $1.subscriptionsLimit)
+        }
+        result.append("creation", self.creationDate, formatter: IG.Formatter.date(time: nil))
+        return result.generate()
     }
 }

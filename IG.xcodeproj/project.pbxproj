@@ -20,7 +20,6 @@
 		8D222CD922F5601200AF98E0 /* StreamerDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA612149A6CE00344CBF /* StreamerDeal.swift */; };
 		8D23A90722C1E41E00518EC9 /* ReactiveSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8D23A90622C1E41E00518EC9 /* ReactiveSwift */; };
 		8D24D0D2230EF496003D25EA /* Confirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24D0D1230EF496003D25EA /* Confirmation.swift */; };
-		8D299E4922F4C09A007FC5F8 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D299E4822F4C09A007FC5F8 /* String.swift */; };
 		8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262222E9F66E0080D3C1 /* APIInternals.swift */; };
 		8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Collections.swift */; };
 		8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */; };
@@ -64,6 +63,8 @@
 		8D94BA9B2316A6E600AFBA1E /* DBSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */; };
 		8D987E7C22F950A4003F85D9 /* XCTestCase+Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D987E7A22F950A0003F85D9 /* XCTestCase+Streamer.swift */; };
 		8D987E7F22F95661003F85D9 /* StreamerAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */; };
+		8D9FB785231EDA6900D76B6A /* DebugDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB784231EDA6900D76B6A /* DebugDescription.swift */; };
+		8D9FB787231F943C00D76B6A /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB786231F943C00D76B6A /* Formatters.swift */; };
 		8DA8F8902317BF7200F1A2C0 /* DBApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */; };
 		8DA8F8922317EAB100F1A2C0 /* DBMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */; };
 		8DA8F89723181E7200F1A2C0 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBForex.swift */; };
@@ -118,7 +119,7 @@
 		8DE1B2C0214A641F00C1FF13 /* APIMockedJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAAD2149A6CE00344CBF /* APIMockedJSON.swift */; };
 		8DE1B2C2214A647F00C1FF13 /* APIFileProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA842149A6CE00344CBF /* APIFileProtocol.swift */; };
 		8DE1B2C5214A647F00C1FF13 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
-		8DE2C3DC22FBF7DD00BB6261 /* StreamerFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatter.swift */; };
+		8DE2C3DC22FBF7DD00BB6261 /* StreamerFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */; };
 		8DE2C3DE22FC72E400BB6261 /* DealLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DD22FC72E400BB6261 /* DealLimit.swift */; };
 		8DE2C3E022FC72FE00BB6261 /* DealStop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DF22FC72FE00BB6261 /* DealStop.swift */; };
 		8DE2C3E222FC789B00BB6261 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3E122FC789B00BB6261 /* Deal.swift */; };
@@ -160,7 +161,6 @@
 		8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyEncodable.swift; sourceTree = "<group>"; };
 		8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+API.swift"; sourceTree = "<group>"; };
 		8D24D0D1230EF496003D25EA /* Confirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Confirmation.swift; sourceTree = "<group>"; };
-		8D299E4822F4C09A007FC5F8 /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		8D3C262222E9F66E0080D3C1 /* APIInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIInternals.swift; sourceTree = "<group>"; };
 		8D3C262422E9FA020080D3C1 /* Collections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collections.swift; sourceTree = "<group>"; };
 		8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerInternals.swift; sourceTree = "<group>"; };
@@ -186,6 +186,8 @@
 		8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSessionTests.swift; sourceTree = "<group>"; };
 		8D987E7A22F950A0003F85D9 /* XCTestCase+Streamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCTestCase+Streamer.swift"; sourceTree = "<group>"; };
 		8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerAccountTests.swift; sourceTree = "<group>"; };
+		8D9FB784231EDA6900D76B6A /* DebugDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDescription.swift; sourceTree = "<group>"; };
+		8D9FB786231F943C00D76B6A /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
 		8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplication.swift; sourceTree = "<group>"; };
 		8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMigration.swift; sourceTree = "<group>"; };
 		8DA8F89623181E7200F1A2C0 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
@@ -270,7 +272,7 @@
 		8DC4CC032149ACA200344CBF /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
 		8DC4CC052149AF2500344CBF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8DD468D322F1C70100134B67 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
-		8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFormatter.swift; sourceTree = "<group>"; };
+		8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFormatters.swift; sourceTree = "<group>"; };
 		8DE2C3DD22FC72E400BB6261 /* DealLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealLimit.swift; sourceTree = "<group>"; };
 		8DE2C3DF22FC72FE00BB6261 /* DealStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealStop.swift; sourceTree = "<group>"; };
 		8DE2C3E122FC789B00BB6261 /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
@@ -543,6 +545,8 @@
 				8D3C262422E9FA020080D3C1 /* Collections.swift */,
 				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8DC4CA492149A6CE00344CBF /* Date.swift */,
+				8D9FB786231F943C00D76B6A /* Formatters.swift */,
+				8D9FB784231EDA6900D76B6A /* DebugDescription.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -564,8 +568,7 @@
 		8DC4CA4D2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8D299E4822F4C09A007FC5F8 /* String.swift */,
-				8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatter.swift */,
+				8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -936,6 +939,8 @@
 			files = (
 				8DF85B1C22F046FA00F1C525 /* Error.swift in Sources */,
 				8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */,
+				8D9FB785231EDA6900D76B6A /* DebugDescription.swift in Sources */,
+				8D9FB787231F943C00D76B6A /* Formatters.swift in Sources */,
 				8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */,
 				8DC4CC0A2149B11100344CBF /* Operators.swift in Sources */,
 				8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */,
@@ -979,11 +984,10 @@
 				8DC4CC212149B3A600344CBF /* APIWorkingOrder.swift in Sources */,
 				8DC4CC222149B3A600344CBF /* APIWorkingOrderOTC.swift in Sources */,
 				8DC4CC1E2149B3A600344CBF /* APIConfirmation.swift in Sources */,
-				8D299E4922F4C09A007FC5F8 /* String.swift in Sources */,
 				8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */,
 				8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */,
 				8D50EE7F22FBE4B500F82671 /* StreamerMockableChannel.swift in Sources */,
-				8DE2C3DC22FBF7DD00BB6261 /* StreamerFormatter.swift in Sources */,
+				8DE2C3DC22FBF7DD00BB6261 /* StreamerFormatters.swift in Sources */,
 				8DC158A322F08A8100012A19 /* Streamer.swift in Sources */,
 				8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */,
 				8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */,

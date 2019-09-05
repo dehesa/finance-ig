@@ -194,12 +194,12 @@ extension IG.API {
         public let identifier: String
         /// Watchlist given name.
         public let name: String
+        /// Indicates whether the watchlist belong to the user or is one predefined by the system.
+        public let isOwnedBySystem: Bool
         /// Indicates whether the watchlist can be altered by the user.
         public let isEditable: Bool
         /// Indicates whether the watchlist can be deleted by the user.
         public let isDeleteable: Bool
-        /// Indicates whether the watchlist belong to the user or is one predefined by the system.
-        public let isPredefined: Bool
 
         /// Do not call! The only way to initialize is through `Decodable`.
         private init?() { fatalError("Unaccessible initializer") }
@@ -207,9 +207,21 @@ extension IG.API {
         private enum CodingKeys: String, CodingKey {
             case identifier = "id"
             case name
+            case isOwnedBySystem = "defaultSystemWatchlist"
             case isEditable = "editable"
             case isDeleteable = "deleteable"
-            case isPredefined = "defaultSystemWatchlist"
         }
+    }
+}
+
+extension IG.API.Watchlist: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Watchlist")
+        result.append("watchlist ID", self.identifier)
+        result.append("name", self.name)
+        result.append("is owned by user", !self.isOwnedBySystem)
+        result.append("is editable", self.isEditable)
+        result.append("is deleteable", self.isDeleteable)
+        return result.generate()
     }
 }

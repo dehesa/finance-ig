@@ -346,11 +346,3 @@ extension IG.Streamer.Session.Status: CustomDebugStringConvertible {
         }
     }
 }
-
-extension Array where Element == IG.Streamer.Session.Status {
-    internal var debugDescription: String {
-        return self.enumerated().map { (index, status) in
-            "\t\(index + 1). \(status.debugDescription)"
-        }.joined(separator: "\n")
-    }
-}

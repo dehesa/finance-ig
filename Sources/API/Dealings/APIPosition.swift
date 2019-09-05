@@ -117,3 +117,21 @@ extension IG.API {
         }
     }
 }
+
+extension IG.API.Position: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Position")
+        result.append("deal ID", self.identifier)
+        result.append("deal reference", self.reference)
+        result.append("date", self.date, formatter: IG.Formatter.date(.yearMonthDay, time: .normal, localize: true))
+        result.append("epic", self.market.instrument.epic)
+        result.append("currency", self.currencyCode)
+        result.append("direction", self.direction)
+        result.append("contract size", self.contractSize)
+        result.append("size", self.size)
+        result.append("level", self.level)
+        result.append("limit", self.limit?.debugDescription)
+        result.append("stop", self.stop?.debugDescription)
+        return result.generate()
+    }
+}

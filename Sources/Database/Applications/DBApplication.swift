@@ -49,8 +49,6 @@ extension IG.DB {
     public struct Application {
         /// Application API key identifying the application and the developer.
         public let key: IG.API.Key
-        /// Application creation date (referencing UTC dates, although no time data is stored).
-        public let created: Date
         /// Application name given by the developer.
         public let name: String
         ///  Application status.
@@ -59,12 +57,14 @@ extension IG.DB {
         public let permission: Self.Permission
         /// The limits at which the receiving application is constrained to.
         public let allowance: Self.Allowance
+        /// Application creation date (referencing UTC dates, although no time data is stored).
+        public let created: Date
         /// The date at which this entity was inserted in the database with factual information.
         public let updated: Date
         
+        /// Mapper from API instances to DB instances.
         fileprivate init(with app: IG.API.Application) {
             self.key = app.key
-            self.created = app.creationDate
             self.name = app.name
             
             switch app.status {
@@ -79,6 +79,7 @@ extension IG.DB {
                                    trading: app.allowance.account.tradingRequests,
                                    history: app.allowance.account.tradingRequests,
                                    subscriptions: app.allowance.subscriptionsLimit)
+            self.created = app.creationDate
             self.updated = Date()
         }
     }
@@ -101,7 +102,7 @@ extension IG.DB.Application {
         public let accessToEquityPrices: Bool
         /// Boolean indicating if quote orders are permitted.
         public let areQuoteOrdersAllowed: Bool
-        
+        /// Designated initializer.
         fileprivate init(equities: Bool, quoteOrders: Bool) {
             self.accessToEquityPrices = equities
             self.areQuoteOrdersAllowed = quoteOrders
@@ -141,33 +142,28 @@ extension IG.DB.Application {
     }
 }
 
-// MARK: GRDB functionality
-
-extension IG.DB.Application {
+extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.PersistableRecord {
     /// Creates a SQLite table for API applications.
     static func tableCreation(in db: GRDB.Database) throws {
         try db.create(table: "applications", ifNotExists: false, withoutRowID: true) { (t) in
             t.column("key", .text).primaryKey()
-            t.column("created", .date).notNull()
             t.column("name", .text).notNull().collate(.unicodeCompare)
             t.column("status", .integer).notNull()
             t.column("allowEquities", .boolean).notNull()
             t.column("allowQuotes", .boolean).notNull()
-            t.column("limitApp", .integer).notNull() 
+            t.column("limitApp", .integer).notNull()
             t.column("limitAccount", .integer).notNull()
             t.column("limitTrade", .integer).notNull()
             t.column("limitHistory", .integer).notNull()
             t.column("limitSubs", .integer).notNull()
+            t.column("created", .date).notNull()
             t.column("updated", .date).notNull()
         }
     }
-}
-
-extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.PersistableRecord {
+    
     /// The table columns
     private enum Columns: String, GRDB.ColumnExpression {
         case key = "key"
-        case created = "created"
         case name = "name"
         case status = "status"
         case accessToEquityPrices = "allowEquities"
@@ -177,24 +173,23 @@ extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.Persis
         case tradeRequestsLimit = "limitTrade"
         case dataRequestsLimit = "limitHistory"
         case concurrentSubscriptionLimit = "limitSubs"
+        case created = "created"
         case updated = "updated"
     }
     
     public init(row: GRDB.Row) {
         self.key = row[0]
-        self.created = row[1]
-        self.name = row[2]
-        self.status = row[3]
-        self.permission = .init(equities: row[4], quoteOrders: row[5])
-        self.allowance = Self.Allowance(overall: row[6], account: row[7], trading: row[8], history: row[9], subscriptions: row[10])
+        self.name = row[1]
+        self.status = row[2]
+        self.permission = .init(equities: row[3], quoteOrders: row[4])
+        self.allowance = Self.Allowance(overall: row[5], account: row[6], trading: row[7], history: row[8], subscriptions: row[9])
+        self.created = row[10]
         self.updated = row[11]
     }
     
     public static var databaseTableName: String {
         return "applications"
     }
-    
-    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
 
     public func encode(to container: inout GRDB.PersistenceContainer) {
         container[Columns.key] = self.key
@@ -209,5 +204,36 @@ extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.Persis
         container[Columns.dataRequestsLimit] = self.allowance.account.historicalDataRequests
         container[Columns.concurrentSubscriptionLimit] = self.allowance.concurrentSubscriptions
         container[Columns.updated] = self.updated
+    }
+}
+
+extension IG.DB.Application: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("DB Application")
+        result.append("key", self.key)
+        result.append("name", self.name)
+        let status: String
+        switch self.status {
+        case .enabled: status = "Enabled"
+        case .disabled: status = "Disabled"
+        case .revoked: status = "Revoked"
+        }
+        result.append("status", status)
+        result.append("permission", self.permission) {
+            $0.append("access to equities", $1.accessToEquityPrices)
+            $0.append("quote orders allowed", $1.areQuoteOrdersAllowed)
+        }
+        result.append("allowance", self.allowance) {
+            $0.append("overall requests", $1.overallRequests)
+            $0.append("account", $1.account) {
+                $0.append("overall requests", $1.overallRequests)
+                $0.append("trading requests", $1.tradingRequests)
+                $0.append("price requests", $1.historicalDataRequests)
+            }
+            $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
+        }
+        result.append("created", self.created, formatter: IG.Formatter.date(time: nil))
+        result.append("updated", self.updated, formatter: IG.Formatter.date(localize: true))
+        return result.generate()
     }
 }

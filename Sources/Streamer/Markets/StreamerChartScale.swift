@@ -268,25 +268,32 @@ extension IG.Streamer.Chart.Aggregated {
 
 extension IG.Streamer.Chart.Aggregated: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = self.epic.rawValue
-        result.append(prefix: "\n\t", name: "Candle", ":", " ")
-        result.append(prefix: "\n\t\t", name: "date", ": ", self.candle.date.map { IG.Streamer.Formatter.time.string(from: $0) })
-        result.append(prefix: "\n\t\t", name: "ticks", ": ", self.candle.numTicks)
-        result.append(prefix: "\n\t\t", name: "done", "? ", self.candle.isFinished)
-        result.append(prefix: "\n\t\t", name: "open (bid)", ": ", self.candle.open.bid)
-        result.append(prefix: "\n\t\t", name: "open (ask)", ": ", self.candle.open.ask)
-        result.append(prefix: "\n\t\t", name: "close (bid)", ": ", self.candle.close.bid)
-        result.append(prefix: "\n\t\t", name: "close (ask)", ": ", self.candle.close.ask)
-        result.append(prefix: "\n\t\t", name: "lowest (bid)", ": ", self.candle.lowest.bid)
-        result.append(prefix: "\n\t\t", name: "lowest (ask)", ": ", self.candle.lowest.ask)
-        result.append(prefix: "\n\t\t", name: "highest (bid)", ": ", self.candle.highest.bid)
-        result.append(prefix: "\n\t\t", name: "highest (ask)", ": ", self.candle.highest.ask)
-        result.append(prefix: "\n\t", name: "Dayly statistics", ":", " ")
-        result.append(prefix: "\n\t\t", name: "lowest", ": ", self.day.lowest)
-        result.append(prefix: "\n\t\t", name: "mid", ": ", self.day.mid)
-        result.append(prefix: "\n\t\t", name: "highest", ": ", self.day.highest)
-        result.append(prefix: "\n\t\t", name: "change (net)", ": ", self.day.changeNet)
-        result.append(prefix: "\n\t\t", name: "change (%)", ": ", self.day.changePercentage)
-        return result
+        let represent: (Self.Candle.Point)->String = {
+            switch ($0.bid, $0.ask) {
+            case (nil, nil): return IG.DebugDescription.nilSymbol
+            case (let bid?, let ask?): return "\(ask) ask, \(bid) bid"
+            case (let bid?, nil): return "\(IG.DebugDescription.nilSymbol) ask, \(bid) bid"
+            case (nil, let ask?): return "\(ask) ask, \(IG.DebugDescription.nilSymbol) bid"
+            }
+        }
+        
+        var result = IG.DebugDescription("Streamer Chart Aggregated \(self.interval) (\(self.epic))")
+        result.append("candle", self.candle) {
+            $0.append("date", $1.date, formatter: IG.Streamer.Formatter.time)
+            $0.append("ticks", $1.numTicks)
+            $0.append("is finished", $1.isFinished)
+            $0.append("open", represent($1.open))
+            $0.append("close", represent($1.close))
+            $0.append("lowest", represent($1.lowest))
+            $0.append("highest", represent($1.highest))
+        }
+        result.append("day", self.day) {
+            $0.append("range (high)", $1.highest)
+            $0.append("range (mid)", $1.mid)
+            $0.append("range (low)", $1.lowest)
+            $0.append("change (net)", $1.changeNet)
+            $0.append("change (%)", $1.changePercentage)
+        }
+        return result.generate()
     }
 }
