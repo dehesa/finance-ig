@@ -275,3 +275,14 @@ extension IG.API {
         }
     }
 }
+
+extension API.Node: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Node")
+        result.append("node ID", self.identifier)
+        result.append("name", self.name)
+        result.append("subnodes IDs", self.subnodes?.map { $0.identifier ?? IG.DebugDescription.nilSymbol })
+        result.append("markets", self.markets?.map { $0.instrument.epic } )
+        return result.generate()
+    }
+}

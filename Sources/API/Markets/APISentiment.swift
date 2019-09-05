@@ -92,3 +92,12 @@ extension IG.API.Market {
     }
 }
 
+extension IG.API.Market.Sentiment: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Market Sentiment")
+        result.append("market ID", self.marketIdentifier)
+        result.append("longs", "\(self.longs) %")
+        result.append("shorts", "\(self.shorts) %")
+        return result.generate()
+    }
+}

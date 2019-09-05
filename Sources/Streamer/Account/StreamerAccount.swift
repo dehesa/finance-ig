@@ -210,23 +210,30 @@ extension IG.Streamer.Account {
 
 extension IG.Streamer.Account: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = self.identifier.rawValue
-        result.append(prefix: "\n\t", name: "Equity", ":", " ")
-        result.append(prefix: "\n\t\t", name: "value", ": ", self.equity.value)
-        result.append(prefix: "\n\t\t", name: "used", ": ", self.equity.used)
-        result.append(prefix: "\n\t", name: "Funds", ":", " ")
-        result.append(prefix: "\n\t\t", name: "value", ": ", self.funds.value)
-        result.append(prefix: "\n\t\t", name: "cash available", ": ", self.funds.cashAvailable)
-        result.append(prefix: "\n\t\t", name: "trade available", ": ", self.funds.tradeAvailable)
-        result.append(prefix: "\n\t\t", name: "deposit", ": ", self.funds.deposit)
-        result.append(prefix: "\n\t", name: "Margins", ":", " ")
-        result.append(prefix: "\n\t\t", name: "value", ": ", self.margins.value)
-        result.append(prefix: "\n\t\t", name: "limited risk", ": ", self.margins.limitedRisk)
-        result.append(prefix: "\n\t\t", name: "non limited risk", ": ", self.margins.nonLimitedRisk)
-        result.append(prefix: "\n\t", name: "Profit & Loss", ":", " ")
-        result.append(prefix: "\n\t\t", name: "value", ": ", self.profitLoss.value)
-        result.append(prefix: "\n\t\t", name: "limited risk", ": ", self.profitLoss.limitedRisk)
-        result.append(prefix: "\n\t\t", name: "non limited risk", ": ", self.profitLoss.nonLimitedRisk)
-        return result
+        var result = IG.DebugDescription("Streamer Account (\(self.identifier))")
+        result.append("equity", self.equity) {
+            $0.append("value", $1.value)
+            $0.append("used", $1.used)
+        }
+        
+        result.append("funds", self.funds) {
+            $0.append("value", $1.value)
+            $0.append("cash available", $1.cashAvailable)
+            $0.append("trade available", $1.tradeAvailable)
+            $0.append("deposit", $1.deposit)
+        }
+        
+        result.append("margins", self.margins) {
+            $0.append("value", $1.value)
+            $0.append("limited risk", $1.limitedRisk)
+            $0.append("non limited risk", $1.nonLimitedRisk)
+        }
+        
+        result.append("P&L", self.profitLoss) {
+            $0.append("value", $1.value)
+            $0.append("limited risk", $1.limitedRisk)
+            $0.append("non limited risk", $1.nonLimitedRisk)
+        }
+        return result.generate()
     }
 }

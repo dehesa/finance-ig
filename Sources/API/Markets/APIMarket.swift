@@ -151,6 +151,8 @@ extension IG.API.Market {
         public let name: String
         /// Instrument type.
         public let type: Self.Kind
+        /// Unit used to qualify the size of a trade.
+        public let unit: Self.Unit
         /// Market expiration date details.
         public let expiration: Self.Expiration
         /// Country.
@@ -160,8 +162,6 @@ extension IG.API.Market {
         /// Market open and closes times.
         /// - todo: Not yet tested.
         public let openingTime: [Self.HourRange]?
-        /// Unit used to qualify the size of a trade.
-        public let unit: Self.Unit
         /// Meaning and value of the Price Interest Point (a.k.a. PIP).
         public let pip: Self.Pip?
         /// Minimum amount of unit that an instrument can be dealt in the market. It's the relationship between unit and the amount per point.
@@ -177,6 +177,8 @@ extension IG.API.Market {
         public let isStopLimitAllowed: Bool
         /// Are controlled risk trades allowed.
         public let isLimitedRiskAllowed: Bool
+        /// Boolean indicating whether prices are available through streaming communications.
+        public let isAvailableByStreaming: Bool
         /// Deposit bands.
         public let margin: Self.Margin
         /// Slippage factor details for the given market.
@@ -188,8 +190,6 @@ extension IG.API.Market {
         public let rollover: Self.Rollover?
         /// The limited risk premium.
         public let limitedRiskPremium: IG.API.Market.Distance
-        /// Boolean indicating whether prices are available through streaming communications.
-        public let isAvailableByStreaming: Bool
         /// Chart code.
         public let chartCode: String
         /// Retuers news code.
@@ -204,6 +204,7 @@ extension IG.API.Market {
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
             self.type = try container.decode(IG.API.Market.Instrument.Kind.self, forKey: .type)
+            self.unit = try container.decode(Self.Unit.self, forKey: .unit)
             self.expiration = try .init(from: decoder)
             self.country = try container.decodeIfPresent(String.self, forKey: .country)
             self.currencies = try container.decodeIfPresent(Array<Self.Currency>.self, forKey: .currencies) ?? []
@@ -215,7 +216,6 @@ extension IG.API.Market {
                 self.openingTime = nil
             }
             
-            self.unit = try container.decode(Self.Unit.self, forKey: .unit)
             
             let pipMeaning = try container.decodeIfPresent(String.self, forKey: .pipMeaning)
             let pipValue = try container.decodeIfPresent(String.self, forKey: .pipValue)
@@ -237,11 +237,11 @@ extension IG.API.Market {
             self.isForceOpenAllowed = try container.decode(Bool.self, forKey: .isForceOpenAllowed)
             self.isLimitedRiskAllowed = try container.decode(Bool.self, forKey: .isLimitedRiskAllowed)
             self.isStopLimitAllowed = try container.decode(Bool.self, forKey: .isStopLimitAllowed)
+            self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.margin = try .init(from: decoder)
             self.slippageFactor = try container.decode(Self.SlippageFactor.self, forKey: .slippageFactor)
             self.rollover = try container.decodeIfPresent(Self.Rollover.self, forKey: .rollover)
             self.limitedRiskPremium = try container.decode(IG.API.Market.Distance.self, forKey: .limitedRiskPremium)
-            self.isAvailableByStreaming = try container.decode(Bool.self, forKey: .isAvailableByStreaming)
             self.chartCode = try container.decode(String.self, forKey: .chartCode)
             self.newsCode = try container.decode(String.self, forKey: .newsCode)
             let details = try container.decodeIfPresent([String].self, forKey: .details)
@@ -270,7 +270,7 @@ extension IG.API.Market {
 
 extension IG.API.Market.Instrument {
     /// Instrument related entities.
-    public enum Kind: Decodable {
+    public enum Kind: RawRepresentable, Decodable {
         /// A binary allows you to take a view on whether a specific outcome will or won't occur.
         ///
         /// For example, Will Wall Street be up at the close of the day?
@@ -305,34 +305,83 @@ extension IG.API.Market.Instrument {
             case commodities, currencies, indices, rates, shares
         }
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let string = try container.decode(String.self)
-            
-            switch string {
-            case "BINARY": self = .binary
-            case "COMMODITIES": self = .commodities
-            case "CURRENCIES": self = .currencies
-            case "INDICES": self = .indices
-            case "OPT_COMMODITIES": self = .options(.commodities)
-            case "OPT_CURRENCIES": self = .options(.currencies)
-            case "OPT_INDICES": self = .options(.indices)
-            case "OPT_RATES": self = .options(.rates)
-            case "OPT_SHARES": self = .options(.shares)
-            case "RATES": self = .rates
-            case "SECTORS": self = .sectors
-            case "SHARES": self = .shares
-            case "SPRINT_MARKET": self = .sprintMarket
-            case "TEST_MARKET": self = .testMarket
-            case "BUNGEE_CAPPED": self = .bungee(.capped)
-            case "BUNGEE_COMMODITIES": self = .bungee(.commodities)
-            case "BUNGEE_CURRENCIES": self = .bungee(.currencies)
-            case "BUNGEE_INDICES": self = .bungee(.indices)
-            case "UNKNOWN": self = .unknown
-            default:
-                let message = #"The instrument type "\#(string)" couldn't be mapped to a proper type"#
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: message)
+        public init?(rawValue: String) {
+            typealias V = Self.Value
+            switch rawValue {
+            case V.binary:       self = .binary
+            case V.commodities:  self = .commodities
+            case V.currencies:   self = .currencies
+            case V.indices:      self = .indices
+            case V.optionsCommodities: self = .options(.commodities)
+            case V.optionCurrencies:   self = .options(.currencies)
+            case V.optionIndices:      self = .options(.indices)
+            case V.optionRates:        self = .options(.rates)
+            case V.optionShares:       self = .options(.shares)
+            case V.rates:        self = .rates
+            case V.sectors:      self = .sectors
+            case V.shares:       self = .shares
+            case V.sprintMarket: self = .sprintMarket
+            case V.testMarket:   self = .testMarket
+            case V.bungeeCapped:       self = .bungee(.capped)
+            case V.bungeeCommodities:  self = .bungee(.commodities)
+            case V.bungeeCurrencies:   self = .bungee(.currencies)
+            case V.bungeeIndices:      self = .bungee(.indices)
+            case V.unknown:      self = .unknown
+            default: return nil
             }
+        }
+        
+        public var rawValue: String {
+            typealias V = Self.Value
+            switch self {
+            case .binary:       return V.binary
+            case .commodities:  return V.commodities
+            case .currencies:   return V.currencies
+            case .indices:      return V.indices
+            case .options(let type):
+                switch type {
+                case .commodities:  return V.optionsCommodities
+                case .currencies:   return V.optionCurrencies
+                case .indices:      return V.optionIndices
+                case .rates:        return V.optionRates
+                case .shares:       return V.optionShares
+                }
+            case .rates:        return V.rates
+            case .sectors:      return V.sectors
+            case .shares:       return V.shares
+            case .sprintMarket: return V.sprintMarket
+            case .testMarket:   return V.testMarket
+            case .bungee(let type):
+                switch type {
+                case .capped:       return V.bungeeCapped
+                case .commodities:  return V.bungeeCommodities
+                case .currencies:   return V.bungeeCurrencies
+                case .indices:      return V.bungeeIndices
+                }
+            case .unknown:      return V.unknown
+            }
+        }
+        
+        private enum Value {
+            static let binary = "BINARY"
+            static let commodities = "COMMODITIES"
+            static let currencies = "CURRENCIES"
+            static let indices = "INDICES"
+            static let optionsCommodities = "OPT_COMMODITIES"
+            static let optionCurrencies = "OPT_CURRENCIES"
+            static let optionIndices = "OPT_INDICES"
+            static let optionRates = "OPT_RATES"
+            static let optionShares = "OPT_SHARES"
+            static let rates = "RATES"
+            static let sectors = "SECTORS"
+            static let shares = "SHARES"
+            static let sprintMarket = "SPRINT_MARKET"
+            static let testMarket = "TEST_MARKET"
+            static let bungeeCapped = "BUNGEE_CAPPED"
+            static let bungeeCommodities = "BUNGEE_COMMODITIES"
+            static let bungeeCurrencies = "BUNGEE_CURRENCIES"
+            static let bungeeIndices = "BUNGEE_INDICES"
+            static let unknown = "UNKNOWN"
         }
     }
     
@@ -351,7 +400,8 @@ extension IG.API.Market.Instrument {
             self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
                 self.settlementInfo = nil
-                self.lastDealingDate = nil; return
+                self.lastDealingDate = nil
+                return
             }
 
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .expirationDetails)
@@ -419,16 +469,16 @@ extension IG.API.Market.Instrument {
 
     /// Margin requirements and deposit bands.
     public struct Margin: Decodable {
-        /// The dimension for a dealing rule value.
-        public let unit: IG.API.Market.Distance.Unit
         /// Margin requirement factor.
         public let factor: Decimal
+        /// The dimension for the margin factor.
+        public let unit: IG.API.Market.Distance.Unit
         /// Deposit bands.
         public let depositBands: [Self.Band]
 
         private enum CodingKeys: String, CodingKey {
-            case unit = "marginFactorUnit"
             case factor = "marginFactor"
+            case unit = "marginFactorUnit"
             case depositBands = "marginDepositBands"
         }
 
@@ -489,11 +539,12 @@ extension IG.API.Market.Instrument {
 
         public init?(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-
-            let hasMin = try container.decodeNil(forKey: .sprintMin)
-            let hasMax = try container.decodeNil(forKey: .sprintMax)
-            guard hasMin == hasMax else { throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range.") }
-            guard hasMin == false else { return nil }
+            
+            switch (try container.decodeNil(forKey: .sprintMin), try container.decodeNil(forKey: .sprintMax)) {
+            case (false, false): break
+            case (true, true): return nil
+            default: throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range.")
+            }
 
             self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.monthYear)
             self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.monthYear)
@@ -536,23 +587,34 @@ extension IG.API.Market {
         }
         
         /// Market order trading preference.
-        public enum Order: Decodable {
+        public enum Order: RawRepresentable, Decodable {
             /// Market orders are not allowed for the current site and/or instrument.
             case unavailable
             /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
             /// The user has also decided whether that should be the default.
             case available(isDefault: Bool)
             
-            public init(from decoder: Decoder) throws {
-                let container = try decoder.singleValueContainer()
-                let preference = try container.decode(String.self)
-                
-                switch preference {
-                case "NOT_AVAILABLE": self = .unavailable
-                case "AVAILABLE_DEFAULT_ON": self = .available(isDefault: true)
-                case "AVAILABLE_DEFAULT_OFF": self = .available(isDefault: false)
-                default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market order preference \"\(preference)\" not recognized.")
+            public init?(rawValue: String) {
+                switch rawValue {
+                case Self.Value.unavailable:  self = .unavailable
+                case Self.Value.availableOff: self = .available(isDefault: false)
+                case Self.Value.availableOn:  self = .available(isDefault: true)
+                default: return nil
                 }
+            }
+            
+            public var rawValue: String {
+                switch self {
+                case .unavailable: return Self.Value.unavailable
+                case .available(isDefault: false): return Self.Value.availableOff
+                case .available(isDefault: true): return Self.Value.availableOn
+                }
+            }
+            
+            private enum Value {
+                static let unavailable = "NOT_AVAILABLE"
+                static let availableOn = "AVAILABLE_DEFAULT_ON"
+                static let availableOff = "AVAILABLE_DEFAULT_OFF"
             }
         }
         
@@ -700,5 +762,94 @@ extension IG.API.Market {
             case points = "POINTS"
             case percentage = "PERCENTAGE"
         }
+    }
+}
+
+extension IG.API.Market: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Market")
+        result.append("epic", self.instrument.epic)
+        result.append("name", self.instrument.name)
+        result.append("market ID", self.identifier)
+        result.append("chart code", self.instrument.chartCode)
+        result.append("news code", self.instrument.newsCode)
+        
+        let dayMonthYear = IG.Formatter.date(time: nil, localize: false)
+        let dateTime = IG.Formatter.date(localize: true)
+        result.append("instrument", self.instrument) {
+            $0.append("type", $1.type)
+            $0.append("unit", $1.unit)
+            
+            let expiryValue: String
+            switch $1.expiration.expiry {
+            case .none: expiryValue = IG.DebugDescription.nilSymbol
+            case .dailyFunded: expiryValue = "Daily funded"
+            case .forward(let date): expiryValue = dayMonthYear.string(from: date)
+            }
+            $0.append("expiry: \(expiryValue)", delimiter: false, $1.expiration) {
+                if let date = $1.lastDealingDate {
+                    $0.append("last dealing date", date, formatter: dateTime)
+                }
+                if let info = $1.settlementInfo {
+                    $0.append("settlement information", info)
+                }
+            }
+            
+            $0.append("country", $1.country)
+            $0.append("currencies", $1.currencies.map { "\($0.code) (base: \($0.baseExchangeRate), rate: \($0.exchangeRate))" })
+            $0.append("opening hours", $1.openingTime?.map { "\($0.open) to \($0.close)" })
+            $0.append("PIP", $1.pip.map { "\($0.meaning), value: \($0.value)" })
+            $0.append("lot size", $1.lotSize)
+            $0.append("contract size", $1.contractSize)
+            $0.append("is force open allowed", $1.isForceOpenAllowed)
+            $0.append("is stop limit allowed", $1.isStopLimitAllowed)
+            $0.append("is guaranteed stop allowed", $1.isLimitedRiskAllowed)
+            $0.append("is available by streaming", $1.isAvailableByStreaming)
+            $0.append("margin", $1.margin) {
+                $0.append("factor", "\(String(describing: $1.factor)) \($1.unit.rawValue)")
+                $0.append("bands", $1.depositBands.map { "\($0.margin) (\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode))" })
+            }
+            $0.append("slippage factor", "\($1.slippageFactor.value) \($1.slippageFactor.unit)")
+            $0.append("rollover", $1.rollover) {
+                $0.append("date", $1.lastDate, formatter: dayMonthYear)
+                $0.append("info", $1.info)
+            }
+            $0.append("limited risk premium", "\($1.limitedRiskPremium.value) \($1.limitedRiskPremium.unit)")
+            $0.append("details", $1.details)
+            $0.append("sprint market", $1.sprintMarket) {
+                $0.append("min expiration dates", $1.minExpirationDate, formatter: dayMonthYear)
+                $0.append("max expiration dates", $1.maxExpirationDate, formatter: dayMonthYear)
+            }
+        }
+        result.append("dealing rules", self.rules) {
+            $0.append("market order preferences", $1.marketOrder)
+            $0.append("min deal size", "\($1.minimumDealSize.value) \($1.minimumDealSize.unit)")
+            $0.append("limit distance", "\($1.limit.mininumDistance)...\($1.limit.maximumDistance)")
+            $0.append("stop ", $1.stop) {
+                $0.append("distance", "\($1.mininumDistance.value) \($1.mininumDistance.unit)...\($1.maximumDistance.value) \($1.maximumDistance.unit)")
+                $0.append("guaranteed stop distance", "\($1.minimumLimitedRiskDistance.value) \($1.minimumLimitedRiskDistance.unit)")
+                if $1.trailing.areAvailable {
+                    $0.append("trailing minimum step", "\($1.trailing.minimumIncrement.value) \($1.trailing.minimumIncrement.unit)")
+                } else {
+                    $0.append("are trailing available", false)
+                }
+            }
+        }
+        result.append("snapshot", self.snapshot) {
+            $0.append("date", $1.date, formatter: dateTime)
+            $0.append("delay", "\($1.delay) (minutes)")
+            $0.append("status", $1.status)
+            $0.append("price", $1.price) {
+                $0.append("ask", $1.ask)
+                $0.append("bid", $1.bid)
+                $0.append("range", "\($1.lowest)...\($1.highest)")
+                $0.append("change", "\($1.change.net) (net) or \($1.change.percentage) %")
+            }
+            $0.append("scaling factor", $1.scalingFactor)
+            $0.append("decimal places (for levels)", $1.decimalPlacesFactor)
+            $0.append("guaranteed stop extra spread", $1.extraSpreadForControlledRisk)
+            $0.append("binary odds", $1.binaryOdds)
+        }
+        return result.generate()
     }
 }

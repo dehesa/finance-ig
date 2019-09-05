@@ -290,3 +290,16 @@ extension IG.API.Session {
         }
     }
 }
+
+extension IG.API.Session: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Session")
+        result.append("client ID", self.client)
+        result.append("account ID", self.account)
+        result.append("streamer URL", self.streamerURL.path)
+        result.append("timezone", self.timezone.description)
+        result.append("locale", self.locale.description)
+        result.append("currency code", self.currencyCode)
+        return result.generate()
+    }
+}

@@ -2,7 +2,7 @@ import Foundation
 
 extension IG.API {
     /// A user within the platform.
-    public struct User: ExpressibleByArrayLiteral {
+    public struct User: ExpressibleByArrayLiteral, CustomDebugStringConvertible {
         /// Platform's username.
         public let name: Self.Name
         /// The user's given password.
@@ -31,6 +31,13 @@ extension IG.API {
             guard elements.count == 2 else { fatalError(#"A "\#(Self.self)" type can only be initialized with an array with two non-empty strings."#)}
             self.name = .init(stringLiteral: elements[0])
             self.password = .init(stringLiteral: elements[1])
+        }
+        
+        public var debugDescription: String {
+            var result = IG.DebugDescription("API User")
+            result.append("name", self.name)
+            result.append("password", String(repeating: "*", count: self.password.rawValue.count))
+            return result.generate()
         }
     }
 }
@@ -88,7 +95,7 @@ extension IG.API.User {
 extension IG.API.User {
     /// The user's password within the platform.
     public struct Password: ExpressibleByStringLiteral, Codable {
-        private let rawValue: String
+        fileprivate let rawValue: String
         
         public init?(rawValue: String) {
             guard Self.validate(rawValue) else { return nil }

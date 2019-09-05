@@ -142,7 +142,7 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Market: CustomDebugStringConvertible {
+extension IG.Streamer.Market {
     /// The current status of the market.
     public enum Status: String, Codable {
         /// The market is open for trading.
@@ -181,19 +181,21 @@ extension IG.Streamer.Market: CustomDebugStringConvertible {
             self.changePercentage = try update[F.dayChangePercentage.rawValue]?.value.map(U.toDecimal)
         }
     }
+}
 
+extension IG.Streamer.Market: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result: String = "Market (epic): \(self.epic.rawValue)"
-        result.append(prefix: "\n\t", name: "Status", ": ", self.status)
-        result.append(prefix: "\n\t", name: "Date", ": ", self.date.map { IG.Streamer.Formatter.time.string(from: $0) })
-        result.append(prefix: "\n\t", name: "Are prices delayed?", " ", self.isDelayed)
-        result.append(prefix: "\n\t", name: "Price (bid)", ": ", self.bid)
-        result.append(prefix: "\n\t", name: "Price (ask)", ": ", self.ask)
-        result.append(prefix: "\n\t", name: "Range (high)", ": ", self.day.highest)
-        result.append(prefix: "\n\t", name: "Range (mid)", ": ", self.day.mid)
-        result.append(prefix: "\n\t", name: "Range (low)", ": ", self.day.lowest)
-        result.append(prefix: "\n\t", name: "Change (net)", ": ", self.day.changeNet)
-        result.append(prefix: "\n\t", name: "Change (%)", ": ", self.day.changePercentage)
-        return result
+        var result = IG.DebugDescription("Streamer Market (\(self.epic.rawValue))")
+        result.append("status", self.status)
+        result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
+        result.append("are prices delayed?", self.isDelayed)
+        result.append("price (ask)", self.ask)
+        result.append("price (bid)", self.bid)
+        result.append("range (high)", self.day.highest)
+        result.append("range (mid)", self.day.mid)
+        result.append("range (low)", self.day.lowest)
+        result.append("change (net)", self.day.changeNet)
+        result.append("change (%)", self.day.changePercentage)
+        return result.generate()
     }
 }

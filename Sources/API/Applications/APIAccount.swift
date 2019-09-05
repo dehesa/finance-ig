@@ -178,3 +178,25 @@ extension IG.API.Account {
         }
     }
 }
+
+extension IG.API.Account: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = IG.DebugDescription("API Account")
+        result.append("account ID", self.identifier)
+        result.append("name", self.name)
+        result.append("alias", self.alias)
+        result.append("type", self.type)
+        result.append("status", self.status)
+        result.append("is default", self.isDefault)
+        result.append("currency code", self.currencyCode)
+        result.append("inbound transfers allowed", self.transfersAllowed.in)
+        result.append("outbound transfers allowed", self.transfersAllowed.out)
+        result.append("account balance", self.balance) {
+            $0.append("funds", $1.value)
+            $0.append("deposit", $1.deposit)
+            $0.append("P&L", $1.profitLoss)
+            $0.append("available", $1.available)
+        }
+        return result.generate()
+    }
+}
