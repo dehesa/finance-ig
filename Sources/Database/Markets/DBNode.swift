@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 extension IG.DB {
@@ -13,40 +12,40 @@ extension IG.DB {
     }
 }
 
-// MARK: - GRDB Internals
-
-extension IG.DB.Node {
-    /// Creates a SQLite table for Forex markets.
-    static func tableCreation(in db: GRDB.Database) throws {
-        try db.create(table: "nodes", ifNotExists: false, withoutRowID: true) { (t) in
-            t.column("nodeId", .text).primaryKey()
-            t.column("name", .text)  .collate(.unicodeCompare)
-        }
-    }
-}
-
-extension IG.DB.Node: GRDB.FetchableRecord, GRDB.PersistableRecord {
-    public init(row: GRDB.Row) {
-        self.identifier = row[0]
-        self.name = row[1]
-    }
-    
-    public func encode(to container: inout GRDB.PersistenceContainer) {
-        container[Columns.identifier] = self.identifier
-        container[Columns.name] = self.name
-    }
-}
-
-extension IG.DB.Node: GRDB.TableRecord {
-    /// The SQLite table columns.
-    internal enum Columns: String, GRDB.ColumnExpression {
-        case identifier = "nodeId"
-        case name = "name"
-    }
-    
-    public static var databaseTableName: String {
-        return "nodes"
-    }
-    
-    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
-}
+//// MARK: - GRDB Internals
+//
+//extension IG.DB.Node {
+//    /// Creates a SQLite table for Forex markets.
+//    static func tableCreation(in db: GRDB.Database) throws {
+//        try db.create(table: "nodes", ifNotExists: false, withoutRowID: true) { (t) in
+//            t.column("nodeId", .text).primaryKey()
+//            t.column("name", .text)  .collate(.unicodeCompare)
+//        }
+//    }
+//}
+//
+//extension IG.DB.Node: GRDB.FetchableRecord, GRDB.PersistableRecord {
+//    public init(row: GRDB.Row) {
+//        self.identifier = row[0]
+//        self.name = row[1]
+//    }
+//    
+//    public func encode(to container: inout GRDB.PersistenceContainer) {
+//        container[Columns.identifier] = self.identifier
+//        container[Columns.name] = self.name
+//    }
+//}
+//
+//extension IG.DB.Node: GRDB.TableRecord {
+//    /// The SQLite table columns.
+//    internal enum Columns: String, GRDB.ColumnExpression {
+//        case identifier = "nodeId"
+//        case name = "name"
+//    }
+//    
+//    public static var databaseTableName: String {
+//        return "nodes"
+//    }
+//    
+//    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
+//}

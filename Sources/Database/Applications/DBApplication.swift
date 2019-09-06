@@ -1,29 +1,35 @@
-import GRDB
+import SQLite3
 import ReactiveSwift
 import Foundation
 
 extension IG.DB.Request.Applications {
-    /// Returns all applications stored in the database.
-    public func getAll() -> SignalProducer<[IG.DB.Application],IG.DB.Error> {
-        SignalProducer(database: self.database)
-            .read { (db, _, _) in
-                try IG.DB.Application.fetchAll(db)
-            }
-    }
-    
+//    /// Returns all applications stored in the database.
+//    public func getAll() -> SignalProducer<[IG.DB.Application],IG.DB.Error> {
+//        SignalProducer(database: self.database)
+//            .read { (db, _, _) in
+//                try IG.DB.Application.fetchAll(db)
+//            }
+//    }
+
     /// Updates the database with the information received from the server.
     /// - parameter applications: Information returned from the server.
     /// - throws: `Database.Error` exclusively.
-    public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
-        SignalProducer(database: self.database) { _ in
-                applications.map { IG.DB.Application(with: $0) }
-            }.write { (db, applications, shallContinue) -> Void in
-                for app in applications {
-                    guard case .continue = shallContinue() else { return }
-                    try app.save(db)
-                }
-            }
-    }
+//    public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
+//        typealias C = IG.DB.Application.Columns
+//        typealias A = IG.API.Application
+//
+//        return SignalProducer(database: self.database).write { (db, _, shallContinue) -> Void in
+//            for app in applications {
+//                guard case .continue = shallContinue() else { return }
+////                try db.execute(sql: "INSERT OR REPLACE INTO \(IG.DB.Application.tableName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+//                let pointer = db.sqliteConnection
+////                sqlite3_prepare_v2(pointer, <#T##zSql: UnsafePointer<Int8>!##UnsafePointer<Int8>!#>, <#T##nByte: Int32##Int32#>, <#T##ppStmt: UnsafeMutablePointer<OpaquePointer?>!##UnsafeMutablePointer<OpaquePointer?>!#>, <#T##pzTail: UnsafeMutablePointer<UnsafePointer<Int8>?>!##UnsafeMutablePointer<UnsafePointer<Int8>?>!#>)
+//                sqlite3_bind_text(pointer, <#T##Int32#>, <#T##UnsafePointer<Int8>!#>, <#T##Int32#>, <#T##((UnsafeMutableRawPointer?) -> Void)!##((UnsafeMutableRawPointer?) -> Void)!##(UnsafeMutableRawPointer?) -> Void#>)
+//                sqlite3_bind_text(pointer, <#T##Int32#>, <#T##UnsafePointer<Int8>!#>, <#T##Int32#>, <#T##((UnsafeMutableRawPointer?) -> Void)!##((UnsafeMutableRawPointer?) -> Void)!##(UnsafeMutableRawPointer?) -> Void#>)
+//                sqlite3_step
+//            }
+//        }
+//    }
 }
 
 // MARK: - Supporting Entities
@@ -31,11 +37,11 @@ extension IG.DB.Request.Applications {
 extension IG.DB.Request {
     /// Contains all functionality related to API applications.
     public struct Applications {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
+        /// Pointer to the actual database instance in charge of the low-level objects..
         fileprivate unowned let database: IG.DB
         
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
+        /// Hidden initializer passing the instance needed to perform the database fetches/updates.
+        /// - parameter database: The instance calling the low-level databse.
         init(database: IG.DB) {
             self.database = database
         }
@@ -87,7 +93,7 @@ extension IG.DB {
 
 extension IG.DB.Application {
     /// Application status in the platform.
-    public enum Status: Int, GRDB.DatabaseValueConvertible {
+    public enum Status: Int {
         /// The application is enabled and thus ready to receive/send data.
         case enabled = 1
         /// The application has been disabled by the developer.
@@ -142,69 +148,75 @@ extension IG.DB.Application {
     }
 }
 
-extension IG.DB.Application: GRDB.FetchableRecord, GRDB.TableRecord, GRDB.PersistableRecord {
+extension IG.DB.Application {
     /// Creates a SQLite table for API applications.
-    static func tableCreation(in db: GRDB.Database) throws {
-        try db.create(table: "applications", ifNotExists: false, withoutRowID: true) { (t) in
-            t.column("key", .text).primaryKey()
-            t.column("name", .text).notNull().collate(.unicodeCompare)
-            t.column("status", .integer).notNull()
-            t.column("allowEquities", .boolean).notNull()
-            t.column("allowQuotes", .boolean).notNull()
-            t.column("limitApp", .integer).notNull()
-            t.column("limitAccount", .integer).notNull()
-            t.column("limitTrade", .integer).notNull()
-            t.column("limitHistory", .integer).notNull()
-            t.column("limitSubs", .integer).notNull()
-            t.column("created", .date).notNull()
-            t.column("updated", .date).notNull()
+    internal static func tableDefinition(for version: IG.DB.Migration.Version) -> String? {
+        #warning("Specify default unicode collations for 'name'")
+        switch version {
+        case .v0: return """
+            CREATE TABLE Apps (
+            key     TEXT     NOT NULL CHECK ( LENGTH(name) > 0 ) PRIMARY KEY,
+            name    TEXT     NOT NULL CHECK ( LENGTH(name) > 0 ),
+            status  INTEGER  NOT NULL CHECK ( status BETWEEN -1 AND 1 ),
+            equity  BOOLEAN  NOT NULL CHECK ( equity BETWEEN 0 AND 1 ),
+            quote   BOOLEAN  NOT NULL CHECK ( quote BETWEEN 0 AND 1 ),
+            liApp   INTEGER  NOT NULL CHECK ( liApp >= 0 ),
+            liAcco  INTEGER  NOT NULL CHECK ( liAcco >= 0 ),
+            liTrade INTEGER  NOT NULL CHECK ( liTrade >= 0 ),
+            liHisto INTEGER  NOT NULL CHECK ( liHisto >= 0 ),
+            subs    INTEGER  NOT NULL CHECK ( subs >= 0 ),
+            created TEXT     NOT NULL CHECK (( created IS DATE(created) ) AND ( created <= DATE('now') )),
+            updated TEXT     NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (( created IS DATE(created) ) AND ( updated <= CURRENT_TIMESTAMP ))
+            ) WITHOUT ROWID;
+            """
         }
     }
     
-    /// The table columns
-    private enum Columns: String, GRDB.ColumnExpression {
-        case key = "key"
-        case name = "name"
-        case status = "status"
-        case accessToEquityPrices = "allowEquities"
-        case areQuoteOrdersAllowed = "allowQuotes"
-        case appRequestsLimit = "limitApp"
-        case accountRequestsLimit = "limitAccount"
-        case tradeRequestsLimit = "limitTrade"
-        case dataRequestsLimit = "limitHistory"
-        case concurrentSubscriptionLimit = "limitSubs"
-        case created = "created"
-        case updated = "updated"
+    /// The table name for the latest supported migration.
+    fileprivate static var tableName: String {
+        return "Apps"
     }
     
-    public init(row: GRDB.Row) {
-        self.key = row[0]
-        self.name = row[1]
-        self.status = row[2]
-        self.permission = .init(equities: row[3], quoteOrders: row[4])
-        self.allowance = Self.Allowance(overall: row[5], account: row[6], trading: row[7], history: row[8], subscriptions: row[9])
-        self.created = row[10]
-        self.updated = row[11]
-    }
-    
-    public static var databaseTableName: String {
-        return "applications"
+    /// The table columns for the latest supported migration.
+    fileprivate enum Columns: String {
+        case key                    = "key"
+        case name                   = "name"
+        case status                 = "status"
+        case accessToEquityPrices   = "equity"
+        case areQuoteOrdersAllowed  = "quote"
+        case appRequestsLimit       = "liApp"
+        case accountRequestsLimit   = "liAcco"
+        case tradeRequestsLimit     = "liTrade"
+        case dataRequestsLimit      = "liHisto"
+        case concurrentSubscriptionLimit = "subs"
+        case created                = "created"
+        case updated                = "updated"
     }
 
-    public func encode(to container: inout GRDB.PersistenceContainer) {
-        container[Columns.key] = self.key
-        container[Columns.created] = self.created
-        container[Columns.name] = self.name
-        container[Columns.status] = self.status
-        container[Columns.accessToEquityPrices] = self.permission.accessToEquityPrices
-        container[Columns.areQuoteOrdersAllowed] = self.permission.areQuoteOrdersAllowed
-        container[Columns.appRequestsLimit] = self.allowance.overallRequests
-        container[Columns.accountRequestsLimit] = self.allowance.account.overallRequests
-        container[Columns.tradeRequestsLimit] = self.allowance.account.tradingRequests
-        container[Columns.dataRequestsLimit] = self.allowance.account.historicalDataRequests
-        container[Columns.concurrentSubscriptionLimit] = self.allowance.concurrentSubscriptions
-        container[Columns.updated] = self.updated
-    }
+//    public init(row: GRDB.Row) {
+//        self.key = row[0]
+//        self.name = row[1]
+//        self.status = row[2]
+//        self.permission = .init(equities: row[3], quoteOrders: row[4])
+//        self.allowance = Self.Allowance(overall: row[5], account: row[6], trading: row[7], history: row[8], subscriptions: row[9])
+//        self.created = row[10]
+//        self.updated = row[11]
+//    }
+//
+//    public func encode(to container: inout GRDB.PersistenceContainer) {
+//        container[Columns.key] = self.key
+//        container[Columns.created] = self.created
+//        container[Columns.name] = self.name
+//        container[Columns.status] = self.status
+//        container[Columns.accessToEquityPrices] = self.permission.accessToEquityPrices
+//        container[Columns.areQuoteOrdersAllowed] = self.permission.areQuoteOrdersAllowed
+//        container[Columns.appRequestsLimit] = self.allowance.overallRequests
+//        container[Columns.accountRequestsLimit] = self.allowance.account.overallRequests
+//        container[Columns.tradeRequestsLimit] = self.allowance.account.tradingRequests
+//        container[Columns.dataRequestsLimit] = self.allowance.account.historicalDataRequests
+//        container[Columns.concurrentSubscriptionLimit] = self.allowance.concurrentSubscriptions
+//        container[Columns.updated] = self.updated
+//    }
 }
 
 extension IG.DB.Application: CustomDebugStringConvertible {

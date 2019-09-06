@@ -6,7 +6,8 @@ final class StreamerMarketTests: XCTestCase {
     /// Tests the market info subscription.
     func testMarketSubscriptions() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
 
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.markets.subscribe(to: epic, fields: .all), value: { (market) in

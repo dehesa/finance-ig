@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 extension IG.DB {
@@ -25,14 +24,14 @@ extension IG.DB.Request {
         /// - parameter values: Values that have been validated in a previous step.
         /// - parameter shallContinue: Small closure, that everytime is called returns a Boolean indicating whether you can continue fetching the database (`.continue`) or you should stop immediately (`.stop`).
         /// - returns: The result of the database interaction.
-        typealias Interaction<T,R> = (_ db: GRDB.Database, _ values: T, _ shallContinue: ()->IG.DB.Response.Iteration) throws -> R
+        typealias Interaction<T,R> = (_ database: IG.DB, _ values: T, _ shallContinue: ()->IG.DB.Response.Iteration) throws -> R
         /// This closure receives a valid low-level database session, validated values to use on the database requests, and a function to query "from-time-to-time" whether the database interaction should continue or it should be stop as soon as possible.
         /// - parameter db: Low-level database session.
         /// - parameter values: Values that have been validated in a previous step.
         /// - parameter shallContinue: Small closure, that everytime is called returns a Boolean indicating whether you can continue fetching the database (`.continue`) or you should stop immediately (`.stop`).
         /// - parameter continuousResult: This closure is called everytime you want to communicate further steps about intermediate results. As a convenience, it returns the value of `shallContinue` after sending values.
         /// - returns: The result of the database interaction.
-        typealias ContinuousInteraction<T,R> = (_ db: GRDB.Database, _ values: T,
+        typealias ContinuousInteraction<T,R> = (_ database: IG.DB, _ values: T,
             _ shallContinue: ()->IG.DB.Response.Iteration,
             _ continuousResult: (R) -> IG.DB.Response.Iteration
         ) throws -> Void
@@ -44,7 +43,9 @@ extension IG.DB.Request {
 extension IG.DB.Response {
     /// Indication of whether an operation should continue or stop.
     internal enum Iteration: Equatable {
+        /// The operation shall continue.
         case `continue`
+        /// The operation shall stop as soon as possible.
         case stop
     }
 }

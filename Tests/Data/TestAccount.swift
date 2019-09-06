@@ -32,8 +32,6 @@ extension Test {
 extension Test.Account {
     /// Account test environment API information.
     struct APIData: Decodable {
-        /// Whether mocked files or actuall HTTP calls.
-        let scheme: Test.Account.SupportedScheme
         /// The root URL from where to call the endpoints.
         ///
         /// If this references a folder in the bundles file system, it shall be of type:
@@ -46,6 +44,7 @@ extension Test.Account {
         /// Credentials used on the API server
         let credentials: Self.Credentials
         
+        /// Credentials for the API differentiating between User (name & password), CST, and OAuth.
         enum Credentials {
             case user(IG.API.User)
             case certificate(access: String, security: String)
@@ -58,7 +57,6 @@ extension Test.Account {
             guard let processedScheme = Test.Account.SupportedScheme(url: self.rootURL) else {
                 throw DecodingError.dataCorruptedError(forKey: .rootURL, in: container, debugDescription: "The API scheme couldn't be inferred from the API root URL: \(self.rootURL)")
             }
-            self.scheme = processedScheme
             self.key = try container.decode(IG.API.Key.self, forKey: .key)
             
             if container.contains(.user) {
@@ -78,7 +76,7 @@ extension Test.Account {
                 let scope = try nested.decode(String.self, forKey: .scope)
                 let type = try nested.decode(String.self, forKey: .type)
                 self.credentials = .oauth(access: access, refresh: refresh, scope: scope, type: type)
-            } else if case .file = self.scheme {
+            } else if case .file = processedScheme {
                 self.credentials = .user(.init("fake_user", "fake_password"))
             } else {
                 let ctx = DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "There were no credentials on the test account file.")

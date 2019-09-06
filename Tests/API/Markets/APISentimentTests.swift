@@ -5,7 +5,7 @@ import XCTest
 final class APISentimentTests: XCTestCase {
     /// Tests the platform's sentiment list call.
     func testSentiments() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let ids = ["EURGBP", "GC", "VOD-UK"].sorted { $0 > $1 }
         let markets = try! api.markets.getSentiment(from: ids).single()!.get()
@@ -19,7 +19,7 @@ final class APISentimentTests: XCTestCase {
     
     /// Tests the platform's sentiment call.
     func testSentiment() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
 
         let id = "EURGBP"
         let market = try! api.markets.getSentiment(from: id).single()!.get()
@@ -29,7 +29,7 @@ final class APISentimentTests: XCTestCase {
     }
 
     func testMarketRelations() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let id = "EURGBP"
         let markets = try! api.markets.getSentimentRelated(to: id).single()!.get()

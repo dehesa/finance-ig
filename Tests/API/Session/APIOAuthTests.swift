@@ -6,7 +6,7 @@ import XCTest
 final class APIOAuthTests: XCTestCase {
     /// Test the OAuth lifecycle: session creation, refresh, and disconnection.
     func testOAuth() {
-        let api = Test.makeAPI(credentials: nil)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
         let account = Test.account.identifier
         let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else {

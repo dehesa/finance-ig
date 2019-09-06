@@ -2,11 +2,16 @@ import Lightstreamer_macOS_Client
 import ReactiveSwift
 import Foundation
 
+/// A streamer channel needs to inherit from this protocol.
+///
+/// Mainly used for testing.
 internal protocol StreamerMockableChannel: class {
     /// Initializes the session setting up all parameters to be ready to connect.
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
-    init(rootURL: URL, credentials: IG.Streamer.Credentials)
+    /// - parameter queue: The `DispatchQueue` processing all new packages. The higher its QoS, the faster packages will be processed.
+    /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
+    init(rootURL: URL, credentials: IG.Streamer.Credentials, queue: DispatchQueue)
     /// Returns the current streamer status.
     var status: Property<IG.Streamer.Session.Status> { get }
     /// Requests to open the session against the Lightstreamer server.

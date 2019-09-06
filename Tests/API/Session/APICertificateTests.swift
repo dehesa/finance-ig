@@ -6,7 +6,7 @@ import XCTest
 final class APICertificateTests: XCTestCase {
     /// Tests the CST lifecycle: session creation, refresh, and disconnection.
     func testCertificateLogInOut() {
-        let api = Test.makeAPI(credentials: nil)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
         let account = Test.account.identifier
         let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else {
@@ -35,7 +35,7 @@ final class APICertificateTests: XCTestCase {
     
     /// Tests the refresh functionality.
     func testRefreshCertificates() {
-        let api = Test.makeAPI(credentials: nil)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
         let account = Test.account.identifier
         let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }

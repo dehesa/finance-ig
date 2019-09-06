@@ -1,19 +1,18 @@
 @testable import IG
 import ReactiveSwift
-import GRDB
 import XCTest
 
 class DBMarketTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testIntroduction() {
-        let database = try! IG.DB(rootURL: nil)
-        
-        let queue = database.channel
-        try! queue.write { (db) in
-            try IG.DB.Application.tableCreation(in: db)
-            try IG.DB.Market.tableCreation(in: db)
-            try IG.DB.Market.Forex.tableCreation(in: db)
-        }
+//        let database = try! IG.DB(rootURL: nil)
+//
+//        let queue = database.channel
+//        try! queue.write { (db) in
+//            try IG.DB.Application.tableCreation(in: db)
+//            try IG.DB.Market.tableCreation(in: db)
+//            try IG.DB.Market.Forex.tableCreation(in: db)
+//        }
     }
     
     func testDoStuff() {
@@ -23,7 +22,7 @@ class DBMarketTests: XCTestCase {
 
 //    /// Tests the creation of a File-System database.
 //    func testDatabaseCreation() {
-//        let database = Test.makeDatabase()
+//        let database = Test.makeDatabase(rootURL: Self.account.database?.rootURL)
 //        if let url = Test.account.database?.rootURL {
 //            XCTAssertEqual(database.channel.path, url.path)
 //        }

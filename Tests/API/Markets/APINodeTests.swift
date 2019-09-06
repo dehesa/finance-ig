@@ -5,7 +5,7 @@ import XCTest
 final class APINavigationNodeTests: XCTestCase {
     /// Tests navigation nodes retrieval.
     func testNavigationNodes() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
 
         let nodeId: String? = nil
         let nodeGivenName = "Root"
@@ -21,7 +21,7 @@ final class APINavigationNodeTests: XCTestCase {
 
     /// Test the market search capabilities.
     func testMarketTermSearch() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let markets = try! api.nodes.getMarkets(matching: "NZD").single()!.get()
 //        print(markets.map { $0.instrument.epic.rawValue + "\t->\t" + $0.instrument.name }.joined(separator: "\n"))
@@ -31,7 +31,7 @@ final class APINavigationNodeTests: XCTestCase {
 //    func testExtractNodes() {
 //        print()
 //
-//        let api = Test.makeAPI(credentials: Test.credentials.api)
+//        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api)
 //        let rootNode = try! api.nodes.get(identifier: "184730", name: "ETFs, ETCs & Trackers", depth: .all).single()!.get()
 //
 //        var parsing: [API.Node] = [rootNode]

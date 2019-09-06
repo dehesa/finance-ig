@@ -30,7 +30,7 @@ extension IG.API.Request.Positions {
                        order: IG.API.Position.Order, strategy: IG.API.Position.Order.Strategy,
                        size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?,
                        forceOpen: Bool = true, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
                 return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
             }.request(.post, "positions/otc", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
@@ -52,7 +52,7 @@ extension IG.API.Request.Positions {
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     /// - note: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
     public func update(identifier: IG.Deal.Identifier, limitLevel: Decimal?, stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api)  { (_) -> Self.PayloadUpdate in
+        return SignalProducer(api: self.api)  { _ -> Self.PayloadUpdate in
                 return try .init(limit: limitLevel, stop: stop)
             }.request(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
@@ -71,7 +71,7 @@ extension IG.API.Request.Positions {
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func delete(matchedBy identification: Self.Identification, direction: IG.Deal.Direction,
                        order: IG.API.Position.Order, strategy: IG.API.Position.Order.Strategy, size: Decimal) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadDeletion in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadDeletion in
                 return try .init(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
             }.request(.post, "positions/otc", version: 1, credentials: true, headers: { (_,_) in
                 [._method: IG.API.HTTP.Method.delete.rawValue]
@@ -103,6 +103,8 @@ extension IG.API.Request.Positions {
         let forceOpen: Bool
         let reference: IG.Deal.Reference?
         
+        /// Designated initializer for Position creation payload.
+        /// - throws: `IG.API.Error` exclusively.
         init(epic: IG.Market.Epic, expiry: IG.Market.Expiry, currency: IG.Currency.Code, direction: IG.Deal.Direction, order: IG.API.Position.Order, strategy: IG.API.Position.Order.Strategy, size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?, forceOpen: Bool, reference: IG.Deal.Reference?) throws {
             self.epic = epic
             self.expiry = expiry
@@ -407,7 +409,7 @@ extension IG.API.Position.Order {
         switch self {
         case .market: return "MARKET"
         case .limit: return "LIMIT"
-        case .quote(_): return "QUOTE"
+        case .quote: return "QUOTE"
         }
     }
 }

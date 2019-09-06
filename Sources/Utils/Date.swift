@@ -170,12 +170,12 @@ extension KeyedDecodingContainer {
 extension SingleValueEncodingContainer {
     /// Encodes a single value of the given type.
     ///
+    /// - precondition: May not be called after a previous `self.encode(_:)`
+    ///   call. 
     /// - parameter value: The value to encode.
     /// - parameter formatter: The date formatter to be used to transform the date into a string.
     /// - throws: `EncodingError.invalidValue` if the given value is invalid in
     ///   the current context for this format.
-    /// - precondition: May not be called after a previous `self.encode(_:)`
-    ///   call.
     public mutating func encode(_ value: Date, with formatter: DateFormatter) throws {
         let dateString = formatter.string(from: value)
         try self.encode(dateString)

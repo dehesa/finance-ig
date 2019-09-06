@@ -8,7 +8,7 @@ extension IG.API.Request.Markets {
     /// Returns the client sentiment for the gven markets.
     /// - parameter marketIdentifiers: The platform's markets being targeted (don't confuse it with `epic` identifiers).
     public func getSentiment(from marketIdentifiers: [String]) -> SignalProducer<[IG.API.Market.Sentiment],IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> [String] in
+        return SignalProducer(api: self.api) { _ -> [String] in
                 let filteredIds = marketIdentifiers.filter { !$0.isEmpty }
                 guard !filteredIds.isEmpty else {
                     let message = "There were no market identifiers to query"

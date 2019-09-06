@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 extension IG.API {
@@ -39,7 +38,7 @@ extension IG.API.Key: Codable {
     }
 }
 
-extension IG.API.Key: GRDB.DatabaseValueConvertible {
+extension IG.API.Key {
     /// Returns a Boolean indicating whether the raw value can represent an API key.
     private static func validate(_ value: String) -> Bool {
         return value.count == 40 && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }

@@ -9,6 +9,8 @@ import Foundation
 public final class API {
     /// URL root address.
     public let rootURL: URL
+    /// The queue processing all API requests and responses.
+    private let queue: DispatchQueue
     /// Represents this instances lifetime. It will be triggered when the instance is deallocated.
     internal let lifetime: Lifetime
     /// The token that when triggered, will trigger all `Lifetime` observers. It is triggered (automatically) when the instance is deallocated.
@@ -36,20 +38,27 @@ public final class API {
     public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
+    ///
+    /// Each API instance has its own serial `DispatchQueue`. The queue provided in this initializer is the target queue for the created instance's queue.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    public convenience init(rootURL: URL, credentials: IG.API.Credentials?) {
-        self.init(rootURL: rootURL, credentials: credentials, configuration: API.defaultSessionConfigurations)
+    /// - parameter queue: The target queue on which to process the `API` requests and responses.
+    public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
+        let dispatchQueue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
+        let operationQueue = OperationQueue(name: dispatchQueue.label + ".operationQueue", underlyingQueue: dispatchQueue)
+        let channel = URLSession(configuration: API.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
+        self.init(rootURL: rootURL, credentials: credentials, channel: channel, queue: dispatchQueue)
     }
     
     /// Designated initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
-    /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter configuration: URL session configuration properties. By default, you get a non-cached, non-cookies, pipeline and secure URL session configuration.
-    internal init(rootURL: URL, credentials: IG.API.Credentials?, configuration: URLSessionConfiguration) {
+    /// - parameter channel: The low-level API endpoint handler.
+    /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
+    internal init(rootURL: URL, credentials: IG.API.Credentials?, channel: URLSession, queue: DispatchQueue) {
         self.rootURL = rootURL
+        self.queue = queue
         (self.lifetime, self.lifetimeToken) = Lifetime.make()
-        self.channel = URLSession(configuration: configuration)
+        self.channel = channel
         self.session = .init(credentials: credentials)
         self.session.api = self
     }
@@ -63,10 +72,14 @@ extension IG.API {
     /// The root address for the IG endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     
+    /// The reverse DNS identifier for the `API` instance.
+    internal static var reverseDNS: String {
+        return IG.bundleIdentifier() + ".api"
+    }
+    
     /// Default configuration for the underlying URLSession
     internal static var defaultSessionConfigurations: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
-//        configuration.identifier = Bundle(for: API.self).bundleIdentifier! + ".api"
         configuration.networkServiceType = .default
         configuration.allowsCellularAccess = true
         configuration.httpCookieAcceptPolicy = .never

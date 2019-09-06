@@ -1,9 +1,8 @@
-import GRDB
 import Foundation
 
 extension IG.DB.Market {
     /// Database representation of a Foreign Exchange market.
-    public struct Forex: GRDB.FetchableRecord {
+    public struct Forex {
         /// Instrument identifier.
         public let epic: IG.Market.Epic
         /// The currency base and counter for the receiving Forex market.
@@ -17,33 +16,33 @@ extension IG.DB.Market {
         /// Margin information and requirements.
         public let margin: Self.Margin
         
-        public init(row: GRDB.Row) {
-            self.epic = row[0]
-            self.currency = (base: row[1],
-                             counter: row[2])
-            self.identifiers = Self.Identifiers(
-                                name: row[3],
-                                market: row[4],
-                                chart: row[5],
-                                reuters: row[6])
-            self.information = Self.DealingInformation(
-                                contractSize: row[7],
-                                pipValue: row[8],
-                                pipPlaces: row[9],
-                                levelPlaces: row[10],
-                                slippage: row[11],
-                                premium: row[12],
-                                extra: row[13])
-            self.restrictions = Self.Restrictions(
-                                size: row[14],
-                                normalDistance: row[15],
-                                limitedRiskDistance: row[16],
-                                maxDistance: row[17],
-                                minStep: row[18])
-            self.margin = Self.Margin(
-                                factor: row[19],
-                                band: row[20])
-        }
+//        public init(row: GRDB.Row) {
+//            self.epic = row[0]
+//            self.currency = (base: row[1],
+//                             counter: row[2])
+//            self.identifiers = Self.Identifiers(
+//                                name: row[3],
+//                                market: row[4],
+//                                chart: row[5],
+//                                reuters: row[6])
+//            self.information = Self.DealingInformation(
+//                                contractSize: row[7],
+//                                pipValue: row[8],
+//                                pipPlaces: row[9],
+//                                levelPlaces: row[10],
+//                                slippage: row[11],
+//                                premium: row[12],
+//                                extra: row[13])
+//            self.restrictions = Self.Restrictions(
+//                                size: row[14],
+//                                normalDistance: row[15],
+//                                limitedRiskDistance: row[16],
+//                                maxDistance: row[17],
+//                                minStep: row[18])
+//            self.margin = Self.Margin(
+//                                factor: row[19],
+//                                band: row[20])
+//        }
     }
 }
 
@@ -204,109 +203,109 @@ extension IG.DB.Market.Forex {
 
 // MARK: - GRDB functionality
 
-extension IG.DB.Market.Forex {
-    /// Creates a SQLite table for Forex markets.
-    static func tableCreation(in db: GRDB.Database) throws {
-        let greaterThanZero: (Column) -> SQLExpressible = { $0 > 0 }
-        let equalOrgreaterThanZero: (Column) -> SQLExpressible = { $0 >= 0 }
-        
-        try db.create(table: "forex", ifNotExists: false, withoutRowID: true) { (t) in
-            t.column("epic", .text)         .primaryKey()
-            t.column("base", .text)         .notNull()
-            t.column("counter", .text)      .notNull()
-            t.column("name", .text)         .notNull().unique()
-            t.column("marketId", .text)     .notNull()
-            t.column("chartId", .text)      .notNull()
-            t.column("reutersId", .text)    .notNull()
-            t.column("contSize", .integer)  .notNull().check(greaterThanZero)
-            t.column("pipVal", .integer)    .notNull().check(greaterThanZero)
-            t.column("placePip", .integer)  .notNull().check(equalOrgreaterThanZero)
-            t.column("placeLevel", .integer).notNull().check(equalOrgreaterThanZero)
-            t.column("slippage", .integer)  .notNull().check(equalOrgreaterThanZero)
-            t.column("premium", .integer)   .notNull().check(equalOrgreaterThanZero)
-            t.column("extra", .integer)     .notNull().check(equalOrgreaterThanZero)
-            t.column("minSize", .integer)   .notNull().check(greaterThanZero)
-            t.column("minDista", .integer)  .notNull().check(greaterThanZero)
-            t.column("minRisk", .integer)   .notNull().check(greaterThanZero)
-            t.column("maxDista", .integer)  .notNull().check(greaterThanZero)
-            t.column("minStep", .integer)   .notNull().check(greaterThanZero)
-            t.column("margin", .integer)    .notNull().check(greaterThanZero)
-            t.column("bands", .text)        .notNull()
-            
-            t.check(Self.Columns.currencyBase != Self.Columns.currencyCounter)
-        }
-    }
-}
-
-extension IG.DB.Market.Forex: GRDB.TableRecord {
-    /// The table columns
-    internal enum Columns: String, GRDB.ColumnExpression {
-        case epic = "epic"
-        case currencyBase = "base"
-        case currencyCounter = "counter"
-        
-        case name = "name"
-        case marketId = "marketId"
-        case chartId = "chartId"
-        case reutersId = "reutersId"
-        
-        case contractSize = "contSize"
-        case pipValue = "pipVal"
-        case decimalPlacesPip = "placePip"
-        case decimalPlacesLevel = "placeLevel"
-        case slippageFactor = "slippage"
-        case guaranteedStopPremium = "premium"
-        case guaranteedStopExtraSpread = "extra"
-        
-        case minimumSize = "minSize"
-        case minimumDistance = "minDista"
-        case minimumLimitedDistance = "minRisk"
-        case maximumDistance = "maxDista"
-        case minimumTrailingIncrement = "minStep"
-        
-        case marginFactor = "margin"
-        case marginBands = "bands"
-    }
-    
-    public static var databaseTableName: String {
-        return "forex"
-    }
-    
-    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
-}
-
-extension IG.DB.Market.Forex: GRDB.PersistableRecord {
-    public func encode(to container: inout PersistenceContainer) {
-        container[Columns.epic] = self.epic
-        container[Columns.currencyBase] = self.currency.base
-        container[Columns.currencyCounter] = self.currency.counter
-        
-        container[Columns.name] = self.identifiers.name
-        container[Columns.marketId] = self.identifiers.market
-        container[Columns.chartId] = self.identifiers.chart
-        container[Columns.reutersId] = self.identifiers.reuters
-        
-        let powerFactor = Self.Power.factor
-        container[Columns.contractSize] = self.information.contractSize
-        container[Columns.pipValue] = self.information.pipValue
-        container[Columns.decimalPlacesPip] = self.information.pipDecimalPlaces
-        container[Columns.decimalPlacesLevel] = self.information.levelDecimalPlaces
-        container[Columns.slippageFactor] = Int(clamping: self.information.slippageFactor, multiplyingByPowerOf10: powerFactor)
-        container[Columns.guaranteedStopPremium] = Int(clamping: self.information.guaranteedStopPremium, multiplyingByPowerOf10: powerFactor)
-        container[Columns.guaranteedStopExtraSpread] = Int(clamping: self.information.guaranteedStopExtraSpread, multiplyingByPowerOf10: powerFactor)
-        
-        let powerRest = Self.Power.restrictions
-        container[Columns.minimumSize] = Int(clamping: self.restrictions.minimumSize, multiplyingByPowerOf10: powerRest)
-        container[Columns.minimumDistance] = Int(clamping: self.restrictions.limitDistance.minimum, multiplyingByPowerOf10: powerRest)
-        container[Columns.minimumLimitedDistance] = Int(clamping: self.restrictions.guarantedStopDistance.minimum, multiplyingByPowerOf10: powerRest)
-        container[Columns.maximumDistance] = Int(clamping: self.restrictions.limitDistance.maximumAsPercentage, multiplyingByPowerOf10: powerRest)
-        container[Columns.minimumTrailingIncrement] = Int(clamping: self.restrictions.minimumTrailingStopIncrement, multiplyingByPowerOf10: powerRest)
-        
-        let powerMargin = Self.Power.factor
-        container[Columns.marginFactor] = Int(clamping: self.margin.factor, multiplyingByPowerOf10: powerMargin)
-        container[Columns.marginBands] = self.margin.depositBands.encode()
-    }
-    
+//extension IG.DB.Market.Forex {
+//    /// Creates a SQLite table for Forex markets.
+//    static func tableCreation(in db: GRDB.Database) throws {
+//        let greaterThanZero: (Column) -> SQLExpressible = { $0 > 0 }
+//        let equalOrgreaterThanZero: (Column) -> SQLExpressible = { $0 >= 0 }
+//
+//        try db.create(table: "forex", ifNotExists: false, withoutRowID: true) { (t) in
+//            t.column("epic", .text)         .primaryKey()
+//            t.column("base", .text)         .notNull()
+//            t.column("counter", .text)      .notNull()
+//            t.column("name", .text)         .notNull().unique()
+//            t.column("marketId", .text)     .notNull()
+//            t.column("chartId", .text)      .notNull()
+//            t.column("reutersId", .text)    .notNull()
+//            t.column("contSize", .integer)  .notNull().check(greaterThanZero)
+//            t.column("pipVal", .integer)    .notNull().check(greaterThanZero)
+//            t.column("placePip", .integer)  .notNull().check(equalOrgreaterThanZero)
+//            t.column("placeLevel", .integer).notNull().check(equalOrgreaterThanZero)
+//            t.column("slippage", .integer)  .notNull().check(equalOrgreaterThanZero)
+//            t.column("premium", .integer)   .notNull().check(equalOrgreaterThanZero)
+//            t.column("extra", .integer)     .notNull().check(equalOrgreaterThanZero)
+//            t.column("minSize", .integer)   .notNull().check(greaterThanZero)
+//            t.column("minDista", .integer)  .notNull().check(greaterThanZero)
+//            t.column("minRisk", .integer)   .notNull().check(greaterThanZero)
+//            t.column("maxDista", .integer)  .notNull().check(greaterThanZero)
+//            t.column("minStep", .integer)   .notNull().check(greaterThanZero)
+//            t.column("margin", .integer)    .notNull().check(greaterThanZero)
+//            t.column("bands", .text)        .notNull()
+//
+//            t.check(Self.Columns.currencyBase != Self.Columns.currencyCounter)
+//        }
+//    }
+//}
+//
+//extension IG.DB.Market.Forex: GRDB.TableRecord {
+//    /// The table columns
+//    internal enum Columns: String, GRDB.ColumnExpression {
+//        case epic = "epic"
+//        case currencyBase = "base"
+//        case currencyCounter = "counter"
+//
+//        case name = "name"
+//        case marketId = "marketId"
+//        case chartId = "chartId"
+//        case reutersId = "reutersId"
+//
+//        case contractSize = "contSize"
+//        case pipValue = "pipVal"
+//        case decimalPlacesPip = "placePip"
+//        case decimalPlacesLevel = "placeLevel"
+//        case slippageFactor = "slippage"
+//        case guaranteedStopPremium = "premium"
+//        case guaranteedStopExtraSpread = "extra"
+//
+//        case minimumSize = "minSize"
+//        case minimumDistance = "minDista"
+//        case minimumLimitedDistance = "minRisk"
+//        case maximumDistance = "maxDista"
+//        case minimumTrailingIncrement = "minStep"
+//
+//        case marginFactor = "margin"
+//        case marginBands = "bands"
+//    }
+//
+//    public static var databaseTableName: String {
+//        return "forex"
+//    }
+//
+//    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
+//}
+//
+extension IG.DB.Market.Forex { // : GRDB.PersistableRecord
+//    public func encode(to container: inout PersistenceContainer) {
+//        container[Columns.epic] = self.epic
+//        container[Columns.currencyBase] = self.currency.base
+//        container[Columns.currencyCounter] = self.currency.counter
+//
+//        container[Columns.name] = self.identifiers.name
+//        container[Columns.marketId] = self.identifiers.market
+//        container[Columns.chartId] = self.identifiers.chart
+//        container[Columns.reutersId] = self.identifiers.reuters
+//
+//        let powerFactor = Self.Power.factor
+//        container[Columns.contractSize] = self.information.contractSize
+//        container[Columns.pipValue] = self.information.pipValue
+//        container[Columns.decimalPlacesPip] = self.information.pipDecimalPlaces
+//        container[Columns.decimalPlacesLevel] = self.information.levelDecimalPlaces
+//        container[Columns.slippageFactor] = Int(clamping: self.information.slippageFactor, multiplyingByPowerOf10: powerFactor)
+//        container[Columns.guaranteedStopPremium] = Int(clamping: self.information.guaranteedStopPremium, multiplyingByPowerOf10: powerFactor)
+//        container[Columns.guaranteedStopExtraSpread] = Int(clamping: self.information.guaranteedStopExtraSpread, multiplyingByPowerOf10: powerFactor)
+//
+//        let powerRest = Self.Power.restrictions
+//        container[Columns.minimumSize] = Int(clamping: self.restrictions.minimumSize, multiplyingByPowerOf10: powerRest)
+//        container[Columns.minimumDistance] = Int(clamping: self.restrictions.limitDistance.minimum, multiplyingByPowerOf10: powerRest)
+//        container[Columns.minimumLimitedDistance] = Int(clamping: self.restrictions.guarantedStopDistance.minimum, multiplyingByPowerOf10: powerRest)
+//        container[Columns.maximumDistance] = Int(clamping: self.restrictions.limitDistance.maximumAsPercentage, multiplyingByPowerOf10: powerRest)
+//        container[Columns.minimumTrailingIncrement] = Int(clamping: self.restrictions.minimumTrailingStopIncrement, multiplyingByPowerOf10: powerRest)
+//
+//        let powerMargin = Self.Power.factor
+//        container[Columns.marginFactor] = Int(clamping: self.margin.factor, multiplyingByPowerOf10: powerMargin)
+//        container[Columns.marginBands] = self.margin.depositBands.encode()
+//    }
+//
     /// List of Tenth powers used to transform decimals into integers.
     private enum Power {
         static var factor: Int { 3 }

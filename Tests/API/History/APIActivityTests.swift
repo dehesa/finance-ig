@@ -6,7 +6,7 @@ import XCTest
 final class APIActivityTests: XCTestCase {
     /// Tests paginated activity retrieval.
     func testActivities() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
             $0.timeZone = TimeZone.current

@@ -10,7 +10,7 @@ extension IG.API.Request.Watchlists {
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: SignalProducer with the watchlist identifier as its value.
     public func create(name: String, epics: [IG.Market.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     let message = "The watchlist name cannot be empty"
                     throw IG.API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character.")
@@ -43,7 +43,7 @@ extension IG.API.Request.Watchlists {
     /// Returns the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     public func getMarkets(from identifier: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Void in
+        return SignalProducer(api: self.api) { _ -> Void in
                 guard !identifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
                 }

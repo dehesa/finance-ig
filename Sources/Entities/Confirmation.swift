@@ -34,11 +34,12 @@ public struct Confirmation: Decodable {
         let details = try Self.Details(from: decoder)
         self.status = .accepted(details: details)
     }
+    
     /// Returns Boolean indicating whether the receiving confirmation has been accepted.
     public var isAccepted: Bool {
         switch self.status {
-        case .accepted(_): return true
-        case .rejected(_): return false
+        case .accepted: return true
+        case .rejected: return false
         }
     }
     

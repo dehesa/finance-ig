@@ -8,7 +8,7 @@ extension IG.Streamer {
         /// Streamer credentials used to access the trading platform.
         @nonobjc private let credentials: IG.Streamer.Credentials
         /// The central queue handling all events within the Streamer flow.
-        @nonobjc private let queue: DispatchQueue
+        @nonobjc private unowned let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let client: LSLightstreamerClient
@@ -19,12 +19,9 @@ extension IG.Streamer {
         /// Returns the current streamer status.
         @nonobjc private let mutableStatus: MutableProperty<IG.Streamer.Session.Status>
         
-        @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials) {
+        @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials, queue: DispatchQueue) {
             self.credentials = credentials
-            
-            let label = Bundle(for: IG.Streamer.self).bundleIdentifier! + ".streamer"
-            self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
-            
+            self.queue = queue
             self.client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
             self.client.connectionDetails.user = credentials.identifier.rawValue
             self.client.connectionDetails.setPassword(credentials.password)
@@ -55,7 +52,7 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
         return .init { [weak self] (generator, lifetime) in
             guard let self = self else { return generator.send(error: .sessionExpired()) }
             
-            let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, target: self.queue)
+            let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, targetQueue: self.queue)
             self.subscriptions.insert(subscription)
             /// When triggered, it stops listening to the subscription's statuses.
             var detacher: Disposable? = nil

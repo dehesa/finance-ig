@@ -1,4 +1,3 @@
-import GRDB
 import ReactiveSwift
 import Foundation
 
@@ -56,24 +55,26 @@ extension SignalProducer where Error==IG.DB.Error {
                 permission = .stop
             }
             
-            input.database.channel.asyncRead { (result) in
-                do {
-                    let db = try result.get()
-                    let values = try interaction(db, input.values) { permission }
-                    
-                    generator.send(value: values)
-                    generator.sendCompleted()
-                } catch let error as Self.Error {
-                    generator.send(error: error)
-                } catch let error {
-                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
-                    result.context.append(("Input values", input.values))
-                    generator.send(error: result)
-                }
-                
-                // Triggering `detacher` removes the signal lifetime observation.
-                detacher?.dispose()
-            }
+            #warning("SQLite: Read")
+            fatalError()
+//            input.database.channel.asyncRead { (result) in
+//                do {
+//                    let db = try result.get()
+//                    let values = try interaction(db, input.values) { permission }
+//
+//                    generator.send(value: values)
+//                    generator.sendCompleted()
+//                } catch let error as Self.Error {
+//                    generator.send(error: error)
+//                } catch let error {
+//                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                    result.context.append(("Input values", input.values))
+//                    generator.send(error: result)
+//                }
+//
+//                // Triggering `detacher` removes the signal lifetime observation.
+//                detacher?.dispose()
+//            }
         }
     }
     
@@ -89,27 +90,30 @@ extension SignalProducer where Error==IG.DB.Error {
                 permission = .stop
             }
 
-            input.database.channel.asyncRead { (result) in
-                do {
-                    let db = try result.get()
-                    let shallContinue = { permission }
-                    try interaction(db, input.values, shallContinue) { (values: R) in
-                        generator.send(value: values)
-                        return shallContinue()
-                    }
-                    
-                    generator.sendCompleted()
-                } catch let error as Self.Error {
-                    generator.send(error: error)
-                } catch let error {
-                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
-                    result.context.append(("Input values", input.values))
-                    generator.send(error: result)
-                }
-                
-                // Triggering `detacher` removes the signal lifetime observation.
-                detacher?.dispose()
-            }
+            
+            #warning("SQLite: Read")
+            fatalError()
+//            input.database.channel.asyncRead { (result) in
+//                do {
+//                    let db = try result.get()
+//                    let shallContinue = { permission }
+//                    try interaction(db, input.values, shallContinue) { (values: R) in
+//                        generator.send(value: values)
+//                        return shallContinue()
+//                    }
+//
+//                    generator.sendCompleted()
+//                } catch let error as Self.Error {
+//                    generator.send(error: error)
+//                } catch let error {
+//                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                    result.context.append(("Input values", input.values))
+//                    generator.send(error: result)
+//                }
+//
+//                // Triggering `detacher` removes the signal lifetime observation.
+//                detacher?.dispose()
+//            }
         }
     }
     
@@ -124,27 +128,29 @@ extension SignalProducer where Error==IG.DB.Error {
                 permission = .stop
             }
             
-            input.database.channel.asyncWrite({ (db) -> R in
-                try interaction(db, input.values) { permission }
-            }) { (db, result) in
-                // Triggering `detacher` removes the signal lifetime observation.
-                detacher?.dispose()
-                
-                switch result {
-                case .success(let value):
-                    generator.send(value: value)
-                    generator.sendCompleted()
-                case .failure(let error):
-                    if let error = error as? Self.Error {
-                        generator.send(error: error)
-                    } else {
-                        var result: Self.Error = .callFailed("An asynchronous database write failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
-                        result.context.append(("Input values", input.values))
-                        generator.send(error: result)
-                    }
-                }
-            }
+            #warning("SQLite: Write")
+            fatalError()
             
+//            input.database.channel.asyncWrite({ (db) -> R in
+//                try interaction(db, input.values) { permission }
+//            }) { (db, result) in
+//                // Triggering `detacher` removes the signal lifetime observation.
+//                detacher?.dispose()
+//
+//                switch result {
+//                case .success(let value):
+//                    generator.send(value: value)
+//                    generator.sendCompleted()
+//                case .failure(let error):
+//                    if let error = error as? Self.Error {
+//                        generator.send(error: error)
+//                    } else {
+//                        var result: Self.Error = .callFailed("An asynchronous database write failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                        result.context.append(("Input values", input.values))
+//                        generator.send(error: result)
+//                    }
+//                }
+//            }
         }
     }
 }

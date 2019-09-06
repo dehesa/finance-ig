@@ -22,7 +22,7 @@ extension IG.API.Request.WorkingOrders {
     public func create(epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
                        type: IG.API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool = true,
                        expiration: IG.API.WorkingOrder.Expiration, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadCreation in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
                 return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.request(.post, "workingorders/otc", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)
@@ -44,7 +44,7 @@ extension IG.API.Request.WorkingOrders {
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadUpdate in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadUpdate in
                 return try .init(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.request(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
                 let data = try JSONEncoder().encode(payload)

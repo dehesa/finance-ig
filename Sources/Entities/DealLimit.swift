@@ -148,6 +148,7 @@ extension KeyedDecodingContainer {
     /// - parameter levelKey: The key that the limit level value is associated with.
     /// - parameter distanceKey: The key that the limit distance value is associated with.
     /// - returns: A decoded value of the deal limit type, or  `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
+    /// - throws: `DecodingError` exclusively.
     internal func decodeIfPresent(_ type: IG.Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?) throws -> IG.Deal.Limit? {
         
         typealias L = IG.Deal.Limit

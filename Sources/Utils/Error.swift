@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 /// Errors thrown by the IG framework.
@@ -99,17 +98,6 @@ extension IG.Error where Self: IG.ErrorPrintable {
         } else if let error = subError as? IG.DB.Error {
             result.append("Database error: \(error.type) \(error.message) \(error.suggestion)")
             attachedError = error.underlyingError
-        // MARK: GRDB.DatabaseError
-        } else if let error = subError as? GRDB.DatabaseError {
-            result.append("SQLite error:")
-            result.append("\(Self.prefix)\tPrimary: \(error.resultCode)")
-            result.append("\(Self.prefix)\tExtended: \(error.extendedResultCode)")
-            if let message = error.message {
-                result.append("\(Self.prefix)\tMessage: \(message)")
-            }
-            if let sql = error.sql {
-                result.append("\(Self.prefix)\tSQL query: \(sql)")
-            }
         // MARK: Unknown error
         } else {
             result.append("unknown error: ")

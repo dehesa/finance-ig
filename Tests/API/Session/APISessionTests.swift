@@ -6,7 +6,7 @@ import XCTest
 final class APISessionTests: XCTestCase {
     /// Tests the Session information retrieval mechanisms.
     func testAPISession() {
-        let api = Test.makeAPI(credentials: nil)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
         
         let key = Test.account.api.key
         let account = Test.account.identifier

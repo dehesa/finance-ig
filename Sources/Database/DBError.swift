@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 extension IG.DB {
@@ -11,11 +10,14 @@ extension IG.DB {
         public internal(set) var suggestion: String
         public internal(set) var underlyingError: Swift.Error?
         public internal(set) var context: [(title: String, value: Any)] = []
+        /// The internal SQLite code returned from an SQLite operation.
+        internal private(set) var code: SQLite.Result?
         
-        internal init(_ type: Self.Kind, _ message: String, suggestion: String, underlying error: Swift.Error? = nil) {
+        internal init(_ type: Self.Kind, _ message: String, suggestion: String, code: SQLite.Result? = nil, underlying error: Swift.Error? = nil) {
             self.type = type
             self.message = message
             self.suggestion = suggestion
+            self.code = code
             self.underlyingError = error
         }
         
@@ -36,8 +38,8 @@ extension IG.DB {
         /// A factory function for `.callFailed` database errors.
         /// - parameter message: A brief explanation on what happened.
         /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-        internal static func callFailed(_ message: String, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-            self.init(.callFailed, message, suggestion: suggestion, underlying: error)
+        internal static func callFailed(_ message: String, code: SQLite.Result , underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+            self.init(.callFailed, message, suggestion: suggestion, code: code, underlying: error)
         }
     }
 }
@@ -82,6 +84,10 @@ extension IG.DB.Error: IG.ErrorPrintable {
     
     public var debugDescription: String {
         var result = self.printableHeader
+        
+        if let code = self.code {
+            #warning("Handle the SQLite error code here.")
+        }
         
         if let contextString = self.printableContext {
             result.append(contextString)
