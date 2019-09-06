@@ -5,6 +5,8 @@ import Foundation
 public final class Streamer {
     /// URL root address.
     public let rootURL: URL
+    /// The queue managing all Streamer requests and responses.
+    private let queue: DispatchQueue
     /// The underlying instance (whether real or mocked) managing the streaming connections.
     internal let channel: IG.StreamerMockableChannel
     
@@ -24,18 +26,23 @@ public final class Streamer {
     /// If you set `autoconnect` to `false` you need to remember to call `connect` on the returned instance.
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
+    /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
-    public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, autoconnect: Bool = true) {
-        let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
-        self.init(rootURL: rootURL, channel: channel, autoconnect: autoconnect)
+    /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
+    public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?, autoconnect: Bool = true) {
+        let queue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
+        let channel = Self.Channel(rootURL: rootURL, credentials: credentials, queue: queue)
+        self.init(rootURL: rootURL, channel: channel, queue: queue, autoconnect: autoconnect)
     }
     
     /// Initializer for a Streamer instance.
     /// - parameter rootURL: The URL where the streaming server is located.
-    /// - parameter session: Real or mocked session managing the streaming connections.
+    /// - parameter channel: The low-level streaming connection manager.
+    /// - parameter queue: The queue on which to process the `Streamer` requests and responses.
     /// - parameter autoconnect: Booleain indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
-    internal init<S:IG.StreamerMockableChannel>(rootURL: URL, channel: S, autoconnect: Bool) {
+    internal init<Session:IG.StreamerMockableChannel>(rootURL: URL, channel: Session, queue: DispatchQueue, autoconnect: Bool) {
         self.rootURL = rootURL
+        self.queue = queue
         self.channel = channel
         
         guard autoconnect else { return }
@@ -45,5 +52,12 @@ public final class Streamer {
     deinit {
         let _ = self.channel.unsubscribeAll()
         self.channel.disconnect()
+    }
+}
+
+extension Streamer {
+    /// The reverse DNS identifier for the `Streamer` instance.
+    internal static var reverseDNS: String {
+        return IG.bundleIdentifier() + ".streamer"
     }
 }

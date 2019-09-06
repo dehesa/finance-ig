@@ -160,7 +160,7 @@ extension IG.API.Request.Session {
                 .validate(statusCodes: 204)
                 .start {
                     switch $0 {
-                    case .value(_):
+                    case .value:
                         weakAPI?.session.credentials = nil
                         input.send(value: ())
                     case .completed: input.sendCompleted()

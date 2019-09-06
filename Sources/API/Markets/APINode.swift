@@ -27,7 +27,7 @@ extension IG.API.Request.Nodes {
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
     public func getMarkets(matching searchTerm: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> String in
+        return SignalProducer(api: self.api) { _ -> String in
             guard !searchTerm.isEmpty else {
                 let message = "Search for markets failed! The search term cannot be empty."
                 throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocumentation)

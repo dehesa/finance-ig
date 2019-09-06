@@ -6,7 +6,7 @@ import XCTest
 final class APIPriceTests: XCTestCase {
     /// Tests paginated activity retrieval.
     func testPrices() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let components = DateComponents().set {
             $0.timeZone = TimeZone(abbreviation: "CET")

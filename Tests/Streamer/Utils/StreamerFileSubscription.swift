@@ -122,7 +122,7 @@ extension StreamerFileSession.SubscriptionSession {
         }
         
         // Prepare all variables for subscription.
-        let label = Bundle(for: StreamerFileSession.self).bundleIdentifier! + ".streamer.subscription"
+        let label = IG.Streamer.reverseDNS + ".subscription"
         let queue = DispatchQueue(label: label, qos: .realTimeMessaging, autoreleaseFrequency: .never, target: nil)
         let (signal, input) = Signal<Event,Never>.pipe()
         let disposable = signal.observeValues { [weak session = self] (event) in

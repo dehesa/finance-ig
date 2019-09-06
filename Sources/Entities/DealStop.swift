@@ -294,6 +294,7 @@ extension KeyedDecodingContainer {
     /// - parameter trailingIncrementKey: The key that the trailing increment value is associated with.
     /// - parameter referencing: The deal direction and level given where the stop will apply.
     /// - returns: A decoded value of deal stop type, or `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
+    /// - throws: `DecodingError` exclusively.
     internal func decodeIfPresent(_ type: IG.Deal.Stop.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?,
                                   riskKey: (isGuaranteed: KeyedDecodingContainer<K>.Key, premium: KeyedDecodingContainer<K>.Key?),
                                   trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?)) throws -> IG.Deal.Stop? {

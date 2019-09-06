@@ -6,7 +6,8 @@ final class StreamerAccountTests: XCTestCase {
     /// Test Lightstreamer subscription to account changes.
     func testAccountSubscription() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
         let accountId = Test.account.identifier
         self.test( streamer.accounts.subscribe(to: accountId, fields: .all, snapshot: true), value: { (account) in

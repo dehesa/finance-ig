@@ -1,4 +1,3 @@
-import GRDB
 import Foundation
 
 /// Namespace for market information.
@@ -39,7 +38,7 @@ extension IG.Market.Epic: Codable {
     }
 }
 
-extension IG.Market.Epic: GRDB.DatabaseValueConvertible {
+extension IG.Market.Epic {
     /// Returns a Boolean indicating whether the raw value can represent a market epic.
     private static func validate(_ value: String) -> Bool {
         let allowedRange = 6...30

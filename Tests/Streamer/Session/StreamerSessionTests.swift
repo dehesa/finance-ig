@@ -8,7 +8,8 @@ final class StreamerSessionTests: XCTestCase {
         let scheduler = QueueScheduler(suffix: ".streamer.session")
         
         // 0. Create the streamer and check that is disconnected.
-        let streamer = Test.makeStreamer(autoconnect: .no)
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .no)
         XCTAssertEqual(streamer.session.status.value, .disconnected(isRetrying: false))
         
         // 1. Test connection.

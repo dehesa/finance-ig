@@ -5,11 +5,6 @@ extension IG.Streamer {
     public enum Request {}
 }
 
-extension DispatchQoS {
-    /// Quality of Service for real time messaging.
-    internal static let realTimeMessaging = DispatchQoS(qosClass: .userInitiated, relativePriority: 0)
-}
-
 extension IG.Streamer {
     /// Possible Lightstreamer modes.
     internal enum Mode: String {

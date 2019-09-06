@@ -6,7 +6,8 @@ final class StreamerTradeTests: XCTestCase {
     /// Tests for the stream confirmation subscription.
 //    func testAccountTrade() {
 //        let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-//        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+//        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+//        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, autoconnect: .yes(timeout: 1.5, queue: scheduler))
 //
 //        let account = Test.account.identifier
 //        self.test( streamer.deals.subscribe(to: account, updates: .all, snapshot: true), value: { (update) in
@@ -26,8 +27,9 @@ final class StreamerTradeTests: XCTestCase {
     func testChain() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
         
-        let api = Test.makeAPI(credentials: Test.credentials.api)
-        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
         var dealId: IG.Deal.Identifier! = nil
         _ = streamer.confirmations.subscribe(to: Test.account.identifier, snapshot: false).startWithResult {

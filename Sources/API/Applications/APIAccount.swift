@@ -32,13 +32,13 @@ extension IG.API.Request.Accounts {
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: `SignalProducer` indicating the success of the operation.
     public func updatePreferences(trailingStops: Bool) -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer(api: self.api) { (_) -> Self.PayloadPreferences in
+        return SignalProducer(api: self.api) { _ -> Self.PayloadPreferences in
                 return .init(trailingStopsEnabled: trailingStops)
             }.request(.put, "accounts/preferences", version: 1, credentials: true, body: { (_, payload) in
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json)
             .validate(statusCodes: 200)
-            .map { (_) in return }
+            .map { _ in return }
     }
 }
 

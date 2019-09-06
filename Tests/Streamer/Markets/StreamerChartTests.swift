@@ -6,7 +6,8 @@ final class StreamerChartTests: XCTestCase {
     /// Tests subscription to candle charts.
     func testChartSecond() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.charts.subscribe(to: epic, interval: .second, fields: .all, snapshot: true), value: { (second) in
@@ -39,7 +40,8 @@ final class StreamerChartTests: XCTestCase {
     /// Tests subscription to tick charts.
     func testChartTick() {
         let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-        let streamer = Test.makeStreamer(autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         self.test( streamer.charts.subscribe(to: epic, fields: .all, snapshot: true), value: { (tick) in

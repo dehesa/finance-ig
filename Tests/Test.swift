@@ -2,6 +2,7 @@
 import ReactiveSwift
 import Foundation
 
+/// Holder for the test data and credentials information.
 enum Test {
     /// A test account that can be share through all tests.
     static let account = Self.Account.make(from: "io.dehesa.money.ig.tests.account")
@@ -11,7 +12,7 @@ enum Test {
 
 extension Test {
     /// Holder (and fetcher) for the API and Streamer credentials.
-    class Credentials {
+    final class Credentials {
         /// The default timeout waiting for the semaphore to succeed.
         private let timeout: DispatchTimeInterval
         /// Semaphore controling the access to API credentials..
@@ -24,6 +25,7 @@ extension Test {
         private var streamerCredentials: IG.Streamer.Credentials? = nil
         
         /// Initializes the credential fetcher with a given timeout, so test are not waiting forever.
+        /// - parameter timeout: The maximum wait for a dispatch semaphore.
         fileprivate init(timeout: DispatchTimeInterval) {
             self.timeout = timeout
         }
@@ -35,7 +37,7 @@ extension Test {
             
             if let credentials = self.apiCredentials { return credentials }
             
-            var api: IG.API! = Test.makeAPI(credentials: nil)
+            var api: IG.API! = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
             defer { api = nil }
             
             let key = Test.account.api.key
@@ -80,7 +82,7 @@ extension Test {
                 return self.streamerCredentials!
             }
             
-            var api: IG.API! = .init(rootURL: Test.account.api.rootURL, credentials: apiCredentials)
+            var api: IG.API! = .init(rootURL: Test.account.api.rootURL, credentials: apiCredentials, targetQueue: nil)
             defer { api = nil }
             
             switch api.session.refreshCertificate().single() {

@@ -5,7 +5,7 @@ import XCTest
 final class APIPositionTests: XCTestCase {
     /// Tests the position creation, confirmation, retrieval, and deletion.
     func testPositionLifecycle() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let expiry: IG.Market.Expiry = nil

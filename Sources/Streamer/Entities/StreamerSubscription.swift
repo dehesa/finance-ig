@@ -19,12 +19,14 @@ extension IG.Streamer {
         @nonobjc internal let status: Property<IG.Streamer.Subscription.Event>
         
         /// Initializes a subscription which is not yet connected to the server.
+        ///
+        /// Each subscription will have its own serial `DispatchQueue`.
         /// - parameter mode: The Lightstreamer mode to use on subscription.
         /// - parameter item: The item being subscrbed to (e.g. "MARKET" or "ACCOUNT").
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool, target: DispatchQueue) {
+        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool, targetQueue: DispatchQueue) {
             self.events = .init(.unsubscribed)
             self.status = self.events.skipRepeats { (lhs, rhs) -> Bool in
                 switch (lhs, rhs) {
@@ -35,8 +37,8 @@ extension IG.Streamer {
                 }
             }
             
-            let childLabel = target.label + "." + mode.rawValue.lowercased()
-            self.queue = DispatchQueue(label: childLabel, qos: .realTimeMessaging, autoreleaseFrequency: .inherit, target: target)
+            let childLabel = targetQueue.label + "." + mode.rawValue.lowercased()
+            self.queue = DispatchQueue(label: childLabel, qos: targetQueue.qos, autoreleaseFrequency: .workItem, target: targetQueue)
             
             self.item = item
             self.fields = fields

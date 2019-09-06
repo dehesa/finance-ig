@@ -6,7 +6,7 @@ import XCTest
 final class APIApplicationTests: XCTestCase {
     /// Tests the retrieval of all applications accessible by the given user.
     func testApplications() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let applications = try! api.applications.getAll().single()!.get()
         
         guard let app = applications.first else { return XCTFail("No applications were found.") }
@@ -20,11 +20,13 @@ final class APIApplicationTests: XCTestCase {
         XCTAssertGreaterThan(app.allowance.account.historicalDataRequests, 0)
         XCTAssertGreaterThan(app.allowance.subscriptionsLimit, 0)
         XCTAssertLessThan(app.creationDate, Date())
+        
+        print(app)
     }
     
     /// Tests the application configuration capabilities.
     func testApplicationSettings() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let key = Test.account.api.key
         let status: API.Application.Status = .enabled

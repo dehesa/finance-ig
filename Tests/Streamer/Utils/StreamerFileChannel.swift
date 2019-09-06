@@ -13,9 +13,8 @@ final class StreamerFileChannel: StreamerMockableChannel {
     /// Returns the current streamer status.
     private let mutableStatus: MutableProperty<Streamer.Session.Status>
     
-    init(rootURL: URL, credentials: Streamer.Credentials) {
-        let label = Bundle(for: Streamer.self).bundleIdentifier! + ".streamer"
-        self.queue = DispatchQueue(label: label, qos: .realTimeMessaging, attributes: .concurrent, autoreleaseFrequency: .never)
+    init(rootURL: URL, credentials: Streamer.Credentials, queue: DispatchQueue) {
+        self.queue = queue
         self.mutableStatus = .init(.disconnected(isRetrying: false))
         self.status = self.mutableStatus.skipRepeats()
     }

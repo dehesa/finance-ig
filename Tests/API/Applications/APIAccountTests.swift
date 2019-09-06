@@ -6,7 +6,7 @@ import XCTest
 final class APIAccountTests: XCTestCase {
     /// Tests Account information retrieval.
     func testAccounts() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let accounts = try! api.accounts.getAll().single()!.get()
         
         let account = accounts.first!
@@ -17,7 +17,7 @@ final class APIAccountTests: XCTestCase {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let initial = try! api.accounts.preferences().single()!.get()
         
         try! api.accounts.updatePreferences(trailingStops: !initial.trailingStops).single()!.get()

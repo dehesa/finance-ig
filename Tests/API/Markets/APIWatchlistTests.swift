@@ -5,7 +5,7 @@ import XCTest
 final class APIWatchlistTests: XCTestCase {
     /// Tests the various watchlist retrieval endpoints.
     func testWatchlistRetrieval() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let watchlists = try! api.watchlists.getAll().single()!.get()
         XCTAssertFalse(watchlists.isEmpty)
@@ -17,7 +17,7 @@ final class APIWatchlistTests: XCTestCase {
 
     /// Tests to perform only on the server side.
     func testWatchlistLifecycle() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         /// Epics to be added to the watchlist.
         let startEpics: [IG.Market.Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0.rawValue > $1.rawValue }
         let addedEpic: IG.Market.Epic = "CS.D.GBPEUR.CFD.IP"

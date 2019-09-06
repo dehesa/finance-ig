@@ -5,7 +5,7 @@ import XCTest
 final class APIWorkingOrderTests: XCTestCase {
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
 
         let market = try! api.markets.get(epic: "CS.D.EURUSD.MINI.IP").single()!.get()
         let epic = market.instrument.epic

@@ -5,7 +5,7 @@ import XCTest
 final class APIMarketTests: XCTestCase {
     /// Tests market search through epic strings.
     func testMarkets() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let epics: Set<IG.Market.Epic> = ["CS.D.EURGBP.MINI.IP", "CS.D.EURUSD.MINI.IP", "CO.D.DX.FCS1.IP", "KA.D.VOD.CASH.IP"]
         let markets = try! api.markets.get(epics: epics).single()!.get()
@@ -14,7 +14,7 @@ final class APIMarketTests: XCTestCase {
     }
     
     func testMarketRetrieval() {
-        let api = Test.makeAPI(credentials: Test.credentials.api)
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let market = try! api.markets.get(epic: epic).single()!.get()

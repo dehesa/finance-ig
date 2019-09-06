@@ -1,6 +1,5 @@
 @testable import IG
 import ReactiveSwift
-import GRDB
 import XCTest
 
 class DBNodeTests: XCTestCase {
@@ -35,7 +34,7 @@ class DBNodeTests: XCTestCase {
 
 //    /// Tests the creation of a File-System database.
 //    func testDatabaseCreation() {
-//        let database = Test.makeDatabase()
+//        let database = Test.makeDatabase(rootURL: Self.account.database?.rootURL)
 //        if let url = Test.account.database?.rootURL {
 //            XCTAssertEqual(database.channel.path, url.path)
 //        }
