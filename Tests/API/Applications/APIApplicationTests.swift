@@ -20,8 +20,6 @@ final class APIApplicationTests: XCTestCase {
         XCTAssertGreaterThan(app.allowance.account.historicalDataRequests, 0)
         XCTAssertGreaterThan(app.allowance.subscriptionsLimit, 0)
         XCTAssertLessThan(app.creationDate, Date())
-        
-        print(app)
     }
     
     /// Tests the application configuration capabilities.
@@ -30,7 +28,7 @@ final class APIApplicationTests: XCTestCase {
         
         let key = Test.account.api.key
         let status: API.Application.Status = .enabled
-        let allowance: (overall: UInt, trading: UInt) = (30, 100)
+        let allowance: (overall: UInt, trading: UInt) = (60, 100)
         
         let app = try! api.applications.update(key: key, status: status, accountAllowance: allowance).single()!.get()
         XCTAssertEqual(app.key, key)

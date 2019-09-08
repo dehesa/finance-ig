@@ -90,3 +90,22 @@ extension IG.Streamer.Formatter {
     }
 }
 
+extension IG.Streamer.Formatter.Update.Error: IG.ErrorPrintable {
+    var printableDomain: String {
+        return "IG.\(Streamer.self).\(Streamer.Formatter.self).\(Streamer.Formatter.Update.self).\(Streamer.Formatter.Update.Error.self)"
+    }
+    
+    var printableType: String {
+        return self.type
+    }
+    
+    func printableMultiline(level: Int) -> String {
+        let prefix = Self.debugPrefix(level: level+1)
+        
+        var result = self.printableDomain
+        result.append("\(prefix)Updating to type: \(self.printableType)")
+        result.append("\(prefix)Value: \(self.value)")
+        return result
+    }
+}
+

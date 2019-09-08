@@ -268,20 +268,23 @@ extension IG.API.Request.Positions {
             if let stop = stop, case .dynamic(let settings) = stop.trailing {
                 guard case .some(let settings) = settings else {
                     var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified.")
-                    error.context.append(("Position stop", stop))
+                    error.context.append(("Position stop level", stop.level))
+                    error.context.append(("Position stop trailing", stop.trailing))
                     throw error
                 }
                 
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.distance) else {
                     var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing disance provided must be a positive number and greater than zero.")
-                    error.context.append(("Position stop", stop))
+                    error.context.append(("Position stop level", stop.level))
+                    error.context.append(("Position stop trailing", stop.trailing))
                     throw error
                 }
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.increment) else {
                     var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero.")
-                    error.context.append(("Position stop", stop))
+                    error.context.append(("Position stop level", stop.level))
+                    error.context.append(("Position stop trailing", stop.trailing))
                     throw error
                 }
             }
