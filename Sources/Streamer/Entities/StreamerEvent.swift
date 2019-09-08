@@ -66,6 +66,42 @@ extension IG.Streamer.Subscription {
     }
 }
 
+extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
+    var printableDomain: String {
+        return "IG.\(IG.Streamer.self).\(IG.Streamer.Subscription.self).\(IG.Streamer.Subscription.Error.self)"
+    }
+    
+    var printableType: String {
+        switch self.type {
+        case .unknown: return "Unknown"
+        case .invalidAdapterName: return "Invalid adapter name"
+        case .interruptedSession: return "Interrupt session"
+        case .invalidGroupName: return "Invalid group name"
+        case .invalidGroupNameForSchema: return "Invalid group name for schema"
+        case .invalidSchemaName: return "Invalid schema name"
+        case .prohibitedModeForItem: return "Prohibit mode for item"
+        case .invalidSelectorName: return "Invalid selector name"
+        case .unfilteredDispatchingProhibited: return "Unfiltered dispatching prohibited"
+        case .unfilteredDispatchingUnsupported: return "Unfilter dispatching unsupported"
+        case .unfilteredDispatchingRestricted: return "Unfiltered dispatching restricted"
+        case .rawModeRestricted: return "Raw mode restricted"
+        case .subscriptionRestricted: return "Subscription restricted"
+        case .requestRefused: return "Request refused"
+        }
+    }
+    
+    func printableMultiline(level: Int) -> String {
+        let levelPrefix = Self.debugPrefix(level: level+1)
+        
+        var result = "\(self.printableDomain) (\(self.code) -> \(self.printableType))"
+        result.append("\(levelPrefix)Type description: \(self.type.debugDescription)")
+        if let message = self.message {
+            result.append("\(levelPrefix)Error message: \(message)")
+        }
+        return result
+    }
+}
+
 extension IG.Streamer.Subscription.Error {
     /// The type of a subscription error.
     internal enum Kind: CustomDebugStringConvertible {

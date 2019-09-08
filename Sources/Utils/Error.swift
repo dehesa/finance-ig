@@ -1,9 +1,11 @@
 import Foundation
 
 /// Errors thrown by the IG framework.
-public protocol Error: Swift.Error, CustomDebugStringConvertible {
+public protocol Error: Swift.Error {
     /// The error subtype within this errors domain.
     associatedtype Kind: CaseIterable
+    /// A type for a context item.
+    typealias Item = (title: String, value: Any)
     
     /// The type of error.
     var type: Self.Kind { get }
@@ -14,198 +16,160 @@ public protocol Error: Swift.Error, CustomDebugStringConvertible {
     /// Any underlying error that was raised right before this hosting error.
     var underlyingError: Swift.Error? { get }
     /// Store values/objects that gives context to the hosting error.
-    var context: [(title: String, value: Any)] { get }
+    var context: [Item] { get }
 }
 
-internal protocol ErrorPrintable {
+internal protocol ErrorPrintable: CustomDebugStringConvertible {
     /// The human readable error domain.
     var printableDomain: String { get }
     /// The human readable error type.
     var printableType: String { get }
+    /// Multiple line of text representing the error,
+    func printableMultiline(level: Int) -> String
 }
 
-extension IG.Error where Self: IG.ErrorPrintable {
-    /// Prefix to append before any new line when making a human readable version of the error.
-    internal static var prefix: String { "\n\t" }
-    /// Header to be appended to any human readable version of the error.
-    internal var printableHeader: String {
-        var result = "\n\n[\(self.printableDomain)] \(self.printableType)."
-        result.append("\(Self.prefix)Description: \(self.message)")
-        result.append("\(Self.prefix)Suggestions: \(self.suggestion)")
+extension IG.ErrorPrintable {
+    public var debugDescription: String {
+        var result = Self.debugPrefix(level: 0)
+        result.append(self.printableMultiline(level: 0))
+        result.append("\n")
         return result
     }
-    /// Human readable version of the underlying error.
-    internal var printableUnderlyingError: String? {
-        guard let subError = self.underlyingError else { return nil }
-        var attachedError: Swift.Error? = nil
-        
-        var result = "\(Self.prefix)Underlying "
-        // MARK: Foundation.EncodingError
-        if let encodingError = subError as? EncodingError {
-            result.append("encoding error: ")
-            switch encodingError {
-            case .invalidValue(let value, let ctx):
-                result.append(#"Invalid value at coding path "\#(ctx.codingPath.printableString)"."#)
-                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                result.append("\(Self.prefix)\t\(String(describing: value))")
-                attachedError = ctx.underlyingError
-            @unknown default:
-                result.append("Non-identifyiable.")
-            }
-        // MARK: Foundation.DecodingError
-        } else if let decodingError = subError as? DecodingError {
-            result.append("decoding error: ")
-            switch decodingError {
-            case .keyNotFound(let key, let ctx):
-                result.append(#"Key "\#(key.printableString)" not found at coding path "\#(ctx.codingPath.printableString)"."#)
-                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                attachedError = ctx.underlyingError
-            case .valueNotFound(let type, let ctx):
-                result.append(#"Value of type "\#(type.self)" not found at coding path "\#(ctx.codingPath.printableString)"."#)
-                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                attachedError = ctx.underlyingError
-            case .typeMismatch(let type, let ctx):
-                result.append(#"Mismatch of expected value type "\#(type.self)" at coding path "\#(ctx.codingPath.printableString)"."#)
-                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                attachedError = ctx.underlyingError
-            case .dataCorrupted(let ctx):
-                result.append(#"Data corrupted at coding path "\#(ctx.codingPath.printableString)"."#)
-                result.append("\(Self.prefix)\t\(ctx.debugDescription)")
-                attachedError = ctx.underlyingError
-            @unknown default:
-                result.append("Non-identifyiable.")
-            }
-        // MARK: IG.API.Error
-        } else if let error = subError as? IG.API.Error {
-            result.append("API error: \(error.type) \(error.message) \(error.suggestion)")
-            attachedError = error.underlyingError
-        // MARK: IG.Streamer.Error
-        } else if let error = subError as? IG.Streamer.Error {
-            result.append("Streamer error: \(error.type) \(error.message) \(error.suggestion)")
-            attachedError = error.underlyingError
-        // MARK: IG.Streamer.Subscription.Error
-        } else if let error = subError as? IG.Streamer.Subscription.Error {
-            result.append("subscription error (code \(error.code)): \(String(describing: error.type))")
-            if let message = error.message {
-                result.append("\(Self.prefix)\tMessage: \(message)")
-            }
-        // MARK: IG.Streamer.Formatter.Update.Error
-        } else if let error = subError as? IG.Streamer.Formatter.Update.Error {
-            result.append("transformation error:")
-            result.append("\(Self.prefix)\tResult type: \(error.type)")
-            result.append("\(Self.prefix)\tValue received: \(error.value)")
-        // MARK: IG.Database.Error
-        } else if let error = subError as? IG.DB.Error {
-            result.append("Database error: \(error.type) \(error.message) \(error.suggestion)")
-            attachedError = error.underlyingError
-        // MARK: Unknown error
-        } else {
-            result.append("unknown error: ")
-            result.append(Self.excerpt(of: subError, maximumCharacters: 100))
-        }
-        
-        if let sourceError = attachedError {
-            result.append("\(Self.prefix)\tSource error: \(Self.excerpt(of: sourceError, maximumCharacters: 100))")
-        }
+    
+    /// Maximum number of characters per debug line (suggestion).
+    internal static var maxCharsPerLine: Int { 180 }
+    /// Returns the prefixes to be appended to each debug line.
+    /// - parameter level: The prefix indentation level.
+    internal static func debugPrefix(level: Int) -> String {
+        guard level > 0 else { return "" }
+        var result = "\n"
+        result.append(String(repeating: "|   ", count: level-1))
+        result.append("|-- ")
         return result
     }
-    /// Huamn readable version of the error context.
-    internal var printableContext: String? {
-        guard !self.context.isEmpty else { return nil }
+}
+
+internal enum ErrorHelper {
+    /// Returns a single-line `String` representation of the passed value taking a given prefix and a maximum number of characters per line.
+    internal static func representation(of value: Any, prefixCount: Int, maxCharacters: Int, replacingNewLinesWith replace: String? = " ") -> String {
+        let string = (value as? String) ?? String(describing: value)
+        guard !string.isEmpty else { return "" }
         
-        var result = "\(Self.prefix)Context:"
-        for element in self.context {
-            result.append("\(Self.prefix)\t* \(element.title): ")
+        let maxCount = max(maxCharacters - prefixCount, 0)
+        let end = string.index(string.startIndex, offsetBy: maxCount, limitedBy: string.endIndex) ?? string.endIndex
+        
+        let result = String(string[..<end])
+        guard let char = replace, !char.isEmpty else { return result }
+        return result.replacingOccurrences(of: "\n", with: char)
+    }
+    
+    /// Returns a multi-line representation of the passed error.
+    internal static func representation(of underlyingError: Swift.Error?, level: Int, prefixCount: Int, maxCharacters: Int) -> String? {
+        switch underlyingError {
+        case .none:
+            return nil
+        case let printableError as IG.ErrorPrintable:
+            return printableError.printableMultiline(level: level+1)
+        case let unknownError?:
+            return IG.ErrorHelper.representation(of: unknownError, prefixCount: prefixCount, maxCharacters: maxCharacters)
+        }
+    }
+    
+    /// Returns a multi-line representation of the given error context.
+    internal static func representation(of context: [IG.Error.Item], itemPrefix: String, maxCharacters: Int) -> String {
+        var result = String()
+        
+        for (title, value) in context {
+            let beginning = "\(itemPrefix)\(title): "
+            result.append(beginning)
             
-            switch element.value {
+            switch value {
             case let string as String:
-                result.append(string)
-            case let update as [String:IG.Streamer.Subscription.Update]:
-                result.append("[")
-                result.append(update.map { (key, value) in
-                    let u = (value.isUpdated) ? "(not updated) " : ""
-                    let v = value.value ?? "nil"
-                    return "\(key): \(u)\(v)"
-                }.joined(separator: ", "))
-                result.append("]")
+                result.append(IG.ErrorHelper.representation(of: string, prefixCount: beginning.count, maxCharacters: maxCharacters))
+            case let decimal as Decimal:
+                result.append(String(describing: decimal))
             case let date as Date:
-                result.append(self.dateFormatter.string(from: date))
+                result.append(IG.API.Formatter.humanReadableLong.deepCopy.string(from: date))
+            case let request as URLRequest:
+                var stringValue = String()
+                if let method = request.httpMethod { stringValue.append("\(method) ") }
+                if let url = request.url { stringValue.append("\(url) ") }
+                result.append(stringValue)
+            case let response as URLResponse:
+                result.append(IG.ErrorHelper.representation(of: response, prefixCount: beginning.count, maxCharacters: maxCharacters))
             case let limit as IG.Deal.Limit:
-                switch limit.type {
-                case .distance(let distance): result.append(#"distance "\#(distance)""#)
-                case .position(let level): result.append(#"level "\#(level)""#)
-                }
+                result.append(Self.representation(of: limit.type))
             case let stop as IG.Deal.Stop:
-                switch stop.type {
-                case .distance(let distance): result.append(#"distance "\#(distance)""#)
-                case .position(let level): result.append(#"level "\#(level)""#)
-                }
+                result.append(Self.representation(of: stop.type))
                 result.append(", ")
                 switch stop.risk {
-                case .exposed: result.append("exposed risk")
+                case .exposed:
+                    result.append("exposed risk")
                 case .limited(let premium):
                     result.append("limited risk")
-                    if let comission = premium { result.append(#" (premium "\#(comission)""#) }
+                    if let comission = premium {
+                        result.append(#" (premium "\#(comission)""#)
+                    }
                 }
                 switch stop.trailing {
                 case .static: break
                 case .dynamic(let settings):
                     result.append(", trailing")
-                    if let s = settings { result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#) }
+                    if let s = settings {
+                        result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#)
+                    }
                 }
-            case let request as URLRequest:
-                if let method = request.httpMethod { result.append("\(method) ") }
-                if let url = request.url { result.append("\(url) ") }
-                if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
-                    result.append("\(Self.prefix)\t[")
-                    result.append(headers.map { "\($0): \($1)" }.joined(separator: ", "))
-                    result.append("]")
+            case let stopType as IG.Deal.Stop.Kind:
+                result.append(Self.representation(of: stopType))
+            case let stopTrailing as IG.Deal.Stop.Trailing:
+                switch stopTrailing {
+                case .static: result.append("static")
+                case .dynamic(let settings):
+                    result.append("dynamic")
+                    if let s = settings {
+                        result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#)
+                    }
                 }
-            case let statuses as [IG.Streamer.Session.Status]:
-                let representation = statuses.map { $0.debugDescription }.joined(separator: ", ")
-                result.append("[\(representation)]")
+            case let code as IG.SQLite.Result:
+                result.append("\(code.rawValue) -> \(code.description)")
             case let errors as [IG.Streamer.Error]:
-                let representation = errors.map { "\($0.type)" }.joined(separator: ", ")
-                result.append("[\(representation)]")
+                let string = errors.map {
+                    var s = $0.printableType
+                    if let item = $0.item { s.append(" for \(item)") }
+                    return s
+                }.joined(separator: ", ")
+                result.append("[\(string)]")
+            case let statuses as [IG.Streamer.Session.Status]:
+                let string = statuses.map { $0.rawValue }.joined(separator: ", ")
+                result.append("[\(string)]")
+            case let updates as [String:IG.Streamer.Subscription.Update]:
+                let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
+                result.append("[\(string)]")
             default:
-                result.append(Self.excerpt(of: element.value, maximumCharacters: 45))
+                result.append(IG.ErrorHelper.representation(of: value, prefixCount: beginning.count, maxCharacters: maxCharacters))
             }
         }
+        
         return result
     }
     
-    /// The date formatter to use when representing dates on errors.
-    private var dateFormatter: DateFormatter {
-        let result = IG.API.Formatter.humanReadableLong.deepCopy
-        result.timeZone = TimeZone.current
-        return result
-    }
-    
-    /// Returns a `String` representation of the given instance with a maximum of `max` characters.
-    /// - parameter instance: The instance to represent as a `String`.
-    /// - parameter max: The maximum amount of characters in the string.
-    private static func excerpt(of instance: Any, maximumCharacters max: Int) -> String {
-        let string = String(describing: instance)
-        let end = string.index(string.startIndex, offsetBy: max, limitedBy: string.endIndex) ?? string.endIndex
-        return String(string[..<end])
-    }
-}
-
-// MARK: - Supporting functionality
-
-extension CodingKey {
-    /// Human readable print version of the coding key.
-    fileprivate var printableString: String {
-        if let number = self.intValue {
-            return String(number)
-        } else {
-            return self.stringValue
+    /// Returns a `String` representation of a deal limit type.
+    /// - parameter limitType: A type of limit for a given deal.
+    /// - returns: A representation for a deal's limit.
+    private static func representation(of limitType: IG.Deal.Limit.Kind) -> String {
+        switch limitType {
+        case .distance(let distance): return #"distance "\#(distance)""#
+        case .position(let level):    return #"level "\#(level)""#
         }
     }
-}
-
-extension Array where Array.Element == CodingKey {
-    fileprivate var printableString: String {
-        return self.map { $0.printableString }.joined(separator: "/")
+    
+    /// Returns a `String` representation of a deal stop type.
+    /// - parameter limitType: A type of stop for a given deal.
+    /// - returns: A representation for a deal's stop.
+    private static func representation(of stopType: IG.Deal.Stop.Kind) -> String {
+        switch stopType {
+        case .distance(let distance): return #"distance "\#(distance)""#
+        case .position(let level):    return #"level "\#(level)""#
+        }
     }
 }

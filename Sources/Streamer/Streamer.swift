@@ -30,7 +30,7 @@ public final class Streamer {
     /// - parameter autoconnect: Boolean indicating whether the `connect()` function is called right away, or whether it shall be called later on by the user.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
     public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?, autoconnect: Bool = true) {
-        let queue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
+        let queue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials, queue: queue)
         self.init(rootURL: rootURL, channel: channel, queue: queue, autoconnect: autoconnect)
     }
