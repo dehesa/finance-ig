@@ -92,7 +92,7 @@ extension IG.API {
                 switch $0 {
                 case Self.Expiration.CodingKeys.tillCancelled.rawValue: return .tillCancelled
                 case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: IG.API.Formatter.iso8601noSeconds))
-                default: throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\($0)\" couldn't be processed.")
+                default: throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration \"\($0)\" couldn't be processed")
                 }
             }(try container.decode(String.self, forKey: .expiration))
         }

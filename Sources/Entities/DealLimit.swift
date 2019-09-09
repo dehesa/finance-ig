@@ -177,7 +177,7 @@ extension KeyedDecodingContainer {
             }
             
             guard let limit = possibleLimit else {
-                let msg = #"The limit level "\#(level)" and/or the limit distance "\#(distance)" decoded were invalid."#
+                let msg = #"The limit level "\#(level)" and/or the limit distance "\#(distance)" decoded were invalid"#
                 throw DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: msg)
             }
             return limit
@@ -193,8 +193,6 @@ extension IG.Deal.Limit: CustomDebugStringConvertible {
         case .position(let level): result.append("position at \(level)")
         case .distance(let dista): result.append("distance of \(dista) pips")
         }
-        
-        result.append(".")
         return result
     }
 }

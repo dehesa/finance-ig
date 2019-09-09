@@ -7,7 +7,7 @@ public enum Market {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The epic couldn't be identified or is not in the correct format.") }
+            guard Self.validate(value) else { fatalError("The epic couldn't be identified or is not in the correct format") }
             self.rawValue = value
         }
         
@@ -27,7 +27,7 @@ extension IG.Market.Epic: Codable {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
         guard Self.validate(rawValue) else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern.")
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The given string doesn't conform to the regex pattern")
         }
         self.rawValue = rawValue
     }

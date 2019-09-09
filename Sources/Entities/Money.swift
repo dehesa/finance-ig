@@ -24,7 +24,7 @@ public struct Money<C:IG.CurrencyType>: Equatable, Hashable {
         NSDecimalRound(&rounded, &approximate, C.minorUnit, .bankers)
         return Self.init(rounded)
         #else
-        #error("Decimal rounding is not supported by non-Darwin platforms.")
+        #error("Decimal rounding is not supported by non-Darwin platforms")
         #endif
     }
 }
@@ -49,7 +49,7 @@ extension IG.Money: ExpressibleByFloatLiteral {
     /// - bug: See Swift bug [SR-920](https://bugs.swift.org/browse/SR-920).
     public init(floatLiteral value: Double) {
         guard let result = Decimal(string: String(value)) else {
-            fatalError(#"The float literal "\#(value)" couldn't be transformed into "\#(Self.self)"."#)
+            fatalError(#"The float literal "\#(value)" couldn't be transformed into "\#(Self.self)""#)
         }
         self.init(result)
     }
@@ -66,7 +66,7 @@ extension IG.Money: ExpressibleByStringLiteral {
     
     public init(stringLiteral value: String) {
         guard let result = Decimal(string: value) else {
-            fatalError(#"The string literal "\#(value)" couldn't be transformed into "\#(Self.self)"."#)
+            fatalError(#"The string literal "\#(value)" couldn't be transformed into "\#(Self.self)""#)
         }
         self.init(result)
     }

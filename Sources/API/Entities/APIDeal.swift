@@ -23,7 +23,7 @@ extension IG.API.Deal {
             case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
             case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
             case Self.CodingKeys.deleted.rawValue: self = .deleted
-            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The status value "\#(value)" couldn't be parsed."#)
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The status value "\#(value)" couldn't be parsed"#)
             }
         }
         

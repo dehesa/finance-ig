@@ -1,5 +1,11 @@
 import Foundation
 
+/// Used on types with a custom debug descriptions within this framework.
+internal protocol DebugDescriptable: CustomDebugStringConvertible {
+    /// The name to use as the receiver domain.
+    static var printableDomain: String { get }
+}
+
 /// Convenience structure gathering several items in a final `String` representation.
 ///
 /// Here is an example of an outcome for this structure with the default settings:

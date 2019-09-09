@@ -35,7 +35,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return input.send(error: error)
             } catch let underlyingError {
-                let error: Self.Error = .invalidRequest("The request validation failed.", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The request validation failed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
                 return input.send(error: error)
             }
             
@@ -56,7 +56,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return .failure(error)
             } catch let underlyingError {
-                let error: Self.Error = .invalidRequest("The URL request couldn't be created.", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The URL request couldn't be created", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
                 return .failure(error)
             }
             
@@ -90,20 +90,20 @@ extension SignalProducer where Error==IG.API.Error {
                 } catch let error as Self.Error {
                     return .failure(error)
                 } catch let underlyingError {
-                    let error: Self.Error = .invalidRequest("The URL request queries couldn't be formed.", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                    let error: Self.Error = .invalidRequest("The URL request queries couldn't be formed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
                     return .failure(error)
                 }
                 
                 if !queries.isEmpty {
                     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-                        let error: Self.Error = .invalidRequest(#""\#(method.rawValue) \#(url)" URL cannot be transmuted into "URLComponents"."#, suggestion: Self.Error.Suggestion.bug)
+                        let error: Self.Error = .invalidRequest(#""\#(method.rawValue) \#(url)" URL cannot be transmuted into "URLComponents""#, suggestion: Self.Error.Suggestion.bug)
                         return .failure(error)
                     }
                     
                     components.queryItems = queries
                     guard let requestURL = components.url else {
                         let representation = queries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
-                        let error: Self.Error = .invalidRequest(#"An error was encountered when appending the URL queries "[\#(representation)]" to "\#(method.rawValue) \#(url)" URL."#, suggestion: Self.Error.Suggestion.readDocumentation)
+                        let error: Self.Error = .invalidRequest(#"An error was encountered when appending the URL queries "[\#(representation)]" to "\#(method.rawValue) \#(url)" URL"#, suggestion: Self.Error.Suggestion.readDocumentation)
                         return .failure(error)
                     }
                     url = requestURL
@@ -131,7 +131,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return .failure(error)
             } catch let error {
-                let error: Self.Error = .invalidRequest("The request header couldn't be created.", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The request header couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
                 return .failure(error)
             }
             
@@ -143,7 +143,7 @@ extension SignalProducer where Error==IG.API.Error {
                 } catch let error as Self.Error {
                     return .failure(error)
                 } catch let error {
-                    let error: Self.Error = .invalidRequest("The request body couldn't be created.", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
+                    let error: Self.Error = .invalidRequest("The request body couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
                     return .failure(error)
                 }
             }
@@ -172,12 +172,12 @@ extension SignalProducer where Value==IG.API.Request.Wrapper, Error==IG.API.Erro
                 detacher?.dispose()
                 
                 if let error = error {
-                    let error: Self.Error = .callFailed(message: "The HTTP request call failed.", request: request, response: response as? HTTPURLResponse, data: data, underlying: error, suggestion: "The server must be reachable before performing this request. Try again when the connection is established.")
+                    let error: Self.Error = .callFailed(message: "The HTTP request call failed", request: request, response: response as? HTTPURLResponse, data: data, underlying: error, suggestion: "The server must be reachable before performing this request. Try again when the connection is established")
                     return generator.send(error: error)
                 }
                 
                 guard let header = response as? HTTPURLResponse else {
-                    var error: Self.Error = .callFailed(message: #"The response was not of HTTPURLResponse type."#, request: request, response: nil, data: data, underlying: error, suggestion: Self.Error.Suggestion.bug)
+                    var error: Self.Error = .callFailed(message: #"The response was not of HTTPURLResponse type"#, request: request, response: nil, data: data, underlying: error, suggestion: Self.Error.Suggestion.bug)
                     if let httpResponse = response { error.context.append(("Received response", httpResponse)) }
                     return generator.send(error: error)
                 }
@@ -231,7 +231,7 @@ extension SignalProducer where Value==IG.API.Request.Wrapper, Error==IG.API.Erro
                 } catch let error as Self.Error {
                     return generator.send(error: error)
                 } catch let error {
-                    var error: Self.Error = .invalidRequest("The paginated request couldn't be created.", request: initialRequest, underlying: error, suggestion: Self.Error.Suggestion.bug)
+                    var error: Self.Error = .invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: error, suggestion: Self.Error.Suggestion.bug)
                     if let previous = previousRequest {
                         error.context.append(("Last successfully executed paginated request", previous.request))
                     }
@@ -268,7 +268,7 @@ extension SignalProducer where Value==IG.API.Response.Wrapper, Error==IG.API.Err
     internal func validate<S>(statusCodes: S) -> SignalProducer<Value,Error> where S: Sequence, S.Element==Int {
         return self.attemptMap { (request, header, data) -> Result<Value,Self.Error> in
             guard statusCodes.contains(header.statusCode) else {
-                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(statusCodes) codes were expected."#
+                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(statusCodes) codes were expected"#
                 let error: Self.Error = .invalidResponse(message: message, request: request, response: header, data: data, suggestion: Self.Error.Suggestion.reviewError)
                 return .failure(error)
             }
@@ -288,13 +288,13 @@ extension SignalProducer where Value==IG.API.Response.Wrapper, Error==IG.API.Err
     internal func validateLadenData<S>(statusCodes: S? = nil) -> SignalProducer<IG.API.Response.WrapperData,Error> where S: Sequence, S.Element==Int {
         return self.attemptMap { (request, header, data) -> Result<IG.API.Response.WrapperData,Self.Error> in
             if let codes = statusCodes, !codes.contains(header.statusCode) {
-                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(codes) codes were expected."#
+                let message = #"The URL response code "\#(header.statusCode)" was received, when only \#(codes) codes were expected"#
                 let error: Self.Error = .invalidResponse(message: message, request: request, response: header, data: data, suggestion: Self.Error.Suggestion.reviewError)
                 return .failure(error)
             }
             
             guard let data = data else {
-                let error: Self.Error = .invalidResponse(message: "Response was expected to contained a body, but no data was found.", request: request, response: header, suggestion: Self.Error.Suggestion.reviewError)
+                let error: Self.Error = .invalidResponse(message: "Response was expected to contained a body, but no data was found", request: request, response: header, suggestion: Self.Error.Suggestion.reviewError)
                 return .failure(error)
             }
             
@@ -326,8 +326,8 @@ extension SignalProducer where Value==IG.API.Response.WrapperData, Error==IG.API
                 if case .none = error.responseData { error.responseData = data }
                 return .failure(error)
             } catch let underlyingError {
-                let message =  #"The response body could not be decoded as the expected type: "\#(T.self)"."#
-                let suggestion = "Review the underlying error and try to figure out the issue."
+                let message =  #"The response body could not be decoded as the expected type: "\#(T.self)""#
+                let suggestion = "Review the underlying error and try to figure out the issue"
                 let error: Self.Error = .invalidResponse(message: message, request: request, response: header, data: data, underlying: underlyingError, suggestion: suggestion)
                 return .failure(error)
             }

@@ -81,11 +81,11 @@ extension IG.API.Node.Market {
             let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date ?? Date()
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
             let update = try responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) ?!
-                DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
+                DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
             
             if update > responseDate {
                 let newDate = try IG.UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) ?!
-                    DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
+                    DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time")
                 self.date = newDate
             } else {
                 self.date = update

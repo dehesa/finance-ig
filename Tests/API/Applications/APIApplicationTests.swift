@@ -9,7 +9,7 @@ final class APIApplicationTests: XCTestCase {
         let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let applications = try! api.applications.getAll().single()!.get()
         
-        guard let app = applications.first else { return XCTFail("No applications were found.") }
+        guard let app = applications.first else { return XCTFail("No applications were found") }
         XCTAssertFalse(app.name.isEmpty)
         XCTAssertEqual(app.key, api.session.credentials!.key)
         XCTAssertEqual(app.status, .enabled)

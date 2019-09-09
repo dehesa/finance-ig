@@ -79,7 +79,7 @@ extension Test.Account {
             } else if case .file = processedScheme {
                 self.credentials = .user(.init("fake_user", "fake_password"))
             } else {
-                let ctx = DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "There were no credentials on the test account file.")
+                let ctx = DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "There were no credentials on the test account file")
                 throw DecodingError.keyNotFound(Self.CodingKeys.user, ctx)
             }
         }
@@ -122,7 +122,7 @@ extension Test.Account {
                 let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .user)
                 let identifier = try nested.decode(IG.Account.Identifier.self, forKey: .identifier)
                 guard nested.contains(.password) else {
-                    let ctx = DecodingError.Context(codingPath: nested.codingPath, debugDescription: "The password key was not found.")
+                    let ctx = DecodingError.Context(codingPath: nested.codingPath, debugDescription: "The password key was not found")
                     throw DecodingError.keyNotFound(Self.CodingKeys.NestedKeys.password, ctx)
                 }
                 
@@ -133,7 +133,7 @@ extension Test.Account {
                     let access = try passwordContainer.decode(String.self, forKey: .access)
                     let security = try passwordContainer.decode(String.self, forKey: .security)
                     let password = try IG.Streamer.Credentials.password(fromCST: access, security: security)
-                        ?! DecodingError.dataCorrupted(.init(codingPath: passwordContainer.codingPath, debugDescription: "The streamer password couldnt' be formed."))
+                        ?! DecodingError.dataCorrupted(.init(codingPath: passwordContainer.codingPath, debugDescription: "The streamer password couldnt' be formed"))
                     self.credentials = (identifier, password)
                 }
             } else if case .file = self.scheme {

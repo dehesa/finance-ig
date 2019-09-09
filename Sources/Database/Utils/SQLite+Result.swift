@@ -1,5 +1,5 @@
-import SQLite3
 import Foundation
+import SQLite3
 
 /// Namespace for `SQLite` related entities and functionality.
 internal enum SQLite {
@@ -23,7 +23,7 @@ internal enum SQLite {
         }
         
         var description: String {
-            guard let pointer = sqlite3_errstr(self.value) else { fatalError("The receiving result \"\(self.value)\" is not an SQLite result.") }
+            guard let pointer = sqlite3_errstr(self.value) else { fatalError("The receiving result \"\(self.value)\" is not an SQLite result") }
             return .init(cString: pointer)
         }
     }
@@ -38,6 +38,19 @@ extension SQLite.Result {
     var isExtended: Bool {
         return (self.value >> 8) > 0
     }
+    
+    #warning("Extended result codes are not yet trully supported.")
+    // To compare primary to extended errors is important.
+    
+    /// Returns `true` if the code on the left matches the code on the right.
+    public static func ~= (pattern: Self, code: Self) -> Bool {
+        return pattern.rawValue == code.rawValue
+    }
+    
+    /// Returns `true` if the code on the left matches the code on the right.
+    public static func ~= (pattern: Self, code: Int32) -> Bool {
+        return pattern.rawValue == code
+    }
 }
 
 extension Int32 {
@@ -45,20 +58,6 @@ extension Int32 {
     /// - precondition: This function expect the value to be a correct SQLite result. No conditions are performed.
     var result: IG.SQLite.Result {
         return .init(trusted: self)
-    }
-    
-    /// It compares the receiving SQLite `Int32` result with the passed `result` and if it doesn't match, it throws an error with the given `error` and `suggestion`. If the results match, no operation is performed.
-    ///
-    /// - parameter result: The expected SQLite result.
-    /// - parameter error: The error message to pass to the `IG.DB.Error` (if necessary).
-    /// - parameter suggestion: The error suggestion to pass to the `IG.DB.Error` (if necessary).
-    /// - parameter handler: A closure that is only executed if the results don't match, so it lets you handle the error. It also pass the error that will be thrown at the end of this function.
-    func expecting(_ result: IG.SQLite.Result, error: @autoclosure ()->String, suggestion: @autoclosure ()->String = IG.DB.Error.Suggestion.reviewError, handler: ((inout IG.DB.Error)->Void)? = nil) throws {
-        guard self != result.rawValue else { return }
-        
-        var error = IG.DB.Error.callFailed(error(), code: .init(trusted: self), underlying: nil, suggestion: suggestion())
-        handler?(&error)
-        throw error
     }
     
     static func == (lhs: Self, rhs: IG.SQLite.Result) -> Bool {

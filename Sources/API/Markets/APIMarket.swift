@@ -22,7 +22,7 @@ extension IG.API.Request.Markets {
             .decodeJSON { (request, response) in
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header."
+                    let message = "The response date couldn't be extracted from the response header"
                     throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
@@ -44,8 +44,8 @@ extension IG.API.Request.Markets {
         return SignalProducer(api: self.api) { (api) in
             let epicRange = 1...50
             guard epicRange.contains(epics.count) else {
-                let message = "Only between 1 to 50 markets can be queried at the same time."
-                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
+                let message = "Only between 1 to 50 markets can be queried at the same time"
+                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)"
                 throw IG.API.Error.invalidRequest(message, suggestion: suggestion)
             }
             
@@ -61,7 +61,7 @@ extension IG.API.Request.Markets {
             .decodeJSON { (request, response) in
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                     let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                        let message = "The response date couldn't be extracted from the response header."
+                        let message = "The response date couldn't be extracted from the response header"
                         throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
@@ -211,7 +211,7 @@ extension IG.API.Market {
             
             if let wrapper = try container.decodeIfPresent([String:Array<Self.HourRange>].self, forKey: .openingTime) {
                 self.openingTime = try wrapper[Self.CodingKeys.openingMarketTimes.rawValue]
-                    ?! DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(Self.CodingKeys.openingMarketTimes.rawValue)\" was not found.")
+                    ?! DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(Self.CodingKeys.openingMarketTimes.rawValue)\" was not found")
             } else {
                 self.openingTime = nil
             }
@@ -224,13 +224,13 @@ extension IG.API.Market {
             } else if pipMeaning == nil, pipValue == nil {
                 self.pip = nil
             } else {
-                throw DecodingError.dataCorruptedError(forKey: .pipMeaning, in: container, debugDescription: "The pip definition is inconsistent.")
+                throw DecodingError.dataCorruptedError(forKey: .pipMeaning, in: container, debugDescription: "The pip definition is inconsistent")
             }
             
             self.lotSize = try container.decode(Decimal.self, forKey: .lotSize)
             if let contractString = try container.decodeIfPresent(String.self, forKey: .contractSize) {
                 self.contractSize = try Decimal(string: contractString)
-                    ?! DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number.")
+                    ?! DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number")
             } else {
                 self.contractSize = nil
             }
@@ -408,7 +408,7 @@ extension IG.API.Market.Instrument {
             self.settlementInfo = try nestedContainer.decodeIfPresent(String.self, forKey: .settlementInfo)
             
             let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
-                ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.lastDealingDate = try nestedContainer.decodeIfPresent(Date.self, forKey: .lastDealingDate, with: formatter)
         }
 
@@ -517,7 +517,7 @@ extension IG.API.Market.Instrument {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
-                throw DecodingError.dataCorruptedError(forKey: .lastDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                throw DecodingError.dataCorruptedError(forKey: .lastDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             }
             
             self.lastDate = try container.decode(Date.self, forKey: .lastDate, with: formatter)
@@ -543,7 +543,7 @@ extension IG.API.Market.Instrument {
             switch (try container.decodeNil(forKey: .sprintMin), try container.decodeNil(forKey: .sprintMax)) {
             case (false, false): break
             case (true, true): return nil
-            default: throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range.")
+            default: throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range")
             }
 
             self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.monthYear)
@@ -715,12 +715,12 @@ extension IG.API.Market {
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
             
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) else {
-                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred.")
+                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
             }
             
             if update > responseDate {
                 guard let newDate = IG.UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) else {
-                    throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time.")
+                    throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time")
                 }
                 self.date = newDate
             } else {

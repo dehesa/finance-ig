@@ -19,7 +19,7 @@ extension Test {
 //            return .init(rootURL: rootURL, credentials: credentials, configuration: configuration)
             fatalError()
         case .none:
-            fatalError(#"The API rootURL "\#(rootURL)" is invalid."#)
+            fatalError(#"The API rootURL "\#(rootURL)" is invalid"#)
         }
     }
 }
@@ -47,7 +47,7 @@ extension Test {
             do {
                 try streamer.session.connect()
                     .timeout(after: timeout, on: queue) {
-                        .invalidRequest("The connection timeout elapsed with status:\n\($0.debugDescription)", suggestion: "Be sure to be connected to the internet and that the credentials for the test account are appropriate. If so, try again later or contact the repository maintainer.")
+                        .invalidRequest("The connection timeout elapsed with status:\n\($0.debugDescription)", suggestion: "Be sure to be connected to the internet and that the credentials for the test account are appropriate. If so, try again later or contact the repository maintainer")
                     }.wait().get()
             } catch let error {
                 fatalError("\(error)")

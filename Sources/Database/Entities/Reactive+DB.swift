@@ -35,7 +35,7 @@ extension SignalProducer where Error==IG.DB.Error {
             } catch let error as Self.Error {
                 return input.send(error: error)
             } catch let underlyingError {
-                let error: Self.Error = .invalidRequest("The request validation failed.", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error = Self.Error.invalidRequest("The request validation failed", underlying: underlyingError, suggestion: .readDocumentation)
                 return input.send(error: error)
             }
             
@@ -44,19 +44,19 @@ extension SignalProducer where Error==IG.DB.Error {
         }
     }
     
-    /// Sends one or several read commands to the database grouped in a transaction. The results are then returned as a value.
-    /// - parameter interaction: Closure were the read database commands are specified.
-    internal func read<T,R>(_ interaction: @escaping IG.DB.Request.Generator.Interaction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
-        return self.remake { (input, generator, lifetime) in
-            /// This value turns to `.stop` when the hosting signal has been disposed.
-            var permission: IG.DB.Response.Iteration = .continue
-            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
-            let detacher = lifetime.observeEnded {
-                permission = .stop
-            }
-            
-            #warning("SQLite: Read")
-            fatalError()
+//    /// Sends one or several read commands to the database grouped in a transaction. The results are then returned as a value.
+//    /// - parameter interaction: Closure were the read database commands are specified.
+//    internal func read<T,R>(_ interaction: @escaping IG.DB.Request.Generator.Interaction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
+//        return self.remake { (input, generator, lifetime) in
+//            /// This value turns to `.stop` when the hosting signal has been disposed.
+//            var permission: IG.DB.Response.Iteration = .continue
+//            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
+//            let detacher = lifetime.observeEnded {
+//                permission = .stop
+//            }
+//
+//            #warning("SQLite: Read")
+//            fatalError()
 //            input.database.channel.asyncRead { (result) in
 //                do {
 //                    let db = try result.get()
@@ -67,7 +67,7 @@ extension SignalProducer where Error==IG.DB.Error {
 //                } catch let error as Self.Error {
 //                    generator.send(error: error)
 //                } catch let error {
-//                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                    var result: Self.Error = .callFailed("An asynchronous database read failed", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
 //                    result.context.append(("Input values", input.values))
 //                    generator.send(error: result)
 //                }
@@ -75,24 +75,24 @@ extension SignalProducer where Error==IG.DB.Error {
 //                // Triggering `detacher` removes the signal lifetime observation.
 //                detacher?.dispose()
 //            }
-        }
-    }
-    
-    /// Sends one or several read commands to the database grouped in a transaction. The results are then returned as a stream of values.
-    /// - parameter interaction: Closure were the read database commands are specified. When the closure returns, the signal completes.
-    /// - important: Liberate the receiving `DispatchQueue` as soon as possible.
-    internal func readContinuously<T,R>(_ interaction: @escaping IG.DB.Request.Generator.ContinuousInteraction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
-        return self.remake { (input, generator, lifetime) in
-            /// This value turns to `.stop` when the hosting signal has been disposed.
-            var permission: IG.DB.Response.Iteration = .continue
-            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
-            let detacher = lifetime.observeEnded {
-                permission = .stop
-            }
-
-            
-            #warning("SQLite: Read")
-            fatalError()
+//        }
+//    }
+//
+//    /// Sends one or several read commands to the database grouped in a transaction. The results are then returned as a stream of values.
+//    /// - parameter interaction: Closure were the read database commands are specified. When the closure returns, the signal completes.
+//    /// - important: Liberate the receiving `DispatchQueue` as soon as possible.
+//    internal func readContinuously<T,R>(_ interaction: @escaping IG.DB.Request.Generator.ContinuousInteraction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
+//        return self.remake { (input, generator, lifetime) in
+//            /// This value turns to `.stop` when the hosting signal has been disposed.
+//            var permission: IG.DB.Response.Iteration = .continue
+//            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
+//            let detacher = lifetime.observeEnded {
+//                permission = .stop
+//            }
+//
+//
+//            #warning("SQLite: Read")
+//            fatalError()
 //            input.database.channel.asyncRead { (result) in
 //                do {
 //                    let db = try result.get()
@@ -106,7 +106,7 @@ extension SignalProducer where Error==IG.DB.Error {
 //                } catch let error as Self.Error {
 //                    generator.send(error: error)
 //                } catch let error {
-//                    var result: Self.Error = .callFailed("An asynchronous database read failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                    var result: Self.Error = .callFailed("An asynchronous database read failed", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
 //                    result.context.append(("Input values", input.values))
 //                    generator.send(error: result)
 //                }
@@ -114,23 +114,23 @@ extension SignalProducer where Error==IG.DB.Error {
 //                // Triggering `detacher` removes the signal lifetime observation.
 //                detacher?.dispose()
 //            }
-        }
-    }
-    
-    /// Sends one or several read/write commands to the database grouped in a transaction. The results are then returned as a value.
-    /// - parameter interaction: Closure were the read/write database commands are specified.
-    internal func write<T,R>(_ interaction: @escaping IG.DB.Request.Generator.Interaction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
-        return self.remake { (input, generator, lifetime) in
-            /// This value turns to `.stop` when the hosting signal has been disposed.
-            var permission: IG.DB.Response.Iteration = .continue
-            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
-            let detacher = lifetime.observeEnded {
-                permission = .stop
-            }
-            
-            #warning("SQLite: Write")
-            fatalError()
-            
+//        }
+//    }
+//
+//    /// Sends one or several read/write commands to the database grouped in a transaction. The results are then returned as a value.
+//    /// - parameter interaction: Closure were the read/write database commands are specified.
+//    internal func write<T,R>(_ interaction: @escaping IG.DB.Request.Generator.Interaction<T,R>) -> SignalProducer<R,Self.Error> where Value==IG.DB.Request.Wrapper<T> {
+//        return self.remake { (input, generator, lifetime) in
+//            /// This value turns to `.stop` when the hosting signal has been disposed.
+//            var permission: IG.DB.Response.Iteration = .continue
+//            /// This detacher holds the disposable to stop observing the hosting signal lifetime.
+//            let detacher = lifetime.observeEnded {
+//                permission = .stop
+//            }
+//
+//            #warning("SQLite: Write")
+//            fatalError()
+//
 //            input.database.channel.asyncWrite({ (db) -> R in
 //                try interaction(db, input.values) { permission }
 //            }) { (db, result) in
@@ -145,12 +145,12 @@ extension SignalProducer where Error==IG.DB.Error {
 //                    if let error = error as? Self.Error {
 //                        generator.send(error: error)
 //                    } else {
-//                        var result: Self.Error = .callFailed("An asynchronous database write failed.", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
+//                        var result: Self.Error = .callFailed("An asynchronous database write failed", underlying: error, suggestion: Self.Error.Suggestion.reviewError)
 //                        result.context.append(("Input values", input.values))
 //                        generator.send(error: result)
 //                    }
 //                }
 //            }
-        }
-    }
+//        }
+//    }
 }

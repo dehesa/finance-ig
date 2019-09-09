@@ -129,7 +129,7 @@ extension IG.API.Error {
 }
 
 extension IG.API.Error: IG.ErrorPrintable {
-    internal var printableDomain: String {
+    internal static var printableDomain: String {
         return "IG.\(IG.API.self).\(IG.API.Error.self)"
     }
     
@@ -146,7 +146,7 @@ extension IG.API.Error: IG.ErrorPrintable {
         let levelPrefix    = Self.debugPrefix(level: level+1)
         let sublevelPrefix = Self.debugPrefix(level: level+2)
         
-        var result = "\(self.printableDomain) (\(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.printableType))"
         result.append("\(levelPrefix)Error message: \(self.message)")
         result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
         

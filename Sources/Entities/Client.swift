@@ -7,7 +7,7 @@ public enum Client {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The client identifier provided is not in the valid format.") }
+            guard Self.validate(value) else { fatalError("The client identifier provided is not in the valid format") }
             self.rawValue = value
         }
         
@@ -20,7 +20,7 @@ public enum Client {
             let container = try decoder.singleValueContainer()
             let name = try container.decode(String.self)
             guard Self.validate(name) else {
-                let reason = "The client identifier being decoded doesn't conform to the validation function."
+                let reason = "The client identifier being decoded doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = name

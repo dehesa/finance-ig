@@ -17,7 +17,7 @@ extension IG.Streamer.Request.Session {
             let initialStatus = channel.status.value
             
             guard initialStatus != .stalled else {
-                let error: IG.Streamer.Error = .invalidRequest(#"The streamer seems to be "stalled"."#, suggestion: "Disconnect it and connect it back again.")
+                let error: IG.Streamer.Error = .invalidRequest(#"The streamer seems to be "stalled""#, suggestion: "Disconnect it and connect it back again")
                 return generator.send(error: error)
             }
             guard case .disconnected(isRetrying: false) = initialStatus else {
@@ -44,11 +44,11 @@ extension IG.Streamer.Request.Session {
                         generator.sendCompleted()
                     case .disconnected(isRetrying: false):
                         guard statuses.count > 1 else { return }
-                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer disconnected after trying to connect. It is not trying any longer."#, suggestion: "Disconnect it manually and connect it back again.")
+                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer disconnected after trying to connect. It is not trying any longer"#, suggestion: "Disconnect it manually and connect it back again")
                         error.context.append(("Status cycle", statuses))
                         generator.send(error: error)
                     case .stalled:
-                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status."#, suggestion: "Disconnect it and connect it back again.")
+                        var error: IG.Streamer.Error = .init(.invalidResponse, #"The streamer reached a "stalled" status"#, suggestion: "Disconnect it and connect it back again")
                         error.context.append(("Status cycle", statuses))
                         generator.send(error: error)
                     }
@@ -131,8 +131,8 @@ extension IG.Streamer.Request.Session {
                             generator.send(value: wrapper.subscription.item)
                         case .error(let underlyingError):
                             storage.remove(wrapper)
-                            let message = "An unknown problem occurred when unsubscribing."
-                            let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
+                            let message = "An unknown problem occurred when unsubscribing"
+                            let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer"
                             let error: IG.Streamer.Error = .subscriptionFailed(message, item: wrapper.subscription.item, fields: wrapper.subscription.fields, underlying: underlyingError, suggestion: suggestion)
                             errors.append(error)
                         }
@@ -142,7 +142,7 @@ extension IG.Streamer.Request.Session {
                     case .interrupted: // The producer shall only be interrupted by stopping the result signal's lifetime
                         return
                     case .failed: // The producer shall never fail
-                        fatalError("A subscription status provide cannot fail.")
+                        fatalError("A subscription status provide cannot fail")
                     }
                     
                     wrapper.detacher?.dispose()
@@ -152,8 +152,8 @@ extension IG.Streamer.Request.Session {
                         return generator.sendCompleted()
                         
                     } else {
-                        let message = "\(errors.count) were encountered when trying to unsubscribe all current \(IG.Streamer.self) subscriptions."
-                        let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer."
+                        let message = "\(errors.count) were encountered when trying to unsubscribe all current \(IG.Streamer.self) subscriptions"
+                        let suggestion = "No problems should stam from this; however, if it happens frequently please contact the repository maintainer"
                         var error: IG.Streamer.Error = .init(.subscriptionFailed, message, suggestion: suggestion)
                         error.context.append(("Unsubscription errors", errors))
                         return generator.send(error: error)

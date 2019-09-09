@@ -82,24 +82,24 @@ extension IG.Streamer.Error {
 extension IG.Streamer.Error {
     /// Namespace for messages reused over the framework.
     internal enum Message {
-        static var sessionExpired: String { "The \(IG.Streamer.self) instance was not found." }
-        static var noCredentials: String { "No credentials were found on the \(IG.Streamer.self) instance." }
-        static var unknownParsing: String { "An unknown error occur while parsing a subscription update." }
+        static var sessionExpired: String { "The \(IG.Streamer.self) instance was not found" }
+        static var noCredentials: String { "No credentials were found on the \(IG.Streamer.self) instance" }
+        static var unknownParsing: String { "An unknown error occur while parsing a subscription update" }
         static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> String {
-            #"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type."#
+            #"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type"#
         }
     }
     
     /// Namespace for suggestions reused over the framework.
     internal enum Suggestion {
-        static var keepSession: String { "The \(IG.Streamer.self) functionality is asynchronous; keep around the \(IG.Streamer.self) instance while a response hasn't been received." }
+        static var keepSession: String { "The \(IG.Streamer.self) functionality is asynchronous; keep around the \(IG.Streamer.self) instance while a response hasn't been received" }
         static var bug: String { IG.API.Error.Suggestion.bug }
-        static var reviewError: String { "Review the returned error and try to fix the problem." }
+        static var reviewError: String { "Review the returned error and try to fix the problem" }
     }
 }
 
 extension IG.Streamer.Error: IG.ErrorPrintable {
-    var printableDomain: String {
+    static var printableDomain: String {
         return "IG.\(IG.Streamer.self).\(IG.Streamer.Error.self)"
     }
     
@@ -116,7 +116,7 @@ extension IG.Streamer.Error: IG.ErrorPrintable {
         let levelPrefix    = Self.debugPrefix(level: level+1)
         let sublevelPrefix = Self.debugPrefix(level: level+2)
         
-        var result = "\(self.printableDomain) (\(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.printableType))"
         result.append("\(levelPrefix)Error message: \(self.message)")
         result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
         

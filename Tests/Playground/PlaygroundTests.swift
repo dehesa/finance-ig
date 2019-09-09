@@ -5,29 +5,35 @@ import XCTest
 
 final class PlaygroundTests: XCTestCase {
     func testPlay() {
-        let url: URL =  URL(string: "https://www.meneame.net")!
-        print(url)
+        let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
+        
+        var tableStatement: OpaquePointer? = nil
+        sqlite3_prepare_v2(db.channel, IG.DB.Application.tableDefinition(for: .v0)!, -1, &tableStatement, nil)
+        sqlite3_step(tableStatement)
+        sqlite3_finalize(tableStatement)
+        
+        var statement: OpaquePointer? = nil
+        let definition: String = """
+        INSERT OR REPLACE INTO Apps VALUES (
+            'i12848vk82599t79948l0635gz3oi786v9095129',
+            'superlopez',
+            '1',
+            '0',
+            '0',
+            '60',
+            '60',
+            '100',
+            '10000',
+            '60',
+            '2019-09-09',
+            CURRENT_TIMESTAMP);
+        """
+        guard case .ok = sqlite3_prepare_v2(db.channel, definition, -1, &statement, nil) else { fatalError() }
+        
+        guard case .done = sqlite3_step(statement).result else { fatalError() }
+        sqlite3_finalize(statement)
+        
+        print()
+        print()
     }
 }
-
-// e.g. API Error (Invalid HTTP response)
-// e.g. |-- Error message: Invalid trailing stop setting
-// e.g. |-- Suggestions: Review the returned error and try to fix the problem
-// e.g. |-- Request: POST https://api.ig.com/gateway/deal/positions/otc
-// e.g. |   |-- Headers: [Server:HAProxy, Access-Control-Allow-Methods:POST, GET, PUT, DELETE, OPTIONS...]
-// e.g. |-- Response: 200
-// e.g. |   |-- Headers: [Server:HAProxy, Access-Control-Allow-Methods:POST, GET, PUT, DELETE, OPTIONS...]
-// e.g. |   |-- Server code: Service bean method[disableApplication] failure: 404 Not Found
-// e.g. |   |-- Data: { "errorCode": "Service bean method[disableApplication] failure: 404 Not Found" }
-// e.g. |-- Context:
-// e.g. |   |-- Stop level: 125.234
-// e.g. |-- Underlying error: API error (Invalid HTTP response)
-// e.g. |   |-- Error message: Invalid trailing stop setting
-// e.g. |   |-- Suggestions: Review the returned error and try to fix the problem
-// e.g. |   |-- Request: POST https://api.ig.com/gateway/deal/positions/otc
-// e.g. |   |   |-- Headers: [Server:HAProxy, Access-Control-Allow-Methods:POST, GET, PUT, DELETE, OPTIONS...]
-// e.g. |   |   |-- Server code: Service bean method[disableApplication] failure: 404 Not Found
-// e.g. |   |-- Context:
-// e.g. |   |   |-- Stop level: 125.234
-// e.g. |   |-- Underlying error:
-// e.g. |       |--

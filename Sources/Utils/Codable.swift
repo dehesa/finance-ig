@@ -1,8 +1,8 @@
 import Foundation
 
 extension Swift.EncodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
-    internal var printableDomain: String {
-        return "Encoding error"
+    internal static var printableDomain: String {
+        return "Swift.\(EncodingError.self)"
     }
     
     internal var printableType: String {
@@ -14,7 +14,7 @@ extension Swift.EncodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
     
     internal func printableMultiline(level: Int) -> String {
         let levelPrefix = Self.debugPrefix(level: level+1)
-        var result = "\(self.printableDomain) (\(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.printableType))"
         
         switch self {
         case .invalidValue(let val, let ctx):
@@ -41,8 +41,8 @@ extension Swift.EncodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
 }
 
 extension Swift.DecodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
-    internal var printableDomain: String {
-        return "Decoding error"
+    internal static var printableDomain: String {
+        return "Swift.\(DecodingError.self)"
     }
     
     internal var printableType: String {
@@ -57,7 +57,7 @@ extension Swift.DecodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
     
     internal func printableMultiline(level: Int) -> String {
         let levelPrefix = Self.debugPrefix(level: level+1)
-        var result = "\(self.printableDomain) (\(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.printableType))"
         let context: DecodingError.Context
         switch self {
         case .keyNotFound(let key, let ctx):
@@ -92,7 +92,7 @@ extension Swift.DecodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
 
 // MARK: - Supporting functionality
 
-extension CodingKey {
+extension Swift.CodingKey {
     /// Human readable print version of the coding key.
     fileprivate var printableString: String {
         if let number = self.intValue {
@@ -103,7 +103,7 @@ extension CodingKey {
     }
 }
 
-extension Array where Array.Element == CodingKey {
+extension Array where Array.Element == Swift.CodingKey {
     fileprivate var printableString: String {
         return self.map { $0.printableString }.joined(separator: "/")
     }

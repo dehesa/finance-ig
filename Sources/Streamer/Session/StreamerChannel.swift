@@ -72,11 +72,11 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
                         return generator.send(value: update)
                     case .updateLost(let count, _):
                         #if DEBUG
-                        debugPrint("Streamer subscription lost \(count) updates from \(item) [\(fields.joined(separator: ","))].")
+                        debugPrint("Streamer subscription lost \(count) updates from \(item) [\(fields.joined(separator: ","))]")
                         #endif
                         return
                     case .error(let error):
-                        let message = "The subscription couldn't be established."
+                        let message = "The subscription couldn't be established"
                         let error: IG.Streamer.Error = .subscriptionFailed(message, item: item, fields: fields, underlying: error, suggestion: IG.Streamer.Error.Suggestion.reviewError)
                         generator.send(error: error)
                     case .subscribed, .unsubscribed: // Subscription and unsubscription may happen for temporary loss of connection.
@@ -114,7 +114,7 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
 extension IG.Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
         guard let result = IG.Streamer.Session.Status(rawValue: status) else {
-            fatalError("Lightstreamer client status \"\(status)\" was not recognized.")
+            fatalError("Lightstreamer client status \"\(status)\" was not recognized")
         }
         
         self.queue.async { [property = self.mutableStatus] in

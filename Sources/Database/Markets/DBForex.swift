@@ -131,7 +131,7 @@ extension IG.DB.Market.Forex {
                 self.storage = underlying.split(separator: Self.separator.elements).map {
                     let strings = $0.split(separator: Self.separator.numbers)
                     guard strings.count == 2 else {
-                        let msg = #"The given forex margin band "\#(String($0))" is invalid since it contains \#(strings.count) elements. Only 2 are expected."#
+                        let msg = #"The given forex margin band "\#(String($0))" is invalid since it contains \#(strings.count) elements. Only 2 are expected"#
                         fatalError(msg)
                     }
                     guard let lowerBound = Decimal(string: String(strings[0])) else { fatalError() }
@@ -140,7 +140,7 @@ extension IG.DB.Market.Forex {
                 }
 
                 guard !self.storage.isEmpty else {
-                    fatalError("The given forex market since to have no margin bands. This behavior is not expected.")
+                    fatalError("The given forex market since to have no margin bands. This behavior is not expected")
                 }
             }
             

@@ -136,7 +136,7 @@ extension IG.API.Session {
             guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let tokens = Self.Token(headerFields: headerFields) else {
-                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header")
                 throw DecodingError.dataCorrupted(errorContext)
             }
             self.tokens = tokens
@@ -162,7 +162,7 @@ extension IG.API.Session.Certificate {
             self.client = try container.decode(IG.Client.Identifier.self, forKey: .client)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
-            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
+            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             self.settings = try .init(from: decoder)
         }
         
@@ -266,7 +266,7 @@ extension IG.API.Session {
             guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                   let headerFields = response.allHeaderFields as? [String:Any],
                   let token = IG.API.Session.Certificate.Token(headerFields: headerFields) else {
-                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header.")
+                let errorContext = DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "The access token and security token couldn't get extracted from the response header")
                 throw DecodingError.dataCorrupted(errorContext)
             }
             self.token = token

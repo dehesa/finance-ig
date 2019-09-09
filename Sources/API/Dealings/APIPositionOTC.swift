@@ -125,38 +125,38 @@ extension IG.API.Request.Positions {
             // Check for "forceOpen" agreement: if a limit or stop is set, then force open must be true
             let forceOpenValidation: (Bool) throws -> Void = {
                 guard $0 else {
-                    throw E.invalidRequest(#"The "forceOpen" value is invalid for the given limit or stop."#, suggestion: #"A position must set "forceOpen" to true if a limit or stop is set."#)
+                    throw E.invalidRequest(#"The "forceOpen" value is invalid for the given limit or stop"#, suggestion: #"A position must set "forceOpen" to true if a limit or stop is set"#)
                 }
             }
             /// Check for limit validation.
             let limitValidation: (IG.Deal.Direction, Decimal, IG.Deal.Limit) throws -> Void = { (direction, base, limit) in
                 guard limit.isValid(on: direction, from: base) else {
-                    throw E.invalidRequest("The given limit is invalid.", suggestion: E.Suggestion.validLimit).set { $0.context.append(("Position limit", limit)) }
+                    throw E.invalidRequest("The given limit is invalid", suggestion: E.Suggestion.validLimit).set { $0.context.append(("Position limit", limit)) }
                 }
             }
             /// Check for stop validation.
             let stopValidation: (IG.Deal.Direction, Decimal, IG.Deal.Stop) throws -> Void = { (direction, base, stop) in
                 guard stop.isValid(on: direction, from: base) else {
-                    throw E.invalidRequest("The given stop is invalid.", suggestion: E.Suggestion.validStop).set { $0.context.append(("Position stop", stop)) }
+                    throw E.invalidRequest("The given stop is invalid", suggestion: E.Suggestion.validStop).set { $0.context.append(("Position stop", stop)) }
                 }
             }
             /// Check for trailing validation.
             let trailingValidation: (IG.Deal.Stop) throws -> Void = { (stop) in
                 if case .dynamic(let settings) = stop.trailing {
                     guard case .some(let trailing) = settings else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified.").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified").set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard case .distance(let stopDistance) = stop.type else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: #"If a trailing stop is chosen, only the stop type ".distance" is allowed as a stop level."#).set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: #"If a trailing stop is chosen, only the stop type ".distance" is allowed as a stop level"#).set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard trailing.distance.isEqual(to: stopDistance) else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the stop distance and the trailing distance must match on position creation time.").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the stop distance and the trailing distance must match on position creation time").set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard trailing.increment.isNormal, case .plus = trailing.increment.sign else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero.").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero").set { $0.context.append(("Position stop", stop)) }
                     }
                 }
             }
@@ -229,7 +229,7 @@ extension IG.API.Request.Positions {
                     guard let behavior = settings else {
                         var codingPaths = container.codingPath
                         codingPaths.append(Self.CodingKeys.isStopTrailing)
-                        throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found."))
+                        throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found"))
                     }
                     try container.encode(behavior.increment, forKey: .stopTrailingIncrement)
                 }
@@ -267,7 +267,7 @@ extension IG.API.Request.Positions {
         init(limit: Decimal?, stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) throws {
             if let stop = stop, case .dynamic(let settings) = stop.trailing {
                 guard case .some(let settings) = settings else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified.")
+                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
@@ -275,14 +275,14 @@ extension IG.API.Request.Positions {
                 
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.distance) else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing disance provided must be a positive number and greater than zero.")
+                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing disance provided must be a positive number and greater than zero")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
                 }
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.increment) else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero.")
+                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
@@ -313,7 +313,7 @@ extension IG.API.Request.Positions {
                     guard let behavior = behavior else {
                         var codingPaths = container.codingPath
                         codingPaths.append(Self.CodingKeys.isTrailingStop)
-                        throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found."))
+                        throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found"))
                     }
                     try container.encode(true, forKey: .isTrailingStop)
                     try container.encode(behavior.distance, forKey: .stopTrailingDistance)

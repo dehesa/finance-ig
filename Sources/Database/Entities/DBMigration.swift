@@ -17,7 +17,7 @@ extension IG.DB {
         /// Registers all table on the SQLite database.
 //        static func register(on migrator: inout GRDB.DatabaseMigrator) {
 //            var migrations = Self.Version.allCases.makeIterator()
-//            let errorMessage = "The migrator encountered an error."
+//            let errorMessage = "The migrator encountered an error"
 //
 //            guard case .v0 = migrations.next() else { fatalError(errorMessage) }
 //            migrator.registerMigration(Self.Version.v0.rawValue) { (db) in
@@ -29,7 +29,7 @@ extension IG.DB {
 ////                try IG.DB.Node.AssociativeSubnode.tableCreation(in: db)
 //            }
 //
-//            guard case .none = migrations.next() else { fatalError("More migration awaited to be registered.") }
+//            guard case .none = migrations.next() else { fatalError("More migration awaited to be registered") }
 //        }
     }
 }

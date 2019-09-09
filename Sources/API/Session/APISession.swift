@@ -49,7 +49,7 @@ extension IG.API.Request.Session {
         }.attemptMap { [weak weakAPI = self.api] (token) -> Result<Void,IG.API.Error> in
             guard let api = weakAPI else { return .failure(.sessionExpired()) }
             guard var credentials = api.session.credentials else {
-                let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time."
+                let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
                 return .failure(.sessionExpired(message: IG.API.Error.Message.noCredentials, suggestion: suggestion))
             }
             credentials.token = token
@@ -121,7 +121,7 @@ extension IG.API.Request.Session {
                 }
                 
                 guard var credentials = api.session.credentials else {
-                    let error: IG.API.Error = .invalidResponse(message: IG.API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation.")
+                    let error: IG.API.Error = .invalidResponse(message: IG.API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation")
                     return .failure(error)
                 }
                 credentials.account = accountId
@@ -255,7 +255,7 @@ extension IG.API {
             self.account = try container.decode(IG.Account.Identifier.self, forKey: .account)
             let offset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: offset * 3600)
-                ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure.")
+                ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
