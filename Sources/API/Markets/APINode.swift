@@ -29,7 +29,7 @@ extension IG.API.Request.Nodes {
     public func getMarkets(matching searchTerm: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
         return SignalProducer(api: self.api) { _ -> String in
             guard !searchTerm.isEmpty else {
-                let message = "Search for markets failed! The search term cannot be empty."
+                let message = "Search for markets failed! The search term cannot be empty"
                 throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocumentation)
             }
             return searchTerm
@@ -40,7 +40,7 @@ extension IG.API.Request.Nodes {
             .decodeJSON { (request, response) in
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header."
+                    let message = "The response date couldn't be extracted from the response header"
                     throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 

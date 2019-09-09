@@ -1,5 +1,5 @@
-import SQLite3
 import Foundation
+import SQLite3
 
 extension IG.DB {
     /// Listing of functions to perform on the SQLite raw pointer.
@@ -17,7 +17,7 @@ extension IG.DB {
                 path = ":memory:"
             case .some(let url):
                 guard url.isFileURL else {
-                    var error: IG.DB.Error = .invalidRequest(#"The database location provided is not a valid file URL."#, suggestion: #"Make sure the URL is of "file://" domain."#)
+                    var error = IG.DB.Error.invalidRequest(#"The database location provided is not a valid file URL"#, suggestion: #"Make sure the URL is of "file://" domain"#)
                     error.context.append(("Root URL", url))
                     throw error
                 }
@@ -26,7 +26,7 @@ extension IG.DB {
                     do {
                         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
                     } catch let error {
-                        throw IG.DB.Error.invalidRequest("When creating a database, the URL path couldn't be recreated.", underlying: error, suggestion: "Make sure the rootURL is valid and try again")
+                        throw IG.DB.Error.invalidRequest("When creating a database, the URL path couldn't be recreated", underlying: error, suggestion: "Make sure the rootURL and/or create all subfolders in between")
                     }
                 }
 
@@ -36,20 +36,18 @@ extension IG.DB {
             var db: OpaquePointer? = nil
             try queue.sync {
                 let openFlags = SQLITE_OPEN_NOMUTEX | (SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE)
-                try sqlite3_open_v2(path, &db, openFlags, nil).expecting(.ok, error: "The SQLite database couldn't be opened.") { error in
-                    guard let channel = db else { return }
-                    // Close the database connection normally.
-                    var closeResult = sqlite3_close(channel).result
-                    guard closeResult != .ok else { return }
-                    error.context.append(("Subsequent error code (trying to close DB)", closeResult))
-                    // If the connection cannot be closed, tell it to "auto-destroy" when any running statement is done.
-                    closeResult = sqlite3_close_v2(channel).result
-                    guard closeResult != .ok else { return }
-                    error.context.append(("Subsequent error code (trying to zombify DB)", closeResult))
+                let openResult = sqlite3_open_v2(path, &db, openFlags, nil).result
+                guard openResult == .ok else {
+                    var error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: openResult, lowlevel: nil, suggestion: .reviewError)
+                    if let channel = db {
+                        error.lowlevel = String(cString: sqlite3_errmsg(channel))
+                        Self.destroy(channel: channel, on: queue)
+                    }
+                    throw error
                 }
             }
             
-            guard let channel = db else { fatalError("SQLite returned OK, but there was no pointer. This should never happen.") }
+            guard let channel = db else { fatalError("SQLite returned SQLITE_OK, but there was no pointer. This should never happen") }
             return channel
         }
         
@@ -59,15 +57,18 @@ extension IG.DB {
         static func destroy(channel: OpaquePointer, on queue: DispatchQueue) {
             queue.async {
                 // Close the database connection normally.
-                if sqlite3_close(channel) == .ok { return }
+                let closeResult = sqlite3_close(channel)
+                if closeResult == .ok { return }
+                let closeLowlevelMessage = String(cString: sqlite3_errmsg(channel))
                 // If the connection cannot be closed, tell it to "auto-destroy" when any running statement is done.
                 let scheduleResult = sqlite3_close_v2(channel).result
                 if scheduleResult == .ok { return }
                 // If not even that couldn't be scheduled, just print the error and crash.
-                let error: DB.Error = .callFailed("The SQlite database coudln't be closed properly", code: scheduleResult, suggestion: DB.Error.Suggestion.bug)
+                var error: DB.Error = .callFailed("The SQLite database coudln't be properly close", code: scheduleResult, lowlevel: String(cString: sqlite3_errmsg(channel)), suggestion: DB.Error.Suggestion.fileBug)
+                error.context.append(("First closing code", closeResult))
+                error.context.append(("First closing messge", closeLowlevelMessage))
                 fatalError(error.debugDescription)
             }
-            fatalError()
         }
     }
 }

@@ -101,13 +101,13 @@ extension IG.API.Request.WorkingOrders {
             }()
             self.level = try {
                 guard level.isFinite else {
-                    throw IG.API.Error.invalidRequest("The given working order level is invalid.", suggestion: "Input a valid number as level.").set { $0.context.append(("Working order level", level)) }
+                    throw IG.API.Error.invalidRequest("The given working order level is invalid", suggestion: "Input a valid number as level").set { $0.context.append(("Working order level", level)) }
                 }
                 return level
             }()
             self.limit = try limit.map { (limit) in
                 guard limit.isValid(on: direction, from: level) else {
-                    throw IG.API.Error.invalidRequest("The given limit is invalid.", suggestion: IG.API.Error.Suggestion.validLimit).set { $0.context.append(("Working order limit", limit)) }
+                    throw IG.API.Error.invalidRequest("The given limit is invalid", suggestion: IG.API.Error.Suggestion.validLimit).set { $0.context.append(("Working order limit", limit)) }
                 }
                 return limit
             }
@@ -123,7 +123,7 @@ extension IG.API.Request.WorkingOrders {
                 }
                 
                 if case .limited = stop.risk, case .position = stop.type {
-                    throw IG.API.Error.invalidRequest("The given stop is invalid.", suggestion: #"Only working order's stop distances may be "guaranteed stops" (or limited risk)."#).set { $0.context.append(("Working order stop", stop)) }
+                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: #"Only working order's stop distances may be "guaranteed stops" (or limited risk)"#).set { $0.context.append(("Working order stop", stop)) }
                 }
                 
                 return result
@@ -131,7 +131,7 @@ extension IG.API.Request.WorkingOrders {
             self.forceOpen = forceOpen
             self.expiration = try { // Check that the expiration date is at least one second later than now.
                 if case .tillDate(let date) = expiration, date <= Date(timeIntervalSinceNow: 1) {
-                    throw IG.API.Error.invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.").set { $0.context.append(("Working order expiration", date)) }
+                    throw IG.API.Error.invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date").set { $0.context.append(("Working order expiration", date)) }
                 }
                 return expiration
             }()
@@ -206,7 +206,7 @@ extension IG.API.Request.WorkingOrders {
             // Check that the stop distance is a positive number (if it is set).
             if case .distance(let distance) = stop {
                 guard distance.isNormal, case .plus = distance.sign else {
-                    var error: IG.API.Error = .invalidRequest("The given stop is invalid.", suggestion: "The stop distance must be a valid number and greater than zero.")
+                    var error: IG.API.Error = .invalidRequest("The given stop is invalid", suggestion: "The stop distance must be a valid number and greater than zero")
                     error.context.append(("Position stop distance", distance))
                     throw error
                 }
@@ -214,7 +214,7 @@ extension IG.API.Request.WorkingOrders {
             // Check that the expiration date is at least one second later than now.
             if case .tillDate(let date) = expiration {
                 guard date > Date(timeIntervalSinceNow: 1) else {
-                    var error: IG.API.Error = .invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date.")
+                    var error: IG.API.Error = .invalidRequest("The working order expiration date is invalid", suggestion: "The expiration date must be later than the current date")
                     error.context.append(("Working order expiration", date))
                     throw error
                 }
@@ -228,7 +228,7 @@ extension IG.API.Request.WorkingOrders {
                 case .position(let l): result = .position(level: l)
                 case .distance(let d): result = .distance(d)
                 }
-                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid.", suggestion: IG.API.Error.Suggestion.validStop).set { $0.context.append(("Working order stop", type)) }
+                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid", suggestion: IG.API.Error.Suggestion.validStop).set { $0.context.append(("Working order stop", type)) }
             }
             self.expiration = expiration
         }

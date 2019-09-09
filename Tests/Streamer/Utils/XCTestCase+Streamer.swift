@@ -18,7 +18,7 @@ extension XCTestCase {
         var collection: [V] = []
         var producer = expression().on(value: { collection.append($0); value?($0) })
         
-        let suggestion = "Check that you are running the tests while the markets are open (on weekends, the subscription doesn't usually work)."
+        let suggestion = "Check that you are running the tests while the markets are open (on weekends, the subscription doesn't usually work)"
         
         if let take = take {
             let message = "The \(timeout) seconds interval timeout elapsed. Only \(collection.count) values out of the \(take) requested were gathered. Values:\n\(collection)"

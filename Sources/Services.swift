@@ -64,8 +64,8 @@ public final class Services {
         guard token.expirationDate > Date() else {
             switch token.value {
             case .certificate:
-                let message = "The given certificate token has expired and it cannot be refreshed."
-                let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
+                let message = "The given certificate token has expired and it cannot be refreshed"
+                let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password")
                 return .init(error: .api(error: error))
             case .oauth(_, let refreshToken, _,_):
                 return api.session.refreshOAuth(token: refreshToken, key: key)
@@ -96,8 +96,8 @@ public final class Services {
         }
         // Check that they haven't expired.
         guard apiCredentials.token.expirationDate > Date() else {
-            let message = "The given credentials have expired."
-            let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password.")
+            let message = "The given credentials have expired"
+            let error: IG.API.Error = .invalidRequest(message, suggestion: "Log in with your username and password")
             return .init(error: .api(error: error))
         }
         
@@ -114,7 +114,7 @@ public final class Services {
             } catch let error as IG.API.Error {
                 return .failure(.api(error: error))
             } catch let underlyingError {
-                let msg = "An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.DB.self) instance."
+                let msg = "An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.DB.self) instance"
                 var error: IG.Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.bug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))

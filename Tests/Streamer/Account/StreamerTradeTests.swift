@@ -57,8 +57,8 @@ final class StreamerTradeTests: XCTestCase {
         print("\n------- 3. Waited one second. -------\n")
         
         guard let orderIdentifier = dealId else {
-            print("Failed to get the dealId.")
-            fatalError("No deal identifier obtained.")
+            print("Failed to get the dealId")
+            fatalError("No deal identifier obtained")
         }
         
         let newLevel = level + 0.0005

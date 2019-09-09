@@ -220,7 +220,7 @@ extension IG.API.Price {
             
             guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                   let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                let message = "The date on the response header couldn't be processed."
+                let message = "The date on the response header couldn't be processed"
                 throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: message)
             }
             

@@ -10,12 +10,12 @@ extension URLRequest {
         }
         
         guard let previousURL = self.url else {
-            let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty."
+            let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty"
             throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
-            let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents"."#
+            let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents""#
             throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         
@@ -33,7 +33,7 @@ extension URLRequest {
         }
         
         guard let url = components.url else {
-            let message = "A new URL from the previous request and the given queries couldn't be formed."
+            let message = "A new URL from the previous request and the given queries couldn't be formed"
             let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
             
             var error: IG.API.Error = .invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
@@ -75,7 +75,7 @@ extension URLRequest {
         do {
             self.httpBody = try encoder.encode(body)
         } catch let error {
-            let message = #"The provided body (of type "\#(T.self)") for the request couldn't be serialized."#
+            let message = #"The provided body (of type "\#(T.self)") for the request couldn't be serialized"#
             throw IG.API.Error.invalidRequest(message, request: self, underlying: error, suggestion: IG.API.Error.Suggestion.readDocumentation)
         }
         

@@ -220,5 +220,3 @@ extension KeyedEncodingContainer {
         try self.encodeIfPresent(dateString, forKey: key)
     }
 }
-
-

@@ -31,10 +31,7 @@ extension IG.DB.Request {
         /// - parameter shallContinue: Small closure, that everytime is called returns a Boolean indicating whether you can continue fetching the database (`.continue`) or you should stop immediately (`.stop`).
         /// - parameter continuousResult: This closure is called everytime you want to communicate further steps about intermediate results. As a convenience, it returns the value of `shallContinue` after sending values.
         /// - returns: The result of the database interaction.
-        typealias ContinuousInteraction<T,R> = (_ database: IG.DB, _ values: T,
-            _ shallContinue: ()->IG.DB.Response.Iteration,
-            _ continuousResult: (R) -> IG.DB.Response.Iteration
-        ) throws -> Void
+        typealias ContinuousInteraction<T,R> = (_ database: IG.DB, _ values: T, _ shallContinue: ()->IG.DB.Response.Iteration, _ continuousResult: (R) -> IG.DB.Response.Iteration) throws -> Void
     }
 }
 

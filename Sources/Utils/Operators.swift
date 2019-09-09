@@ -1,5 +1,3 @@
-import Foundation
-
 infix operator ?!
 
 /// Checks whether the value exists. If so, it returns it; if not, it throws the given error.

@@ -10,7 +10,7 @@ final class APICertificateTests: XCTestCase {
         let account = Test.account.identifier
         let key = Test.account.api.key
         guard case .user(let user) = Test.account.api.credentials else {
-            return XCTFail("Certificate tests can't be performed without username and password.")
+            return XCTFail("Certificate tests can't be performed without username and password")
         }
         
         let returned = try! api.session.loginCertificate(key: key, user: user).single()!.get()
@@ -38,7 +38,7 @@ final class APICertificateTests: XCTestCase {
         let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
         let account = Test.account.identifier
         let key = Test.account.api.key
-        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password.") }
+        guard case .user(let user) = Test.account.api.credentials else { return XCTFail("OAuth tests can't be performed without username and password") }
         
         let credentials = try! api.session.loginOAuth(key: key, user: user).single()!.get()
         api.session.credentials = credentials
@@ -50,7 +50,7 @@ final class APICertificateTests: XCTestCase {
         
         let token = try! api.session.refreshCertificate().single()!.get()
         XCTAssertGreaterThan(token.expirationDate, Date())
-        guard case .certificate(let access, let security) = token.value else { return XCTFail("A certificate token hasn't been regenerated.") }
+        guard case .certificate(let access, let security) = token.value else { return XCTFail("A certificate token hasn't been regenerated") }
         XCTAssertFalse(access.isEmpty)
         XCTAssertFalse(security.isEmpty)
     }

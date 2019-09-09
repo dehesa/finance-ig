@@ -35,7 +35,7 @@ extension IG.API.Request.Session {
     internal func refreshOAuth(token: String, key: IG.API.Key) -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> {
         return SignalProducer(api: self.api) { _ -> Self.TemporaryRefresh in
                 guard !token.isEmpty else {
-                    let error: IG.API.Error = .invalidRequest("The OAuth refresh token cannot be empty.", suggestion: IG.API.Error.Suggestion.readDocumentation)
+                    let error: IG.API.Error = .invalidRequest("The OAuth refresh token cannot be empty", suggestion: IG.API.Error.Suggestion.readDocumentation)
                     throw error
                 }
             
@@ -102,7 +102,7 @@ extension IG.API.Session {
             
             /// - bug: The server returns one hour less for the timezone offset. I believe this is due not accounting for the summer time. Check in winter!
             let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
-            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT.")
+            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             
             self.tokens = try container.decode(IG.API.Session.OAuth.Token.self, forKey: .tokens)
         }
@@ -141,7 +141,7 @@ extension IG.API.Session.OAuth {
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
             let seconds = try TimeInterval(secondsString)
-                ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number.")
+                ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number")
             
             if let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,

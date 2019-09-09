@@ -42,7 +42,7 @@ extension StreamerMockedJSON {
                 let fields: [String:String] = try container.decodeIfPresent([String:String].self, forKey: .fields) ?? [:]
                 self = .update(isSnapShot: isSnapshot, fields: fields)
             case let type?:
-                throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "The event type\"\(type)\" is invalid.")
+                throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "The event type\"\(type)\" is invalid")
             }
         }
         

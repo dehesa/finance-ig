@@ -11,7 +11,9 @@ extension IG.DB {
         public internal(set) var underlyingError: Swift.Error?
         public internal(set) var context: [(title: String, value: Any)] = []
         /// The internal SQLite code returned from an SQLite operation.
-        internal private(set) var code: SQLite.Result?
+        internal var code: SQLite.Result?
+        /// A low-level message coming directly from SQLite.
+        internal var lowlevel: String?
         
         /// Designated initializer, filling all required error fields.
         /// - parameter type: The error type.
@@ -19,11 +21,12 @@ extension IG.DB {
         /// - parameter suggestion: A helpful suggestion on how to avoid the error.
         /// - parameter code: The `SQLite` low-level response code origin of the error.
         /// - parameter error: The underlying error that happened right before this error was created.
-        internal init(_ type: Self.Kind, _ message: String, suggestion: String, code: SQLite.Result? = nil, underlying error: Swift.Error? = nil) {
+        internal init(_ type: Self.Kind, _ message: String, suggestion: String, code: SQLite.Result? = nil, lowlevel: String? = nil, underlying error: Swift.Error? = nil) {
             self.type = type
             self.message = message
             self.suggestion = suggestion
             self.code = code
+            self.lowlevel = lowlevel
             self.underlyingError = error
         }
     }
@@ -38,21 +41,23 @@ extension IG.DB.Error {
         case invalidRequest
         /// A database request was executed, but an error was returned by low-level layers.
         case callFailed
+        /// The fetched response from the database is invalid.
+        case invalidResponse
     }
     
     /// A factory function for `.sessionExpired` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func sessionExpired(message: String = Self.Message.sessionExpired, suggestion: String = Self.Suggestion.keepSession) -> Self {
-        self.init(.sessionExpired, message, suggestion: suggestion)
+    internal static func sessionExpired(message: Self.Message = .sessionExpired, suggestion: Self.Suggestion = .keepSession) -> Self {
+        self.init(.sessionExpired, message.rawValue, suggestion: suggestion.rawValue)
     }
     
     /// A factory function for `.invalidRequest` database errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidRequest(_ message: String, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.invalidRequest, message, suggestion: suggestion, underlying: error)
+    internal static func invalidRequest(_ message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.invalidRequest, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
     
     /// A factory function for `.callFailed` database errors.
@@ -60,36 +65,57 @@ extension IG.DB.Error {
     /// - parameter code: The `SQLite` low-level response code origin of the error.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func callFailed(_ message: String, code: SQLite.Result , underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.callFailed, message, suggestion: suggestion, code: code, underlying: error)
+    internal static func callFailed(_ message: Self.Message, code: SQLite.Result, lowlevel: String?, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.callFailed, message.rawValue, suggestion: suggestion.rawValue, code: code, lowlevel: lowlevel, underlying: error)
+    }
+    
+    /// A factory function for `.invalidResponse` database errors.
+    /// - parameter message: A brief explanation on what happened.
+    /// - parameter error: The underlying error that is the source of the error being initialized.
+    /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+    internal static func invalidResponse(message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
 }
 
 extension IG.DB.Error {
     /// Namespace for messages reused over the framework.
-    internal struct Message {
-        static var sessionExpired: String { "The \(IG.DB.self) instance was not found." }
+    internal struct Message: IG.ErrorNameSpace {
+        let rawValue: String
+        init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
+        static func tableCompilation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to compile into byte code") }
+        static func tableCreation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute") }
+        static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }
+        static func nilResponse(on column: String, type: IG.DebugDescriptable.Type) -> Self { .init("\"nil\" was found on column \"\(column)\" for \"\(type.printableDomain)\"") }
+        static func storing(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred storing values on the table for \"\(type.printableDomain)\"") }
     }
     
     /// Namespace for suggestions reused over the framework.
-    internal enum Suggestion {
-        static var keepSession: String { "The \(IG.DB.self) functionality is asynchronous; keep around the \(IG.DB.self) instance while a response hasn't been received." }
-        static var readDocumentation: String { "Read the request documentation and be sure to follow all requirements." }
-        static var bug: String { IG.API.Error.Suggestion.bug }
-        static var reviewError: String { "Review the returned error and try to fix the problem." }
+    internal struct Suggestion: IG.ErrorNameSpace {
+        let rawValue: String
+        init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var keepSession: Self { .init("The \(IG.DB.printableDomain) functionality is asynchronous; keep around the \(IG.DB.self) instance while a response hasn't been received") }
+        static var readDocumentation: Self { .init("Read the request documentation and be sure to follow all requirements") }
+        static var reviewError: Self { .init("Review the returned error and try to fix the problem") }
+        static var fileBug: Self { .init("A unexpected error was encountered. Please contact the repository maintainer and attach this debug print") }
+        static var corruptedValue: Self { .init("The value in the database is invalid. Rewrite with the framework or with SQLite command-line application") }
     }
 }
 
 extension IG.DB.Error: IG.ErrorPrintable {
-    var printableDomain: String {
+    static var printableDomain: String {
         return "IG.\(IG.DB.self).\(IG.DB.Error.self)"
     }
     
     var printableType: String {
         switch self.type {
-        case .sessionExpired: return "Session expired"
-        case .invalidRequest: return "Invalid request"
-        case .callFailed:     return "Database call failed"
+        case .sessionExpired:  return "Session expired"
+        case .invalidRequest:  return "Invalid request"
+        case .callFailed:      return "Database call failed"
+        case .invalidResponse: return "Invalid response"
         }
     }
     
@@ -97,12 +123,16 @@ extension IG.DB.Error: IG.ErrorPrintable {
         let levelPrefix    = Self.debugPrefix(level: level+1)
         let sublevelPrefix = Self.debugPrefix(level: level+2)
         
-        var result = "\(self.printableDomain) (\(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.printableType))"
         result.append("\(levelPrefix)Error message: \(self.message)")
         result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
         
         if let code = self.code {
             result.append("\(levelPrefix)SQLite code (\(code.rawValue)): \(code.description)")
+        }
+        
+        if let lowlevel = self.lowlevel {
+            result.append("\(levelPrefix)SQLite message: \(lowlevel)")
         }
         
         if !self.context.isEmpty {

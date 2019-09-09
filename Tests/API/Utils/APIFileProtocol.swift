@@ -61,7 +61,7 @@ final class APIFileProtocol: URLProtocol {
 //              let method = request.httpMethod,
 //              let header = request.allHTTPHeaderFields,
 //              let version = header[API.HTTP.Header.Key.version.rawValue] else {
-//            fatalError("The mocked fileURL couldn't be formed.")
+//            fatalError("The mocked fileURL couldn't be formed")
 //        }
 //
 //        /// Sometimes, IG has hidden the real HTTP method being used within the header.
@@ -71,12 +71,12 @@ final class APIFileProtocol: URLProtocol {
 //
 //        // For now, delete the queries.
 //        guard var components = URLComponents(url: fileURL, resolvingAgainstBaseURL: true) else {
-//            fatalError("The mocked fileURL components couldn't be extracted.")
+//            fatalError("The mocked fileURL components couldn't be extracted")
 //        }
 //
 //        components.queryItems = nil
 //        guard let result = components.url else {
-//            fatalError("The mocked fileURL couldn't be formed.")
+//            fatalError("The mocked fileURL couldn't be formed")
 //        }
 //
 //        return result

@@ -9,7 +9,7 @@ extension Decimal {
         NSDecimalRound(&rounded, &original, 0, .down)
         return original - rounded == 0
         #else
-        #error("Decimal rounding is not supported by non-Darwin platforms.")
+        #error("Decimal rounding is not supported by non-Darwin platforms")
         #endif
     }
     
@@ -117,7 +117,7 @@ extension Decimal {
         }
         
         guard let result = Decimal(string: String(double)) else {
-            throw onError("The double value \"\(double)\" couldn't be transformed into a Decimal.")
+            throw onError("The double value \"\(double)\" couldn't be transformed into a Decimal")
         }
         
         self = result

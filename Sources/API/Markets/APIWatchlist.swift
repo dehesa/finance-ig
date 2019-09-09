@@ -13,7 +13,7 @@ extension IG.API.Request.Watchlists {
         return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     let message = "The watchlist name cannot be empty"
-                    throw IG.API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character.")
+                    throw IG.API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character")
                 }
                 return .init(name: name, epics: epics.uniqueElements)
             }.request(.post, "watchlists", version: 1, credentials: true, body: { (_, payload) in
@@ -135,7 +135,7 @@ extension IG.API.Error.Message {
 }
 
 extension IG.API.Error.Suggestion {
-    fileprivate static var emptyWatchlistIdentifier: String { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier." }
+    fileprivate static var emptyWatchlistIdentifier: String { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
 }
 
 extension IG.API.Request.Watchlists {

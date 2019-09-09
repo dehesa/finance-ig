@@ -7,7 +7,7 @@ public enum Deal {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The deal identifier "\#(value)" is not in a valid format."#) }
+            guard Self.validate(value) else { fatalError(#"The deal identifier "\#(value)" is not in a valid format"#) }
             self.rawValue = value
         }
         
@@ -20,7 +20,7 @@ public enum Deal {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
             guard Self.validate(rawValue) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The deal identifier being decoded "\#(rawValue)" doesn't conform to the validation function."#)
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The deal identifier being decoded "\#(rawValue)" doesn't conform to the validation function"#)
             }
             self.rawValue = rawValue
         }
@@ -47,7 +47,7 @@ extension IG.Deal {
     public struct Reference: RawRepresentable, ExpressibleByStringLiteral, Codable, CustomStringConvertible, Hashable {
         public let rawValue: String
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The deal reference "\#(value)" is not in a valid format."#) }
+            guard Self.validate(value) else { fatalError(#"The deal reference "\#(value)" is not in a valid format"#) }
             self.rawValue = value
         }
         
@@ -60,7 +60,7 @@ extension IG.Deal {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
             guard Self.validate(rawValue) else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The deal reference being decoded "\#(rawValue)" doesn't conform to the validation function."#)
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The deal reference being decoded "\#(rawValue)" doesn't conform to the validation function"#)
             }
             self.rawValue = rawValue
         }

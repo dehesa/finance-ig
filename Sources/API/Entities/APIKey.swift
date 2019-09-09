@@ -11,7 +11,7 @@ extension IG.API {
         }
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The API key provided is not in a valid format.") }
+            guard Self.validate(value) else { fatalError("The API key provided is not in a valid format") }
             self.rawValue = value
         }
         
@@ -26,7 +26,7 @@ extension IG.API.Key: Codable {
         let container = try decoder.singleValueContainer()
         let name = try container.decode(String.self)
         guard Self.validate(name) else {
-            let reason = "The API key being decoded doesn't conform to the validation function."
+            let reason = "The API key being decoded doesn't conform to the validation function"
             throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
         }
         self.rawValue = name

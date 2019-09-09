@@ -10,6 +10,9 @@
 		8D0A232C22EB9600001853E7 /* APIUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0A232B22EB9600001853E7 /* APIUser.swift */; };
 		8D0D48A022F09CB7000579CF /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
 		8D10BBF02318E91700557960 /* DBMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D10BBEF2318E91700557960 /* DBMarket.swift */; };
+		8D19C51B2326459000F029B3 /* ErrorPrintable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51A2326459000F029B3 /* ErrorPrintable.swift */; };
+		8D19C51D23266CBD00F029B3 /* DBFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51C23266CBD00F029B3 /* DBFormatter.swift */; };
+		8D19C51F232694DC00F029B3 /* SQLite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51E232694DC00F029B3 /* SQLite.swift */; };
 		8D1C8D532322BF7500841CA0 /* Dispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C8D522322BF7500841CA0 /* Dispatch.swift */; };
 		8D1C8D562322D9E500841CA0 /* OperationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C8D552322D9E500841CA0 /* OperationQueue.swift */; };
 		8D1C8D582322E53900841CA0 /* DBChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C8D572322E53900841CA0 /* DBChannel.swift */; };
@@ -161,6 +164,9 @@
 /* Begin PBXFileReference section */
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
+		8D19C51A2326459000F029B3 /* ErrorPrintable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorPrintable.swift; sourceTree = "<group>"; };
+		8D19C51C23266CBD00F029B3 /* DBFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBFormatter.swift; sourceTree = "<group>"; };
+		8D19C51E232694DC00F029B3 /* SQLite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLite.swift; sourceTree = "<group>"; };
 		8D1C8D522322BF7500841CA0 /* Dispatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dispatch.swift; sourceTree = "<group>"; };
 		8D1C8D552322D9E500841CA0 /* OperationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationQueue.swift; sourceTree = "<group>"; };
 		8D1C8D572322E53900841CA0 /* DBChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBChannel.swift; sourceTree = "<group>"; };
@@ -327,6 +333,16 @@
 			path = AnyCodable;
 			sourceTree = "<group>";
 		};
+		8D47509623262EC60051E425 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				8D19C51E232694DC00F029B3 /* SQLite.swift */,
+				8D30D08023240B0C00D83E0A /* SQLite+Result.swift */,
+				8D19C51C23266CBD00F029B3 /* DBFormatter.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
 		8D52F33F22FB1DBB00521759 /* Entities */ = {
 			isa = PBXGroup;
 			children = (
@@ -414,6 +430,7 @@
 				8DA8F8932317EAB800F1A2C0 /* Entities */,
 				8DA8F88E2317BF4900F1A2C0 /* Applications */,
 				8DA8F89523181E4200F1A2C0 /* Markets */,
+				8D47509623262EC60051E425 /* Utils */,
 			);
 			path = Database;
 			sourceTree = "<group>";
@@ -442,7 +459,6 @@
 				8D1C8D572322E53900841CA0 /* DBChannel.swift */,
 				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
-				8D30D08023240B0C00D83E0A /* SQLite+Result.swift */,
 				8DB90A82231E91AA004204B8 /* Reactive+DB.swift */,
 			);
 			path = Entities;
@@ -552,6 +568,8 @@
 			isa = PBXGroup;
 			children = (
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
+				8D19C51A2326459000F029B3 /* ErrorPrintable.swift */,
+				8D9FB784231EDA6900D76B6A /* DebugDescription.swift */,
 				8D30D082232566D900D83E0A /* Codable.swift */,
 				8DBB682822F30E7F00D04867 /* Reactive+Map.swift */,
 				8DB560F7214A6F6200DA980E /* SetUp.swift */,
@@ -560,7 +578,6 @@
 				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8DC4CA492149A6CE00344CBF /* Date.swift */,
 				8D9FB786231F943C00D76B6A /* Formatters.swift */,
-				8D9FB784231EDA6900D76B6A /* DebugDescription.swift */,
 				8D1C8D522322BF7500841CA0 /* Dispatch.swift */,
 			);
 			path = Utils;
@@ -952,9 +969,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DF85B1C22F046FA00F1C525 /* Error.swift in Sources */,
-				8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */,
+				8D19C51B2326459000F029B3 /* ErrorPrintable.swift in Sources */,
 				8D9FB785231EDA6900D76B6A /* DebugDescription.swift in Sources */,
-				8D1C8D582322E53900841CA0 /* DBChannel.swift in Sources */,
+				8D30D083232566D900D83E0A /* Codable.swift in Sources */,
+				8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */,
 				8D9FB787231F943C00D76B6A /* Formatters.swift in Sources */,
 				8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */,
 				8DC4CC0A2149B11100344CBF /* Operators.swift in Sources */,
@@ -996,7 +1014,6 @@
 				8DC4CC1B2149B38900344CBF /* APINode.swift in Sources */,
 				8DF93B9822E757B4001B9412 /* APISentiment.swift in Sources */,
 				8DC4CC1D2149B38900344CBF /* APIWatchlist.swift in Sources */,
-				8D30D083232566D900D83E0A /* Codable.swift in Sources */,
 				8DC4CC1F2149B3A600344CBF /* APIPosition.swift in Sources */,
 				8DC4CC202149B3A600344CBF /* APIPositionOTC.swift in Sources */,
 				8DC4CC212149B3A600344CBF /* APIWorkingOrder.swift in Sources */,
@@ -1009,6 +1026,7 @@
 				8DC158A322F08A8100012A19 /* Streamer.swift in Sources */,
 				8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */,
 				8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */,
+				8D19C51D23266CBD00F029B3 /* DBFormatter.swift in Sources */,
 				8D6D959122F4073B00BD42C2 /* StreamerSubscription.swift in Sources */,
 				8DC158A622F08AC800012A19 /* StreamerChannel.swift in Sources */,
 				8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */,
@@ -1017,9 +1035,11 @@
 				8D222CD622F55FFC00AF98E0 /* StreamerChartScale.swift in Sources */,
 				8D222CD822F5600700AF98E0 /* StreamerChartTick.swift in Sources */,
 				8D222CD922F5601200AF98E0 /* StreamerDeal.swift in Sources */,
+				8D19C51F232694DC00F029B3 /* SQLite.swift in Sources */,
 				8D30D08123240B0C00D83E0A /* SQLite+Result.swift in Sources */,
 				8D94BA962316575500AFBA1E /* DB.swift in Sources */,
 				8D94BA9823165DB500AFBA1E /* DBError.swift in Sources */,
+				8D1C8D582322E53900841CA0 /* DBChannel.swift in Sources */,
 				8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */,
 				8DB90A83231E91AA004204B8 /* Reactive+DB.swift in Sources */,
 				8DA8F8922317EAB100F1A2C0 /* DBMigration.swift in Sources */,

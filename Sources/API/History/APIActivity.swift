@@ -57,13 +57,13 @@ extension IG.API.Request.History {
                 }
                 
                 guard let queries = URLComponents(string: next)?.queryItems else {
-                    let message = #"The paginated request for activities couldn't be processed because there were no "next" queries."#
+                    let message = #"The paginated request for activities couldn't be processed because there were no "next" queries"#
                     throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
-                    let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found."#
+                    let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found"#
                     throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
                 }
                 
@@ -146,7 +146,7 @@ extension IG.API {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
-                ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.title = try container.decode(String.self, forKey: .title)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
@@ -249,7 +249,7 @@ extension IG.API.Activity {
                 case "GTC": return .tillCancelled
                 case let dateString?:
                     guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
-                        throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found.")
+                        throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
                     }
                     let date = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
                     return .tillDate(date)
@@ -303,7 +303,7 @@ extension IG.API.Activity {
             case "WORKING_ORDER_DELETED": self.type = .workingOrder(status: .deleted, type: nil)
             case "UNKNOWN":             self.type = .unknown
             default:
-                let description = #"The action type "\#(type)" couldn't be identified."#
+                let description = #"The action type "\#(type)" couldn't be identified"#
                 throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: description)
             }
         }

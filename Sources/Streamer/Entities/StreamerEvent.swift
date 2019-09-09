@@ -67,7 +67,7 @@ extension IG.Streamer.Subscription {
 }
 
 extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
-    var printableDomain: String {
+    static var printableDomain: String {
         return "IG.\(IG.Streamer.self).\(IG.Streamer.Subscription.self).\(IG.Streamer.Subscription.Error.self)"
     }
     
@@ -93,7 +93,7 @@ extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
     func printableMultiline(level: Int) -> String {
         let levelPrefix = Self.debugPrefix(level: level+1)
         
-        var result = "\(self.printableDomain) (\(self.code) -> \(self.printableType))"
+        var result = "\(Self.printableDomain) (\(self.code) -> \(self.printableType))"
         result.append("\(levelPrefix)Type description: \(self.type.debugDescription)")
         if let message = self.message {
             result.append("\(levelPrefix)Error message: \(message)")
@@ -155,20 +155,20 @@ extension IG.Streamer.Subscription.Error {
         
         var debugDescription: String {
             switch self {
-            case .unknown: return "Unknown error."
-            case .invalidAdapterName: return "Bad Data Adapter name or default Data Adapter not defined for the current Adapter Set."
-            case .interruptedSession: return "Session interrupted."
-            case .invalidGroupName: return "Bad Group name."
-            case .invalidGroupNameForSchema: return "Bad Group name for this Schema."
-            case .invalidSchemaName: return "Bad Schema name."
-            case .prohibitedModeForItem: return "Mode not allowed for an Item."
-            case .invalidSelectorName: return "Bad Selector name."
-            case .unfilteredDispatchingProhibited: return "Unfiltered dispatching not allowed for an Item, because a frequency limit is associated to the item."
-            case .unfilteredDispatchingUnsupported: return "Unfiltered dispatching not supported for an Item, because a frequency prefiltering is applied for the item."
-            case .unfilteredDispatchingRestricted: return "Unfiltered dispatching is not allowed by the current license terms (for special licenses only)."
-            case .rawModeRestricted: return "RAW mode is not allowed by the current license terms (for special licenses only)."
-            case .subscriptionRestricted: return "Subscriptions are not allowed by the current license terms (for special licenses only)."
-            case .requestRefused: return "The Metadata Adapter has refused the subscription or unsubscription request; the code value is dependent on the specific Metadata Adapter implementation."
+            case .unknown: return "Unknown error"
+            case .invalidAdapterName: return "Bad Data Adapter name or default Data Adapter not defined for the current Adapter Set"
+            case .interruptedSession: return "Session interrupted"
+            case .invalidGroupName: return "Bad Group name"
+            case .invalidGroupNameForSchema: return "Bad Group name for this Schema"
+            case .invalidSchemaName: return "Bad Schema name"
+            case .prohibitedModeForItem: return "Mode not allowed for an Item"
+            case .invalidSelectorName: return "Bad Selector name"
+            case .unfilteredDispatchingProhibited: return "Unfiltered dispatching not allowed for an Item, because a frequency limit is associated to the item"
+            case .unfilteredDispatchingUnsupported: return "Unfiltered dispatching not supported for an Item, because a frequency prefiltering is applied for the item"
+            case .unfilteredDispatchingRestricted: return "Unfiltered dispatching is not allowed by the current license terms (for special licenses only)"
+            case .rawModeRestricted: return "RAW mode is not allowed by the current license terms (for special licenses only)"
+            case .subscriptionRestricted: return "Subscriptions are not allowed by the current license terms (for special licenses only)"
+            case .requestRefused: return "The Metadata Adapter has refused the subscription or unsubscription request; the code value is dependent on the specific Metadata Adapter implementation"
             }
         }
     }

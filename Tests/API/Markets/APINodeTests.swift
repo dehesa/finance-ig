@@ -53,7 +53,7 @@ final class APINavigationNodeTests: XCTestCase {
 //        }
 //
 //        print()
-//        print("\(parsed.count + 1) nodes has been parsed.")
+//        print("\(parsed.count + 1) nodes has been parsed")
 //        print()
 //    }
 //

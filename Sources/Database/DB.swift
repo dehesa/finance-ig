@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 
 /// The Database instance is the bridge between the internal SQLite storage
 public final class DB {
@@ -6,10 +7,13 @@ public final class DB {
     ///
     /// If `nil` the database is created "in memory".
     public let rootURL: URL?
-    /// The queue processing all API requests and responses.
-    private let queue: DispatchQueue
+    /// The queues processing all API requests and responses.
+    internal let queue: IG.DB.Queues
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
-    private let channel: OpaquePointer
+    ///
+    /// The access is restricted by the database queue. Only access this pointer from there.
+    internal let channel: OpaquePointer
+    #warning("Make the channel private")
     
     /// It holds data and functionality related to the user's applications.
     public var applications: IG.DB.Request.Applications { return .init(database: self) }
@@ -19,31 +23,33 @@ public final class DB {
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
     /// - throws: `IG.Database.Error`
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let queue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        let channel = try Self.Channel.make(rootURL: rootURL, on: queue)
-        self.init(rootURL: rootURL, channel: channel, queue: queue)
+        let queues: IG.DB.Queues = (
+            DispatchQueue(label: Self.reverseDNS + ".sqlite", qos: .utility, autoreleaseFrequency: .never, target: targetQueue),
+            DispatchQueue(label: Self.reverseDNS + ".response", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        )
+        let channel = try Self.Channel.make(rootURL: rootURL, on: queues.database)
+        self.init(rootURL: rootURL, channel: channel, queues: queues)
     }
     
     /// Designated initializer for the database instance providing the database configuration.
     /// - parameter rootURL: The file URL where the databse file is or `nil` for "in memory" storage.
     /// - parameter queue: The queue on which to process the `DB` requests and responses.
     /// - throws: `IG.Database.Error`
-    internal init(rootURL: URL?, channel: OpaquePointer, queue: DispatchQueue) {
+    internal init(rootURL: URL?, channel: OpaquePointer, queues: IG.DB.Queues) {
         self.rootURL = rootURL
-        self.queue = queue
+        self.queue = queues
         self.channel = channel
     }
     
     deinit {
-        Self.Channel.destroy(channel: self.channel, on: self.queue)
-    }
-    
-    internal func work<T>(_ item: (_ channel: OpaquePointer)->T) -> T {
-        fatalError()
+        Self.Channel.destroy(channel: self.channel, on: self.queue.database)
     }
 }
 
 extension IG.DB {
+    /// Tuple identifying the different types of queues.
+    typealias Queues = (database: DispatchQueue, response: DispatchQueue)
+    
     /// The root address for the underlying database file.
     public static var rootURL: URL {
         let result: URL
@@ -58,5 +64,22 @@ extension IG.DB {
     /// The reverse DNS identifier for the `DB` instance.
     internal static var reverseDNS: String {
         return IG.bundleIdentifier() + ".db"
+    }
+}
+
+extension IG.DB: DebugDescriptable {
+    static var printableDomain: String {
+        return "IG.\(IG.DB.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("Root URL", self.rootURL.map { $0.path } ?? ":memory:")
+        result.append("SQLite version", SQLITE_VERSION)
+        result.append("Database queue", self.queue.database.label)
+        result.append("Database queue QoS", String(describing: self.queue.database.qos.qosClass))
+        result.append("Response queue", self.queue.response.label)
+        result.append("Response queue QoS", String(describing: self.queue.response.qos.qosClass))
+        return result.generate()
     }
 }
