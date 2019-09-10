@@ -13,11 +13,6 @@ class DBApplicationTests: XCTestCase {
     func testApplicationRaw() {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        var tableStatement: OpaquePointer? = nil
-        sqlite3_prepare_v2(db.channel, IG.DB.Application.tableDefinition(for: .v0)!, -1, &tableStatement, nil)
-        sqlite3_step(tableStatement)
-        sqlite3_finalize(tableStatement)
-        
         let data = """
         {
             "apiKey": "a12345bc67890d12345e6789fg0hi123j4567890",
@@ -38,9 +33,6 @@ class DBApplicationTests: XCTestCase {
         print("\n\(appAPI.debugDescription)\n")
 
         try! db.applications.update([appAPI]).single()!.get()
-        print()
-        print("Update finished")
-        print()
         
         let appsDB = try! db.applications.getAll().single()!.get()
         print(appsDB.first!)

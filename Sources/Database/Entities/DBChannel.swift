@@ -5,13 +5,14 @@ extension IG.DB {
     /// Listing of functions to perform on the SQLite raw pointer.
     internal enum Channel {
         /// Opens or creates a SQLite database and returns the pointer handler to it.
-        /// - parameter channel: The C pointer to the SQLite database.
-        /// - parameter queue: The queue serializing access to the database. 
-        /// - throws: `IG.DB.Error` exclusively.
         /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
-        static func make(rootURL: URL?, on queue: DispatchQueue) throws -> OpaquePointer {
+        /// - parameter channel: The C pointer to the SQLite database.
+        /// - parameter queue: The queue serializing access to the database.
+        /// - throws: `IG.DB.Error` exclusively.
+        static func make(rootURL: URL?, on queue: DispatchQueue) throws -> SQLite.Database {
             let path: String
-
+            
+            // 1. Define file path (or in memory keyword)
             switch rootURL {
             case .none:
                 path = ":memory:"
@@ -33,28 +34,52 @@ extension IG.DB {
                 path = url.path
             }
             
-            var db: OpaquePointer? = nil
-            try queue.sync {
-                let openFlags = SQLITE_OPEN_NOMUTEX | (SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE)
-                let openResult = sqlite3_open_v2(path, &db, openFlags, nil).result
-                guard openResult == .ok else {
-                    var error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: openResult, lowlevel: nil, suggestion: .reviewError)
+            // 2. Open/Create the database connection
+            var db: SQLite.Database? = nil
+            var error: IG.DB.Error? = nil
+            
+            queue.sync {
+                let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX
+                if let errorCode = sqlite3_open_v2(path, &db, openFlags, nil).enforce(.ok) {
+                    error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: errorCode, suggestion: .reviewError)
                     if let channel = db {
-                        error.lowlevel = String(cString: sqlite3_errmsg(channel))
-                        Self.destroy(channel: channel, on: queue)
+                        let message = String(cString: sqlite3_errmsg(channel))
+                        if message != errorCode.description {
+                            error?.context.append(("Open error message", message))
+                        }
                     }
-                    throw error
                 }
             }
             
-            guard let channel = db else { fatalError("SQLite returned SQLITE_OK, but there was no pointer. This should never happen") }
-            return channel
+            // If there is an error, it shall be thrown in the calling queue.
+            switch (db, error) {
+            case (.some,  .none):  break
+            case (let c?, let e?): Self.destroy(channel: c, on: queue); fallthrough
+            case (.none,  let e?): throw e
+            case (.none,  .none):  fatalError("SQLite returned SQLITE_OK, but there was no database connection pointer. This should never happen")
+            }
+            
+            // 3. Enable extended results.
+            queue.sync {
+                if let errorCode = sqlite3_extended_result_codes(db, 1).enforce(.ok) {
+                    error = .callFailed("The SQLite database couldn't enable extended result codes", code: errorCode, suggestion: .reviewError)
+                    return
+                }
+            }
+            
+            // If there is an error, it shall be thrown in the calling queue.
+            if let e = error {
+                Self.destroy(channel: db!, on: queue)
+                throw e
+            }
+            
+            return db!
         }
         
         /// Destroys/Deinitialize a low-level SQLite connection.
         /// - parameter channel: The C pointer to the SQLite database.
         /// - parameter queue: The queue serializing access to the database.
-        static func destroy(channel: OpaquePointer, on queue: DispatchQueue) {
+        static func destroy(channel: SQLite.Database, on queue: DispatchQueue) {
             queue.async {
                 // Close the database connection normally.
                 let closeResult = sqlite3_close(channel)
@@ -64,9 +89,14 @@ extension IG.DB {
                 let scheduleResult = sqlite3_close_v2(channel).result
                 if scheduleResult == .ok { return }
                 // If not even that couldn't be scheduled, just print the error and crash.
-                var error: DB.Error = .callFailed("The SQLite database coudln't be properly close", code: scheduleResult, lowlevel: String(cString: sqlite3_errmsg(channel)), suggestion: DB.Error.Suggestion.fileBug)
+                var error: DB.Error = .callFailed("The SQLite database coudln't be properly close", code: scheduleResult, suggestion: DB.Error.Suggestion.fileBug)
                 error.context.append(("First closing code", closeResult))
-                error.context.append(("First closing messge", closeLowlevelMessage))
+                error.context.append(("First closing message", closeLowlevelMessage))
+                
+                let secondMessage = String(cString: sqlite3_errmsg(channel))
+                if secondMessage != scheduleResult.description {
+                    error.context.append(("Second closing message", secondMessage))
+                }
                 fatalError(error.debugDescription)
             }
         }

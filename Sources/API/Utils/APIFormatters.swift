@@ -35,20 +35,14 @@ extension IG.API {
         /// - Format: `yyyy-MM-dd`
         /// - Example: `2019-11-25`
         static var yearMonthDay: DateFormatter {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.calendar = IG.UTC.calendar
-            formatter.timeZone = IG.UTC.timezone
-            return formatter
+            return IG.Formatter.yearMonthDay
         }
         
         /// Time formatter using the UTC calendar and timezone as `DateFormatter` base.
         /// - Format: `HH:mm:ss`
         /// - Example: `18:30:02`
-        static let time = DateFormatter().set {
-            $0.dateFormat = "HH:mm:ss"
-            $0.calendar = IG.UTC.calendar
-            $0.timeZone = IG.UTC.timezone
+        static var time: DateFormatter {
+            return IG.Formatter.time
         }
         
         /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.

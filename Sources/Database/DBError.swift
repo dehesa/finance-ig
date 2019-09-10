@@ -12,8 +12,6 @@ extension IG.DB {
         public internal(set) var context: [(title: String, value: Any)] = []
         /// The internal SQLite code returned from an SQLite operation.
         internal var code: SQLite.Result?
-        /// A low-level message coming directly from SQLite.
-        internal var lowlevel: String?
         
         /// Designated initializer, filling all required error fields.
         /// - parameter type: The error type.
@@ -21,12 +19,11 @@ extension IG.DB {
         /// - parameter suggestion: A helpful suggestion on how to avoid the error.
         /// - parameter code: The `SQLite` low-level response code origin of the error.
         /// - parameter error: The underlying error that happened right before this error was created.
-        internal init(_ type: Self.Kind, _ message: String, suggestion: String, code: SQLite.Result? = nil, lowlevel: String? = nil, underlying error: Swift.Error? = nil) {
+        internal init(_ type: Self.Kind, _ message: String, suggestion: String, code: SQLite.Result? = nil, underlying error: Swift.Error? = nil) {
             self.type = type
             self.message = message
             self.suggestion = suggestion
             self.code = code
-            self.lowlevel = lowlevel
             self.underlyingError = error
         }
     }
@@ -65,8 +62,8 @@ extension IG.DB.Error {
     /// - parameter code: The `SQLite` low-level response code origin of the error.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func callFailed(_ message: Self.Message, code: SQLite.Result, lowlevel: String?, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
-        self.init(.callFailed, message.rawValue, suggestion: suggestion.rawValue, code: code, lowlevel: lowlevel, underlying: error)
+    internal static func callFailed(_ message: Self.Message, code: SQLite.Result, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.callFailed, message.rawValue, suggestion: suggestion.rawValue, code: code, underlying: error)
     }
     
     /// A factory function for `.invalidResponse` database errors.
@@ -85,6 +82,7 @@ extension IG.DB.Error {
         init(_ trustedValue: String) { self.rawValue = trustedValue }
         
         static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
+        static func sqlNotFound(for type: IG.DebugDescriptable.Type, version: IG.DB.Migration.Version) -> Self { .init("The SQL expression for \"\(type.printableDomain)\" (on version \"\(version.rawValue)\") was expected, but it couldn't be found") }
         static func tableCompilation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to compile into byte code") }
         static func tableCreation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute") }
         static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }
@@ -128,11 +126,18 @@ extension IG.DB.Error: IG.ErrorPrintable {
         result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
         
         if let code = self.code {
-            result.append("\(levelPrefix)SQLite code (\(code.rawValue)): \(code.description)")
-        }
-        
-        if let lowlevel = self.lowlevel {
-            result.append("\(levelPrefix)SQLite message: \(lowlevel)")
+            result.append("\(levelPrefix)SQLite code: ")
+            if let name = code.name {
+                result.append(name)
+            } else {
+                result.append(String(describing: code.rawValue))
+            }
+            
+            let message = code.description
+            result.append("\(levelPrefix)SQLite message: \(message)")
+            if let documentation = code.verbose, documentation != message {
+                result.append("\(levelPrefix)SQLite documentation: \(documentation)")
+            }
         }
         
         if !self.context.isEmpty {

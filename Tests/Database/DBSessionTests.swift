@@ -1,5 +1,6 @@
 @testable import IG
 import XCTest
+import SQLite3
 
 class DBSessionTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
@@ -16,3 +17,4 @@ class DBSessionTests: XCTestCase {
 //        }
 //    }
 }
+

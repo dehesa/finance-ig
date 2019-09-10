@@ -1,3 +1,4 @@
+import ReactiveSwift
 import Foundation
 import SQLite3
 
@@ -7,13 +8,12 @@ public final class DB {
     ///
     /// If `nil` the database is created "in memory".
     public let rootURL: URL?
-    /// The queues processing all API requests and responses.
-    internal let queue: IG.DB.Queues
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
     ///
     /// The access is restricted by the database queue. Only access this pointer from there.
-    internal let channel: OpaquePointer
-    #warning("Make the channel private")
+    private let channel: SQLite.Database
+    /// The queue restricting database entry.
+    private let queue: DispatchQueue
     
     /// It holds data and functionality related to the user's applications.
     public var applications: IG.DB.Request.Applications { return .init(database: self) }
@@ -21,35 +21,64 @@ public final class DB {
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
-    /// - throws: `IG.Database.Error`
+    /// - throws: `IG.DB.Error` exclusively.
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let queues: IG.DB.Queues = (
-            DispatchQueue(label: Self.reverseDNS + ".sqlite", qos: .utility, autoreleaseFrequency: .never, target: targetQueue),
-            DispatchQueue(label: Self.reverseDNS + ".response", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        )
-        let channel = try Self.Channel.make(rootURL: rootURL, on: queues.database)
-        self.init(rootURL: rootURL, channel: channel, queues: queues)
+        let queue = DispatchQueue(label: Self.reverseDNS + ".sqlite",   qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let channel = try Self.Channel.make(rootURL: rootURL, on: queue)
+        try self.init(rootURL: rootURL, channel: channel, queue: queue)
     }
     
     /// Designated initializer for the database instance providing the database configuration.
     /// - parameter rootURL: The file URL where the databse file is or `nil` for "in memory" storage.
     /// - parameter queue: The queue on which to process the `DB` requests and responses.
-    /// - throws: `IG.Database.Error`
-    internal init(rootURL: URL?, channel: OpaquePointer, queues: IG.DB.Queues) {
+    /// - throws: `IG.DB.Error` exclusively.
+    internal init(rootURL: URL?, channel: SQLite.Database, queue: DispatchQueue, migrating version: IG.DB.Migration.Version = .latest) throws {
         self.rootURL = rootURL
-        self.queue = queues
         self.channel = channel
+        self.queue = queue
+        
+        try IG.DB.Migration.apply(untilVersion: version, for: channel, on: queue)
     }
     
     deinit {
-        Self.Channel.destroy(channel: self.channel, on: self.queue.database)
+        Self.Channel.destroy(channel: self.channel, on: self.queue)
     }
+    
+    /// Performs a work on the database priviledge queue
+    internal func work<R>(_ interaction: @escaping (_ channel: SQLite.Database, _ permission: IG.DB.Request.Expiration) -> IG.DB.Response<R>) -> SignalProducer<R,IG.DB.Error> {
+        dispatchPrecondition(condition: .notOnQueue(self.queue))
+        return SignalProducer<R,IG.DB.Error>.init { [weak self] (generator, lifetime) in
+            var result: IG.DB.Response<R> = .expired
+            var permission: IG.DB.Request.Iteration = .continue
+            var detacher = lifetime.observeEnded { permission = .stop }
+            
+            self?.queue.sync { [shallContinue = { permission }] in
+                guard let self = self else { return }
+                result = interaction(self.channel, shallContinue)
+            }
+            
+            detacher?.dispose()
+            detacher = nil
+            
+            switch result {
+            case .success(let value):
+                generator.send(value: value)
+                generator.sendCompleted()
+            case .failure(let error):
+                generator.send(error: error)
+            case .expired:
+                generator.send(error: .sessionExpired())
+            case .interruption:
+                generator.sendInterrupted()
+            }
+        }
+    }
+    
+    
+    
 }
 
 extension IG.DB {
-    /// Tuple identifying the different types of queues.
-    typealias Queues = (database: DispatchQueue, response: DispatchQueue)
-    
     /// The root address for the underlying database file.
     public static var rootURL: URL {
         let result: URL
@@ -76,10 +105,8 @@ extension IG.DB: DebugDescriptable {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("Root URL", self.rootURL.map { $0.path } ?? ":memory:")
         result.append("SQLite version", SQLITE_VERSION)
-        result.append("Database queue", self.queue.database.label)
-        result.append("Database queue QoS", String(describing: self.queue.database.qos.qosClass))
-        result.append("Response queue", self.queue.response.label)
-        result.append("Response queue QoS", String(describing: self.queue.response.qos.qosClass))
+        result.append("Database queue", self.queue.label)
+        result.append("Database queue QoS", String(describing: self.queue.qos.qosClass))
         return result.generate()
     }
 }

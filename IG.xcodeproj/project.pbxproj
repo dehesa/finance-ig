@@ -81,7 +81,6 @@
 		8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB560F7214A6F6200DA980E /* SetUp.swift */; };
 		8DB90A7F231E729F004204B8 /* DBMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A7E231E729F004204B8 /* DBMarketTests.swift */; };
 		8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A80231E79BE004204B8 /* DBInternals.swift */; };
-		8DB90A83231E91AA004204B8 /* Reactive+DB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A82231E91AA004204B8 /* Reactive+DB.swift */; };
 		8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB682822F30E7F00D04867 /* Reactive+Map.swift */; };
 		8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5E2149A6CE00344CBF /* StreamerError.swift */; };
 		8DC158A322F08A8100012A19 /* Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5C2149A6CE00344CBF /* Streamer.swift */; };
@@ -212,7 +211,6 @@
 		8DB560F7214A6F6200DA980E /* SetUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetUp.swift; sourceTree = "<group>"; };
 		8DB90A7E231E729F004204B8 /* DBMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarketTests.swift; sourceTree = "<group>"; };
 		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
-		8DB90A82231E91AA004204B8 /* Reactive+DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+DB.swift"; sourceTree = "<group>"; };
 		8DBB682822F30E7F00D04867 /* Reactive+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+Map.swift"; sourceTree = "<group>"; };
 		8DC20A6F231AF3B000760FA4 /* DBNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNode.swift; sourceTree = "<group>"; };
 		8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodeTests.swift; sourceTree = "<group>"; };
@@ -459,7 +457,6 @@
 				8D1C8D572322E53900841CA0 /* DBChannel.swift */,
 				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
-				8DB90A82231E91AA004204B8 /* Reactive+DB.swift */,
 			);
 			path = Entities;
 			sourceTree = "<group>";
@@ -655,10 +652,10 @@
 		8DC4CA6B2149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */,
 				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
 				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
 				8D1C8D552322D9E500841CA0 /* OperationQueue.swift */,
+				8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -973,14 +970,13 @@
 				8D9FB785231EDA6900D76B6A /* DebugDescription.swift in Sources */,
 				8D30D083232566D900D83E0A /* Codable.swift in Sources */,
 				8DBB682922F30E7F00D04867 /* Reactive+Map.swift in Sources */,
-				8D9FB787231F943C00D76B6A /* Formatters.swift in Sources */,
 				8DB560F8214A6F6200DA980E /* SetUp.swift in Sources */,
 				8DC4CC0A2149B11100344CBF /* Operators.swift in Sources */,
 				8D3C262522E9FA020080D3C1 /* Collections.swift in Sources */,
 				8D911F6522ECF4CA0038E899 /* Decimal.swift in Sources */,
 				8DC4CC082149B10300344CBF /* Date.swift in Sources */,
+				8D9FB787231F943C00D76B6A /* Formatters.swift in Sources */,
 				8D1C8D532322BF7500841CA0 /* Dispatch.swift in Sources */,
-				8D1C8D562322D9E500841CA0 /* OperationQueue.swift in Sources */,
 				8D52F34122FB1E8400521759 /* Account.swift in Sources */,
 				8D52F34322FB201000521759 /* Client.swift in Sources */,
 				8D47E0D723159C8900AD53A2 /* Market.swift in Sources */,
@@ -1001,8 +997,8 @@
 				8D3C262322E9F66E0080D3C1 /* APIInternals.swift in Sources */,
 				8DC4CC272149B3C500344CBF /* URLRequest.swift in Sources */,
 				8DC4CC242149B3C500344CBF /* APIFormatters.swift in Sources */,
+				8D1C8D562322D9E500841CA0 /* OperationQueue.swift in Sources */,
 				8D1CC97D229B0706009AB4D3 /* Reactive+API.swift in Sources */,
-				8DC4CC1C2149B38900344CBF /* APIMarket.swift in Sources */,
 				8DC4CC102149B2FC00344CBF /* APISession.swift in Sources */,
 				8DC4CC132149B2FC00344CBF /* APICertificate.swift in Sources */,
 				8DC4CC122149B2FC00344CBF /* APIOAuth.swift in Sources */,
@@ -1011,6 +1007,7 @@
 				8DC4CC182149B31800344CBF /* APIActivity.swift in Sources */,
 				8DC4CC172149B31800344CBF /* APITransaction.swift in Sources */,
 				8DC4CC162149B31800344CBF /* APIPrice.swift in Sources */,
+				8DC4CC1C2149B38900344CBF /* APIMarket.swift in Sources */,
 				8DC4CC1B2149B38900344CBF /* APINode.swift in Sources */,
 				8DF93B9822E757B4001B9412 /* APISentiment.swift in Sources */,
 				8DC4CC1D2149B38900344CBF /* APIWatchlist.swift in Sources */,
@@ -1019,29 +1016,28 @@
 				8DC4CC212149B3A600344CBF /* APIWorkingOrder.swift in Sources */,
 				8DC4CC222149B3A600344CBF /* APIWorkingOrderOTC.swift in Sources */,
 				8DC4CC1E2149B3A600344CBF /* APIConfirmation.swift in Sources */,
-				8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */,
-				8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */,
-				8D50EE7F22FBE4B500F82671 /* StreamerMockableChannel.swift in Sources */,
 				8DE2C3DC22FBF7DD00BB6261 /* StreamerFormatters.swift in Sources */,
+				8DC158A522F08A8C00012A19 /* StreamerCredentials.swift in Sources */,
+				8D6D959122F4073B00BD42C2 /* StreamerSubscription.swift in Sources */,
+				8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */,
+				8D3C262722E9FAC20080D3C1 /* StreamerInternals.swift in Sources */,
 				8DC158A322F08A8100012A19 /* Streamer.swift in Sources */,
 				8DC158A222F08A6300012A19 /* StreamerError.swift in Sources */,
-				8D6D959322F4390B00BD42C2 /* StreamerEvent.swift in Sources */,
-				8D19C51D23266CBD00F029B3 /* DBFormatter.swift in Sources */,
-				8D6D959122F4073B00BD42C2 /* StreamerSubscription.swift in Sources */,
-				8DC158A622F08AC800012A19 /* StreamerChannel.swift in Sources */,
 				8D89F7F622F0EB7E00AF7698 /* StreamerSession.swift in Sources */,
+				8DC158A622F08AC800012A19 /* StreamerChannel.swift in Sources */,
+				8D50EE7F22FBE4B500F82671 /* StreamerMockableChannel.swift in Sources */,
 				8D6D958C22F3239A00BD42C2 /* StreamerMarket.swift in Sources */,
-				8D222CD522F557C600AF98E0 /* StreamerAccount.swift in Sources */,
 				8D222CD622F55FFC00AF98E0 /* StreamerChartScale.swift in Sources */,
 				8D222CD822F5600700AF98E0 /* StreamerChartTick.swift in Sources */,
+				8D222CD522F557C600AF98E0 /* StreamerAccount.swift in Sources */,
 				8D222CD922F5601200AF98E0 /* StreamerDeal.swift in Sources */,
 				8D19C51F232694DC00F029B3 /* SQLite.swift in Sources */,
 				8D30D08123240B0C00D83E0A /* SQLite+Result.swift in Sources */,
+				8D19C51D23266CBD00F029B3 /* DBFormatter.swift in Sources */,
 				8D94BA962316575500AFBA1E /* DB.swift in Sources */,
 				8D94BA9823165DB500AFBA1E /* DBError.swift in Sources */,
 				8D1C8D582322E53900841CA0 /* DBChannel.swift in Sources */,
 				8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */,
-				8DB90A83231E91AA004204B8 /* Reactive+DB.swift in Sources */,
 				8DA8F8922317EAB100F1A2C0 /* DBMigration.swift in Sources */,
 				8DA8F8902317BF7200F1A2C0 /* DBApplication.swift in Sources */,
 				8D10BBF02318E91700557960 /* DBMarket.swift in Sources */,

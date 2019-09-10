@@ -3,20 +3,22 @@ import Foundation
 extension IG.DB {
     /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `DB` instance context.
     internal enum Formatter {
-        /// Database *date* formatter.
-        /// - Example: `2019-09-09`
-        static let date = DateFormatter().set {
-            $0.dateFormat = "yyyy-MM-dd"
-            $0.calendar = IG.UTC.calendar
-            $0.timeZone = IG.UTC.timezone
-        }
-        
         /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
         /// - Example: `2019-09-09 11:43:09`
-        static let timestamp = DateFormatter().set {
-            $0.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            $0.calendar = IG.UTC.calendar
-            $0.timeZone = IG.UTC.timezone
+        static var timestamp: DateFormatter {
+            return IG.Formatter.fullDate
+        }
+        
+        /// Database *date* formatter.
+        /// - Example: `2019-09-09`
+        static var date: DateFormatter {
+            return IG.Formatter.yearMonthDay
+        }
+        
+        /// Database *time* formatter.
+        /// - Example: `11:43:09`
+        static var time: DateFormatter {
+            return IG.Formatter.time
         }
     }
 }
