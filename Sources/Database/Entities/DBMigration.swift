@@ -1,35 +1,68 @@
 import Foundation
+import SQLite3
 
 extension IG.DB {
     /// All migrations described in this database.
-    enum Migration {
+    internal enum Migration {
         /// The number of versions currently supported
-        enum Version: String, Equatable, CaseIterable {
+        internal enum Version: String, Equatable, CaseIterable {
             /// The initial migration.
             case v0 = "v0"
-            
-            /// The last described migration.
-            static var last: Self {
-                return Self.allCases.last!
-            }
         }
         
-        /// Registers all table on the SQLite database.
-//        static func register(on migrator: inout GRDB.DatabaseMigrator) {
-//            var migrations = Self.Version.allCases.makeIterator()
-//            let errorMessage = "The migrator encountered an error"
-//
-//            guard case .v0 = migrations.next() else { fatalError(errorMessage) }
-//            migrator.registerMigration(Self.Version.v0.rawValue) { (db) in
-//                try IG.DB.Application.tableCreation(in: db)
-//                try IG.DB.Market.tableCreation(in: db)
-//                try IG.DB.Market.Forex.tableCreation(in: db)
-////                try IG.DB.Node.tableCreation(in: db)
-////                try IG.DB.Node.AssociativeMarket.tableCreation(in: db)
-////                try IG.DB.Node.AssociativeSubnode.tableCreation(in: db)
-//            }
-//
-//            guard case .none = migrations.next() else { fatalError("More migration awaited to be registered") }
-//        }
+        /// Apply the migrations till (and including) the given version.
+        ///
+        /// This function will check the version of your database and migrate till the given version.
+        /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
+        /// - parameter version: The last version to migrate your database to.
+        /// - parameter channel: The database connection pointer.
+        /// - parameter queue: The priviledge database queue.
+        /// - throws: `IG.DB.Error` exclusively.
+        internal static func apply(untilVersion version: Self.Version, for channel: SQLite.Database, on queue: DispatchQueue) throws {
+            switch version {
+            case .v0: try Self.initialVersion(version, channel: channel, queue: queue)
+            }
+        }
+    }
+}
+
+internal protocol DBMigratable {
+    /// Returns a SQL definition for the receiving type on the specific database version.
+    static func tableDefinition(for version: IG.DB.Migration.Version) -> String?
+}
+
+extension IG.DB.Migration {
+    private typealias MigrationType = DBMigratable & DebugDescriptable
+    
+    /// Where the actual migration happens.
+    private static func initialVersion(_ version: Self.Version, channel: SQLite.Database, queue: DispatchQueue) throws {
+        #warning("Each migration must be in its own transaction")
+        let types: [MigrationType.Type] = [IG.DB.Application.self]
+        
+        for type in types {
+            guard let sql = type.tableDefinition(for: version) else {
+                throw IG.DB.Error.invalidRequest(.sqlNotFound(for: type, version: version), suggestion: .reviewError)
+            }
+            
+            var statement: OpaquePointer? = nil
+            if let compilerError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
+                throw IG.DB.Error.callFailed(.tableCompilation(for: type), code: compilerError, suggestion: .reviewError)
+            }
+            
+            if let creationError = sqlite3_step(statement).enforce(.done) {
+                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: creationError, suggestion: .reviewError)
+            }
+            
+            if let finalizeError = sqlite3_finalize(statement).enforce(.ok) {
+                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: finalizeError, suggestion: .reviewError)
+            }
+        }
+    }
+}
+
+extension IG.DB.Migration.Version {
+    /// The last described migration.
+    static var latest: Self {
+        return Self.allCases.last!
     }
 }
