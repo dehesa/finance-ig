@@ -62,7 +62,7 @@ extension IG.DB.Error {
     /// - parameter code: The `SQLite` low-level response code origin of the error.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func callFailed(_ message: Self.Message, code: SQLite.Result, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+    internal static func callFailed(_ message: Self.Message, code: SQLite.Result, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion = .reviewError) -> Self {
         self.init(.callFailed, message.rawValue, suggestion: suggestion.rawValue, code: code, underlying: error)
     }
     
@@ -83,6 +83,7 @@ extension IG.DB.Error {
         
         static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
         static func sqlNotFound(for type: IG.DebugDescriptable.Type, version: IG.DB.Migration.Version) -> Self { .init("The SQL expression for \"\(type.printableDomain)\" (on version \"\(version.rawValue)\") was expected, but it couldn't be found") }
+        static var  transactionError: Self { .init("There was an error beginning or commiting a transaction") }
         static func tableCompilation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to compile into byte code") }
         static func tableCreation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute") }
         static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }

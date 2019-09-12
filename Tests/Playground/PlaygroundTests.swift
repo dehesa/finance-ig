@@ -1,6 +1,5 @@
 @testable import IG
 import ReactiveSwift
-import SQLite3
 import XCTest
 
 final class PlaygroundTests: XCTestCase {

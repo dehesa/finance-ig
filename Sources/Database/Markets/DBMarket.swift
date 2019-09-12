@@ -1,21 +1,59 @@
 import ReactiveSwift
 import Foundation
+import SQLite3
 
 extension IG.DB.Request.Markets {
     /// Returns all markets stored in the database.
-//    public func getAll() -> SignalProducer<[IG.DB.Market],IG.DB.Error> {
-//        SignalProducer(database: self.database)
-//            .read { (db, _, _) in
-//                try IG.DB.Market.fetchAll(db)
-//            }
-//    }
+    public func getAll() -> SignalProducer<[IG.DB.Market],IG.DB.Error> {
+        return self.database.work { (channel, requestPermission) in
+            var statement: SQLite.Statement? = nil
+            defer { sqlite3_finalize(statement) }
+            
+            let query = "SELECT * FROM Markets;"
+            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
+                return .failure(error: .callFailed(.querying(IG.DB.Market.self), code: compileError))
+            }
+            
+            var result: [IG.DB.Market] = .init()
+            repeat {
+                switch sqlite3_step(statement).result {
+                case .row:  result.append(.init(statement: statement!))
+                case .done: return .success(value: result)
+                case let e: return .failure(error: .callFailed(.querying(IG.DB.Market.self), code: e))
+                }
+            } while requestPermission().isAllowed
+            
+            return .interruption
+        }
+    }
     
     ///
-//    public func update(_ market: [IG.API.Market]) {
-//        SignalProducer(database: self.database) { _ in
-//            
-//        }
-//    }
+    internal func insert(_ markets: [(epic: IG.Market.Epic, type: IG.DB.Market.Kind)]) -> SignalProducer<Void,IG.DB.Error> {
+        return self.database.work { (channel, requestPermission) in
+            var statement: SQLite.Statement? = nil
+            defer { sqlite3_finalize(statement) }
+            
+            let query = """
+                INSERT INTO Markets VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING;
+                """
+            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
+                return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: compileError, suggestion: .reviewError))
+            }
+            
+            for market in markets {
+                guard case .continue = requestPermission() else { return .interruption }
+                sqlite3_reset(statement)
+                sqlite3_bind_text(statement, 1, market.epic.rawValue, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_int (statement, 2, Int32(market.type.rawValue))
+                
+                if let updateError = sqlite3_step(statement).enforce(.done) {
+                    return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: updateError))
+                }
+            }
+            
+            return .interruption
+        }
+    }
 }
 
 // MARK: - Supporting Entities
@@ -44,10 +82,11 @@ extension IG.DB {
         /// The type of market (i.e. instrument type).
         public let type: Self.Kind?
         
-//        public init(row: Row) {
-//            self.epic = row[0]
-//            self.type = row[1]
-//        }
+        /// Initializer when the instance comes directly from the database.
+        fileprivate init(statement s: SQLite.Statement) {
+            self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, 0)))!
+            self.type = Self.Kind(rawValue: Int(sqlite3_column_int(s, 1)))!
+        }
     }
 }
 
@@ -80,34 +119,29 @@ extension IG.DB.Market {
     }
 }
 
-// MARK: - GRDB functionality
+extension IG.DB.Market: DBMigratable {
+    internal static func tableDefinition(for version: DB.Migration.Version) -> String? {
+        switch version {
+        case .v0: return """
+        CREATE TABLE Markets (
+        epic TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ) PRIMARY KEY,
+        type INTEGER          CHECK( type BETWEEN 1 AND 6 )
+        ) WITHOUT ROWID;
+        """
+        #warning("Primary key and index")
+        }
+    }
+}
 
-//extension IG.DB.Market {
-//    static func tableCreation(in db: GRDB.Database) throws {
-//        try db.create(table: "markets", ifNotExists: false, withoutRowID: true) { (t) in
-//            t.column("epic", .text).primaryKey()
-//            t.column("type", .integer).indexed()
-//        }
-//    }
-//}
-//
-//extension IG.DB.Market: GRDB.TableRecord {
-//    /// The table columns
-//    private enum Columns: String, GRDB.ColumnExpression {
-//        case epic = "epic"
-//        case type = "kind"
-//    }
-//
-//    public static var databaseTableName: String {
-//        return "markets"
-//    }
-//
-//    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
-//}
-//
-//extension IG.DB.Market: GRDB.PersistableRecord {
-//    public func encode(to container: inout PersistenceContainer) {
-//        container[Columns.epic] = self.epic
-//        container[Columns.type] = self.type
-//    }
-//}
+extension IG.DB.Market: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return IG.DB.printableDomain.appending(".\(Self.self)")
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("epic", self.epic.rawValue)
+        result.append("type", self.type.debugDescription)
+        return result.generate()
+    }
+}

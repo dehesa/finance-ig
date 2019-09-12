@@ -23,7 +23,7 @@ public final class DB {
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
     /// - throws: `IG.DB.Error` exclusively.
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let queue = DispatchQueue(label: Self.reverseDNS + ".sqlite",   qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let queue = DispatchQueue(label: Self.reverseDNS,   qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
         let channel = try Self.Channel.make(rootURL: rootURL, on: queue)
         try self.init(rootURL: rootURL, channel: channel, queue: queue)
     }
@@ -44,9 +44,14 @@ public final class DB {
         Self.Channel.destroy(channel: self.channel, on: self.queue)
     }
     
-    /// Performs a work on the database priviledge queue
+    /// Performs a work item on the database priviledge queue.
+    /// - precondition: The caller must not be on the priviledge database dispatch queue or this function will crash.
+    /// - parameter interaction: Closure giving the priviledge database connection and a way to check whether the operation should be finished (since databse operations may extend for a long time). Its result will be forwarded to the Signal.
+    /// - parameter channel: The priviledge SQLite database actually performing the work.
+    /// - parameter permission: A closure to ask for *continuation* permission to the database manager.
     internal func work<R>(_ interaction: @escaping (_ channel: SQLite.Database, _ permission: IG.DB.Request.Expiration) -> IG.DB.Response<R>) -> SignalProducer<R,IG.DB.Error> {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
+        
         return SignalProducer<R,IG.DB.Error>.init { [weak self] (generator, lifetime) in
             var result: IG.DB.Response<R> = .expired
             var permission: IG.DB.Request.Iteration = .continue
@@ -61,10 +66,10 @@ public final class DB {
             detacher = nil
             
             switch result {
-            case .success(let value):
+            case .success(value: let value):
                 generator.send(value: value)
                 generator.sendCompleted()
-            case .failure(let error):
+            case .failure(error: let error):
                 generator.send(error: error)
             case .expired:
                 generator.send(error: .sessionExpired())
@@ -73,9 +78,6 @@ public final class DB {
             }
         }
     }
-    
-    
-    
 }
 
 extension IG.DB {
