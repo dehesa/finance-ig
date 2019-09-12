@@ -41,7 +41,7 @@ extension IG.DB {
             queue.sync {
                 let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX
                 if let errorCode = sqlite3_open_v2(path, &db, openFlags, nil).enforce(.ok) {
-                    error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: errorCode, suggestion: .reviewError)
+                    error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: errorCode)
                     if let channel = db {
                         let message = String(cString: sqlite3_errmsg(channel))
                         if message != errorCode.description {
@@ -51,7 +51,7 @@ extension IG.DB {
                 }
             }
             
-            // If there is an error, it shall be thrown in the calling queue.
+            // If there is an error, it shall be thrown in the calling queue
             switch (db, error) {
             case (.some,  .none):  break
             case (let c?, let e?): Self.destroy(channel: c, on: queue); fallthrough
@@ -59,10 +59,18 @@ extension IG.DB {
             case (.none,  .none):  fatalError("SQLite returned SQLITE_OK, but there was no database connection pointer. This should never happen")
             }
             
-            // 3. Enable extended results.
+            // 3. Enable everything needed for the database.
             queue.sync {
-                if let errorCode = sqlite3_extended_result_codes(db, 1).enforce(.ok) {
-                    error = .callFailed("The SQLite database couldn't enable extended result codes", code: errorCode, suggestion: .reviewError)
+                // Extended error codes (to better understand problems)
+                if let extendedEnablingCode = sqlite3_extended_result_codes(db, 1).enforce(.ok) {
+                    error = .callFailed("The SQLite database couldn't enable extended result codes", code: extendedEnablingCode)
+                    return
+                }
+                
+                // Foreign key constraints activation
+                let statement = "PRAGMA foreign_keys = ON;"
+                if let foreignEnablingCode = sqlite3_exec(db, statement, nil, nil, nil).enforce(.ok) {
+                    error = .callFailed("Foreign keys couldn't be enabled for the database", code: foreignEnablingCode)
                     return
                 }
             }

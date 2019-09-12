@@ -11,15 +11,15 @@ extension IG.DB.Request.Applications {
             
             let query = "SELECT * FROM Apps;"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError, suggestion: .reviewError))
+                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             var result: [IG.DB.Application] = .init()
             repeat {
                 switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement))
-                case .done: return .success(result)
-                case let c: return .failure(.callFailed(.querying(IG.DB.Application.self), code: c, suggestion: .reviewError))
+                case .row:  result.append(.init(statement: statement!))
+                case .done: return .success(value: result)
+                case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -28,16 +28,36 @@ extension IG.DB.Request.Applications {
     }
     
     /// Updates the database with the information received from the server.
+    /// - remark: This function wraps its call to the database on a transaction.
     /// - parameter applications: Information returned from the server.
-    /// - throws: `Database.Error` exclusively.
     public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = "INSERT OR REPLACE INTO Apps VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP);"
+            if applications.count > 1 {
+                if let errorTransaction = sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
+                    return .failure(error: .callFailed(.transactionError, code: errorTransaction, suggestion: .fileBug))
+                }
+            }
+            
+            let query = """
+                INSERT INTO Apps VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
+                    ON CONFLICT(key) DO UPDATE SET
+                        name = excluded.name,
+                        status = excluded.status,
+                        equity = excluded.equity,
+                        quote = excluded.quote,
+                        liApp = excluded.liApp,
+                        liAcco = excluded.liAcco,
+                        liTrade = excluded.liTrade,
+                        liHisto = excluded.liHisto,
+                        subs = excluded.subs,
+                        created = excluded.created,
+                        updated = excluded.updated;
+                """
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.storing(IG.DB.Application.self), code: compileError, suggestion: .reviewError))
+                return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: compileError))
             }
             
             for app in applications {
@@ -51,26 +71,32 @@ extension IG.DB.Request.Applications {
                 case .revoked: status = .revoked
                 }
                 
-                sqlite3_bind_text(statement,  1, app.key.rawValue, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement,  2, app.name, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_int(statement,   3, status.rawValue)
-                sqlite3_bind_int(statement,   4, Int32(app.permission.accessToEquityPrices))
-                sqlite3_bind_int(statement,   5, Int32(app.permission.areQuoteOrdersAllowed))
+                sqlite3_bind_text (statement, 1, app.key.rawValue, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text (statement, 2, app.name, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_int  (statement, 3, status.rawValue)
+                sqlite3_bind_int  (statement, 4, Int32(app.permission.accessToEquityPrices))
+                sqlite3_bind_int  (statement, 5, Int32(app.permission.areQuoteOrdersAllowed))
                 sqlite3_bind_int64(statement, 6, Int64(app.allowance.overallRequests))
                 sqlite3_bind_int64(statement, 7, Int64(app.allowance.account.overallRequests))
                 sqlite3_bind_int64(statement, 8, Int64(app.allowance.account.tradingRequests))
                 sqlite3_bind_int64(statement, 9, Int64(app.allowance.account.historicalDataRequests))
                 sqlite3_bind_int64(statement,10, Int64(app.allowance.subscriptionsLimit))
-                sqlite3_bind_text(statement, 11, IG.DB.Formatter.date.string(from: app.creationDate), -1, nil)
+                sqlite3_bind_text (statement,11, IG.DB.Formatter.date.string(from: app.creationDate), -1, SQLITE_TRANSIENT)
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
-                    return .failure(.callFailed(.storing(IG.DB.Application.self), code: updateError, suggestion: .reviewError))
+                    return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: updateError))
                 }
                 
                 sqlite3_clear_bindings(statement)
             }
             
-            return .success(())
+            if applications.count > 1 {
+                if let errorTransaction = sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
+                    return .failure(error: .callFailed(.transactionError, code: errorTransaction, suggestion: .fileBug))
+                }
+            }
+            
+            return .success(value: ())
         }
     }
 }
@@ -111,8 +137,8 @@ extension IG.DB {
         /// The date at which this entity was inserted in the database with factual information.
         public let updated: Date
         
-        ///
-        fileprivate init(statement s: SQLite.Statement!) {
+        /// Initializer when the instance comes directly from the database.
+        fileprivate init(statement s: SQLite.Statement) {
             self.key = IG.API.Key(rawValue: String(cString: sqlite3_column_text(s, 0)))!
             self.name = String(cString: sqlite3_column_text(s, 1))
             self.status = Self.Status(rawValue: sqlite3_column_int(s, 2))!
@@ -208,23 +234,22 @@ extension IG.DB.Application {
 }
 
 extension IG.DB.Application: DBMigratable {
-    /// Creates a SQLite table for API applications.
     internal static func tableDefinition(for version: IG.DB.Migration.Version) -> String? {
         switch version {
         case .v0: return """
             CREATE TABLE Apps (
-            key     TEXT     NOT NULL CHECK ( LENGTH(key) == 40 ) PRIMARY KEY,
-            name    TEXT     NOT NULL CHECK ( LENGTH(name) > 0 ),
-            status  INTEGER  NOT NULL CHECK ( status BETWEEN -1 AND 1 ),
-            equity  INTEGER  NOT NULL CHECK ( equity BETWEEN 0 AND 1 ),
-            quote   INTEGER  NOT NULL CHECK ( quote BETWEEN 0 AND 1 ),
-            liApp   INTEGER  NOT NULL CHECK ( liApp >= 0 ),
-            liAcco  INTEGER  NOT NULL CHECK ( liAcco >= 0 ),
-            liTrade INTEGER  NOT NULL CHECK ( liTrade >= 0 ),
-            liHisto INTEGER  NOT NULL CHECK ( liHisto >= 0 ),
-            subs    INTEGER  NOT NULL CHECK ( subs >= 0 ),
-            created TEXT     NOT NULL CHECK (( created IS DATE(created) ) AND ( created <= CURRENT_DATE )),
-            updated TEXT     NOT NULL CHECK (( updated IS DATETIME(updated) ) AND ( updated <= CURRENT_TIMESTAMP ))
+            key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ) PRIMARY KEY,
+            name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
+            status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
+            equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
+            quote   INTEGER NOT NULL CHECK( quote BETWEEN 0 AND 1 ),
+            liApp   INTEGER NOT NULL CHECK( liApp >= 0 ),
+            liAcco  INTEGER NOT NULL CHECK( liAcco >= 0 ),
+            liTrade INTEGER NOT NULL CHECK( liTrade >= 0 ),
+            liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
+            subs    INTEGER NOT NULL CHECK( subs >= 0 ),
+            created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
+            updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) )
             ) WITHOUT ROWID;
             """
         }

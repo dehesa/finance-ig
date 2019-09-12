@@ -46,16 +46,19 @@ extension IG.DB.Migration {
             
             var statement: OpaquePointer? = nil
             if let compilerError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                throw IG.DB.Error.callFailed(.tableCompilation(for: type), code: compilerError, suggestion: .reviewError)
+                throw IG.DB.Error.callFailed(.tableCompilation(for: type), code: compilerError)
             }
             
             if let creationError = sqlite3_step(statement).enforce(.done) {
-                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: creationError, suggestion: .reviewError)
+                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: creationError)
             }
             
             if let finalizeError = sqlite3_finalize(statement).enforce(.ok) {
-                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: finalizeError, suggestion: .reviewError)
+                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: finalizeError)
             }
+            
+            // Once I test all tables, I should use this.
+            // sqlite3_exec(channel, sql, nil, nil, nil)
         }
     }
 }

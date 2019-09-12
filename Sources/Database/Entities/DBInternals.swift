@@ -4,9 +4,9 @@ extension IG.DB {
     /// Domain namespace retaining anything related to DB requests.
     public enum Request {}
     /// Domain namespace retaining anything related to DB responses.
-    public enum Response<T> {
-        case success(T)
-        case failure(IG.DB.Error)
+    internal enum Response<T> {
+        case success(value: T)
+        case failure(error: IG.DB.Error)
         case interruption
         case expired
     }
