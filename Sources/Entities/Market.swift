@@ -77,7 +77,7 @@ extension IG.Market {
         
         public var debugDescription: String {
             switch self {
-            case .none: return IG.DebugDescription.nilSymbol
+            case .none: return IG.DebugDescription.Symbol.nil
             case .dailyFunded: return "Daily funded"
             case .forward(let date): return IG.Formatter.date(.yearMonthDay, time: .hoursMinutes, localize: false).string(from: date)
             }

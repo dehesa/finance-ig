@@ -28,33 +28,23 @@ extension IG.DB.Request.Applications {
     }
     
     /// Updates the database with the information received from the server.
-    /// - remark: This function wraps its call to the database on a transaction.
+    /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter applications: Information returned from the server.
     public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in
+            sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
+            defer { sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil) }
+            
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
-            
-            if applications.count > 1 {
-                if let errorTransaction = sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
-                    return .failure(error: .callFailed(.transactionError, code: errorTransaction, suggestion: .fileBug))
-                }
-            }
             
             let query = """
                 INSERT INTO Apps VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
                     ON CONFLICT(key) DO UPDATE SET
-                        name = excluded.name,
-                        status = excluded.status,
-                        equity = excluded.equity,
-                        quote = excluded.quote,
-                        liApp = excluded.liApp,
-                        liAcco = excluded.liAcco,
-                        liTrade = excluded.liTrade,
-                        liHisto = excluded.liHisto,
-                        subs = excluded.subs,
-                        created = excluded.created,
-                        updated = excluded.updated;
+                        name = excluded.name, status = excluded.status,
+                        equity = excluded.equity, quote = excluded.quote,
+                        liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
+                        created = excluded.created, updated = excluded.updated;
                 """
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: compileError))
@@ -90,12 +80,6 @@ extension IG.DB.Request.Applications {
                 sqlite3_clear_bindings(statement)
             }
             
-            if applications.count > 1 {
-                if let errorTransaction = sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
-                    return .failure(error: .callFailed(.transactionError, code: errorTransaction, suggestion: .fileBug))
-                }
-            }
-            
             return .success(value: ())
         }
     }
@@ -117,7 +101,7 @@ extension IG.DB.Request {
     }
 }
 
-// MARK: Request Entities
+// MARK: Response Entities
 
 extension IG.DB {
     /// Client application
@@ -151,27 +135,6 @@ extension IG.DB {
                                    subscriptions: Int(sqlite3_column_int64(s, 9)))
             self.created = IG.DB.Formatter.date.date(from: String(cString: sqlite3_column_text(s, 10)))!
             self.updated = IG.DB.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, 11)))!
-        }
-        
-        /// Mapper from API instances to DB instances.
-        fileprivate init(with app: IG.API.Application) {
-            self.key = app.key
-            self.name = app.name
-            
-            switch app.status {
-            case .enabled:  self.status = .enabled
-            case .disabled: self.status = .disabled
-            case .revoked:  self.status = .revoked
-            }
-            
-            self.permission = .init(equities: app.permission.accessToEquityPrices, quoteOrders: app.permission.areQuoteOrdersAllowed)
-            self.allowance = .init(overall: app.allowance.overallRequests,
-                                   account: app.allowance.account.overallRequests,
-                                   trading: app.allowance.account.tradingRequests,
-                                   history: app.allowance.account.tradingRequests,
-                                   subscriptions: app.allowance.subscriptionsLimit)
-            self.created = app.creationDate
-            self.updated = Date()
         }
     }
 }
@@ -238,7 +201,7 @@ extension IG.DB.Application: DBMigratable {
         switch version {
         case .v0: return """
             CREATE TABLE Apps (
-            key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ) PRIMARY KEY,
+            key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ),
             name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
             status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
             equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
@@ -249,7 +212,9 @@ extension IG.DB.Application: DBMigratable {
             liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
             subs    INTEGER NOT NULL CHECK( subs >= 0 ),
             created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
-            updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) )
+            updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) ),
+            
+            PRIMARY KEY(key)
             ) WITHOUT ROWID;
             """
         }

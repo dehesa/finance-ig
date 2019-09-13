@@ -36,7 +36,7 @@ extension IG.API.Request.Markets {
     // MARK: GET /markets
     
     /// Returns the details of the given markets.
-    /// - parameter epics: The market epics to target onto. It cannot be empty.
+    /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
     public func get(epics: Set<IG.Market.Epic>) -> SignalProducer<[IG.API.Market],IG.API.Error> {
         let dateFormatter: DateFormatter = IG.API.Formatter.iso8601noSeconds
@@ -106,7 +106,7 @@ extension IG.API {
         ///
         /// It typically represents the underlying 'real-world' market. For example, `VOD-UK` represents Vodafone Group PLC (UK).
         /// This identifier is primarily used in our market research services, such as client sentiment, and may be found on the /market/{epic} service
-        public let identifier: String
+        public let identifier: String?
         /// IG tradeable financial instrument (market), typically based on some underlying financial market instrument.
         ///
         /// Since IG's instruments are derived, they do not have recognisable real-world identifiers such as the Reuters or Bloomberg codes.
@@ -127,7 +127,7 @@ extension IG.API {
             self.snapshot = try container.decode(Self.Snapshot.self, forKey: .snapshot)
             
             let instrumentContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.InstrumentKeys.self, forKey: .instrument)
-            self.identifier = try (instrumentContainer).decode(String.self, forKey: .identifier)
+            self.identifier = try (instrumentContainer).decodeIfPresent(String.self, forKey: .identifier)
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -191,7 +191,7 @@ extension IG.API.Market {
         /// The limited risk premium.
         public let limitedRiskPremium: IG.API.Market.Distance
         /// Chart code.
-        public let chartCode: String
+        public let chartCode: String?
         /// Retuers news code.
         public let newsCode: String
         /// List of special information notices.
@@ -242,7 +242,7 @@ extension IG.API.Market {
             self.slippageFactor = try container.decode(Self.SlippageFactor.self, forKey: .slippageFactor)
             self.rollover = try container.decodeIfPresent(Self.Rollover.self, forKey: .rollover)
             self.limitedRiskPremium = try container.decode(IG.API.Market.Distance.self, forKey: .limitedRiskPremium)
-            self.chartCode = try container.decode(String.self, forKey: .chartCode)
+            self.chartCode = try container.decodeIfPresent(String.self, forKey: .chartCode)
             self.newsCode = try container.decode(String.self, forKey: .newsCode)
             let details = try container.decodeIfPresent([String].self, forKey: .details)
             self.sprintMarket = try SprintMarket(from: decoder)
@@ -782,7 +782,7 @@ extension IG.API.Market: CustomDebugStringConvertible {
             
             let expiryValue: String
             switch $1.expiration.expiry {
-            case .none: expiryValue = IG.DebugDescription.nilSymbol
+            case .none: expiryValue = IG.DebugDescription.Symbol.nil
             case .dailyFunded: expiryValue = "Daily funded"
             case .forward(let date): expiryValue = dayMonthYear.string(from: date)
             }
@@ -824,7 +824,7 @@ extension IG.API.Market: CustomDebugStringConvertible {
         result.append("dealing rules", self.rules) {
             $0.append("market order preferences", $1.marketOrder)
             $0.append("min deal size", "\($1.minimumDealSize.value) \($1.minimumDealSize.unit)")
-            $0.append("limit distance", "\($1.limit.mininumDistance)...\($1.limit.maximumDistance)")
+            $0.append("limit distance", "\($1.limit.mininumDistance.value)  \($1.limit.mininumDistance.unit)...\($1.limit.maximumDistance.value) \($1.limit.maximumDistance.unit)")
             $0.append("stop ", $1.stop) {
                 $0.append("distance", "\($1.mininumDistance.value) \($1.mininumDistance.unit)...\($1.maximumDistance.value) \($1.maximumDistance.unit)")
                 $0.append("guaranteed stop distance", "\($1.minimumLimitedRiskDistance.value) \($1.minimumLimitedRiskDistance.unit)")

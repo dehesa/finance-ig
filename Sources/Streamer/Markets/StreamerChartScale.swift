@@ -270,10 +270,10 @@ extension IG.Streamer.Chart.Aggregated: CustomDebugStringConvertible {
     public var debugDescription: String {
         let represent: (Self.Candle.Point)->String = {
             switch ($0.bid, $0.ask) {
-            case (nil, nil): return IG.DebugDescription.nilSymbol
+            case (nil, nil): return IG.DebugDescription.Symbol.nil
             case (let bid?, let ask?): return "\(ask) ask, \(bid) bid"
-            case (let bid?, nil): return "\(IG.DebugDescription.nilSymbol) ask, \(bid) bid"
-            case (nil, let ask?): return "\(ask) ask, \(IG.DebugDescription.nilSymbol) bid"
+            case (let bid?, nil): return "\(IG.DebugDescription.Symbol.nil) ask, \(bid) bid"
+            case (nil, let ask?): return "\(ask) ask, \(IG.DebugDescription.Symbol.nil) bid"
             }
         }
         

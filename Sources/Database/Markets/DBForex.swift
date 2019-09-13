@@ -1,4 +1,55 @@
+import ReactiveSwift
 import Foundation
+import SQLite3
+
+extension IG.DB.Request.Markets {
+    /// Updates the database with the information received from the server.
+    ///
+    /// This method is intended to be called from the generic update markets. That is why, no transaction is performed here, since the parent method will wrap everything in its own transaction.
+    /// - precondition: The market must be of currency type or an error will be returned.
+    /// - parameter markets: The currency markets to be updated.
+    internal func update(forexMarkets markets: [IG.API.Market], channel: SQLite.Database, permission: IG.DB.Request.Expiration) -> IG.DB.Response<Void> {
+        var statement: SQLite.Statement? = nil
+        defer { sqlite3_finalize(statement) }
+        
+        let query = """
+            INSERT INTO Forex VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+                ON CONFLICT(epic) DO UPDATE SET
+                    base = excluded.base, counter = excluded.counter,
+                    name = excluded.name, marketId = excluded.marketId, chartId = excluded.chartId, reutersId = excluded.reutersId,
+                    contSize = excluded.contSize, pipVal = excluded.pipVal, placePip = excluded.placePip, placeLevel = excluded.placeLevel, slippage = excluded.slippage, premium = excluded.premium, extra = excluded.extra,
+                    minSize = excluded.minSize, minDista = excluded.minDista, minRisk = excluded.minRisk, maxDista = excluded.maxDista, minStep = excluded.minStep,
+                    margin = excluded.margin, bands = excluded.bands;
+            """
+        if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
+            return .failure(error: .callFailed(.storing(IG.DB.Market.Forex.self), code: compileError))
+        }
+        
+        for market in markets {
+            guard case .continue = permission() else { return .interruption }
+            sqlite3_reset(statement)
+            
+            sqlite3_bind_text (statement, 1, market.instrument.epic.rawValue, -1, SQLITE_TRANSIENT)
+//            sqlite3_bind_int(statement, 2, Int32(<#T##Int32#>))
+//
+//            sqlite3_bind_int64(statement, <#T##Int32#>, Int64(<#T##sqlite3_int64#>))
+//            sqlite3_bind_text (statement, <#T##Int32#>, <#T##UnsafePointer<Int8>!#>, -1, SQLITE_TRANSIENT)
+            
+            
+            if let updateError = sqlite3_step(statement).enforce(.done) {
+                return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: updateError))
+            }
+            
+            sqlite3_clear_bindings(statement)
+        }
+        
+        return .success(value: ())
+    }
+}
+
+// MARK: - Supporting Entities
+
+// MARK: Response Entities
 
 extension IG.DB.Market {
     /// Database representation of a Foreign Exchange market.
@@ -16,33 +67,36 @@ extension IG.DB.Market {
         /// Margin information and requirements.
         public let margin: Self.Margin
         
-//        public init(row: GRDB.Row) {
-//            self.epic = row[0]
-//            self.currency = (base: row[1],
-//                             counter: row[2])
-//            self.identifiers = Self.Identifiers(
-//                                name: row[3],
-//                                market: row[4],
-//                                chart: row[5],
-//                                reuters: row[6])
-//            self.information = Self.DealingInformation(
-//                                contractSize: row[7],
-//                                pipValue: row[8],
-//                                pipPlaces: row[9],
-//                                levelPlaces: row[10],
-//                                slippage: row[11],
-//                                premium: row[12],
-//                                extra: row[13])
-//            self.restrictions = Self.Restrictions(
-//                                size: row[14],
-//                                normalDistance: row[15],
-//                                limitedRiskDistance: row[16],
-//                                maxDistance: row[17],
-//                                minStep: row[18])
-//            self.margin = Self.Margin(
-//                                factor: row[19],
-//                                band: row[20])
-//        }
+        /// Initializer when the instance comes directly from the database.
+        fileprivate init(statement s: SQLite.Statement) {
+            self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, 0)))!
+            self.currency = (base:    IG.Currency.Code(rawValue: String(cString: sqlite3_column_text(s, 1)))!,
+                             counter: IG.Currency.Code(rawValue: String(cString: sqlite3_column_text(s, 2)))!)
+            self.identifiers = Self.Identifiers(name:    String(cString: sqlite3_column_text(s, 3)),
+                                                market:  String(cString: sqlite3_column_text(s, 4)),
+                                                chart:   String(cString: sqlite3_column_text(s, 5)),
+                                                reuters: String(cString: sqlite3_column_text(s, 6)))
+            self.information = Self.DealingInformation(contractSize: Int(sqlite3_column_int64(s,  7)),
+                                                       pipValue:     Int(sqlite3_column_int64(s,  8)),
+                                                       pipPlaces:    Int(sqlite3_column_int64(s,  9)),
+                                                       levelPlaces:  Int(sqlite3_column_int64(s, 10)),
+                                                       slippage:     Int(sqlite3_column_int64(s, 11)),
+                                                       premium:      Int(sqlite3_column_int64(s, 12)),
+                                                       extra:        Int(sqlite3_column_int64(s, 13)))
+            self.restrictions = Self.Restrictions(size:                Int(sqlite3_column_int64(s, 14)),
+                                                  normalDistance:      Int(sqlite3_column_int64(s, 15)),
+                                                  limitedRiskDistance: Int(sqlite3_column_int64(s, 16)),
+                                                  maxDistance:         Int(sqlite3_column_int64(s, 17)),
+                                                  minStep:             Int(sqlite3_column_int64(s, 18)))
+            self.margin = Self.Margin(factor: Int(sqlite3_column_int64(s, 19)),
+                                      band:   String(cString: sqlite3_column_text(s, 20)))
+        }
+        
+        /// List of Tenth powers used to transform decimals into integers.
+        private enum Power {
+            static var factor: Int { 3 }
+            static var restrictions: Int { 2 }
+        }
     }
 }
 
@@ -71,34 +125,77 @@ extension IG.DB.Market.Forex {
     
     /// Specific information for the given Forex market.
     public struct DealingInformation {
-        /// The number of contracts you wish to trade or of open positions.
+        /// The amount of counter currency per contract.
+        ///
+        /// For example, the EUR/USD market has a contract size of $100,000 per contract.
         public let contractSize: Int
         /// What is the value of one pip (i.e. Price Interest Point).
-        public let pipValue: Int
+        public let pipValue: Int                                // This is both "lotSize" and pipValue
         /// Number of decimal positions for pip representation.
-        public let pipDecimalPlaces: Int   ;#warning("Test all markets: onePipMeans - 10^this == 0")   // This is "log(scalingFactor) / log(10)"
+        public let pipDecimalPlaces: Int                        // This is "log(scalingFactor) / log(10)"
         /// Number of decimal positions for market levels.
-        public let levelDecimalPlaces: Int ;#warning("Test all markets: scalingFactor - 10^this == 0") // This is "decimalPlaces"
+        public let levelDecimalPlaces: Int                      // This is "decimalPlaces"
         /// Slippage is the difference between the level of a stop order and the actual price at which it was executed.
         ///
         /// It can occur during periods of higher volatility when market prices move rapidly or gap
-        /// - note: It is expressed as a percentage `%`.
-        public let slippageFactor: Decimal  ;#warning(#"Test all markets: slippageFactor.unit == "pct""#)
+        /// - note: It is expressed as a percentage (e.g. 50%).
+        public let slippageFactor: Int
         /// The premium (indicated in points) "paid" for a *guaranteed stop*.
-        public let guaranteedStopPremium: Decimal ;#warning(#"Test all markets: limitedRiskPremium.unit == "POINTS""#) // This is "instrument.limitedRiskPremium"
+        public let guaranteedStopPremium: Decimal               // This is "instrument.limitedRiskPremium"
         /// The number of points to add on each side of the market as an additional spread when placing a guaranteed stop trade.
-        public let guaranteedStopExtraSpread: Decimal   // This is "snapshot.controlledRiskExtraSpread"
+        public let guaranteedStopExtraSpread: Decimal           // This is "snapshot.controlledRiskExtraSpread"
         /// Designated initializer
         fileprivate init(contractSize: Int, pipValue: Int, pipPlaces: Int, levelPlaces: Int, slippage: Int, premium: Int, extra: Int) {
             self.contractSize = contractSize
             self.pipValue = pipValue
             self.pipDecimalPlaces = pipPlaces
             self.levelDecimalPlaces = levelPlaces
+            self.slippageFactor = slippage
             
             let power = IG.DB.Market.Forex.Power.factor
-            self.slippageFactor = Decimal(slippage, divingByPowerOf10: power)
             self.guaranteedStopPremium = Decimal(premium, divingByPowerOf10: power)
             self.guaranteedStopExtraSpread = Decimal(extra, divingByPowerOf10: power)
+        }
+    }
+    
+    /// Restrictions applied when dealing on a Forex market.
+    public struct Restrictions {
+        /// Minimum deal size (expressed in points).
+        public let minimumDealSize: Decimal                     // This is "rules.minDealSize"
+        /// Minimum and maximum allowed limits.
+        public let limitDistance: Self.Distance
+        /// Minimum and maximum allowed stops (exposed risk).
+        public let stopDistance: Self.Distance
+        /// Minimum and maximum allowed stops (limited risk).
+        public let guarantedStopDistance: Self.Distance
+        /// Minimum trailing stop increment expressed (in pips).
+        public let minimumTrailingStopIncrement: Decimal
+        /// Designated initializer
+        fileprivate init(size: Int, normalDistance: Int, limitedRiskDistance: Int, maxDistance: Int, minStep: Int) {
+            let power = IG.DB.Market.Forex.Power.restrictions
+            self.minimumDealSize = Decimal(size, divingByPowerOf10: power)
+            
+            let minNormal = Decimal(normalDistance, divingByPowerOf10: power)
+            let max = Decimal(maxDistance, divingByPowerOf10: power)
+            self.limitDistance = Self.Distance(min: minNormal, max: max)
+            self.stopDistance = Self.Distance(min: minNormal, max: max)
+            
+            let minRisk = Decimal(limitedRiskDistance, divingByPowerOf10: power)
+            self.guarantedStopDistance = Self.Distance(min: minRisk, max: max)
+            self.minimumTrailingStopIncrement = Decimal(minStep, divingByPowerOf10: power)
+        }
+        
+        /// Minimum and maximum values for diatances.
+        public struct Distance {
+            /// The minimum distance (expressed in pips).
+            public let minimum: Decimal
+            /// The maximum allowed distance (expressed as percentage)
+            public let maximumAsPercentage: Decimal
+            
+            fileprivate init(min: Decimal, max: Decimal) {
+                self.minimum = min
+                self.maximumAsPercentage = max
+            }
         }
     }
     
@@ -121,6 +218,9 @@ extension IG.DB.Market.Forex {
         ///
         /// All ranges are `RangeExpression`s where `Bound` is set to `Decimal`. The last range is of `PartialRangeFrom` type (because it includes the lower bound till infinity), while all previous ones are of `Range` type.
         public struct Bands: RandomAccessCollection {
+            public typealias Element = (range: Any, depositFactor: Decimal)
+            public typealias Index = Int
+            
             /// The character separators used in encoding/decoding.
             private static let separator: (numbers: Character, elements: Character) = (":", "|")
             /// The underlying storage.
@@ -156,160 +256,82 @@ extension IG.DB.Market.Forex {
             }
         }
     }
-    
-    /// Restrictions applied when dealing on a Forex market.
-    public struct Restrictions {
-        /// Minimum deal size.
-        public let minimumSize: Decimal     ;#warning("Test all markets: instrument.lotSize == rules.minDealSize == this")    // This is "lotSize"
-        /// Minimum and maximum allowed limits.
-        public let limitDistance: Self.Distance
-        /// Minimum and maximum allowed stops (exposed risk).
-        public let stopDistance: Self.Distance
-        /// Minimum and maximum allowed stops (limited risk).
-        public let guarantedStopDistance: Self.Distance
-        /// Minimum trailing stop increment expressed (in pips).
-        public let minimumTrailingStopIncrement: Decimal
-        /// Designated initializer
-        fileprivate init(size: Int, normalDistance: Int, limitedRiskDistance: Int, maxDistance: Int, minStep: Int) {
-            let power = IG.DB.Market.Forex.Power.restrictions
-            self.minimumSize = Decimal(size, divingByPowerOf10: power)
+}
+
+extension IG.DB.Market.Forex: DBMigratable {
+    internal static func tableDefinition(for version: DB.Migration.Version) -> String? {
+        switch version {
+        case .v0: return """
+            CREATE TABLE Forex (
+                epic       TEXT    NOT NULL UNIQUE CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
+                base       TEXT    NOT NULL        CHECK( LENGTH(base) == 3 ),
+                counter    TEXT    NOT NULL        CHECK( LENGTH(counter) == 3 ),
+                name       TEXT    NOT NULL UNIQUE CHECK( LENGTH(name) > 0 ),
+                marketId   TEXT    NOT NULL        CHECK( LENGTH(marketId) > 0 ),
+                chartId    TEXT    NOT NULL        CHECK( LENGTH(chartId) > 0 ),
+                reutersId  TEXT    NOT NULL        CHECK( LENGTH(reutersId) > 0 ),
+                contSize   INTEGER NOT NULL        CHECK( contSize > 0 ),
+                pipVal     INTEGER NOT NULL        CHECK( pipVal > 0 ),
+                placePip   INTEGER NOT NULL        CHECK( placePip >= 0 ),
+                placeLevel INTEGER NOT NULL        CHECK( placeLevel >= 0 ),
+                slippage   INTEGER NOT NULL        CHECK( slippage >= 0 ),
+                premium    INTEGER NOT NULL        CHECK( premium >= 0 ),
+                extra      INTEGER NOT NULL        CHECK( extra >= 0 ),
+                minSize    INTEGER NOT NULL        CHECK( minSize >= 0 ),
+                minDista   INTEGER NOT NULL        CHECK( minDista >= 0 ),
+                minRisk    INTEGER NOT NULL        CHECK( minRisk >= 0 ),
+                maxDista   INTEGER NOT NULL        CHECK( maxDista >= 0 ),
+                minStep    INTEGER NOT NULL        CHECK( minStep >= 0 ),
+                margin     INTEGER NOT NULL        CHECK( margin >= 0 ),
+                bands      TEXT    NOT NULL        CHECK( LENGTH(bands) > 0 ),
             
-            let minNormal = Decimal(normalDistance, divingByPowerOf10: power)
-            let max = Decimal(maxDistance, divingByPowerOf10: power)
-            self.limitDistance = Self.Distance(min: minNormal, max: max)
-            self.stopDistance = Self.Distance(min: minNormal, max: max)
-            
-            let minRisk = Decimal(limitedRiskDistance, divingByPowerOf10: power)
-            self.guarantedStopDistance = Self.Distance(min: minRisk, max: max)
-            self.minimumTrailingStopIncrement = Decimal(minStep, divingByPowerOf10: power)
-        }
-        
-        /// Minimum and maximum values for diatances.
-        public struct Distance {
-            /// The minimum distance (expressed in pips).
-            public let minimum: Decimal
-            /// The maximum allowed distance (expressed as percentage)
-            public let maximumAsPercentage: Decimal ;#warning("what does the percentage represent?")
-            
-            fileprivate init(min: Decimal, max: Decimal) {
-                self.minimum = min
-                self.maximumAsPercentage = max
-            }
-            
-            #warning("Have a function returning a range in points and taking what it is acting on the percentage")
+                CHECK( base != counter )
+                FOREIGN KEY(epic) REFERENCES Markets(epic)
+            );
+            """
         }
     }
 }
 
-// MARK: - GRDB functionality
-
-//extension IG.DB.Market.Forex {
-//    /// Creates a SQLite table for Forex markets.
-//    static func tableCreation(in db: GRDB.Database) throws {
-//        let greaterThanZero: (Column) -> SQLExpressible = { $0 > 0 }
-//        let equalOrgreaterThanZero: (Column) -> SQLExpressible = { $0 >= 0 }
-//
-//        try db.create(table: "forex", ifNotExists: false, withoutRowID: true) { (t) in
-//            t.column("epic", .text)         .primaryKey()
-//            t.column("base", .text)         .notNull()
-//            t.column("counter", .text)      .notNull()
-//            t.column("name", .text)         .notNull().unique()
-//            t.column("marketId", .text)     .notNull()
-//            t.column("chartId", .text)      .notNull()
-//            t.column("reutersId", .text)    .notNull()
-//            t.column("contSize", .integer)  .notNull().check(greaterThanZero)
-//            t.column("pipVal", .integer)    .notNull().check(greaterThanZero)
-//            t.column("placePip", .integer)  .notNull().check(equalOrgreaterThanZero)
-//            t.column("placeLevel", .integer).notNull().check(equalOrgreaterThanZero)
-//            t.column("slippage", .integer)  .notNull().check(equalOrgreaterThanZero)
-//            t.column("premium", .integer)   .notNull().check(equalOrgreaterThanZero)
-//            t.column("extra", .integer)     .notNull().check(equalOrgreaterThanZero)
-//            t.column("minSize", .integer)   .notNull().check(greaterThanZero)
-//            t.column("minDista", .integer)  .notNull().check(greaterThanZero)
-//            t.column("minRisk", .integer)   .notNull().check(greaterThanZero)
-//            t.column("maxDista", .integer)  .notNull().check(greaterThanZero)
-//            t.column("minStep", .integer)   .notNull().check(greaterThanZero)
-//            t.column("margin", .integer)    .notNull().check(greaterThanZero)
-//            t.column("bands", .text)        .notNull()
-//
-//            t.check(Self.Columns.currencyBase != Self.Columns.currencyCounter)
-//        }
-//    }
-//}
-//
-//extension IG.DB.Market.Forex: GRDB.TableRecord {
-//    /// The table columns
-//    internal enum Columns: String, GRDB.ColumnExpression {
-//        case epic = "epic"
-//        case currencyBase = "base"
-//        case currencyCounter = "counter"
-//
-//        case name = "name"
-//        case marketId = "marketId"
-//        case chartId = "chartId"
-//        case reutersId = "reutersId"
-//
-//        case contractSize = "contSize"
-//        case pipValue = "pipVal"
-//        case decimalPlacesPip = "placePip"
-//        case decimalPlacesLevel = "placeLevel"
-//        case slippageFactor = "slippage"
-//        case guaranteedStopPremium = "premium"
-//        case guaranteedStopExtraSpread = "extra"
-//
-//        case minimumSize = "minSize"
-//        case minimumDistance = "minDista"
-//        case minimumLimitedDistance = "minRisk"
-//        case maximumDistance = "maxDista"
-//        case minimumTrailingIncrement = "minStep"
-//
-//        case marginFactor = "margin"
-//        case marginBands = "bands"
-//    }
-//
-//    public static var databaseTableName: String {
-//        return "forex"
-//    }
-//
-//    //public static var databaseSelection: [SQLSelectable] { [AllColumns()] }
-//}
-//
-extension IG.DB.Market.Forex { // : GRDB.PersistableRecord
-//    public func encode(to container: inout PersistenceContainer) {
-//        container[Columns.epic] = self.epic
-//        container[Columns.currencyBase] = self.currency.base
-//        container[Columns.currencyCounter] = self.currency.counter
-//
-//        container[Columns.name] = self.identifiers.name
-//        container[Columns.marketId] = self.identifiers.market
-//        container[Columns.chartId] = self.identifiers.chart
-//        container[Columns.reutersId] = self.identifiers.reuters
-//
-//        let powerFactor = Self.Power.factor
-//        container[Columns.contractSize] = self.information.contractSize
-//        container[Columns.pipValue] = self.information.pipValue
-//        container[Columns.decimalPlacesPip] = self.information.pipDecimalPlaces
-//        container[Columns.decimalPlacesLevel] = self.information.levelDecimalPlaces
-//        container[Columns.slippageFactor] = Int(clamping: self.information.slippageFactor, multiplyingByPowerOf10: powerFactor)
-//        container[Columns.guaranteedStopPremium] = Int(clamping: self.information.guaranteedStopPremium, multiplyingByPowerOf10: powerFactor)
-//        container[Columns.guaranteedStopExtraSpread] = Int(clamping: self.information.guaranteedStopExtraSpread, multiplyingByPowerOf10: powerFactor)
-//
-//        let powerRest = Self.Power.restrictions
-//        container[Columns.minimumSize] = Int(clamping: self.restrictions.minimumSize, multiplyingByPowerOf10: powerRest)
-//        container[Columns.minimumDistance] = Int(clamping: self.restrictions.limitDistance.minimum, multiplyingByPowerOf10: powerRest)
-//        container[Columns.minimumLimitedDistance] = Int(clamping: self.restrictions.guarantedStopDistance.minimum, multiplyingByPowerOf10: powerRest)
-//        container[Columns.maximumDistance] = Int(clamping: self.restrictions.limitDistance.maximumAsPercentage, multiplyingByPowerOf10: powerRest)
-//        container[Columns.minimumTrailingIncrement] = Int(clamping: self.restrictions.minimumTrailingStopIncrement, multiplyingByPowerOf10: powerRest)
-//
-//        let powerMargin = Self.Power.factor
-//        container[Columns.marginFactor] = Int(clamping: self.margin.factor, multiplyingByPowerOf10: powerMargin)
-//        container[Columns.marginBands] = self.margin.depositBands.encode()
-//    }
-//
-    /// List of Tenth powers used to transform decimals into integers.
-    private enum Power {
-        static var factor: Int { 3 }
-        static var restrictions: Int { 2 }
+extension IG.DB.Market.Forex: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return IG.DB.Market.printableDomain.appending(".\(Self.self)")
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("epic", self.epic.rawValue)
+        result.append("currencies", "\(self.currency.base)/\(self.currency.counter)")
+        result.append("identifiers", self.identifiers) {
+            $0.append("name", $1.name)
+            $0.append("market", $1.market)
+            $0.append("chart code", $1.chart)
+            $0.append("news code", $1.reuters)
+        }
+        result.append("information", self.information) {
+            $0.append("contract size", $1.contractSize)
+            $0.append("pip value", $1.pipValue)
+            $0.append("decimal places", "(level: \($1.levelDecimalPlaces), pip: \($1.pipDecimalPlaces)")
+            $0.append("slippage factor", $1.slippageFactor)
+            $0.append("guaranteed stop", "(premium: \($1.guaranteedStopPremium), extra spread: \($1.guaranteedStopExtraSpread)")
+        }
+        result.append("restrictions", self.restrictions) {
+            $0.append("deal size", "\($1.minimumDealSize)...")
+            $0.append("limit distance", "\($1.limitDistance.minimum)pips...\($1.limitDistance.maximumAsPercentage)%")
+            $0.append("stop distance (regular)", "\($1.stopDistance.minimum)pips...\($1.stopDistance.maximumAsPercentage)%")
+            $0.append("stop distance (guaranteed)", "\($1.guarantedStopDistance.minimum)pips...\($1.guarantedStopDistance.maximumAsPercentage)%")
+            $0.append("trailing stop increment", "\($1.minimumTrailingStopIncrement)...")
+        }
+        result.append("margin", self.margin) {
+            $0.append("factor", $1.factor)
+            $0.append("deposit bands (range: factor)", $1.depositBands) {
+                for (range, depositFactor) in $1 {
+                    $0.append(String(describing: range), depositFactor)
+                }
+                $0.append("paco", $1.startIndex)
+            }
+        }
+        return result.generate()
     }
 }
 
@@ -337,7 +359,7 @@ extension IG.DB.Market.Forex {
         switch stop.risk {
         case .exposed:
             let marginNoStop = dealSize * contractSize * price * marginFactor
-            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (dealSize * contractSize * stopDistance)
+            let marginWithStop = (marginNoStop * Decimal(self.information.slippageFactor)) + (dealSize * contractSize * stopDistance)
             return min(marginNoStop, marginWithStop)
         case .limited(let premium):
             return (dealSize * contractSize * stopDistance) + (premium ?? self.information.guaranteedStopPremium)
@@ -346,29 +368,6 @@ extension IG.DB.Market.Forex {
 }
 
 extension IG.DB.Market.Forex.Margin.Bands {
-    /// Returns the deposit factor (expressed as a percentage `%`).
-    /// - parameter dealSize: The size of a given position.
-    public func depositFactor(forDealSize dealSize: Decimal) -> Decimal {
-        var result = self.storage[0].factor
-        for element in self.storage {
-            guard dealSize >= element.lowerBound else { return result }
-            result = element.factor
-        }
-        return result
-    }
-    
-    /// Returns the last band.
-    public var last: (range: PartialRangeFrom<Decimal>, depositFactor: Decimal)? {
-        return self.storage.last.map { (element) in
-            return (element.lowerBound..., element.factor)
-        }
-    }
-}
-
-extension IG.DB.Market.Forex.Margin.Bands {
-    public typealias Element = (range: Any, depositFactor: Decimal)
-    public typealias Index = Int
-    
     public var startIndex: Int {
         return self.storage.startIndex
     }
@@ -394,5 +393,23 @@ extension IG.DB.Market.Forex.Margin.Bands {
     
     public func index(after i: Int) -> Int {
         return self.storage.index(after: i)
+    }
+    
+    /// Returns the deposit factor (expressed as a percentage `%`).
+    /// - parameter dealSize: The size of a given position.
+    public func depositFactor(forDealSize dealSize: Decimal) -> Decimal {
+        var result = self.storage[0].factor
+        for element in self.storage {
+            guard dealSize >= element.lowerBound else { return result }
+            result = element.factor
+        }
+        return result
+    }
+    
+    /// Returns the last band.
+    public var last: (range: PartialRangeFrom<Decimal>, depositFactor: Decimal)? {
+        return self.storage.last.map { (element) in
+            return (element.lowerBound..., element.factor)
+        }
     }
 }

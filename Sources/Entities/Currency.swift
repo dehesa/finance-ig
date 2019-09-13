@@ -35,6 +35,7 @@ public enum Currency {
         case inr = "INR"
         case sgd = "SGD"
         case cny = "CNY"
+        case hkd = "HKD"
         case twd = "TWD"
         case krw = "KRW"
         case jpy = "JPY"
@@ -48,6 +49,20 @@ public enum Currency {
                 fatalError("The given string \"\(value)\" couldn't be identified as a currency")
             }
             self = currency
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            if let value = Self.init(rawValue: string) {
+                self = value
+            } else {
+                // List of exceptions
+                switch string {
+                case "TRL": self = .try
+                default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "\"\(string)\" couldn't be identified as a supported currency")
+                }
+            }
         }
         
         public var description: String {
@@ -217,6 +232,14 @@ extension IG.Currency {
     public enum CNY: IG.CurrencyType {
         public static var code: IG.Currency.Code { .cny }
         public static var name: String { "Yuan Renminbi" }
+        public static var minorUnit: Int { 2 }
+        public static var country: String { "China" }
+    }
+    
+    /// Hong Kong Dollar
+    public enum HKD: IG.CurrencyType {
+        public static var code: IG.Currency.Code { .hkd }
+        public static var name: String { "Hong Kong Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "China" }
     }
