@@ -36,29 +36,26 @@ extension IG.DB.Migration {
     
     /// Where the actual migration happens.
     private static func initialVersion(_ version: Self.Version, channel: SQLite.Database, queue: DispatchQueue) throws {
-        #warning("Each migration must be in its own transaction")
-        let types: [MigrationType.Type] = [IG.DB.Application.self]
+        let types: [MigrationType.Type] = [IG.DB.Application.self, IG.DB.Market.self, IG.DB.Market.Forex.self]
+        
+        sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
+        
+        var isRollbackNeeded = false
+        defer {
+            let statement = (isRollbackNeeded == false) ? "END TRANSACTION" : "ROLLBACK"
+            sqlite3_exec(channel, statement, nil, nil, nil)
+        }
         
         for type in types {
             guard let sql = type.tableDefinition(for: version) else {
+                isRollbackNeeded = true
                 throw IG.DB.Error.invalidRequest(.sqlNotFound(for: type, version: version), suggestion: .reviewError)
             }
             
-            var statement: OpaquePointer? = nil
-            if let compilerError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                throw IG.DB.Error.callFailed(.tableCompilation(for: type), code: compilerError)
-            }
-            
-            if let creationError = sqlite3_step(statement).enforce(.done) {
+            if let creationError = sqlite3_exec(channel, sql, nil, nil, nil).enforce(.ok) {
+                isRollbackNeeded = true
                 throw IG.DB.Error.callFailed(.tableCreation(for: type), code: creationError)
             }
-            
-            if let finalizeError = sqlite3_finalize(statement).enforce(.ok) {
-                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: finalizeError)
-            }
-            
-            // Once I test all tables, I should use this.
-            // sqlite3_exec(channel, sql, nil, nil, nil)
         }
     }
 }

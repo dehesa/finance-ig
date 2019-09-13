@@ -5,28 +5,47 @@ import XCTest
 class DBMarketTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testIntroduction() {
-//        let database = try! IG.DB(rootURL: nil)
-//
-//        let queue = database.channel
-//        try! queue.write { (db) in
-//            try IG.DB.Application.tableCreation(in: db)
-//            try IG.DB.Market.tableCreation(in: db)
-//            try IG.DB.Market.Forex.tableCreation(in: db)
-//        }
+        let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
+        
+        var markets: [(epic: IG.Market.Epic, type: IG.DB.Market.Kind)] = [
+            Self.forex.map { ($0, .currencies) },
+            Self.forexMini.map { ($0, .currencies) },
+            Self.crypto.map { ($0, .currencies) },
+            Self.commodities.map { ($0, .commodities) },
+            Self.bondsRates.map { ($0, .rates) },
+            Self.bondsRatesMini.map { ($0, .rates) }
+        ].flatMap { $0 }
+        markets.sort { $0.epic.rawValue > $1.epic.rawValue }
+        
+        try! db.markets.insert(markets).single()!.get()
+        
+        var dbMarkets = try! db.markets.getAll().single()!.get()
+        dbMarkets.sort { $0.epic.rawValue > $1.epic.rawValue }
+        
+        XCTAssertEqual(markets.count, dbMarkets.count)
+        for (code, stored) in zip(markets, dbMarkets) {
+            XCTAssertEqual(code.epic.rawValue, stored.epic.rawValue)
+        }
     }
     
-    func testDoStuff() {
-        let tmp: [IG.Market.Epic] = ["CS.D.CADNOK.CFD.IP","CS.D.CHFNOK.CFD.IP","CS.D.EURDKK.CFD.IP","CS.D.EURNOK.CFD.IP","CS.D.EURSEK.CFD.IP","CS.D.GBPDKK.CFD.IP","CS.D.GBPNOK.CFD.IP","CS.D.GBPSEK.CFD.IP","CS.D.NOKSEK.CFD.IP","CS.D.USDDKK.CFD.IP","CS.D.USDNOK.CFD.IP","CS.D.USDSEK.CFD.IP","CS.D.CHFHUF.CFD.IP","CS.D.EURCZK.CFD.IP","CS.D.EURHUF.CFD.IP","CS.D.EURMXN.CFD.IP","CS.D.EURPLN.CFD.IP","CS.D.EURTRY.CFD.IP","CS.D.GBPCZK.CFD.IP","CS.D.GBPHUF.CFD.IP","CS.D.GBPMXN.CFD.IP","CS.D.GBPPLN.CFD.IP","CS.D.GBPTRY.CFD.IP","CS.D.TRYJPY.CFD.IP","CS.D.USDCZK.CFD.IP","CS.D.USDHUF.CFD.IP","CS.D.USDMXN.CFD.IP","CS.D.USDPLN.CFD.IP"]
-        print(tmp.count)
+    func testForex() {
+        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        var result = "\n"
+        
+        let markets = Self.bondsRates + Self.bondsRatesMini
+        for (chunkIndex, chunk) in markets.chunked(into: 49).enumerated() {
+            print("Processing chunk \(chunkIndex)")
+            
+            let retrieved = try! api.markets.get(epics: .init(chunk)).single()!.get()
+            for market in retrieved {
+                result.append(market.debugDescription)
+                result.append("------------------------------------------------------------------\n")
+            }
+        }
+        
+        result.append("\n")
+        print(result)
     }
-
-//    /// Tests the creation of a File-System database.
-//    func testDatabaseCreation() {
-//        let database = Test.makeDatabase(rootURL: Self.account.database?.rootURL)
-//        if let url = Test.account.database?.rootURL {
-//            XCTAssertEqual(database.channel.path, url.path)
-//        }
-//    }
     
     static let forex: [IG.Market.Epic] = ["CS.D.CADNOK.CFD.IP","CS.D.CHFNOK.CFD.IP","CS.D.EURDKK.CFD.IP","CS.D.EURNOK.CFD.IP","CS.D.EURSEK.CFD.IP","CS.D.GBPDKK.CFD.IP","CS.D.GBPNOK.CFD.IP","CS.D.GBPSEK.CFD.IP","CS.D.NOKSEK.CFD.IP","CS.D.USDDKK.CFD.IP","CS.D.USDNOK.CFD.IP","CS.D.USDSEK.CFD.IP","CS.D.CHFHUF.CFD.IP","CS.D.EURCZK.CFD.IP","CS.D.EURHUF.CFD.IP","CS.D.EURMXN.CFD.IP","CS.D.EURPLN.CFD.IP","CS.D.EURTRY.CFD.IP","CS.D.GBPCZK.CFD.IP","CS.D.GBPHUF.CFD.IP","CS.D.GBPMXN.CFD.IP","CS.D.GBPPLN.CFD.IP","CS.D.GBPTRY.CFD.IP","CS.D.TRYJPY.CFD.IP","CS.D.USDCZK.CFD.IP","CS.D.USDHUF.CFD.IP","CS.D.USDMXN.CFD.IP","CS.D.USDPLN.CFD.IP","CS.D.USDTRY.CFD.IP","CS.D.CNHJPY.CFD.IP","CS.D.BRLJPY.CFD.IP","CS.D.GBPINR.CFD.IP","CS.D.INRJPY.CFD.IP","CS.D.USDBRL.CFD.IP","CS.D.USDIDR.CFD.IP","CS.D.USDINR.CFD.IP","CS.D.USDKRW.CFD.IP","CS.D.USDPHP.CFD.IP","CS.D.USDTWD.CFD.IP","CS.D.AUDCAD.CFD.IP","CS.D.AUDCHF.CFD.IP","CS.D.AUDEUR.CFD.IP","CS.D.AUDGBP.CFD.IP","CS.D.AUDJPY.CFD.IP","CS.D.AUDNZD.CFD.IP","CS.D.AUDSGD.CFD.IP","CS.D.EURAUD.CFD.IP","CS.D.EURNZD.CFD.IP","CS.D.GBPAUD.CFD.IP","CS.D.GBPNZD.CFD.IP","CS.D.NZDAUD.CFD.IP","CS.D.NZDCAD.CFD.IP","CS.D.NZDCHF.CFD.IP","CS.D.NZDEUR.CFD.IP","CS.D.NZDGBP.CFD.IP","CS.D.NZDJPY.CFD.IP","CS.D.NZDUSD.CFD.IP","CS.D.CADCHF.CFD.IP","CS.D.CADJPY.CFD.IP","CS.D.CHFJPY.CFD.IP","CS.D.EURCAD.CFD.IP","CS.D.EURSGD.CFD.IP","CS.D.EURZAR.CFD.IP","CS.D.GBPCAD.CFD.IP","CS.D.GBPCHF.CFD.IP","CS.D.GBPJPY.CFD.IP","CS.D.GBPSGD.CFD.IP","CS.D.GBPZAR.CFD.IP","CS.D.MXNJPY.CFD.IP","CS.D.NOKJPY.CFD.IP","CS.D.PLNJPY.CFD.IP","CS.D.RUBJPY.CFD.IP","CS.D.SEKJPY.CFD.IP","CS.D.SGDJPY.CFD.IP","CS.D.USDHKD.CFD.IP","CS.D.USDSGD.CFD.IP","CS.D.USDZAR.CFD.IP", "CS.D.AUDUSD.CFD.IP","CS.D.EURCHF.CFD.IP","CS.D.EURGBP.CFD.IP","CS.D.EURJPY.CFD.IP","CS.D.EURUSD.CFD.IP","CS.D.GBPEUR.CFD.IP","CS.D.GBPUSD.CFD.IP","CS.D.USDCAD.CFD.IP","CS.D.USDCHF.CFD.IP","CS.D.USDJPY.CFD.IP","CO.D.DX.FCS1.IP"]
     static let forexMini: [IG.Market.Epic] = ["CS.D.CADNOK.MINI.IP","CS.D.CHFNOK.MINI.IP","CS.D.EURDKK.MINI.IP","CS.D.EURNOK.MINI.IP","CS.D.EURSEK.MINI.IP","CS.D.GBPDKK.MINI.IP","CS.D.GBPNOK.MINI.IP","CS.D.GBPSEK.MINI.IP","CS.D.NOKSEK.MINI.IP","CS.D.USDDKK.MINI.IP","CS.D.USDNOK.MINI.IP","CS.D.USDSEK.MINI.IP","CS.D.CHFHUF.MINI.IP","CS.D.EURCZK.MINI.IP","CS.D.EURHUF.MINI.IP","CS.D.EURMXN.MINI.IP","CS.D.EURPLN.MINI.IP","CS.D.EURTRY.MINI.IP","CS.D.GBPCZK.MINI.IP","CS.D.GBPHUF.MINI.IP","CS.D.GBPMXN.MINI.IP","CS.D.GBPPLN.MINI.IP","CS.D.GBPTRY.MINI.IP","CS.D.TRYJPY.MINI.IP","CS.D.USDCZK.MINI.IP","CS.D.USDHUF.MINI.IP","CS.D.USDMXN.MINI.IP","CS.D.USDPLN.MINI.IP","CS.D.USDTRY.MINI.IP","CS.D.CNHJPY.MINI.IP","CS.D.BRLJPY.MINI.IP","CS.D.GBPINR.MINI.IP","CS.D.INRJPY.MINI.IP","CS.D.USDBRL.MINI.IP","CS.D.USDIDR.MINI.IP","CS.D.USDINR.MINI.IP","CS.D.USDKRW.MINI.IP","CS.D.USDPHP.MINI.IP","CS.D.USDTWD.MINI.IP","CS.D.AUDCAD.MINI.IP","CS.D.AUDCHF.MINI.IP","CS.D.AUDEUR.MINI.IP","CS.D.AUDGBP.MINI.IP","CS.D.AUDJPY.MINI.IP","CS.D.AUDNZD.MINI.IP","CS.D.AUDSGD.MINI.IP","CS.D.EURAUD.MINI.IP","CS.D.EURNZD.MINI.IP","CS.D.GBPAUD.MINI.IP","CS.D.GBPNZD.MINI.IP","CS.D.NZDAUD.MINI.IP","CS.D.NZDCAD.MINI.IP","CS.D.NZDCHF.MINI.IP","CS.D.NZDEUR.MINI.IP","CS.D.NZDGBP.MINI.IP","CS.D.NZDJPY.MINI.IP","CS.D.NZDUSD.MINI.IP","CS.D.CADCHF.MINI.IP","CS.D.CADJPY.MINI.IP","CS.D.CHFJPY.MINI.IP","CS.D.EURCAD.MINI.IP","CS.D.EURSGD.MINI.IP","CS.D.EURZAR.MINI.IP","CS.D.GBPCAD.MINI.IP","CS.D.GBPCHF.MINI.IP","CS.D.GBPJPY.MINI.IP","CS.D.GBPSGD.MINI.IP","CS.D.GBPZAR.MINI.IP","CS.D.MXNJPY.MINI.IP","CS.D.NOKJPY.MINI.IP","CS.D.PLNJPY.MINI.IP","CS.D.RUBJPY.MINI.IP","CS.D.SEKJPY.MINI.IP","CS.D.SGDJPY.MINI.IP","CS.D.USDHKD.MINI.IP","CS.D.USDSGD.MINI.IP","CS.D.USDZAR.MINI.IP","CS.D.AUDUSD.MINI.IP","CS.D.EURCHF.MINI.IP","CS.D.EURGBP.MINI.IP","CS.D.EURJPY.MINI.IP","CS.D.EURUSD.MINI.IP","CS.D.GBPEUR.MINI.IP","CS.D.GBPUSD.MINI.IP","CS.D.USDCAD.MINI.IP","CS.D.USDCHF.MINI.IP","CS.D.USDJPY.MINI.IP"]

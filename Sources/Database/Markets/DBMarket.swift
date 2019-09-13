@@ -27,15 +27,18 @@ extension IG.DB.Request.Markets {
         }
     }
     
-    ///
-    internal func insert(_ markets: [(epic: IG.Market.Epic, type: IG.DB.Market.Kind)]) -> SignalProducer<Void,IG.DB.Error> {
+    /// Updates the database with the information received from the server.
+    /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
+    /// - parameter markets: Information returned from the server.
+    public func update(_ markets: [IG.API.Market]) -> SignalProducer<Void,IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in
+            sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
+            defer { sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil) }
+            
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = """
-                INSERT INTO Markets VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING;
-                """
+            let query = "INSERT INTO Markets VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING;"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: compileError, suggestion: .reviewError))
             }
@@ -43,15 +46,18 @@ extension IG.DB.Request.Markets {
             for market in markets {
                 guard case .continue = requestPermission() else { return .interruption }
                 sqlite3_reset(statement)
-                sqlite3_bind_text(statement, 1, market.epic.rawValue, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_int (statement, 2, Int32(market.type.rawValue))
+                sqlite3_bind_text(statement, 1, market.instrument.epic.rawValue, -1, SQLITE_TRANSIENT)
+//                sqlite3_bind_int (statement, 2, Int32(market.instrument.type.rawValue))
+                #warning("Continue developing here!")
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
                     return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: updateError))
                 }
+                
+                sqlite3_clear_bindings(statement)
             }
             
-            return .interruption
+            return .success(value: ())
         }
     }
 }
@@ -72,7 +78,7 @@ extension IG.DB.Request {
     }
 }
 
-// MARK: Request Entities
+// MARK: Response Entities
 
 extension IG.DB {
     /// List of all markets within the IG platform.
@@ -124,11 +130,11 @@ extension IG.DB.Market: DBMigratable {
         switch version {
         case .v0: return """
         CREATE TABLE Markets (
-        epic TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ) PRIMARY KEY,
-        type INTEGER          CHECK( type BETWEEN 1 AND 6 )
+        epic TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
+        type INTEGER          CHECK( type BETWEEN 1 AND 6 ),
+        PRIMARY KEY(epic)
         ) WITHOUT ROWID;
         """
-        #warning("Primary key and index")
         }
     }
 }

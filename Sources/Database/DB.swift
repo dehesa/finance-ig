@@ -17,6 +17,8 @@ public final class DB {
     
     /// It holds data and functionality related to the user's applications.
     public var applications: IG.DB.Request.Applications { return .init(database: self) }
+    /// It holds data and functionality related to the platform's market.
+    public var markets: IG.DB.Request.Markets { return .init(database: self) }
     
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.

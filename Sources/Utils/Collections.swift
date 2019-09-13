@@ -17,3 +17,27 @@ extension CharacterSet {
     /// Uppercase ANSI letters `A` to `Z`.
     internal static let uppercaseANSI = CharacterSet(charactersIn: "A"..."Z")
 }
+
+extension PartialRangeFrom: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = String(describing: self.lowerBound)
+        result.append("...")
+        return result
+    }
+}
+
+extension PartialRangeUpTo: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = "..<"
+        result.append(String(describing: self.upperBound))
+        return result
+    }
+}
+
+extension PartialRangeThrough: CustomDebugStringConvertible {
+    public var debugDescription: String {
+        var result = "..."
+        result.append(String(describing: self.upperBound))
+        return result
+    }
+}
