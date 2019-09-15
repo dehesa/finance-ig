@@ -83,18 +83,18 @@ extension IG.Streamer {
             
             self.account = account
             guard let confirmationUpdate = update[Self.Field.confirmations.rawValue] else {
-                throw E.invalidResponse("The confirmation field wasn't found in confirmation updates", item: item, update: update, underlying: nil, suggestion: E.Suggestion.bug)
+                throw E.invalidResponse("The confirmation field wasn't found in confirmation updates", item: item, update: update, underlying: nil, suggestion: E.Suggestion.fileBug)
             }
             
             guard let confirmationString = confirmationUpdate.value else {
-                throw E.invalidResponse("The confirmation value wasn't found in confirmation updates", item: item, update: update, underlying: nil, suggestion: E.Suggestion.bug)
+                throw E.invalidResponse("The confirmation value wasn't found in confirmation updates", item: item, update: update, underlying: nil, suggestion: E.Suggestion.fileBug)
             }
             
             let decoder = JSONDecoder()
             do {
                 self.confirmation = try decoder.decode(IG.Confirmation.self, from: .init(confirmationString.utf8))
             } catch let error as IG.Streamer.Formatter.Update.Error {
-                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
             } catch let underlyingError {
                 throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }

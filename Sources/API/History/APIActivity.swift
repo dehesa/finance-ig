@@ -58,13 +58,13 @@ extension IG.API.Request.History {
                 
                 guard let queries = URLComponents(string: next)?.queryItems else {
                     let message = #"The paginated request for activities couldn't be processed because there were no "next" queries"#
-                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.fileBug)
                 }
                 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
                     let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found"#
-                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.fileBug)
                 }
                 
                 var nextRequest = initialRequest

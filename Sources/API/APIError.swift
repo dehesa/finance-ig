@@ -91,19 +91,19 @@ extension IG.API.Error {
     /// Namespace for messages reused over the framework.
     internal enum Message {
         static var sessionExpired: String { "The API instance was not found" }
-        static var noCredentials: String { "No credentials were found on the API instance" }
+        static var noCredentials: String  { "No credentials were found on the API instance" }
         static var invalidTrailingStop: String { "Invalid trailing stop setting" }
     }
     
     /// Namespace for suggestions reused over the framework.
     internal enum Suggestion {
+        static var logIn: String       { "Log in before calling this request" }
         static var keepSession: String { "API functionality is asynchronous; keep around the API instance while a response hasn't been received" }
-        static var readDocumentation: String { "Read the request documentation and be sure to follow all requirements" }
-        static var logIn: String { "Log in before calling this request" }
-        static var bug: String { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
+        static var readDocs: String    { "Read the request documentation and be sure to follow all requirements" }
         static var reviewError: String { "Review the returned error and try to fix the problem" }
-        static var validLimit: String { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
-        static var validStop: String { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
+        static var fileBug: String     { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
+        static var validLimit: String  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
+        static var validStop: String   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
     }
 
     /// A typical server error payload.

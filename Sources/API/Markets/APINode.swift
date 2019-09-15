@@ -30,7 +30,7 @@ extension IG.API.Request.Nodes {
         return SignalProducer(api: self.api) { _ -> String in
             guard !searchTerm.isEmpty else {
                 let message = "Search for markets failed! The search term cannot be empty"
-                throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocumentation)
+                throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocs)
             }
             return searchTerm
         }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) in
@@ -41,7 +41,7 @@ extension IG.API.Request.Nodes {
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                     let message = "The response date couldn't be extracted from the response header"
-                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
                 }
                 
                 let decoder = JSONDecoder()

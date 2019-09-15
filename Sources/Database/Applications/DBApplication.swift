@@ -2,6 +2,16 @@ import ReactiveSwift
 import Foundation
 import SQLite3
 
+extension IG.DB.Request {
+    /// Contains all functionality related to API applications.
+    public struct Applications {
+        /// Pointer to the actual database instance in charge of the low-level objects..
+        fileprivate unowned let database: IG.DB
+        /// Hidden initializer passing the instance needed to perform the database fetches/updates.
+        internal init(database: IG.DB) { self.database = database }
+    }
+}
+
 extension IG.DB.Request.Applications {
     /// Returns all applications stored in the database.
     public func getAll() -> SignalProducer<[IG.DB.Application],IG.DB.Error> {
@@ -52,32 +62,22 @@ extension IG.DB.Request.Applications {
             
             for app in applications {
                 guard case .continue = requestPermission() else { return .interruption }
-                sqlite3_reset(statement)
                 
-                let status: IG.DB.Application.Status
-                switch app.status {
-                case .enabled: status = .enabled
-                case .disabled: status = .disabled
-                case .revoked: status = .revoked
-                }
+                IG.DB.Application(key: app.key, name: app.name, status: .init(app.status),
+                                  permission: .init(accessToEquityPrices: app.permission.accessToEquityPrices, areQuoteOrdersAllowed: app.permission.areQuoteOrdersAllowed),
+                                  allowance: .init(overallRequests: app.allowance.overallRequests,
+                                                   account: .init(overallRequests: app.allowance.account.overallRequests, tradingRequests: app.allowance.account.tradingRequests, historicalDataRequests: app.allowance.account.historicalDataRequests),
+                                                   concurrentSubscriptions: app.allowance.subscriptionsLimit),
+                                  created: app.creationDate, updated: Date()
+                ).bind(to: statement!)
                 
-                sqlite3_bind_text (statement, 1, app.key.rawValue, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_text (statement, 2, app.name, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_int  (statement, 3, status.rawValue)
-                sqlite3_bind_int  (statement, 4, Int32(app.permission.accessToEquityPrices))
-                sqlite3_bind_int  (statement, 5, Int32(app.permission.areQuoteOrdersAllowed))
-                sqlite3_bind_int64(statement, 6, Int64(app.allowance.overallRequests))
-                sqlite3_bind_int64(statement, 7, Int64(app.allowance.account.overallRequests))
-                sqlite3_bind_int64(statement, 8, Int64(app.allowance.account.tradingRequests))
-                sqlite3_bind_int64(statement, 9, Int64(app.allowance.account.historicalDataRequests))
-                sqlite3_bind_int64(statement,10, Int64(app.allowance.subscriptionsLimit))
-                sqlite3_bind_text (statement,11, IG.DB.Formatter.date.string(from: app.creationDate), -1, SQLITE_TRANSIENT)
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
                     return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: updateError))
                 }
                 
                 sqlite3_clear_bindings(statement)
+                sqlite3_reset(statement)
             }
             
             return .success(value: ())
@@ -85,23 +85,7 @@ extension IG.DB.Request.Applications {
     }
 }
 
-// MARK: - Supporting Entities
-
-extension IG.DB.Request {
-    /// Contains all functionality related to API applications.
-    public struct Applications {
-        /// Pointer to the actual database instance in charge of the low-level objects..
-        fileprivate unowned let database: IG.DB
-        
-        /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        /// - parameter database: The instance calling the low-level databse.
-        init(database: IG.DB) {
-            self.database = database
-        }
-    }
-}
-
-// MARK: Response Entities
+// MARK: - Entities
 
 extension IG.DB {
     /// Client application
@@ -120,22 +104,6 @@ extension IG.DB {
         public let created: Date
         /// The date at which this entity was inserted in the database with factual information.
         public let updated: Date
-        
-        /// Initializer when the instance comes directly from the database.
-        fileprivate init(statement s: SQLite.Statement) {
-            self.key = IG.API.Key(rawValue: String(cString: sqlite3_column_text(s, 0)))!
-            self.name = String(cString: sqlite3_column_text(s, 1))
-            self.status = Self.Status(rawValue: sqlite3_column_int(s, 2))!
-            self.permission = .init(equities: Bool(sqlite3_column_int(s, 3)),
-                                    quoteOrders: Bool(sqlite3_column_int(s, 4)))
-            self.allowance = .init(overall: Int(sqlite3_column_int64(s, 5)),
-                                   account: Int(sqlite3_column_int64(s, 6)),
-                                   trading: Int(sqlite3_column_int64(s, 7)),
-                                   history: Int(sqlite3_column_int64(s, 8)),
-                                   subscriptions: Int(sqlite3_column_int64(s, 9)))
-            self.created = IG.DB.Formatter.date.date(from: String(cString: sqlite3_column_text(s, 10)))!
-            self.updated = IG.DB.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, 11)))!
-        }
     }
 }
 
@@ -156,11 +124,6 @@ extension IG.DB.Application {
         public let accessToEquityPrices: Bool
         /// Boolean indicating if quote orders are permitted.
         public let areQuoteOrdersAllowed: Bool
-        /// Designated initializer.
-        fileprivate init(equities: Bool, quoteOrders: Bool) {
-            self.accessToEquityPrices = equities
-            self.areQuoteOrdersAllowed = quoteOrders
-        }
     }
     
     /// The restrictions constraining an API application.
@@ -171,12 +134,6 @@ extension IG.DB.Application {
         public let account: Self.Account
         /// Concurrent subscriptioon limit per lightstreamer connection.
         public let concurrentSubscriptions: Int
-        /// Designated initializer.
-        fileprivate init(overall: Int, account: Int, trading: Int, history: Int, subscriptions: Int) {
-            self.overallRequests = overall
-            self.account = .init(account: account, trading: trading, history: history)
-            self.concurrentSubscriptions = subscriptions
-        }
         
         /// Limit and allowances for the targeted account.
         public struct Account {
@@ -186,43 +143,124 @@ extension IG.DB.Application {
             public let tradingRequests: Int
             /// Historical price data data points per minute allowance.
             public let historicalDataRequests: Int
-            /// Designated initializer.
-            fileprivate init(account: Int, trading: Int, history: Int) {
-                self.overallRequests = account
-                self.tradingRequests = trading
-                self.historicalDataRequests = history
-            }
         }
     }
 }
+
+// MARK: - Functionality
+
+// MARK: SQLite
 
 extension IG.DB.Application: DBMigratable {
     internal static func tableDefinition(for version: IG.DB.Migration.Version) -> String? {
         switch version {
         case .v0: return """
             CREATE TABLE Apps (
-            key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ),
-            name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
-            status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
-            equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
-            quote   INTEGER NOT NULL CHECK( quote BETWEEN 0 AND 1 ),
-            liApp   INTEGER NOT NULL CHECK( liApp >= 0 ),
-            liAcco  INTEGER NOT NULL CHECK( liAcco >= 0 ),
-            liTrade INTEGER NOT NULL CHECK( liTrade >= 0 ),
-            liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
-            subs    INTEGER NOT NULL CHECK( subs >= 0 ),
-            created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
-            updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) ),
+                key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ),
+                name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
+                status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
+                equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
+                quote   INTEGER NOT NULL CHECK( quote BETWEEN 0 AND 1 ),
+                liApp   INTEGER NOT NULL CHECK( liApp >= 0 ),
+                liAcco  INTEGER NOT NULL CHECK( liAcco >= 0 ),
+                liTrade INTEGER NOT NULL CHECK( liTrade >= 0 ),
+                liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
+                subs    INTEGER NOT NULL CHECK( subs >= 0 ),
+                created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
+                updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) ),
             
-            PRIMARY KEY(key)
+                PRIMARY KEY(key)
             ) WITHOUT ROWID;
             """
         }
     }
 }
 
+fileprivate extension IG.DB.Application {
+    typealias Indices = (key: Int32, name: Int32, status: Int32, permission: Self.Permission.Indices, allowance: Self.Allowance.Indices, created: Int32, updated: Int32)
+    
+    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2, (3, 4), (5, (6, 7, 8), 9), 10, 11)) {
+        self.key = IG.API.Key(rawValue: String(cString: sqlite3_column_text(s, indices.key)))!
+        self.name = String(cString: sqlite3_column_text(s, indices.name))
+        self.status = Self.Status(rawValue: sqlite3_column_int(s, indices.status))!
+        self.permission = .init(statement: s, indices: indices.permission)
+        self.allowance = .init(statement: s, indices: indices.allowance)
+        self.created = IG.DB.Formatter.date.date(from: String(cString: sqlite3_column_text(s, indices.created)))!
+        self.updated = IG.DB.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.updated)))!
+    }
+    
+    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5), (6, (7, 8, 9), 10), 11, 12)) {
+        sqlite3_bind_text(statement, indices.key,    self.key.rawValue, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, indices.name,   self.name, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_int (statement, indices.status, status.rawValue)
+        self.permission.bind(to: statement, indices: indices.permission)
+        self.allowance.bind(to: statement, indices: indices.allowance)
+        sqlite3_bind_text(statement, indices.created, IG.DB.Formatter.date.string(from: self.created), -1, SQLITE_TRANSIENT)
+    }   // Updated is not written for now.
+}
+
+fileprivate extension IG.DB.Application.Permission {
+    typealias Indices = (equity: Int32, quotes: Int32)
+    
+    init(statement s: SQLite.Statement, indices: Self.Indices) {
+        self.accessToEquityPrices = Bool(sqlite3_column_int(s, indices.equity))
+        self.areQuoteOrdersAllowed = Bool(sqlite3_column_int(s, indices.quotes))
+    }
+    
+    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+        sqlite3_bind_int(statement, indices.equity, Int32(self.accessToEquityPrices))
+        sqlite3_bind_int(statement, indices.quotes, Int32(self.areQuoteOrdersAllowed))
+    }
+}
+
+fileprivate extension IG.DB.Application.Allowance {
+    typealias Indices = (overall: Int32, account: Self.Account.Indices, subs: Int32)
+    
+    init(statement s: SQLite.Statement, indices: Self.Indices) {
+        self.overallRequests = Int(sqlite3_column_int(s, indices.overall))
+        self.account = .init(statement: s, indices: indices.account)
+        self.concurrentSubscriptions = Int(sqlite3_column_int(s, indices.subs))
+    }
+    
+    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+        sqlite3_bind_int(statement, indices.overall, Int32(self.overallRequests))
+        self.account.bind(to: statement, indices: indices.account)
+        sqlite3_bind_int(statement, indices.subs, Int32(self.concurrentSubscriptions))
+    }
+}
+
+fileprivate extension IG.DB.Application.Allowance.Account {
+    typealias Indices = (overall: Int32, trading: Int32, historical: Int32)
+    
+    init(statement s: SQLite.Statement, indices: Self.Indices) {
+        self.overallRequests = Int(sqlite3_column_int(s, indices.overall))
+        self.tradingRequests = Int(sqlite3_column_int(s, indices.trading))
+        self.historicalDataRequests = Int(sqlite3_column_int(s, indices.historical))
+    }
+    
+    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+        sqlite3_bind_int(statement, indices.overall,    Int32(self.overallRequests))
+        sqlite3_bind_int(statement, indices.trading,    Int32(self.tradingRequests))
+        sqlite3_bind_int(statement, indices.historical, Int32(self.historicalDataRequests))
+    }
+}
+
+// MARK: API
+
+fileprivate extension IG.DB.Application.Status {
+    init(_ status: IG.API.Application.Status) {
+        switch status {
+        case .enabled:  self = .enabled
+        case .disabled: self = .disabled
+        case .revoked:  self = .revoked
+        }
+    }
+}
+
+// MARK: Debugging
+
 extension IG.DB.Application: IG.DebugDescriptable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return IG.DB.printableDomain.appending(".\(Self.self)")
     }
     

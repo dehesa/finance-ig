@@ -49,12 +49,12 @@ extension IG.DB.Migration {
         for type in types {
             guard let sql = type.tableDefinition(for: version) else {
                 isRollbackNeeded = true
-                throw IG.DB.Error.invalidRequest(.sqlNotFound(for: type, version: version), suggestion: .reviewError)
+                throw IG.DB.Error.invalidRequest(.init("The SQL expression for \"\(type.printableDomain)\" (on version \"\(version.rawValue)\") was expected, but it couldn't be found"), suggestion: .reviewError)
             }
             
             if let creationError = sqlite3_exec(channel, sql, nil, nil, nil).enforce(.ok) {
                 isRollbackNeeded = true
-                throw IG.DB.Error.callFailed(.tableCreation(for: type), code: creationError)
+                throw IG.DB.Error.callFailed(.init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute"), code: creationError)
             }
         }
     }
