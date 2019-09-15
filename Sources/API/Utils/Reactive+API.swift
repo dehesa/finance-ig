@@ -35,7 +35,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return input.send(error: error)
             } catch let underlyingError {
-                let error: Self.Error = .invalidRequest("The request validation failed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The request validation failed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocs)
                 return input.send(error: error)
             }
             
@@ -56,7 +56,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return .failure(error)
             } catch let underlyingError {
-                let error: Self.Error = .invalidRequest("The URL request couldn't be created", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The URL request couldn't be created", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocs)
                 return .failure(error)
             }
             
@@ -90,20 +90,20 @@ extension SignalProducer where Error==IG.API.Error {
                 } catch let error as Self.Error {
                     return .failure(error)
                 } catch let underlyingError {
-                    let error: Self.Error = .invalidRequest("The URL request queries couldn't be formed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocumentation)
+                    let error: Self.Error = .invalidRequest("The URL request queries couldn't be formed", underlying: underlyingError, suggestion: Self.Error.Suggestion.readDocs)
                     return .failure(error)
                 }
                 
                 if !queries.isEmpty {
                     guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
-                        let error: Self.Error = .invalidRequest(#""\#(method.rawValue) \#(url)" URL cannot be transmuted into "URLComponents""#, suggestion: Self.Error.Suggestion.bug)
+                        let error: Self.Error = .invalidRequest(#""\#(method.rawValue) \#(url)" URL cannot be transmuted into "URLComponents""#, suggestion: Self.Error.Suggestion.fileBug)
                         return .failure(error)
                     }
                     
                     components.queryItems = queries
                     guard let requestURL = components.url else {
                         let representation = queries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
-                        let error: Self.Error = .invalidRequest(#"An error was encountered when appending the URL queries "[\#(representation)]" to "\#(method.rawValue) \#(url)" URL"#, suggestion: Self.Error.Suggestion.readDocumentation)
+                        let error: Self.Error = .invalidRequest(#"An error was encountered when appending the URL queries "[\#(representation)]" to "\#(method.rawValue) \#(url)" URL"#, suggestion: Self.Error.Suggestion.readDocs)
                         return .failure(error)
                     }
                     url = requestURL
@@ -131,7 +131,7 @@ extension SignalProducer where Error==IG.API.Error {
             } catch let error as Self.Error {
                 return .failure(error)
             } catch let error {
-                let error: Self.Error = .invalidRequest("The request header couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
+                let error: Self.Error = .invalidRequest("The request header couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocs)
                 return .failure(error)
             }
             
@@ -143,7 +143,7 @@ extension SignalProducer where Error==IG.API.Error {
                 } catch let error as Self.Error {
                     return .failure(error)
                 } catch let error {
-                    let error: Self.Error = .invalidRequest("The request body couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocumentation)
+                    let error: Self.Error = .invalidRequest("The request body couldn't be created", request: request, underlying: error, suggestion: Self.Error.Suggestion.readDocs)
                     return .failure(error)
                 }
             }
@@ -177,7 +177,7 @@ extension SignalProducer where Value==IG.API.Request.Wrapper, Error==IG.API.Erro
                 }
                 
                 guard let header = response as? HTTPURLResponse else {
-                    var error: Self.Error = .callFailed(message: #"The response was not of HTTPURLResponse type"#, request: request, response: nil, data: data, underlying: error, suggestion: Self.Error.Suggestion.bug)
+                    var error: Self.Error = .callFailed(message: #"The response was not of HTTPURLResponse type"#, request: request, response: nil, data: data, underlying: error, suggestion: Self.Error.Suggestion.fileBug)
                     if let httpResponse = response { error.context.append(("Received response", httpResponse)) }
                     return generator.send(error: error)
                 }
@@ -231,7 +231,7 @@ extension SignalProducer where Value==IG.API.Request.Wrapper, Error==IG.API.Erro
                 } catch let error as Self.Error {
                     return generator.send(error: error)
                 } catch let error {
-                    var error: Self.Error = .invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: error, suggestion: Self.Error.Suggestion.bug)
+                    var error: Self.Error = .invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: error, suggestion: Self.Error.Suggestion.fileBug)
                     if let previous = previousRequest {
                         error.context.append(("Last successfully executed paginated request", previous.request))
                     }

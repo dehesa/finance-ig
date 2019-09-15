@@ -23,7 +23,7 @@ extension IG.API.Request.Markets {
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                     let message = "The response date couldn't be extracted from the response header"
-                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
+                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
                 }
                 
                 let decoder = JSONDecoder()
@@ -62,7 +62,7 @@ extension IG.API.Request.Markets {
                 guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
                     let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
                         let message = "The response date couldn't be extracted from the response header"
-                        throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.bug)
+                        throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
                 }
                 
                 let decoder = JSONDecoder()
@@ -505,8 +505,12 @@ extension IG.API.Market.Instrument {
     
     /// Distance/Size preference.
     public struct SlippageFactor: Decodable {
-        public let unit: String
         public let value: Decimal
+        public let unit: Unit
+        
+        public enum Unit: String, Decodable {
+            case percentage = "pct"
+        }
     }
 
     /// Instrument rollover details.
@@ -807,7 +811,7 @@ extension IG.API.Market: CustomDebugStringConvertible {
             $0.append("is available by streaming", $1.isAvailableByStreaming)
             $0.append("margin", $1.margin) {
                 $0.append("factor", "\(String(describing: $1.factor)) \($1.unit.rawValue)")
-                $0.append("bands", $1.depositBands.map { "\($0.margin) (\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode))" })
+                $0.append("bands", $1.depositBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode) -> \($0.margin)%" })
             }
             $0.append("slippage factor", "\($1.slippageFactor.value) \($1.slippageFactor.unit)")
             $0.append("rollover", $1.rollover) {
@@ -825,14 +829,11 @@ extension IG.API.Market: CustomDebugStringConvertible {
             $0.append("market order preferences", $1.marketOrder)
             $0.append("min deal size", "\($1.minimumDealSize.value) \($1.minimumDealSize.unit)")
             $0.append("limit distance", "\($1.limit.mininumDistance.value)  \($1.limit.mininumDistance.unit)...\($1.limit.maximumDistance.value) \($1.limit.maximumDistance.unit)")
-            $0.append("stop ", $1.stop) {
+            $0.append("stop", $1.stop) {
                 $0.append("distance", "\($1.mininumDistance.value) \($1.mininumDistance.unit)...\($1.maximumDistance.value) \($1.maximumDistance.unit)")
-                $0.append("guaranteed stop distance", "\($1.minimumLimitedRiskDistance.value) \($1.minimumLimitedRiskDistance.unit)")
-                if $1.trailing.areAvailable {
-                    $0.append("trailing minimum step", "\($1.trailing.minimumIncrement.value) \($1.trailing.minimumIncrement.unit)")
-                } else {
-                    $0.append("are trailing available", false)
-                }
+                $0.append("guaranteed stop distance", "\($1.minimumLimitedRiskDistance.value) \($1.minimumLimitedRiskDistance.unit)...\($1.maximumDistance.value) \($1.maximumDistance.unit)")
+                $0.append("are trailing available", $1.trailing.areAvailable)
+                $0.append("trailing minimum step", "\($1.trailing.minimumIncrement.value) \($1.trailing.minimumIncrement.unit)")
             }
         }
         result.append("snapshot", self.snapshot) {

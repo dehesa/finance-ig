@@ -35,7 +35,7 @@ extension IG.API.Request.Session {
     internal func refreshOAuth(token: String, key: IG.API.Key) -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> {
         return SignalProducer(api: self.api) { _ -> Self.TemporaryRefresh in
                 guard !token.isEmpty else {
-                    let error: IG.API.Error = .invalidRequest("The OAuth refresh token cannot be empty", suggestion: IG.API.Error.Suggestion.readDocumentation)
+                    let error: IG.API.Error = .invalidRequest("The OAuth refresh token cannot be empty", suggestion: IG.API.Error.Suggestion.readDocs)
                     throw error
                 }
             

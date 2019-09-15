@@ -115,7 +115,7 @@ public final class Services {
                 return .failure(.api(error: error))
             } catch let underlyingError {
                 let msg = "An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.DB.self) instance"
-                var error: IG.Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.bug)
+                var error: IG.Streamer.Error = .invalidRequest(msg, suggestion: Streamer.Error.Suggestion.fileBug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))
             }

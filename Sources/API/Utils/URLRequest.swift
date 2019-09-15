@@ -11,12 +11,12 @@ extension URLRequest {
         
         guard let previousURL = self.url else {
             let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty"
-            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocs)
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
             let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents""#
-            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocs)
         }
         
         if let previousQueries = components.queryItems {
@@ -36,7 +36,7 @@ extension URLRequest {
             let message = "A new URL from the previous request and the given queries couldn't be formed"
             let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
             
-            var error: IG.API.Error = .invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocumentation)
+            var error: IG.API.Error = .invalidRequest(message, request: self, suggestion: IG.API.Error.Suggestion.readDocs)
             error.context.append(("Queries", representation))
             throw error
         }
@@ -76,7 +76,7 @@ extension URLRequest {
             self.httpBody = try encoder.encode(body)
         } catch let error {
             let message = #"The provided body (of type "\#(T.self)") for the request couldn't be serialized"#
-            throw IG.API.Error.invalidRequest(message, request: self, underlying: error, suggestion: IG.API.Error.Suggestion.readDocumentation)
+            throw IG.API.Error.invalidRequest(message, request: self, underlying: error, suggestion: IG.API.Error.Suggestion.readDocs)
         }
         
         self.addValue(IG.API.HTTP.Header.Value.ContentType.json.rawValue, forHTTPHeaderField: IG.API.HTTP.Header.Key.requestType.rawValue)

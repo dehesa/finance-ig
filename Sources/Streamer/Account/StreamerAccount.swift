@@ -122,7 +122,7 @@ extension IG.Streamer {
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
             } catch let error as IG.Streamer.Formatter.Update.Error {
-                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.bug)
+                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
             } catch let underlyingError {
                 throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
             }

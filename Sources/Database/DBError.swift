@@ -78,28 +78,21 @@ extension IG.DB.Error {
 extension IG.DB.Error {
     /// Namespace for messages reused over the framework.
     internal struct Message: IG.ErrorNameSpace {
-        let rawValue: String
-        init(_ trustedValue: String) { self.rawValue = trustedValue }
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
         
         static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
-        static func sqlNotFound(for type: IG.DebugDescriptable.Type, version: IG.DB.Migration.Version) -> Self { .init("The SQL expression for \"\(type.printableDomain)\" (on version \"\(version.rawValue)\") was expected, but it couldn't be found") }
-        static var  transactionError: Self { .init("There was an error beginning or commiting a transaction") }
-        static func tableCreation(for type: IG.DebugDescriptable.Type) -> Self { .init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute") }
         static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }
-        static func nilResponse(on column: String, type: IG.DebugDescriptable.Type) -> Self { .init("\"nil\" was found on column \"\(column)\" for \"\(type.printableDomain)\"") }
-        static func storing(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred storing values on the table for \"\(type.printableDomain)\"") }
+        static func storing(_ type: IG.DebugDescriptable.Type) -> Self  { .init("An error occurred storing values on \"\(type.printableDomain)\" table") }
     }
     
     /// Namespace for suggestions reused over the framework.
     internal struct Suggestion: IG.ErrorNameSpace {
-        let rawValue: String
-        init(_ trustedValue: String) { self.rawValue = trustedValue }
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
         
         static var keepSession: Self { .init("The \(IG.DB.printableDomain) functionality is asynchronous; keep around the \(IG.DB.self) instance while a response hasn't been received") }
-        static var readDocumentation: Self { .init("Read the request documentation and be sure to follow all requirements") }
+        static var readDocs: Self    { .init("Read the request documentation and be sure to follow all requirements") }
         static var reviewError: Self { .init("Review the returned error and try to fix the problem") }
-        static var fileBug: Self { .init("A unexpected error was encountered. Please contact the repository maintainer and attach this debug print") }
-        static var corruptedValue: Self { .init("The value in the database is invalid. Rewrite with the framework or with SQLite command-line application") }
+        static var fileBug: Self     { .init("A unexpected error was encountered. Please contact the repository maintainer and attach this debug print") }
     }
 }
 
