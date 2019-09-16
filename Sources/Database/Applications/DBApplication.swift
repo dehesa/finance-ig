@@ -37,6 +37,28 @@ extension IG.DB.Request.Applications {
         }
     }
     
+    /// Returns the application specified by its API key. If not there, an `DB.Error.invalidResponse` is returned.
+    /// - parameter key: The API key identifying the application.
+    public func get(key: IG.API.Key) -> SignalProducer<IG.DB.Application,IG.DB.Error> {
+        return self.database.work { (channel, requestPermission) in
+            var statement: SQLite.Statement? = nil
+            defer { sqlite3_finalize(statement) }
+            
+            let query = "SELECT * FROM Apps where key = ?1;"
+            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
+                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+            }
+            
+            sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLITE_TRANSIENT)
+            
+            switch sqlite3_step(statement).result {
+            case .row:  return .success(value: .init(statement: statement!))
+            case .done: return .failure(error: .invalidResponse(.valueNotFound, suggestion: .valueNotFound))
+            case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+            }
+        }
+    }
+    
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter applications: Information returned from the server.

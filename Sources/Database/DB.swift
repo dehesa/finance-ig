@@ -102,15 +102,15 @@ extension IG.DB {
 
 extension IG.DB: DebugDescriptable {
     static var printableDomain: String {
-        return "IG.\(IG.DB.self)"
+        return "IG.\(Self.self)"
     }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("Root URL", self.rootURL.map { $0.path } ?? ":memory:")
-        result.append("SQLite version", SQLITE_VERSION)
-        result.append("Database queue", self.queue.label)
-        result.append("Database queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("root URL", self.rootURL.map { $0.path } ?? ":memory:")
+        result.append("queue", self.queue.label)
+        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("SQLite", SQLITE_VERSION)
         return result.generate()
     }
 }

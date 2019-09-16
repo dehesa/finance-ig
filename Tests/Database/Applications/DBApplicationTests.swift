@@ -2,7 +2,7 @@
 import ReactiveSwift
 import XCTest
 
-class DBApplicationTests: XCTestCase {
+final class DBApplicationTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testApplicationsInMemory() {
         let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
@@ -27,5 +27,17 @@ class DBApplicationTests: XCTestCase {
             XCTAssertEqual(apiApp.creationDate, dbApp.created)
             XCTAssertLessThan(dbApp.updated, Date())
         }
+        
+        for apiApp in apiResponse {
+            let dbApp = try! db.applications.get(key: apiApp.key).single()!.get()
+            XCTAssertEqual(apiApp.key, dbApp.key)
+        }
+    }
+    
+    /// Tests the creation of an "in-memory" database.
+    func testApplicationsEmpty() {
+        let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
+        guard case .failure(let error) = db.applications.get(key: "a12345bc67890d12345e6789fg0hi123j4567890").single()! else { return XCTFail() }
+        guard case .invalidResponse = error.type else { return XCTFail("An error other than invalid response was found") }
     }
 }

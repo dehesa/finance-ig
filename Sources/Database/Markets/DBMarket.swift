@@ -37,6 +37,13 @@ extension IG.DB.Request.Markets {
         }
     }
     
+    /// Returns all forex markets.
+    public func getForexMarkets() -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
+        return self.database.work { (channel, requestPermission) in
+            return self.getAll(forexMarketsOn: channel, permission: requestPermission)
+        }
+    }
+    
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter markets: Information returned from the server.
@@ -67,7 +74,7 @@ extension IG.DB.Request.Markets {
                 sqlite3_reset(statement)
             }
             
-            return .success(value: ())
+            return self.update(forexMarkets: markets, continueOnError: true, channel: channel, permission: requestPermission)
         }
     }
 }

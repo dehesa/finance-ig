@@ -2,7 +2,7 @@
 import XCTest
 import SQLite3
 
-class DBSessionTests: XCTestCase {
+final class DBSessionTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
 //    func testDatabaseInMemory() {
 //        let database = try! IG.DB(rootURL: nil)

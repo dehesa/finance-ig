@@ -44,25 +44,46 @@ public enum Currency {
         case aud = "AUD"
         case nzd = "NZD"
         
+        public init?(rawValue: String) {
+            guard rawValue.utf8.count == 3 else { return nil }
+            
+            switch rawValue {
+            case "CAD": self = .cad
+            case "USD": self = .usd
+            case "MXN": self = .mxn
+            case "BRL": self = .brl
+            case "GBP": self = .gbp
+            case "NOK": self = .nok
+            case "SEK": self = .sek
+            case "DKK": self = .dkk
+            case "EUR": self = .eur
+            case "CHF": self = .chf
+            case "CZK": self = .czk
+            case "HUF": self = .huf
+            case "PLN": self = .pln
+            case "RUB": self = .rub
+            case "TRY", "TRL": self = .try
+            case "ZAR": self = .zar
+            case "INR": self = .inr
+            case "SGD": self = .sgd
+            case "CNY", "CNH": self = .cny
+            case "HKD": self = .hkd
+            case "TWD": self = .twd
+            case "KRW": self = .krw
+            case "JPY": self = .jpy
+            case "PHP": self = .php
+            case "IDR": self = .idr
+            case "AUD": self = .aud
+            case "NZD": self = .nzd
+            default: return nil
+            }
+        }
+        
         public init(stringLiteral value: String) {
             guard let currency = Self.init(rawValue: value) else {
                 fatalError("The given string \"\(value)\" couldn't be identified as a currency")
             }
             self = currency
-        }
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let string = try container.decode(String.self)
-            if let value = Self.init(rawValue: string) {
-                self = value
-            } else {
-                // List of exceptions
-                switch string {
-                case "TRL": self = .try
-                default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "\"\(string)\" couldn't be identified as a supported currency")
-                }
-            }
         }
         
         public var description: String {

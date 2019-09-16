@@ -55,9 +55,25 @@ public final class Streamer {
     }
 }
 
-extension Streamer {
+extension IG.Streamer {
     /// The reverse DNS identifier for the `Streamer` instance.
     internal static var reverseDNS: String {
         return IG.bundleIdentifier() + ".streamer"
+    }
+}
+
+extension IG.Streamer: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "IG.\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("root URL", self.rootURL.absoluteString)
+        result.append("queue", self.queue.label)
+        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("lightstreamer", IG.Streamer.Channel.lightstreamerVersion)
+        result.append("connection status", self.channel.status.value)
+        return result.generate()
     }
 }

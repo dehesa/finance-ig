@@ -93,3 +93,17 @@ extension IG.API {
         return configuration
     }
 }
+
+extension IG.API: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "IG.\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("root URL", self.rootURL.absoluteString)
+        result.append("queue", self.queue.label)
+        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        return result.generate()
+    }
+}

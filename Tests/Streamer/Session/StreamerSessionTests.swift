@@ -10,6 +10,7 @@ final class StreamerSessionTests: XCTestCase {
         // 0. Create the streamer and check that is disconnected.
         let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .no)
+        print(streamer)
         XCTAssertEqual(streamer.session.status.value, .disconnected(isRetrying: false))
         
         // 1. Test connection.

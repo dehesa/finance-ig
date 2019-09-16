@@ -36,6 +36,11 @@ extension IG.Streamer {
         deinit {
             self.client.removeDelegate(self)
         }
+        
+        /// The Lightstreamer library version.
+        static var lightstreamerVersion: String {
+            return LSLightstreamerClient.lib_VERSION
+        }
     }
 }
 

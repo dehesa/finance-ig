@@ -3,7 +3,6 @@ import Foundation
 import SQLite3
 
 extension IG.DB.Request.Markets {
-    /// Returns all forex markets.
     internal func getAll(forexMarketsOn channel: SQLite.Database, permission: IG.DB.Request.Expiration) -> IG.DB.Response<[IG.DB.Market.Forex]> {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
@@ -30,7 +29,8 @@ extension IG.DB.Request.Markets {
     /// This method is intended to be called from the generic update markets. That is why, no transaction is performed here, since the parent method will wrap everything in its own transaction.
     /// - precondition: The market must be of currency type or an error will be returned.
     /// - parameter markets: The currency markets to be updated.
-    internal func update(forexMarkets markets: [IG.API.Market], channel: SQLite.Database, permission: IG.DB.Request.Expiration) -> IG.DB.Response<Void> {
+    /// - parameter continueOnError: The parameter `markets` may contain other markets that are not forex markets (e.g. crypto currencies, commodities, etc.). Setting this argument to `true` won't throw an error when one of those markets are encountered and it will continue updating the rest.
+    internal func update(forexMarkets markets: [IG.API.Market], continueOnError: Bool, channel: SQLite.Database, permission: IG.DB.Request.Expiration) -> IG.DB.Response<Void> {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         
@@ -51,7 +51,8 @@ extension IG.DB.Request.Markets {
  
             switch IG.DB.Market.Forex.inferred(from: m) {
             case .failure(let error):
-                return .failure(error: error)
+                if continueOnError { continue }
+                else { return .failure(error: error) }
             case .success(let inferred):
                 // The pip value can also be inferred from: `instrument.pip.value`
                 let forex = IG.DB.Market.Forex(epic: m.instrument.epic, currencies: .init(base: inferred.base, counter: inferred.counter),
@@ -527,7 +528,7 @@ extension IG.DB.Market.Forex {
         }()
         // 2. Check that currencies can be actually inferred
         guard let currencies = codes else {
-            return .failure(.invalidRequest(.init(#"is not of "currency" type"#), suggestion: .reviewError))
+            return .failure(error(#"is not of "currency" type"#))
         }
         // 3. Check the market identifier
         guard let marketId = market.identifier else {
@@ -556,7 +557,7 @@ extension IG.DB.Market.Forex {
             return .failure(error(#"doesn't have margin bands"#))
         }
         
-        guard apiBands.allSatisfy({ $0.currencyCode != code }) else {
+        guard apiBands.allSatisfy({ $0.currencyCode == code }) else {
             return .failure(error(#"margin bands have different currency units"#))
         }
         
