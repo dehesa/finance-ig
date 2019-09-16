@@ -159,3 +159,19 @@ extension Services {
         }
     }
 }
+
+extension Services: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "IG.\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("queue", self.queue.label)
+        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("api", self.api.rootURL.absoluteString)
+        result.append("streamer", self.streamer.rootURL.absoluteString)
+        result.append("databse", self.database.rootURL?.absoluteString ?? ":memory:")
+        return result.generate()
+    }
+}

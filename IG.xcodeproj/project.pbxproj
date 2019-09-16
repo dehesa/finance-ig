@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8D08C51F232E53B6008C9059 /* DBDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D08C51E232E53B6008C9059 /* DBDeal.swift */; };
 		8D0A232C22EB9600001853E7 /* APIUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0A232B22EB9600001853E7 /* APIUser.swift */; };
 		8D0D48A022F09CB7000579CF /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
 		8D10BBF02318E91700557960 /* DBMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D10BBEF2318E91700557960 /* DBMarket.swift */; };
@@ -55,6 +54,7 @@
 		8D52F33E22FB1CA900521759 /* APIKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F33D22FB1CA900521759 /* APIKey.swift */; };
 		8D52F34122FB1E8400521759 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34022FB1E8400521759 /* Account.swift */; };
 		8D52F34322FB201000521759 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34222FB201000521759 /* Client.swift */; };
+		8D5B3E1C232F855E0022959F /* TestEpics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5B3E1B232F855E0022959F /* TestEpics.swift */; };
 		8D6BD9FE22EF447700156512 /* APIDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6BD9FD22EF447600156512 /* APIDeal.swift */; };
 		8D6D958C22F3239A00BD42C2 /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
 		8D6D958F22F3413800BD42C2 /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
@@ -163,7 +163,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8D08C51E232E53B6008C9059 /* DBDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBDeal.swift; sourceTree = "<group>"; };
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
 		8D19C51A2326459000F029B3 /* ErrorPrintable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorPrintable.swift; sourceTree = "<group>"; };
@@ -189,6 +188,7 @@
 		8D52F33D22FB1CA900521759 /* APIKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKey.swift; sourceTree = "<group>"; };
 		8D52F34022FB1E8400521759 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		8D52F34222FB201000521759 /* Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Client.swift; sourceTree = "<group>"; };
+		8D5B3E1B232F855E0022959F /* TestEpics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestEpics.swift; sourceTree = "<group>"; };
 		8D61671B22FEC27E00B042C5 /* Deals.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Deals.md; sourceTree = "<group>"; };
 		8D6BD9FD22EF447600156512 /* APIDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDeal.swift; sourceTree = "<group>"; };
 		8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSubscription.swift; sourceTree = "<group>"; };
@@ -461,7 +461,6 @@
 				8D1C8D572322E53900841CA0 /* DBChannel.swift */,
 				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
-				8D08C51E232E53B6008C9059 /* DBDeal.swift */,
 			);
 			path = Entities;
 			sourceTree = "<group>";
@@ -832,6 +831,7 @@
 				8DC4CBFD2149AB1200344CBF /* API */,
 				8DC4CAF42149A6CE00344CBF /* StreamerMockedJSON.swift */,
 				8DC4CBFF2149AB1200344CBF /* Streamer */,
+				8D5B3E1B232F855E0022959F /* TestEpics.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -1045,7 +1045,6 @@
 				8D1C8D582322E53900841CA0 /* DBChannel.swift in Sources */,
 				8DB90A81231E79BE004204B8 /* DBInternals.swift in Sources */,
 				8DA8F8922317EAB100F1A2C0 /* DBMigration.swift in Sources */,
-				8D08C51F232E53B6008C9059 /* DBDeal.swift in Sources */,
 				8DA8F8902317BF7200F1A2C0 /* DBApplication.swift in Sources */,
 				8D10BBF02318E91700557960 /* DBMarket.swift in Sources */,
 				8DA8F89723181E7200F1A2C0 /* DBForex.swift in Sources */,
@@ -1082,6 +1081,7 @@
 				8D4B971822F1ED28002B267F /* APIAccountTests.swift in Sources */,
 				8D4B971922F1FA5A002B267F /* APIActivityTests.swift in Sources */,
 				8D4B971A22F1FA5F002B267F /* APITransactionTests.swift in Sources */,
+				8D5B3E1C232F855E0022959F /* TestEpics.swift in Sources */,
 				8D4B971B22F1FA62002B267F /* APIPriceTests.swift in Sources */,
 				8D4B971C22F20103002B267F /* APINodeTests.swift in Sources */,
 				8D4B971D22F20675002B267F /* APIMarketTests.swift in Sources */,

@@ -2,7 +2,7 @@
 import ReactiveSwift
 import XCTest
 
-class DBNodeTests: XCTestCase {
+final class DBNodeTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testNodeTableCreation() {
 //        let database = try! IG.DB(rootURL: nil)

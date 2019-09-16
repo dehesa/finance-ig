@@ -186,7 +186,7 @@ extension IG.Streamer.Request {
 
 extension IG.Streamer.Request.Session {
     /// Wrapper for the unsubscription process.
-    fileprivate class UnsubWrapper: Hashable {
+    fileprivate final class UnsubWrapper: Hashable {
         /// The instance gathering the subscription data (including the underlying Lighstreamer subscription).
         let subscription: IG.Streamer.Subscription
         /// Disposable to stop listening for the subscription status.

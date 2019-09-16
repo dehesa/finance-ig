@@ -70,7 +70,7 @@ extension IG.DB.Error {
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidResponse(message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+    internal static func invalidResponse(_ message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
         self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
 }
@@ -83,6 +83,7 @@ extension IG.DB.Error {
         static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
         static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }
         static func storing(_ type: IG.DebugDescriptable.Type) -> Self  { .init("An error occurred storing values on \"\(type.printableDomain)\" table") }
+        static var  valueNotFound: Self  { .init("The requested value couldn't be found") }
     }
     
     /// Namespace for suggestions reused over the framework.
@@ -93,6 +94,7 @@ extension IG.DB.Error {
         static var readDocs: Self    { .init("Read the request documentation and be sure to follow all requirements") }
         static var reviewError: Self { .init("Review the returned error and try to fix the problem") }
         static var fileBug: Self     { .init("A unexpected error was encountered. Please contact the repository maintainer and attach this debug print") }
+        static var valueNotFound: Self { .init("The value is not in the database. Please introduce it, before trying to query it") }
     }
 }
 
