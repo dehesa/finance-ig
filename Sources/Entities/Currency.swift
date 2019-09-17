@@ -15,7 +15,7 @@ public protocol CurrencyType {
 /// Namespace for currencies.
 public enum Currency {
     /// ISO 4217 currency codes.
-    public enum Code: String, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Codable {
+    public enum Code: String, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Comparable, Codable {
         case cad = "CAD"
         case usd = "USD"
         case mxn = "MXN"
@@ -88,6 +88,10 @@ public enum Currency {
         
         public var description: String {
             return self.rawValue
+        }
+        
+        public static func < (lhs: Currency.Code, rhs: Currency.Code) -> Bool {
+            return lhs.rawValue < rhs.rawValue
         }
     }
 }

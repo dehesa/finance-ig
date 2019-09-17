@@ -39,7 +39,7 @@ extension IG.Streamer.Request.Charts {
 // MARK: - Supporting Entities
 
 extension IG.Streamer.Request {
-    /// Contains all functionality related to Streamer markets.
+    /// Contains all functionality related to Streamer charts.
     public struct Charts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
         internal unowned let streamer: IG.Streamer

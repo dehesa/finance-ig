@@ -3,7 +3,7 @@ import Foundation
 import SQLite3
 
 extension IG.DB.Request {
-    /// Contains all functionality related to API applications.
+    /// Contains all functionality related to DB applications.
     public struct Applications {
         /// Pointer to the actual database instance in charge of the low-level objects..
         fileprivate unowned let database: IG.DB
@@ -37,7 +37,9 @@ extension IG.DB.Request.Applications {
         }
     }
     
-    /// Returns the application specified by its API key. If not there, an `DB.Error.invalidResponse` is returned.
+    /// Returns the application specified by its API key.
+    ///
+    /// If the application is not found, an `.invalidResponse` is returned.
     /// - parameter key: The API key identifying the application.
     public func get(key: IG.API.Key) -> SignalProducer<IG.DB.Application,IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in

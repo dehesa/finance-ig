@@ -3,7 +3,7 @@ import Foundation
 /// Namespace for market information.
 public enum Market {
     /// An epic represents a unique tradeable market.
-    public struct Epic: RawRepresentable, ExpressibleByStringLiteral, Hashable, CustomStringConvertible {
+    public struct Epic: RawRepresentable, ExpressibleByStringLiteral, Hashable, Comparable, CustomStringConvertible {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
@@ -18,6 +18,11 @@ public enum Market {
         
         public var description: String {
             return self.rawValue
+        }
+        
+        
+        public static func < (lhs: Market.Epic, rhs: Market.Epic) -> Bool {
+            return lhs.rawValue < rhs.rawValue
         }
     }
 }

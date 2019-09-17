@@ -133,6 +133,7 @@
 		8DE2C3E222FC789B00BB6261 /* Deal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3E122FC789B00BB6261 /* Deal.swift */; };
 		8DE4A67122FB40890036CF5E /* APIMarketStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE4A67022FB40890036CF5E /* APIMarketStatus.swift */; };
 		8DE4A67322FB40CF0036CF5E /* APINodeMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */; };
+		8DF1233E2330D9C900312A30 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
 		8DF75CDC2322A85100130229 /* PlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF75CDB2322A85100130229 /* PlaygroundTests.swift */; };
 		8DF85B1C22F046FA00F1C525 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF85B1B22F046FA00F1C525 /* Error.swift */; };
 		8DF93B9822E757B4001B9412 /* APISentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF93B9722E757B4001B9412 /* APISentiment.swift */; };
@@ -296,6 +297,7 @@
 		8DE2C3E122FC789B00BB6261 /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
 		8DE4A67022FB40890036CF5E /* APIMarketStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketStatus.swift; sourceTree = "<group>"; };
 		8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINodeMarket.swift; sourceTree = "<group>"; };
+		8DF1233D2330D9C900312A30 /* DBForexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForexTests.swift; sourceTree = "<group>"; };
 		8DF75CDB2322A85100130229 /* PlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundTests.swift; sourceTree = "<group>"; };
 		8DF85B1B22F046FA00F1C525 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		8DF93B9722E757B4001B9412 /* APISentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentiment.swift; sourceTree = "<group>"; };
@@ -490,6 +492,7 @@
 			children = (
 				8DB90A7E231E729F004204B8 /* DBMarketTests.swift */,
 				8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */,
+				8DF1233D2330D9C900312A30 /* DBForexTests.swift */,
 			);
 			path = Markets;
 			sourceTree = "<group>";
@@ -1072,6 +1075,7 @@
 				8DFF587F23001580000B2777 /* TestAccountError.swift in Sources */,
 				8D4B971522F1C995002B267F /* TestAccount.swift in Sources */,
 				8DD468D522F1C73100134B67 /* Test.swift in Sources */,
+				8DF1233E2330D9C900312A30 /* DBForexTests.swift in Sources */,
 				8DAEF08222F9994F005AB34C /* TestFabric.swift in Sources */,
 				8DF75CDC2322A85100130229 /* PlaygroundTests.swift in Sources */,
 				8D4B972022F213BF002B267F /* APIOAuthTests.swift in Sources */,
