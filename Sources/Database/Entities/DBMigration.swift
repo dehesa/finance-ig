@@ -4,65 +4,132 @@ import SQLite3
 extension IG.DB {
     /// All migrations described in this database.
     internal enum Migration {
+        /// Application ID "magic" number used to identify SQLite database files.
+        private static let applicationID: Int32 = 840797404
+        
         /// The number of versions currently supported
-        internal enum Version: String, Equatable, CaseIterable {
-            /// The initial migration.
-            case v0 = "v0"
+        internal enum Version: Int, Equatable, CaseIterable {
+            /// The version for database creation.
+            case v0 = 0
+            /// The initial version
+            case v1 = 1
+            
+            /// The last described migration.
+            static var latest: Self {
+                return Self.allCases.last!
+            }
         }
         
-        /// Apply the migrations till (and including) the given version.
-        ///
-        /// This function will check the version of your database and migrate till the given version.
+        /// Apply migrations to the latest version.
         /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
-        /// - parameter version: The last version to migrate your database to.
         /// - parameter channel: The database connection pointer.
         /// - parameter queue: The priviledge database queue.
         /// - throws: `IG.DB.Error` exclusively.
-        internal static func apply(untilVersion version: Self.Version, for channel: SQLite.Database, on queue: DispatchQueue) throws {
-            switch version {
-            case .v0: try Self.initialVersion(version, channel: channel, queue: queue)
+        internal static func apply(for channel: SQLite.Database, on queue: DispatchQueue) throws {
+            // Retrieve the current database version
+            let versionNumber = try queue.sync { try Self.version(channel: channel) }
+            guard let version = Self.Version(rawValue: versionNumber) else {
+                if versionNumber > Self.Version.latest.rawValue {
+                    throw IG.DB.Error.invalidResponse(.init(#"The database version number "\#(versionNumber)" is not supported by your current library"#), suggestion: "Update the library to work with the database")
+                } else {
+                    throw IG.DB.Error.invalidResponse(.init(#"The database version number "\#(versionNumber)" is invalid"#), suggestion: .fileBug)
+                }
             }
+            // Retrieve the SQLite's file application identifier.
+            let applicationID = try queue.sync { try Self.applicationID(channel: channel) }
+            guard applicationID == Self.applicationID || (applicationID == 0 && versionNumber == 0) else {
+                throw IG.DB.Error.invalidRequest("The SQLite database file is not supported by this application", suggestion: "It seems you are trying to open a SQLite database belonging to another application")
+            }
+            
+            // Select the correct migration
+            switch version {
+            case .v0: try Self.initialVersion(channel: channel, queue: queue)
+            case .v1: return
+            }
+            // Set the version number to the latest supported version.
+            try queue.sync { try Self.setVersion(Self.Version.latest, channel: channel) }
         }
     }
-}
-
-internal protocol DBMigratable {
-    /// Returns a SQL definition for the receiving type on the specific database version.
-    static func tableDefinition(for version: IG.DB.Migration.Version) -> String?
 }
 
 extension IG.DB.Migration {
-    private typealias MigrationType = DBMigratable & DebugDescriptable
-    
-    /// Where the actual migration happens.
-    private static func initialVersion(_ version: Self.Version, channel: SQLite.Database, queue: DispatchQueue) throws {
-        let types: [MigrationType.Type] = [IG.DB.Application.self, IG.DB.Market.self, IG.DB.Market.Forex.self]
+    /// Returns the SQLite's file application ID "magic" number.
+    /// - precondition: This should only be called from the database queue.
+    /// - parameter channel: The SQLite database connection.
+    private static func applicationID(channel: SQLite.Database) throws -> Int32 {
+        var statement: SQLite.Statement? = nil
+        defer { sqlite3_finalize(statement) }
         
-        sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
-        
-        var isRollbackNeeded = false
-        defer {
-            let statement = (isRollbackNeeded == false) ? "END TRANSACTION" : "ROLLBACK"
-            sqlite3_exec(channel, statement, nil, nil, nil)
+        if let compileError = sqlite3_prepare_v2(channel, "PRAGMA application_id", -1, &statement, nil).enforce(.ok) {
+            throw IG.DB.Error.callFailed("The database's user version retrieval statement couldn't be compiled", code: compileError)
         }
         
-        for type in types {
-            guard let sql = type.tableDefinition(for: version) else {
-                isRollbackNeeded = true
-                throw IG.DB.Error.invalidRequest(.init("The SQL expression for \"\(type.printableDomain)\" (on version \"\(version.rawValue)\") was expected, but it couldn't be found"), suggestion: .reviewError)
-            }
-            
-            if let creationError = sqlite3_exec(channel, sql, nil, nil, nil).enforce(.ok) {
-                isRollbackNeeded = true
-                throw IG.DB.Error.callFailed(.init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute"), code: creationError)
-            }
+        if let stepError = sqlite3_step(statement).enforce(.row) {
+            throw IG.DB.Error.callFailed("The database's user version couldn't be retrieved", code: stepError)
+        }
+        
+        return sqlite3_column_int(statement, 0)
+    }
+    
+    /// Returns the database version for the given SQLite channel.
+    /// - precondition: This should only be called from the database queue.
+    /// - parameter channel: The SQLite database connection.
+    /// - returns: The number stored on the `PRAGMA user_version` field.
+    private static func version(channel: SQLite.Database) throws -> Int {
+        var statement: SQLite.Statement? = nil
+        defer { sqlite3_finalize(statement) }
+        
+        if let compileError = sqlite3_prepare_v2(channel, "PRAGMA user_version", -1, &statement, nil).enforce(.ok) {
+            throw IG.DB.Error.callFailed("The database's user version retrieval statement couldn't be compiled", code: compileError)
+        }
+        
+        if let stepError = sqlite3_step(statement).enforce(.row) {
+            throw IG.DB.Error.callFailed("The database's user version couldn't be retrieved", code: stepError)
+        }
+        
+        return Int(sqlite3_column_int(statement, 0))
+    }
+    
+    /// Sets the SQLite's file application ID "magic" number.
+    /// - precondition: This should only be called from the database queue.
+    /// - parameter applicationID: The application's magic number (i.e. identifier).
+    /// - parameter channel: The SQLite database connection.
+    private static func setApplicationID(_ applicationID: Int32, channel: SQLite.Database) throws {
+        if let storingError = sqlite3_exec(channel, "PRAGMA application_id = \(applicationID)", nil, nil, nil).enforce(.ok) {
+            throw IG.DB.Error.callFailed("The database's user version couldn't be stored", code: storingError)
+        }
+    }
+    
+    /// Sets the database user version number.
+    /// - precondition: This should only be called from the database queue.
+    /// - parameter version: The version number to be set to.
+    /// - parameter channel: The SQLite database connection.
+    private static func setVersion(_ version: Self.Version, channel: SQLite.Database) throws {
+        if let storingError = sqlite3_exec(channel, "PRAGMA user_version = \(version.rawValue)", nil, nil, nil).enforce(.ok) {
+            throw IG.DB.Error.callFailed("The database's user version couldn't be stored", code: storingError)
         }
     }
 }
 
-extension IG.DB.Migration.Version {
-    /// The last described migration.
-    static var latest: Self {
-        return Self.allCases.last!
+extension IG.DB.Migration {
+    /// Where the actual migration happens.
+    /// - parameter channel: The SQLite database connection.
+    private static func initialVersion(channel: SQLite.Database, queue: DispatchQueue) throws {
+        queue.sync { _ = sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil) }
+        
+        var isRollbackNeeded = false
+        defer { queue.sync { _ = sqlite3_exec(channel, String((isRollbackNeeded) ? "ROLLBACK" : "END TRANSACTION"), nil, nil, nil) } }
+        
+        try queue.sync {
+            try Self.setApplicationID(Self.applicationID, channel: channel)
+            
+            let types: [(DBTable & DebugDescriptable).Type] = [IG.DB.Application.self, IG.DB.Market.self, IG.DB.Market.Forex.self]
+            for type in types {
+                if let creationError = sqlite3_exec(channel, type.tableDefinition, nil, nil, nil).enforce(.ok) {
+                    isRollbackNeeded = true
+                    throw IG.DB.Error.callFailed(.init("The SQL statement to create a table for \"\(type.printableDomain)\" failed to execute"), code: creationError)
+                }
+            }
+        }
     }
 }

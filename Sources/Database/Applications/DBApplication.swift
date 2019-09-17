@@ -19,7 +19,7 @@ extension IG.DB.Request.Applications {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = "SELECT * FROM Apps;"
+            let query = "SELECT * FROM \(IG.DB.Application.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
@@ -44,7 +44,7 @@ extension IG.DB.Request.Applications {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = "SELECT * FROM Apps where key = ?1;"
+            let query = "SELECT * FROM Apps where key = ?1"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
@@ -71,12 +71,12 @@ extension IG.DB.Request.Applications {
             defer { sqlite3_finalize(statement) }
             
             let query = """
-                INSERT INTO Apps VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
+                INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
                     ON CONFLICT(key) DO UPDATE SET
                         name = excluded.name, status = excluded.status,
                         equity = excluded.equity, quote = excluded.quote,
                         liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
-                        created = excluded.created, updated = excluded.updated;
+                        created = excluded.created, updated = excluded.updated
                 """
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: compileError))
@@ -173,28 +173,27 @@ extension IG.DB.Application {
 
 // MARK: SQLite
 
-extension IG.DB.Application: DBMigratable {
-    internal static func tableDefinition(for version: IG.DB.Migration.Version) -> String? {
-        switch version {
-        case .v0: return """
-            CREATE TABLE Apps (
-                key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ),
-                name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
-                status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
-                equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
-                quote   INTEGER NOT NULL CHECK( quote BETWEEN 0 AND 1 ),
-                liApp   INTEGER NOT NULL CHECK( liApp >= 0 ),
-                liAcco  INTEGER NOT NULL CHECK( liAcco >= 0 ),
-                liTrade INTEGER NOT NULL CHECK( liTrade >= 0 ),
-                liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
-                subs    INTEGER NOT NULL CHECK( subs >= 0 ),
-                created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
-                updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) ),
-            
-                PRIMARY KEY(key)
-            ) WITHOUT ROWID;
-            """
-        }
+extension IG.DB.Application: DBTable {
+    internal static let tableName: String = "Apps"
+    internal static var tableDefinition: String {
+        """
+        CREATE TABLE \(Self.tableName) (
+            key     TEXT    NOT NULL CHECK( LENGTH(key) == 40 ),
+            name    TEXT    NOT NULL CHECK( LENGTH(name) > 0 ),
+            status  INTEGER NOT NULL CHECK( status BETWEEN -1 AND 1 ),
+            equity  INTEGER NOT NULL CHECK( equity BETWEEN 0 AND 1 ),
+            quote   INTEGER NOT NULL CHECK( quote BETWEEN 0 AND 1 ),
+            liApp   INTEGER NOT NULL CHECK( liApp >= 0 ),
+            liAcco  INTEGER NOT NULL CHECK( liAcco >= 0 ),
+            liTrade INTEGER NOT NULL CHECK( liTrade >= 0 ),
+            liHisto INTEGER NOT NULL CHECK( liHisto >= 0 ),
+            subs    INTEGER NOT NULL CHECK( subs >= 0 ),
+            created TEXT    NOT NULL CHECK( (created IS DATE(created)) AND (created <= CURRENT_DATE) ),
+            updated TEXT    NOT NULL CHECK( (updated IS DATETIME(updated)) AND (updated <= CURRENT_TIMESTAMP) ),
+        
+            PRIMARY KEY(key)
+        ) WITHOUT ROWID;
+        """
     }
 }
 

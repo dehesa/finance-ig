@@ -12,6 +12,13 @@ extension IG.DB {
     }
 }
 
+internal protocol DBTable {
+    /// The table name for the latest version.
+    static var tableName: String { get }
+    /// Returns a SQL definition for the receiving type.
+    static var tableDefinition: String { get }
+}
+
 extension IG.DB {
     /// Measurement units are usually in pips or as percentage.
     public enum Unit: Int, CustomDebugStringConvertible {

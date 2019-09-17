@@ -68,8 +68,7 @@ extension IG.DB {
                 }
                 
                 // Foreign key constraints activation
-                let statement = "PRAGMA foreign_keys = ON;"
-                if let foreignEnablingCode = sqlite3_exec(db, statement, nil, nil, nil).enforce(.ok) {
+                if let foreignEnablingCode = sqlite3_exec(db, "PRAGMA foreign_keys = ON", nil, nil, nil).enforce(.ok) {
                     error = .callFailed("Foreign keys couldn't be enabled for the database", code: foreignEnablingCode)
                     return
                 }

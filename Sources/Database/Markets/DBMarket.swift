@@ -19,7 +19,7 @@ extension IG.DB.Request.Markets {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = "SELECT * FROM Markets;"
+            let query = "SELECT * FROM \(IG.DB.Market.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.querying(IG.DB.Market.self), code: compileError))
             }
@@ -38,7 +38,7 @@ extension IG.DB.Request.Markets {
     }
     
     /// Returns all forex markets.
-    public func getForexMarkets() -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
+    public func getForex() -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in
             return self.getAll(forexMarketsOn: channel, permission: requestPermission)
         }
@@ -55,7 +55,7 @@ extension IG.DB.Request.Markets {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             
-            let query = "INSERT INTO Markets VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING;"
+            let query = "INSERT INTO \(IG.DB.Market.tableName) VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
                 return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: compileError, suggestion: .reviewError))
             }
@@ -113,18 +113,17 @@ extension IG.DB.Market {
 
 // MARK: SQLite
 
-extension IG.DB.Market: DBMigratable {
-    internal static func tableDefinition(for version: DB.Migration.Version) -> String? {
-        switch version {
-        case .v0: return """
-        CREATE TABLE Markets (
+extension IG.DB.Market: DBTable {
+    internal static let tableName: String = "Markets"
+    internal static var tableDefinition: String {
+        """
+        CREATE TABLE \(Self.tableName) (
             epic TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
             type INTEGER          CHECK( type BETWEEN 1 AND 6 ),
             
             PRIMARY KEY(epic)
         ) WITHOUT ROWID;
         """
-        }
     }
 }
 
