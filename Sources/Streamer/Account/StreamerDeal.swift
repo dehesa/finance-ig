@@ -41,7 +41,7 @@ extension IG.Streamer.Request.Confirmations {
 // MARK: - Supporting Entities
 
 extension IG.Streamer.Request {
-    /// Contains all functionality related to Streamer accounts.
+    /// Contains all functionality related to Streamer deals.
     public struct Confirmations {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
         fileprivate unowned let streamer: IG.Streamer

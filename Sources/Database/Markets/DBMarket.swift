@@ -3,17 +3,22 @@ import Foundation
 import SQLite3
 
 extension IG.DB.Request {
-    /// Contains all functionality related to API applications.
+    /// Contains all functionality related to DB markets.
     public struct Markets {
         /// Pointer to the actual database instance in charge of the low-level objects.
         fileprivate unowned let database: IG.DB
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        init(database: IG.DB) { self.database = database }
+        internal init(database: IG.DB) { self.database = database }
+        
+        /// It holds data and functionality related to the forex markets.
+        public var forex: IG.DB.Request.Markets.Forex { return .init(database: self.database) }
     }
 }
 
 extension IG.DB.Request.Markets {
     /// Returns all markets stored in the database.
+    ///
+    /// Only the epic and the type of markets are returned.
     public func getAll() -> SignalProducer<[IG.DB.Market],IG.DB.Error> {
         return self.database.work { (channel, requestPermission) in
             var statement: SQLite.Statement? = nil
@@ -34,13 +39,6 @@ extension IG.DB.Request.Markets {
             } while requestPermission().isAllowed
             
             return .interruption
-        }
-    }
-    
-    /// Returns all forex markets.
-    public func getForex() -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
-        return self.database.work { (channel, requestPermission) in
-            return self.getAll(forexMarketsOn: channel, permission: requestPermission)
         }
     }
     
@@ -74,7 +72,7 @@ extension IG.DB.Request.Markets {
                 sqlite3_reset(statement)
             }
             
-            return self.update(forexMarkets: markets, continueOnError: true, channel: channel, permission: requestPermission)
+            return Self.Forex.update(forexMarkets: markets, continueOnError: true, channel: channel, permission: requestPermission)
         }
     }
 }
@@ -88,6 +86,8 @@ extension IG.DB {
         public let epic: IG.Market.Epic
         /// The type of market (i.e. instrument type).
         public let type: Self.Kind?
+//        /// The name of the price table.
+//        public let price: String?
     }
 }
 
@@ -95,18 +95,77 @@ extension IG.DB.Market {
     /// The type of market (i.e. instrument type).
     public enum Kind: Int32 {
         /// Currencies are medium of exchange.
-        case currencies = 1
+        case currencies = 0x0001
         /// An index is an statistical measure of change in a securities market.
-        case indices = 2
+        case indices = 0x0002
         /// Bonds, money markets, etc.
-        case rates = 3
+        case rates = 0x0004
         /// An option is a contract which gives the buyer the right, but not the obligation, to buy or sell an underlying asset or instrument at a specified strike price prior to or on a specified date, depending on the form of the option.
-        case options = 4
-        /// Shares are unit of ownership interest in a corporation or financial asset that provide for an equal distribution in any profits, if any are declared, in the form of dividends.
-        case shares = 5
+        case options = 0x0008
         /// Commodities are hard assets ranging from wheat to gold to oil.
-        case commodities = 6
+        case commodities = 0x0010
+        /// Shares are unit of ownership interest in a corporation or financial asset that provide for an equal distribution in any profits, if any are declared, in the form of dividends.
+        case shares = 0x0020
     }
+    
+//    /// The type of market (i.e. instrument type).
+//    public enum Manolo: RawRepresentable {
+//        /// Currencies are medium of exchange.
+//        case currencies(Self.Currency)
+//        /// An index is an statistical measure of change in a securities market.
+//        case indices
+//        /// Bonds, money markets, etc.
+//        case rates
+//        /// An option is a contract which gives the buyer the right, but not the obligation, to buy or sell an underlying asset or instrument at a specified strike price prior to or on a specified date, depending on the form of the option.
+//        case options
+//        /// Commodities are hard assets ranging from wheat to gold to oil.
+//        case commodities
+//        /// Shares are unit of ownership interest in a corporation or financial asset that provide for an equal distribution in any profits, if any are declared, in the form of dividends.
+//        case shares
+//
+//        public enum Currency {
+//            case forex
+//            case crypto
+//        }
+//
+//        public init?(rawValue: Int32) {
+//            typealias V = Self.Value
+//            switch rawValue {
+//            case V.currenciesForex:  self = .currencies(.forex)
+//            case V.currenciesCrypto: self = .currencies(.crypto)
+//            case V.indices:          self = .indices
+//            case V.rates:            self = .rates
+//            case V.options:          self = .options
+//            case V.commodities:      self = .commodities
+//            case V.shares:           self = .shares
+//            default: return nil
+//            }
+//        }
+//
+//        public var rawValue: Int32 {
+//            typealias V = Self.Value
+//            switch self {
+//            case .currencies(.forex):  return V.currenciesForex
+//            case .currencies(.crypto): return V.currenciesCrypto
+//            case .indices:             return V.indices
+//            case .rates:               return V.rates
+//            case .options:             return V.options
+//            case .commodities:         return V.commodities
+//            case .shares:              return V.shares
+//            }
+//        }
+//
+//        private enum Value {
+//            static let currencies:       Int32 = 1
+//            static let currenciesForex:  Int32 = Self.currencies & (1 << 16)
+//            static let currenciesCrypto: Int32 = Self.currencies & (2 << 16)
+//            static let indices:          Int32 = 2
+//            static let rates:            Int32 = 3
+//            static let options:          Int32 = 4
+//            static let commodities:      Int32 = 5
+//            static let shares:           Int32 = 6
+//        }
+//    }
 }
 
 // MARK: - Functionality
@@ -119,7 +178,7 @@ extension IG.DB.Market: DBTable {
         """
         CREATE TABLE \(Self.tableName) (
             epic TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
-            type INTEGER          CHECK( type BETWEEN 1 AND 6 ),
+            type INTEGER,
             
             PRIMARY KEY(epic)
         ) WITHOUT ROWID;
