@@ -228,15 +228,29 @@ extension IG.API.Transaction {
     }
     
     /// Transform the currency initial given into  a proper ISO currency.
-    /// - todo: Figure out other currencies. Currently there is only €.
+    /// - note: These are retrieved from `market.intrument.currencies.symbol`.
     private static func currency(from initial: String)-> IG.Currency.Code? {
         switch initial {
         case "E": return .eur
         case "$": return .usd
         case "¥": return .jpy
-        default:
-            #warning("Look for more in: market.intrument.currencies.symbol")
-            return nil
+        case "£": return .gbp
+        case "SF": return .chf
+        case "CD": return .cad
+        case "A$": return .aud
+        case "NZ": return .nzd
+        case "SD": return .sgd
+        case "MP": return .mxn
+        case "NK": return .nok
+        case "SK": return .sek
+        case "DK": return .dkk
+        case "PZ": return .pln
+        case "CK": return .czk
+        case "HF": return .huf
+        case "TL": return .try
+        case "HK": return .hkd
+        case "SR": return .zar
+        default: return nil
         }
     }
 }

@@ -21,15 +21,15 @@ extension IG.DB.Request.Applications {
             
             let query = "SELECT * FROM \(IG.DB.Application.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             var result: [IG.DB.Application] = .init()
             repeat {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(value: result)
-                case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+                case .done: return .success(result)
+                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -48,15 +48,15 @@ extension IG.DB.Request.Applications {
             
             let query = "SELECT * FROM Apps where key = ?1"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLITE_TRANSIENT)
             
             switch sqlite3_step(statement).result {
-            case .row:  return .success(value: .init(statement: statement!))
-            case .done: return .failure(error: .invalidResponse(.valueNotFound, suggestion: .valueNotFound))
-            case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+            case .row:  return .success(.init(statement: statement!))
+            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
+            case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
             }
         }
     }
@@ -81,7 +81,7 @@ extension IG.DB.Request.Applications {
                         created = excluded.created, updated = excluded.updated
                 """
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.storing(IG.DB.Application.self), code: compileError))
             }
             
             for app in applications {
@@ -97,14 +97,14 @@ extension IG.DB.Request.Applications {
                 
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
-                    return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: updateError))
+                    return .failure(.callFailed(.storing(IG.DB.Application.self), code: updateError))
                 }
                 
                 sqlite3_clear_bindings(statement)
                 sqlite3_reset(statement)
             }
             
-            return .success(value: ())
+            return .success(())
         }
     }
 }

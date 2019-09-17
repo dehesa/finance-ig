@@ -1,7 +1,5 @@
 import Foundation
 
-#warning("Try an autoIncrementedPrimaryKey without Foreign keys to see how it works")
-
 extension IG.DB.Node {
     /// Associative table listing nodes and subnodes.
     /// - A node can have none or many subnodes.
