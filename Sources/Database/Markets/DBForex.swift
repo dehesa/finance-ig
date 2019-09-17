@@ -7,7 +7,7 @@ extension IG.DB.Request.Markets {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         
-        let query = "SELECT * FROM Forex;"
+        let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
         if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
             return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
         }
@@ -35,12 +35,12 @@ extension IG.DB.Request.Markets {
         defer { sqlite3_finalize(statement) }
         
         let query = """
-            INSERT INTO Forex VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
+            INSERT INTO \(IG.DB.Market.Forex.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
                 ON CONFLICT(epic) DO UPDATE SET
                     base=excluded.base, counter=excluded.counter,
                     name=excluded.name, marketId=excluded.marketId, chartId=excluded.chartId, reutersId=excluded.reutersId,
                     contSize=excluded.contSize, pipVal=excluded.pipVal, placePip=excluded.placePip, placeLevel=excluded.placeLevel, slippage=excluded.slippage, premium=excluded.premium, extra=excluded.extra, margin=excluded.margin, bands=excluded.bands,
-                    minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep;
+                    minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep
             """
         if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
             return .failure(error: .callFailed(.storing(IG.DB.Market.Forex.self), code: compileError))
@@ -232,43 +232,42 @@ extension IG.DB.Market.Forex {
 
 // MARK: SQLite
 
-extension IG.DB.Market.Forex: DBMigratable {
-    internal static func tableDefinition(for version: DB.Migration.Version) -> String? {
-        switch version {
-        case .v0: return """
-            CREATE TABLE Forex (
-                epic       TEXT    NOT NULL UNIQUE CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
-                base       TEXT    NOT NULL        CHECK( LENGTH(base) == 3 ),
-                counter    TEXT    NOT NULL        CHECK( LENGTH(counter) == 3 ),
-            
-                name       TEXT    NOT NULL UNIQUE CHECK( LENGTH(name) > 0 ),
-                marketId   TEXT    NOT NULL        CHECK( LENGTH(marketId) > 0 ),
-                chartId    TEXT                    CHECK( LENGTH(chartId) > 0 ),
-                reutersId  TEXT    NOT NULL        CHECK( LENGTH(reutersId) > 0 ),
-            
-                contSize   INTEGER NOT NULL        CHECK( contSize > 0 ),
-                pipVal     INTEGER NOT NULL        CHECK( pipVal > 0 ),
-                placePip   INTEGER NOT NULL        CHECK( placePip >= 0 ),
-                placeLevel INTEGER NOT NULL        CHECK( placeLevel >= 0 ),
-                slippage   INTEGER NOT NULL        CHECK( slippage >= 0 ),
-                premium    INTEGER NOT NULL        CHECK( premium >= 0 ),
-                extra      INTEGER NOT NULL        CHECK( extra >= 0 ),
-                margin     INTEGER NOT NULL        CHECK( margin >= 0 ),
-                bands      TEXT    NOT NULL        CHECK( LENGTH(bands) > 0 ),
-            
-                minSize    INTEGER NOT NULL        CHECK( minSize >= 0 ),
-                minDista   INTEGER NOT NULL        CHECK( minDista >= 0 ),
-                maxDista   INTEGER NOT NULL        CHECK( maxDista >= 0 ),
-                minRisk    INTEGER NOT NULL        CHECK( minRisk >= 0 ),
-                riskUnit   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
-                trailing   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
-                minStep    INTEGER NOT NULL        CHECK( minStep >= 0 ),
-            
-                CHECK( base != counter ),
-                FOREIGN KEY(epic) REFERENCES Markets(epic)
-            );
-            """
-        }
+extension IG.DB.Market.Forex: DBTable {
+    internal static let tableName: String = IG.DB.Market.tableName.appending("_Forex")
+    internal static var tableDefinition: String {
+        """
+        CREATE TABLE \(Self.tableName) (
+            epic       TEXT    NOT NULL UNIQUE CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
+            base       TEXT    NOT NULL        CHECK( LENGTH(base) == 3 ),
+            counter    TEXT    NOT NULL        CHECK( LENGTH(counter) == 3 ),
+        
+            name       TEXT    NOT NULL UNIQUE CHECK( LENGTH(name) > 0 ),
+            marketId   TEXT    NOT NULL        CHECK( LENGTH(marketId) > 0 ),
+            chartId    TEXT                    CHECK( LENGTH(chartId) > 0 ),
+            reutersId  TEXT    NOT NULL        CHECK( LENGTH(reutersId) > 0 ),
+        
+            contSize   INTEGER NOT NULL        CHECK( contSize > 0 ),
+            pipVal     INTEGER NOT NULL        CHECK( pipVal > 0 ),
+            placePip   INTEGER NOT NULL        CHECK( placePip >= 0 ),
+            placeLevel INTEGER NOT NULL        CHECK( placeLevel >= 0 ),
+            slippage   INTEGER NOT NULL        CHECK( slippage >= 0 ),
+            premium    INTEGER NOT NULL        CHECK( premium >= 0 ),
+            extra      INTEGER NOT NULL        CHECK( extra >= 0 ),
+            margin     INTEGER NOT NULL        CHECK( margin >= 0 ),
+            bands      TEXT    NOT NULL        CHECK( LENGTH(bands) > 0 ),
+        
+            minSize    INTEGER NOT NULL        CHECK( minSize >= 0 ),
+            minDista   INTEGER NOT NULL        CHECK( minDista >= 0 ),
+            maxDista   INTEGER NOT NULL        CHECK( maxDista >= 0 ),
+            minRisk    INTEGER NOT NULL        CHECK( minRisk >= 0 ),
+            riskUnit   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
+            trailing   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
+            minStep    INTEGER NOT NULL        CHECK( minStep >= 0 ),
+        
+            CHECK( base != counter ),
+            FOREIGN KEY(epic) REFERENCES Markets(epic)
+        );
+        """
     }
 }
 

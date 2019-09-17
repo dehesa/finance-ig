@@ -34,12 +34,12 @@ public final class DB {
     /// - parameter rootURL: The file URL where the databse file is or `nil` for "in memory" storage.
     /// - parameter queue: The queue on which to process the `DB` requests and responses.
     /// - throws: `IG.DB.Error` exclusively.
-    internal init(rootURL: URL?, channel: SQLite.Database, queue: DispatchQueue, migrating version: IG.DB.Migration.Version = .latest) throws {
+    internal init(rootURL: URL?, channel: SQLite.Database, queue: DispatchQueue) throws {
         self.rootURL = rootURL
         self.channel = channel
         self.queue = queue
         
-        try IG.DB.Migration.apply(untilVersion: version, for: channel, on: queue)
+        try IG.DB.Migration.apply(for: channel, on: queue)
     }
     
     deinit {
@@ -110,6 +110,7 @@ extension IG.DB: DebugDescriptable {
         result.append("root URL", self.rootURL.map { $0.path } ?? ":memory:")
         result.append("queue", self.queue.label)
         result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("version", IG.DB.Migration.Version.latest.rawValue)
         result.append("SQLite", SQLITE_VERSION)
         return result.generate()
     }
