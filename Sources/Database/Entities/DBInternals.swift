@@ -4,14 +4,45 @@ extension IG.DB {
     /// Domain namespace retaining anything related to DB requests.
     public enum Request {}
     /// Domain namespace retaining anything related to DB responses.
-    internal enum Response<T> {
-        case success(value: T)
-        case failure(error: IG.DB.Error)
+    internal enum Response {}
+}
+
+// MARK: Request Types
+
+extension IG.DB.Request {
+    /// Indication of whether an operation should continue or stop.
+    internal enum Step: Equatable {
+        /// The operation shall continue.
+        case `continue`
+        /// The operation shall stop as soon as possible.
+        case stop
+        
+        /// Boolean indicating whether the following iteration is allowed.
+        var isAllowed: Bool {
+            return self == .continue
+        }
+    }
+    
+    /// Closure asking for next iteration permission.
+    /// - returns: Akind to a Boolean value indicating whether the routine is allowed to continue or it should stop.
+    internal typealias Permission = () -> Self.Step
+}
+
+// MARK: Response Types
+
+extension IG.DB.Response {
+    ///
+    internal enum Step<T> {
+        case success(T)
+        case failure(IG.DB.Error)
         case interruption
         case expired
     }
 }
 
+// MARK: - Supporting Types
+
+/// Protocol for all types that can be represented through a SQL table.
 internal protocol DBTable {
     /// The table name for the latest version.
     static var tableName: String { get }
@@ -32,24 +63,4 @@ extension IG.DB {
             }
         }
     }
-}
-
-// MARK: - Request types
-
-extension IG.DB.Request {
-    /// Indication of whether an operation should continue or stop.
-    internal enum Iteration: Equatable {
-        /// The operation shall continue.
-        case `continue`
-        /// The operation shall stop as soon as possible.
-        case stop
-        /// Boolean indicating whether the following iteration is allowed.
-        var isAllowed: Bool {
-            return self == .continue
-        }
-    }
-    
-    /// Closure asking for next iteration permission.
-    /// - returns: Akind to a Boolean value indicating whether the routine is allowed to continue or it should stop.
-    internal typealias Expiration = () -> Self.Iteration
 }

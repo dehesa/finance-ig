@@ -51,12 +51,12 @@ public final class DB {
     /// - parameter interaction: Closure giving the priviledge database connection and a way to check whether the operation should be finished (since databse operations may extend for a long time). Its result will be forwarded to the Signal.
     /// - parameter channel: The priviledge SQLite database actually performing the work.
     /// - parameter permission: A closure to ask for *continuation* permission to the database manager.
-    internal func work<R>(_ interaction: @escaping (_ channel: SQLite.Database, _ permission: IG.DB.Request.Expiration) -> IG.DB.Response<R>) -> SignalProducer<R,IG.DB.Error> {
+    internal func work<R>(_ interaction: @escaping (_ channel: SQLite.Database, _ permission: IG.DB.Request.Permission) -> IG.DB.Response.Step<R>) -> SignalProducer<R,IG.DB.Error> {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
         
-        return SignalProducer<R,IG.DB.Error>.init { [weak self] (generator, lifetime) in
-            var result: IG.DB.Response<R> = .expired
-            var permission: IG.DB.Request.Iteration = .continue
+        return SignalProducer<R,IG.DB.Error> { [weak self] (generator, lifetime) in
+            var result: IG.DB.Response.Step<R> = .expired
+            var permission: IG.DB.Request.Step = .continue
             var detacher = lifetime.observeEnded { permission = .stop }
             
             self?.queue.sync { [shallContinue = { permission }] in

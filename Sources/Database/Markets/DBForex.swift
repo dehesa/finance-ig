@@ -23,15 +23,15 @@ extension IG.DB.Request.Markets.Forex {
             
             let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             var result: [IG.DB.Market.Forex] = .init()
             repeat {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(value: result)
-                case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+                case .done: return .success(result)
+                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -50,15 +50,15 @@ extension IG.DB.Request.Markets.Forex {
             
             let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: IG.DB.Error.callFailed("The database's forex market retrieval statement couldn't be compiled", code: compileError))
+                return .failure(IG.DB.Error.callFailed("The database's forex market retrieval statement couldn't be compiled", code: compileError))
             }
             
             sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLITE_TRANSIENT)
             
             switch sqlite3_step(statement).result {
-            case .row: return .success(value: .init(statement: statement!))
-            case .done: return .failure(error: .invalidResponse(.valueNotFound, suggestion: .valueNotFound))
-            case let e: return .failure(error: .callFailed(.querying(IG.DB.Market.Forex.self), code: e))
+            case .row: return .success(.init(statement: statement!))
+            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
+            case let e: return .failure(.callFailed(.querying(IG.DB.Market.Forex.self), code: e))
             }
         }
     }
@@ -78,7 +78,7 @@ extension IG.DB.Request.Markets.Forex {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             for (index, currency) in binds {
@@ -89,8 +89,8 @@ extension IG.DB.Request.Markets.Forex {
             repeat {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(value: result)
-                case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+                case .done: return .success(result)
+                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -118,7 +118,7 @@ extension IG.DB.Request.Markets.Forex {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
             }
             
             for (index, currency) in binds {
@@ -129,8 +129,8 @@ extension IG.DB.Request.Markets.Forex {
             repeat {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(value: result)
-                case let e: return .failure(error: .callFailed(.querying(IG.DB.Application.self), code: e))
+                case .done: return .success(result)
+                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -144,7 +144,7 @@ extension IG.DB.Request.Markets.Forex {
     /// - precondition: The market must be of currency type or an error will be returned.
     /// - parameter markets: The currency markets to be updated.
     /// - parameter continueOnError: The parameter `markets` may contain other markets that are not forex markets (e.g. crypto currencies, commodities, etc.). Setting this argument to `true` won't throw an error when one of those markets are encountered and it will continue updating the rest.
-    internal static func update(forexMarkets markets: [IG.API.Market], continueOnError: Bool, channel: SQLite.Database, permission: IG.DB.Request.Expiration) -> IG.DB.Response<Void> {
+    internal static func update(forexMarkets markets: [IG.API.Market], continueOnError: Bool, channel: SQLite.Database, permission: IG.DB.Request.Permission) -> IG.DB.Response.Step<Void> {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         
@@ -157,7 +157,7 @@ extension IG.DB.Request.Markets.Forex {
                     minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep
             """
         if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-            return .failure(error: .callFailed(.storing(IG.DB.Market.Forex.self), code: compileError))
+            return .failure(.callFailed(.storing(IG.DB.Market.Forex.self), code: compileError))
         }
         
         for m in markets {
@@ -166,7 +166,7 @@ extension IG.DB.Request.Markets.Forex {
             switch IG.DB.Market.Forex.inferred(from: m) {
             case .failure(let error):
                 if continueOnError { continue }
-                else { return .failure(error: error) }
+                else { return .failure(error) }
             case .success(let inferred):
                 // The pip value can also be inferred from: `instrument.pip.value`
                 let forex = IG.DB.Market.Forex(epic: m.instrument.epic, currencies: .init(base: inferred.base, counter: inferred.counter),
@@ -187,14 +187,14 @@ extension IG.DB.Request.Markets.Forex {
             }
             
             if let updateError = sqlite3_step(statement).enforce(.done) {
-                return .failure(error: .callFailed(.storing(IG.DB.Application.self), code: updateError))
+                return .failure(.callFailed(.storing(IG.DB.Application.self), code: updateError))
             }
             
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
         }
         
-        return .success(value: ())
+        return .success(())
     }
 }
 

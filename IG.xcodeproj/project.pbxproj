@@ -177,6 +177,7 @@
 		8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyEncodable.swift; sourceTree = "<group>"; };
 		8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+API.swift"; sourceTree = "<group>"; };
 		8D24D0D1230EF496003D25EA /* Confirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Confirmation.swift; sourceTree = "<group>"; };
+		8D2C214723313BFF006F8C41 /* Reactive+DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+DB.swift"; sourceTree = "<group>"; };
 		8D30D08023240B0C00D83E0A /* SQLite+Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLite+Result.swift"; sourceTree = "<group>"; };
 		8D30D082232566D900D83E0A /* Codable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codable.swift; sourceTree = "<group>"; };
 		8D3C262222E9F66E0080D3C1 /* APIInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIInternals.swift; sourceTree = "<group>"; };
@@ -343,6 +344,7 @@
 				8D19C51E232694DC00F029B3 /* SQLite.swift */,
 				8D30D08023240B0C00D83E0A /* SQLite+Result.swift */,
 				8D19C51C23266CBD00F029B3 /* DBFormatter.swift */,
+				8D2C214723313BFF006F8C41 /* Reactive+DB.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";

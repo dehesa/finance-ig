@@ -26,15 +26,15 @@ extension IG.DB.Request.Markets {
             
             let query = "SELECT * FROM \(IG.DB.Market.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.querying(IG.DB.Market.self), code: compileError))
+                return .failure(.callFailed(.querying(IG.DB.Market.self), code: compileError))
             }
             
             var result: [IG.DB.Market] = .init()
             repeat {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(value: result)
-                case let e: return .failure(error: .callFailed(.querying(IG.DB.Market.self), code: e))
+                case .done: return .success(result)
+                case let e: return .failure(.callFailed(.querying(IG.DB.Market.self), code: e))
                 }
             } while requestPermission().isAllowed
             
@@ -55,7 +55,7 @@ extension IG.DB.Request.Markets {
             
             let query = "INSERT INTO \(IG.DB.Market.tableName) VALUES(?1, ?2) ON CONFLICT(epic) DO NOTHING"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: compileError, suggestion: .reviewError))
+                return .failure(.callFailed(.storing(IG.DB.Market.self), code: compileError, suggestion: .reviewError))
             }
             
             for market in markets {
@@ -65,7 +65,7 @@ extension IG.DB.Request.Markets {
                 market.bind(to: statement!)
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
-                    return .failure(error: .callFailed(.storing(IG.DB.Market.self), code: updateError))
+                    return .failure(.callFailed(.storing(IG.DB.Market.self), code: updateError))
                 }
                 
                 sqlite3_clear_bindings(statement)
