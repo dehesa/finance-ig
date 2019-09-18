@@ -1,3 +1,5 @@
+// MARK: - Optionals
+
 infix operator ?!
 
 /// Checks whether the value exists. If so, it returns it; if not, it throws the given error.
@@ -8,6 +10,22 @@ infix operator ?!
 internal func ?!<T>(lhs: T?, rhs: @autoclosure ()->Swift.Error) throws -> T {
     guard let result = lhs else { throw rhs() }
     return result
+}
+
+internal enum OptionalTernary<W,T> {
+    case none(T)
+    case some(W)
+}
+
+extension Optional {
+    /// Unwraps the receiving optional and execute the appropriate closure depending on whether the value is `.none` or `.some`.
+    @discardableResult @inlinable
+    internal func unwrap<T>(none: ()->T, `some`: (_ wrapped: Self.Wrapped)->T) -> T {
+        switch self {
+        case .some(let wrapped): return some(wrapped)
+        case .none: return none()
+        }
+    }
 }
 
 // MARK: - Sets

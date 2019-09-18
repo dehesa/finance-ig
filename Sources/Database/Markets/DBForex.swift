@@ -23,7 +23,7 @@ extension IG.DB.Request.Markets.Forex {
             
             let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             var result: [IG.DB.Market.Forex] = .init()
@@ -50,7 +50,7 @@ extension IG.DB.Request.Markets.Forex {
             
             let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(IG.DB.Error.callFailed("The database's forex market retrieval statement couldn't be compiled", code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLITE_TRANSIENT)
@@ -78,7 +78,7 @@ extension IG.DB.Request.Markets.Forex {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             for (index, currency) in binds {
@@ -118,7 +118,7 @@ extension IG.DB.Request.Markets.Forex {
             var statement: SQLite.Statement? = nil
             defer { sqlite3_finalize(statement) }
             if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             for (index, currency) in binds {
@@ -157,7 +157,7 @@ extension IG.DB.Request.Markets.Forex {
                     minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep
             """
         if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-            return .failure(.callFailed(.storing(IG.DB.Market.Forex.self), code: compileError))
+            return .failure(.callFailed(.compilingSQL, code: compileError))
         }
         
         for m in markets {
@@ -421,10 +421,8 @@ fileprivate extension IG.DB.Market.Forex.Identifiers {
     func bind(to statement: SQLite.Statement, indices: Self.Indices) {
         sqlite3_bind_text(statement, indices.name, self.name, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(statement, indices.market, self.market, -1, SQLITE_TRANSIENT)
-        switch self.chart {
-        case let c?: sqlite3_bind_text(statement, indices.chart, c, -1, SQLITE_TRANSIENT)
-        case .none:  sqlite3_bind_null(statement, indices.chart)
-        }
+        self.chart.unwrap(none: { sqlite3_bind_null(statement, indices.chart) },
+                          some: { sqlite3_bind_text(statement, indices.chart, $0, -1, SQLITE_TRANSIENT) })
         sqlite3_bind_text (statement, indices.reuters, self.reuters, -1, SQLITE_TRANSIENT)
     }
 }
@@ -597,8 +595,18 @@ extension IG.DB.Market.Forex.DealingInformation.Margin.Bands {
 // MARK: API
 
 extension IG.DB.Market.Forex {
+    /// Returns a Boolean indicating whether the given API market can be represented as a database Forex market.
+    /// - parameter market: The market information received from the platform's server.
+    internal static func isCompatible(market: IG.API.Market) -> Bool {
+        guard market.instrument.type == .currencies,
+              let codes = Self.currencyCodes(from: market),
+              codes.base != codes.counter else { return false }
+        return true
+    }
+    
     /// Check whether the given API market instance is a valid Forex DB market and returns inferred values.
-    static fileprivate func inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.DB.Unit, bands: Self.DealingInformation.Margin.Bands),IG.DB.Error> {
+    /// - parameter market: The market information received from the platform's server.
+    fileprivate static func inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.DB.Unit, bands: Self.DealingInformation.Margin.Bands),IG.DB.Error> {
         let error: (_ suffix: String) -> IG.DB.Error = {
             return .invalidRequest(.init(#"The API market "\#(market.instrument.epic)" \#($0)"#), suggestion: .reviewError)
         }
@@ -607,40 +615,8 @@ extension IG.DB.Market.Forex {
             return .failure(error(#"is not of "currency" type"#))
         }
         
-        let codes: (base: IG.Currency.Code, counter: IG.Currency.Code)? = {
-            // A. The safest value is the pip meaning. However, it is not always indicated
-            if let pip = market.instrument.pip?.meaning {
-                // The pip meaning is divided in the meaning number and the currencies.
-                let components = pip.split(separator: " ")
-                if components.count > 1 {
-                    let codes = components[1].split(separator: "/")
-                    if codes.count == 2, let counter = IG.Currency.Code(rawValue: .init(codes[0])),
-                        let base = IG.Currency.Code(rawValue: .init(codes[1])) {
-                        return (base, counter)
-                    }
-                }
-            }
-            // B. Check the market identifier
-            if let marketId = market.identifier, marketId.count == 6 {
-                if let base = IG.Currency.Code(rawValue: .init(marketId.prefix(3)) ),
-                    let counter = IG.Currency.Code(rawValue: .init(marketId.suffix(3))) {
-                    return (base, counter)
-                }
-            }
-            // C. Check the epic
-            let epicSplit = market.instrument.epic.rawValue.split(separator: ".")
-            if epicSplit.count > 3 {
-                let identifier = epicSplit[2]
-                if let base = IG.Currency.Code(rawValue: .init(identifier.prefix(3)) ),
-                    let counter = IG.Currency.Code(rawValue: .init(identifier.suffix(3))) {
-                    return (base, counter)
-                }
-            }
-            // Otherwise, return `nil` since the currencies couldn't be inferred.
-            return nil
-        }()
-        // 2. Check that currencies can be actually inferred
-        guard let currencies = codes else {
+        // 2. Check that currencies can be actually inferred and they are not equal
+        guard let currencies = Self.currencyCodes(from: market), currencies.base != currencies.counter else {
             return .failure(error(#"is not of "currency" type"#))
         }
         // 3. Check the market identifier
@@ -712,6 +688,41 @@ extension IG.DB.Market.Forex {
         }
         
         return .success((currencies.base, currencies.counter, marketId, contractSize, unit, bands))
+    }
+    
+    /// Returns the currencies for the given market.
+    /// - parameter market: The market information received from the platform's server.
+    private static func currencyCodes(from market: IG.API.Market) -> (base: IG.Currency.Code, counter: IG.Currency.Code)? {
+        // A. The safest value is the pip meaning. However, it is not always there
+        if let pip = market.instrument.pip?.meaning {
+            // The pip meaning is divided in the meaning number and the currencies
+            let components = pip.split(separator: " ")
+            if components.count > 1 {
+                let codes = components[1].split(separator: "/")
+                if codes.count == 2, let counter = IG.Currency.Code(rawValue: .init(codes[0])),
+                    let base = IG.Currency.Code(rawValue: .init(codes[1])) {
+                    return (base, counter)
+                }
+            }
+        }
+        // B. Check the market identifier
+        if let marketId = market.identifier, marketId.count == 6 {
+            if let base = IG.Currency.Code(rawValue: .init(marketId.prefix(3)) ),
+                let counter = IG.Currency.Code(rawValue: .init(marketId.suffix(3))) {
+                return (base, counter)
+            }
+        }
+        // C. Check the epic
+        let epicSplit = market.instrument.epic.rawValue.split(separator: ".")
+        if epicSplit.count > 3 {
+            let identifier = epicSplit[2]
+            if let base = IG.Currency.Code(rawValue: .init(identifier.prefix(3)) ),
+                let counter = IG.Currency.Code(rawValue: .init(identifier.suffix(3))) {
+                return (base, counter)
+            }
+        }
+        // Otherwise, return `nil` since the currencies couldn't be inferred.
+        return nil
     }
 }
 
