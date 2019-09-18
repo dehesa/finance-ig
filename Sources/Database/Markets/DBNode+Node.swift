@@ -1,18 +1,18 @@
 import Foundation
 
-extension IG.DB.Node {
-    /// Associative table listing nodes and subnodes.
-    /// - A node can have none or many subnodes.
-    /// - A subnode can be owned by one or many parent nodes.
-    internal struct AssociativeSubnode {
-        /// Let through the hidden `rowId` column
-        private(set) var identifier: Int64?
-        /// The parent node.
-        let parentIdentifier: String
-        /// A child node from the parent node.
-        let childIdentifier: String
-    }
-}
+//extension IG.DB.Node {
+//    /// Associative table listing nodes and subnodes.
+//    /// - A node can have none or many subnodes.
+//    /// - A subnode can be owned by one or many parent nodes.
+//    internal struct AssociativeSubnode {
+//        /// Let through the hidden `rowId` column
+//        private(set) var identifier: Int64?
+//        /// The parent node.
+//        let parentIdentifier: String
+//        /// A child node from the parent node.
+//        let childIdentifier: String
+//    }
+//}
 
 //extension IG.DB.Node.AssociativeSubnode {
 //    static func tableCreation(in db: GRDB.Database) throws {

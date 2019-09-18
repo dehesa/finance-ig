@@ -117,7 +117,7 @@
 //                    return .failure(error)
 //                } catch let underlyingError {
 //                    sqlite3_finalize(statement)
-//                    return .failure(.invalidRequest(.bindingToSQL, underlying: underlyingError, suggestion: .reviewError))
+//                    return .failure(.invalidRequest("An error occurred while binding values to a SQL statement", underlying: underlyingError, suggestion: .reviewError))
 //                }
 //            }
 //            return result.map { (database, statement, validated) }

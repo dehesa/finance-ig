@@ -1,16 +1,16 @@
-import Foundation
-
-extension IG.DB {
-    /// Database representation of the IG's platform navigation node.
-    public struct Node {
-        /// Node identifier.
-        public let identifier: String
-        /// Node's name.
-        public let name: String?
-        
-//        static let subnodes = hasMany(Self.self, key: "children", using: .init(<#T##originColumns: [ColumnExpression]##[ColumnExpression]#>, to: <#T##[ColumnExpression]?#>))
-    }
-}
+//import Foundation
+//
+//extension IG.DB {
+//    /// Database representation of the IG's platform navigation node.
+//    public struct Node {
+//        /// Node identifier.
+//        public let identifier: String
+//        /// Node's name.
+//        public let name: String?
+//        
+////        static let subnodes = hasMany(Self.self, key: "children", using: .init(<#T##originColumns: [ColumnExpression]##[ColumnExpression]#>, to: <#T##[ColumnExpression]?#>))
+//    }
+//}
 
 //// MARK: - GRDB Internals
 //

@@ -21,7 +21,7 @@ extension IG.DB.Request.Applications {
             
             let query = "SELECT * FROM \(IG.DB.Application.tableName)"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             var result: [IG.DB.Application] = .init()
@@ -48,7 +48,7 @@ extension IG.DB.Request.Applications {
             
             let query = "SELECT * FROM Apps where key = ?1"
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.querying(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLITE_TRANSIENT)
@@ -81,7 +81,7 @@ extension IG.DB.Request.Applications {
                         created = excluded.created, updated = excluded.updated
                 """
             if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.storing(IG.DB.Application.self), code: compileError))
+                return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
             for app in applications {
