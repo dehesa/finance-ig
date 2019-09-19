@@ -24,7 +24,7 @@ public final class API {
     public var applications: IG.API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
     public var accounts: IG.API.Request.Accounts { return .init(api: self) }
-    /// It holds functionality related to the user's activity & transactions, and market prices..
+    /// It holds functionality related to the user's activity & transactions, and market prices.
     public var history: IG.API.Request.History { return .init(api: self) }
     /// It holds functionality related to market navigation nodes.
     public var nodes: IG.API.Request.Nodes { return .init(api: self) }

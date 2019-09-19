@@ -1,5 +1,4 @@
 import ReactiveSwift
-import Foundation
 import SQLite3
 
 /// The Database instance is the bridge between the internal SQLite storage
@@ -17,6 +16,8 @@ public final class DB {
     
     /// It holds data and functionality related to the user's applications.
     public var applications: IG.DB.Request.Applications { return .init(database: self) }
+    /// It holds data and functionality related to the user's activity & transactions, and market prices.
+    public var history: IG.DB.Request.History { return .init(database: self) }
     /// It holds data and functionality related to the platform's market.
     public var markets: IG.DB.Request.Markets { return .init(database: self) }
     

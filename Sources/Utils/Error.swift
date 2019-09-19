@@ -17,8 +17,12 @@ public protocol Error: Swift.Error {
     var context: [Item] { get }
 }
 
+// MARK: -
+
 /// Definitions using this protocol are used as namespaces for `IG.Error`s, such as messages and suggestions.
-internal protocol ErrorNameSpace: ExpressibleByStringLiteral, RawRepresentable where Self.StringLiteralType==String, Self.RawValue==String {
+internal protocol ErrorNameSpace: RawRepresentable, ExpressibleByStringLiteral where Self.RawValue==String, Self.StringLiteralType==String {
+    /// Designated initializer with a pre-validated value.
+    /// - parameter trustedValue: The pre-validated raw value.
     init(_ trustedValue: String)
 }
 

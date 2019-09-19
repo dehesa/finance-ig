@@ -2,7 +2,7 @@ import Foundation
 
 extension IG.Deal {
     /// The level/price at which the user doesn't want to incur more lose.
-    public struct Stop {
+    public struct Stop: Hashable {
         /// The type of stop (whether absolute level or relative distance).
         public let type: Self.Kind
         /// The type of risk the user is assuming when the stop is hit.
@@ -24,24 +24,157 @@ extension IG.Deal {
 }
 
 extension IG.Deal.Stop {
-    /// Check whether the receiving stop is valid in reference to the given base level and direction.
-    /// - parameter reference. The reference level and deal direction.
-    /// - returns: Boolean indicating whether the stop is in the right side of the deal and the number is valid.
-    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        switch self.type {
-        case .position(let l): return Self.isValid(level: l, direction, from: base)
-        case .distance: return true
+    /// Available types of stops.
+    public enum Kind: Hashable {
+        /// Absolute value of the stop (e.g. 1.653 USD/EUR).
+        /// - parameter level: The stop absolute level.
+        case position(level: Decimal)
+        /// Relative stop over an undisclosed reference level.
+        case distance(Decimal)
+    }
+}
+
+extension IG.Deal.Stop {
+    /// Defines the amount of risk being exposed while closing the stop loss.
+    public enum Risk: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Hashable {
+        /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
+        /// - parameter premium: The number of pips that are being charged for your limited risk (i.e. guaranteed stop).
+        case limited(premium: Decimal? = nil)
+        /// An exposed (or non-guaranteed) stop may expose the trade to slippage when exiting it.
+        case exposed
+    }
+}
+
+extension IG.Deal.Stop {
+    /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
+    public enum Trailing: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Hashable {
+        /// A static (non-movable) stop.
+        case `static`
+        /// A dynamic (trailing) stop.
+        case `dynamic`(Self.Settings? = nil)
+        
+        
+        /// The trailing settings (i.e. trailing distance and trailing increment/step).
+        public struct Settings: Equatable, Hashable {
+            /// The distance from the  market price.
+            public let distance: Decimal
+            /// The stop level increment step in pips.
+            public let increment: Decimal
+            /// Designated initializer.
+            fileprivate init(distance: Decimal, increment: Decimal) {
+                self.distance = distance
+                self.increment = increment
+            }
         }
     }
-    
-    /// Boolean indicating whether the stop will trail (be dynamic) or not (be static).
-    public var isTrailing: Bool {
-        switch self.trailing {
-        case .static:  return false
-        case .dynamic: return true
-        }
+}
+
+// MARK: - Factories
+
+extension IG.Deal.Stop {
+    /// Creates a stop level based on an absolute level value.
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter level: The absolute level value at which the stop will be.
+    /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
+    public static func position(level: Decimal, isStopGuaranteed: Bool = false) -> Self? {
+        guard Self.isValid(level: level) else { return nil }
+        return self.init(.position(level: level), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
     }
     
+    /// Creates a stop level based on an absolute level value.
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter level: The absolute level value at which the stop will be.
+    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
+    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
+    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
+        guard Self.isValid(level: level) else { return nil }
+        if case .limited(let premium?) = risk,
+            !Self.Risk.isValid(premium: premium) { return nil }
+        if case .dynamic(let settings?) = trailing,
+            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
+        return self.init(.position(level: level), risk: risk, trailing: .static)
+    }
+    
+    /// Creates a stop level based on an absolute level value.
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter level: The absolute level value at which the stop will be.
+    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
+    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
+    /// - parameter direction: The deal direction.
+    /// - parameter base: The deal/base level.
+    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
+        guard Self.isValid(level: level, direction, from: base) else { return nil }
+        if case .limited(let premium?) = risk,
+            !Self.Risk.isValid(premium: premium) { return nil }
+        if case .dynamic(let settings?) = trailing,
+            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
+        return self.init(.position(level: level), risk: risk, trailing: .static)
+    }
+    
+    /// Creates a stop level based on a relative distince from the base level (not specified here).
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
+    /// - parameter isStopGuaranteed: Indicates, when the stop is activited, whether the filling risk is limited or exposed.
+    public static func distance(_ distance: Decimal, isStopGuaranteed: Bool = false) -> Self? {
+        guard Self.isValid(distance: distance) else { return nil }
+        return self.init(.distance(distance), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
+    }
+    
+    /// Creates a stop level based on a relative distince from the base level (not specified here).
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
+    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
+    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
+    internal static func distance(_ distance: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
+        guard Self.isValid(distance: distance) else { return nil }
+        if case .limited(let premium?) = risk,
+            !Self.Risk.isValid(premium: premium) { return nil }
+        if case .dynamic(let settings?) = trailing,
+            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
+        return self.init(.distance(distance), risk: risk, trailing: .static)
+    }
+    
+    /// Creates a stop level based on a relative distince from the base level (not specified here).
+    ///
+    /// A guaranteed stop pays an extra premium (indicated by the server).
+    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
+    /// - parameter increment: The increment/steps taken everytime the deals go in your favor and the distance from the base level is smaller than `distance`.
+    /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
+    public static func trailing(_ distance: Decimal, increment: Decimal) -> Self? {
+        typealias S = Self.Trailing.Settings
+        guard S.isValid(distance) && S.isValid(increment) else { return nil }
+        return self.init(.distance(distance), risk: .exposed, trailing: .dynamic(.init(distance: distance, increment: increment)))
+    }
+}
+
+extension IG.Deal.Stop.Risk {
+    public init(nilLiteral: ()) {
+        self = .exposed
+    }
+    
+    public init(booleanLiteral value: Bool) {
+        self = (value) ? .exposed : .limited(premium: nil)
+    }
+}
+
+extension IG.Deal.Stop.Trailing {
+    public init(nilLiteral: ()) {
+        self = .static
+    }
+    
+    public init(booleanLiteral value: Bool) {
+        self = (value) ? .dynamic(nil) : .static
+    }
+}
+
+// MARK: - Functionality
+
+extension IG.Deal.Stop {
     /// The `Decimal` value stored with the stop type (whether a relative distance or a level.
     internal var value: Decimal {
         switch self.type {
@@ -83,92 +216,19 @@ extension IG.Deal.Stop {
     }
 }
 
-// MARK: - Factories
-
-extension IG.Deal.Stop {
-    /// Creates a stop level based on an absolute level value.
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter level: The absolute level value at which the stop will be.
-    /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
-    public static func position(level: Decimal, isStopGuaranteed: Bool = false) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        return self.init(.position(level: level), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
-    }
-    
-    /// Creates a stop level based on an absolute level value.
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter level: The absolute level value at which the stop will be.
-    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
-    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
-    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        if case .limited(let premium?) = risk,
-           !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.position(level: level), risk: risk, trailing: .static)
-    }
-    
-    /// Creates a stop level based on an absolute level value.
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter level: The absolute level value at which the stop will be.
-    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
-    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
-        guard Self.isValid(level: level, direction, from: base) else { return nil }
-        if case .limited(let premium?) = risk,
-           !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.position(level: level), risk: risk, trailing: .static)
-    }
-    
-    /// Creates a stop level based on a relative distince from the base level (not specified here).
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
-    /// - parameter isStopGuaranteed: Indicates, when the stop is activited, whether the filling risk is limited or exposed.
-    public static func distance(_ distance: Decimal, isStopGuaranteed: Bool = false) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        return self.init(.distance(distance), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
-    }
-    
-    /// Creates a stop level based on a relative distince from the base level (not specified here).
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
-    /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
-    /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
-    internal static func distance(_ distance: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        if case .limited(let premium?) = risk,
-           !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-           !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.distance(distance), risk: risk, trailing: .static)
-    }
-    
-    /// Creates a stop level based on a relative distince from the base level (not specified here).
-    ///
-    /// A guaranteed stop pays an extra premium (indicated by the server).
-    /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
-    /// - parameter increment: The increment/steps taken everytime the deals go in your favor and the distance from the base level is smaller than `distance`.
-    /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
-    public static func trailing(_ distance: Decimal, increment: Decimal) -> Self? {
-        typealias S = Self.Trailing.Settings
-        guard S.isValid(distance) && S.isValid(increment) else { return nil }
-        return self.init(.distance(distance), risk: .exposed, trailing: .dynamic(.init(distance: distance, increment: increment)))
-    }
-}
-
 // MARK: - Validation
 
 extension IG.Deal.Stop {
+    /// Check whether the receiving stop is valid in reference to the given base level and direction.
+    /// - parameter reference. The reference level and deal direction.
+    /// - returns: Boolean indicating whether the stop is in the right side of the deal and the number is valid.
+    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
+        switch self.type {
+        case .position(let l): return Self.isValid(level: l, direction, from: base)
+        case .distance: return true
+        }
+    }
+    
     /// Checks that the absolute level is finite.
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
@@ -196,89 +256,17 @@ extension IG.Deal.Stop {
     }
 }
 
-// MARK: - Supporting Entities
-
-extension IG.Deal.Stop {
-    /// Available types of stops.
-    public enum Kind {
-        /// Absolute value of the stop (e.g. 1.653 USD/EUR).
-        /// - parameter level: The stop absolute level.
-        case position(level: Decimal)
-        /// Relative stop over an undisclosed reference level.
-        case distance(Decimal)
+extension IG.Deal.Stop.Risk {
+    /// Check whether the given premium is valid.
+    internal static func isValid(premium: Decimal) -> Bool {
+        return premium.isNormal && !premium.isSignMinus
     }
 }
 
-extension IG.Deal.Stop {
-    /// Defines the amount of risk being exposed while closing the stop loss.
-    public enum Risk: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral {
-        /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
-        /// - parameter premium: The number of pips that are being charged for your limited risk (i.e. guaranteed stop).
-        case limited(premium: Decimal? = nil)
-        /// An exposed (or non-guaranteed) stop may expose the trade to slippage when exiting it.
-        case exposed
-        
-        public init(nilLiteral: ()) {
-            self = .exposed
-        }
-        
-        public init(booleanLiteral value: Bool) {
-            self = (value) ? .exposed : .limited(premium: nil)
-        }
-        
-        /// Check whether the given premium is valid.
-        internal static func isValid(premium: Decimal) -> Bool {
-            return premium.isNormal && !premium.isSignMinus
-        }
-    }
-}
-
-extension IG.Deal.Stop {
-    /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
-    public enum Trailing: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral {
-        /// A static (non-movable) stop.
-        case `static`
-        /// A dynamic (trailing) stop.
-        case `dynamic`(Self.Settings? = nil)
-        
-        public init(nilLiteral: ()) {
-            self = .static
-        }
-        
-        public init(booleanLiteral value: Bool) {
-            self = (value) ? .dynamic(nil) : .static
-        }
-        
-        /// The trailing settings (i.e. trailing distance and trailing increment/step).
-        public struct Settings: Equatable, ExpressibleByArrayLiteral {
-            /// The distance from the  market price.
-            public let distance: Decimal
-            /// The stop level increment step in pips.
-            public let increment: Decimal
-            /// Designated initializer.
-            fileprivate init(distance: Decimal, increment: Decimal) {
-                self.distance = distance
-                self.increment = increment
-            }
-            
-            public init(arrayLiteral elements: Decimal...) {
-                guard elements.count == 2 else {
-                    fatalError("Only 2 elements are allowed for trailing stop settings (i.e. trailing stop distances and trailing stop increment). You have set \(elements.count) elements")
-                }
-                
-                let distance = elements[0]
-                let increment = elements[1]
-                guard Self.isValid(distance) && Self.isValid(increment) else {
-                    fatalError(#"The stop trailing distance "\#(distance)" or increment "\#(increment)" are invalid"#)
-                }
-                self.init(distance: elements[0], increment: elements[1])
-            }
-            
-            /// Check whether the given premium is valid.
-            internal static func isValid(_ measurement: Decimal) -> Bool {
-                return measurement.isNormal && !measurement.isSignMinus
-            }
-        }
+extension IG.Deal.Stop.Trailing.Settings {
+    /// Check whether the given premium is valid.
+    internal static func isValid(_ measurement: Decimal) -> Bool {
+        return measurement.isNormal && !measurement.isSignMinus
     }
 }
 

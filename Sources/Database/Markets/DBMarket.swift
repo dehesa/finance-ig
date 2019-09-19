@@ -42,6 +42,27 @@ extension IG.DB.Request.Markets {
         }
     }
     
+    /// Returns the type of Market identified by the given epic.
+    /// - parameter epic: Market instrument identifier.
+    /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.DB.Error.invalidResponse`.
+    public func get(epic: IG.Market.Epic) -> SignalProducer<IG.DB.Market.Kind?,IG.DB.Error> {
+        return self.database.work { (channel, _) in
+            var statement: SQLite.Statement? = nil
+            defer { sqlite3_finalize(statement) }
+            
+            let query = "SELECT type FROM \(IG.DB.Market.tableName)"
+            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
+                return .failure(.callFailed(.compilingSQL, code: compileError))
+            }
+            
+            switch sqlite3_step(statement).result {
+            case .row:  return .success(IG.DB.Market.Kind(rawValue: sqlite3_column_int(statement, 0)))
+            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
+            case let e: return .failure(.callFailed(.querying(IG.DB.Market.self), code: e))
+            }
+        }
+    }
+    
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter markets: Information returned from the server.
@@ -63,7 +84,7 @@ extension IG.DB.Request.Markets {
             for apiMarket in markets {
                 guard case .continue = requestPermission() else { return .interruption }
                 
-                let dbMarket = IG.DB.Market(epic: apiMarket.instrument.epic, type: IG.DB.Market.Kind(market: apiMarket), price: nil)
+                let dbMarket = IG.DB.Market(epic: apiMarket.instrument.epic, type: IG.DB.Market.Kind(market: apiMarket))
                 dbMarket.bind(to: statement!)
                 
                 if let updateError = sqlite3_step(statement).enforce(.done) {
@@ -88,8 +109,6 @@ extension IG.DB {
         public let epic: IG.Market.Epic
         /// The type of market (i.e. instrument type).
         public let type: Self.Kind?
-        /// The name of the price table.
-        public let price: String?
     }
 }
 
@@ -114,12 +133,10 @@ extension IG.DB.Market {
 
 extension IG.DB.Market: DBTable {
     internal static let tableName: String = "Markets"
-    internal static var tableDefinition: String {
-        """
+    internal static var tableDefinition: String { return """
         CREATE TABLE \(Self.tableName) (
             epic  TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
             type  INTEGER,
-            price TEXT    UNIQUE   CHECK( LENGTH(price) > 3 ),
             
             PRIMARY KEY(epic)
         ) WITHOUT ROWID;
@@ -128,20 +145,17 @@ extension IG.DB.Market: DBTable {
 }
 
 fileprivate extension IG.DB.Market {
-    typealias Indices = (epic: Int32, type: Int32, price: Int32)
+    typealias Indices = (epic: Int32, type: Int32)
     
-    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2)) {
+    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1)) {
         self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, indices.epic)))!
         self.type = Self.Kind(rawValue: sqlite3_column_int(s, indices.type))    // Implicit SQLite conversion from `NULL` to `0`
-        self.price = sqlite3_column_text(s, indices.price).map { String(cString: $0) }
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3)) {
-        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLITE_TRANSIENT)
-        self.type.unwrap(none:  { sqlite3_bind_null(statement, indices.type) },
-                         some:  { sqlite3_bind_int (statement, indices.type, $0.rawValue) })
-        self.price.unwrap(none: { sqlite3_bind_null(statement, indices.price) },
-                          some: { sqlite3_bind_text(statement, indices.price, $0, -1, SQLITE_TRANSIENT) })
+    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2)) {
+        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
+        self.type.unwrap( none: { sqlite3_bind_null(statement, indices.type) },
+                          some: { sqlite3_bind_int (statement, indices.type, $0.rawValue) })
     }
 }
 

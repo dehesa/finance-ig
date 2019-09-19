@@ -1,61 +1,38 @@
 import Foundation
 
 /// An amount of money in a given currency.
-public struct Money<C:IG.CurrencyType>: Equatable, Hashable {
-    /// The amount of money.
-    public var amount: Decimal
-    
-    /// Creates an amount of money with a given decimal number.
-    public init(_ amount: Decimal) {
-        self.amount = amount
+public struct Money<C:IG.CurrencyType>: RawRepresentable, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByStringLiteral, LosslessStringConvertible, SignedNumeric, Hashable, Comparable {
+    public var rawValue: Decimal {
+        willSet { precondition(newValue.isFinite) }
     }
     
-    /// The currency type.
-    public var currency: C.Type {
-        return C.self
+    /// Designated initializer used for already-validated values.
+    /// - parameter value: A "finite" value.
+    private init(trusted value: Decimal) {
+        self.rawValue = value
     }
     
-    /// A monetary amount rounded to the number of places of the minor currency unit.
-    public var rounded: Self {
-        var approximate = self.amount
-        var rounded = Decimal()
-        
-        #if canImport(Darwin)
-        NSDecimalRound(&rounded, &approximate, C.minorUnit, .bankers)
-        return Self.init(rounded)
-        #else
-        #error("Decimal rounding is not supported by non-Darwin platforms")
-        #endif
+    public init?(rawValue: Decimal) {
+        guard rawValue.isFinite else { return nil }
+        self.init(trusted: rawValue)
     }
-}
-
-extension IG.Money: CustomStringConvertible {
-    public var description: String {
-        return "\(self.amount)"
+    
+    public init?<T>(exactly source: T) where T: BinaryInteger {
+        guard let rawValue = Decimal(exactly: source) else { return nil }
+        self.init(rawValue: rawValue)
     }
-}
-
-// MARK: - Literal Initialization
-
-extension IG.Money: ExpressibleByIntegerLiteral {
+    
     public init(integerLiteral value: Int) {
-        self.init(Decimal(integerLiteral: value))
+        self.init(trusted: Decimal(integerLiteral: value))
     }
-}
-
-extension IG.Money: ExpressibleByFloatLiteral {
-    /// Creates a new value from the given floating-point literal.
+    
     /// - important: Swift floating-point literals are currently initialized using binary floating-point number type, which cannot precisely express certain values. As a workaround, monetary amounts initialized from a floating-point literal are rounded to the number of places of the minor currency unit. To express a smaller fractional monetary amount, initialize from a string literal or decimal value instead.
     /// - bug: See Swift bug [SR-920](https://bugs.swift.org/browse/SR-920).
     public init(floatLiteral value: Double) {
-        guard let result = Decimal(string: String(value)) else {
-            fatalError(#"The float literal "\#(value)" couldn't be transformed into "\#(Self.self)""#)
-        }
-        self.init(result)
+        guard let result = Decimal(string: String(value)) else { fatalError(#"The float literal "\#(value)" couldn't be transformed into "\#(Self.self)""#) }
+        self.init(trusted: result)
     }
-}
-
-extension IG.Money: ExpressibleByStringLiteral {
+    
     public init(unicodeScalarLiteral value: Unicode.Scalar) {
         self.init(stringLiteral: String(value))
     }
@@ -65,106 +42,139 @@ extension IG.Money: ExpressibleByStringLiteral {
     }
     
     public init(stringLiteral value: String) {
-        guard let result = Decimal(string: value) else {
-            fatalError(#"The string literal "\#(value)" couldn't be transformed into "\#(Self.self)""#)
-        }
-        self.init(result)
+        guard let result = Decimal(string: value) else { fatalError(#"The string literal "\#(value)" couldn't be transformed into "\#(Self.self)""#) }
+        self.init(trusted: result)
+    }
+ 
+    public init?(_ description: String) {
+        guard let amount = Decimal(string: description) else { return nil }
+        self.init(rawValue: amount)
+    }
+    
+    public var description: String {
+        return String(describing: self.rawValue)
+    }
+    
+    public var magnitude: Self {
+        return Self.init(trusted: self.rawValue.magnitude)
     }
 }
 
-extension IG.Money: LosslessStringConvertible {
-    public init?(_ description: String) {
-        guard let amount = Decimal(string: description) else {
-            return nil
-        }
+// MARK: - Functionality
+
+extension IG.Money {
+    /// The currency type.
+    public var currency: C.Type {
+        return C.self
+    }
+    
+    /// A monetary amount rounded to the number of places of the minor currency unit.
+    public var rounded: Self {
+        var source = self.rawValue
+        var result = Decimal()
         
-        self.init(amount)
+        #if canImport(Darwin)
+        NSDecimalRound(&result, &source, C.minorUnit, .bankers)
+        return Self.init(trusted: result)
+        #else
+        #error("Decimal rounding is not supported by non-Darwin platforms")
+        #endif
     }
 }
 
 // MARK: - Operations
 
-extension IG.Money: Comparable {
-    public static func < (lhs: IG.Money<C>, rhs: IG.Money<C>) -> Bool {
-        return lhs.amount < rhs.amount
-    }
-}
-
-extension IG.Money: AdditiveArithmetic {
-    /// The sum of two monetary amounts.
-    public static func + (lhs: IG.Money<C>, rhs: IG.Money<C>) -> IG.Money<C> {
-        return .init(lhs.amount + rhs.amount)
-    }
-    
-    /// Adds one monetary amount to another.
-    public static func += (lhs: inout IG.Money<C>, rhs: IG.Money<C>) {
-        lhs.amount += rhs.amount
-    }
-    
-    /// The difference between two monetary amounts.
-    public static func - (lhs: IG.Money<C>, rhs: IG.Money<C>) -> IG.Money<C> {
-        return .init(lhs.amount - rhs.amount)
-    }
-    
-    /// Subtracts one monetary amount from another.
-    public static func -= (lhs: inout IG.Money<C>, rhs: IG.Money<C>) {
-        lhs.amount -= rhs.amount
-    }
-}
-
 extension IG.Money {
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.rawValue < rhs.rawValue
+    }
+    
+    public static func + (lhs: Self, rhs: Self) -> Self {
+        let result = lhs.rawValue + rhs.rawValue
+        assert(result.isFinite, #"The result of the "+" operation is infinite or NaN"#)
+        return .init(trusted: result)
+    }
+    
+    public static func += (lhs: inout Self, rhs: Self) {
+        lhs.rawValue += rhs.rawValue
+    }
+    
+    public static func - (lhs: Self, rhs: Self) -> Self {
+        let result = lhs.rawValue - rhs.rawValue
+        assert(result.isFinite, #"The result of the "-" operation is infinite or NaN"#)
+        return .init(trusted: result)
+    }
+    
+    public static func -= (lhs: inout Self, rhs: Self) {
+        lhs.rawValue -= rhs.rawValue
+    }
+
     /// Subtracts one monetary amount from another.
-    public static prefix func - (value: IG.Money<C>) -> IG.Money<C> {
-        return .init(-value.amount)
+    public static prefix func - (value: Self) -> Self {
+        return .init(trusted: -value.rawValue)
+    }
+    
+    public static func * (lhs: Self, rhs: Self) -> Self {
+        return lhs * rhs.rawValue
+    }
+    
+    public static func *= (lhs: inout Self, rhs: Self) {
+        lhs *= rhs.rawValue
     }
 }
 
 extension IG.Money {
     /// The product of a monetary amount and a scalar value.
-    public static func * (lhs: IG.Money<C>, rhs: Decimal) -> IG.Money<C> {
-        return .init(lhs.amount * rhs)
+    public static func * (lhs: Self, rhs: Decimal) -> Self {
+        let result = lhs.rawValue * rhs
+        assert(result.isFinite, #"The result of the "*" operation is infinite or NaN"#)
+        return .init(trusted: result)
     }
     
+    /// The product of a monetary amount and a scalar value.
+    public static func *<I>(lhs: Self, rhs: I) -> Self where I:BinaryInteger {
+        guard let value = Decimal(exactly: rhs) else { fatalError(#"The binary integer "\#(rhs)" couldn't be transformed into a Decimal number"#) }
+        return lhs * value
+    }
+    
+    /// The product of a monetary amount and a scalar value.
+    public static func * (lhs: Decimal, rhs: Self) -> Self {
+        return rhs * lhs
+    }
+    
+    /// The product of a monetary amount and a scalar value.
+    public static func *<I>(lhs: I, rhs: Self) -> Self where I:BinaryInteger {
+        return rhs * lhs
+    }
+    
+    /// Multiplies a monetary amount by a scalar value.
+    public static func *= (lhs: inout Self, rhs: Decimal) {
+        lhs.rawValue *= rhs
+    }
+    
+    /// Multiplies a monetary amount by a scalar value.
+    public static func *=<I>(lhs: inout Self, rhs: I) where I:BinaryInteger {
+        guard let value = Decimal(exactly: rhs) else { fatalError(#"The binary integer "\#(rhs)" couldn't be transformed into a Decimal number"#) }
+        lhs.rawValue *= value
+    }
+}
+
+//extension IG.Money {
 //    /// The product of a monetary amount and a scalar value.
 //    /// - important: Multiplying a monetary amount by a floating-point number results in an amount rounded to the number of places of the minor currency unit. To produce a smaller fractional monetary amount, multiply by a `Decimal` value instead.
-//    public static func * (lhs: IG.Money<C>, rhs: Double) -> IG.Money<C> {
+//    public static func * (lhs: Self, rhs: Double) -> Self {
 //        return (lhs * Decimal(rhs)).rounded
 //    }
-    
-    /// The product of a monetary amount and a scalar value.
-    public static func * (lhs: IG.Money<C>, rhs: Int) -> IG.Money<C> {
-        return lhs * Decimal(rhs)
-    }
-    
-    /// The product of a monetary amount and a scalar value.
-    public static func * (lhs: Decimal, rhs: IG.Money<C>) -> IG.Money<C> {
-        return rhs * lhs
-    }
-    
+//
 //    /// The product of a monetary amount and a scalar value.
 //    /// - important: Multiplying a monetary amount by a floating-point number results in an amount rounded to the number of places of the minor currency unit. To produce a smaller fractional monetary amount, multiply by a `Decimal` value instead.
-//    public static func * (lhs: Double, rhs: IG.Money<C>) -> IG.Money<C> {
+//    public static func * (lhs: Double, rhs: Self) -> Self {
 //        return rhs * lhs
 //    }
-    
-    /// The product of a monetary amount and a scalar value.
-    public static func * (lhs: Int, rhs: IG.Money<C>) -> IG.Money<C> {
-        return rhs * lhs
-    }
-    
-    /// Multiplies a monetary amount by a scalar value.
-    public static func *= (lhs: inout IG.Money<C>, rhs: Decimal) {
-        lhs.amount *= rhs
-    }
-    
+//
 //    /// Multiplies a monetary amount by a scalar value.
 //    /// - important: Multiplying a monetary amount by a floating-point number results in an amount rounded to the number of places of the minor currency unit. To produce a smaller fractional monetary amount, multiply by a `Decimal` value instead.
-//    public static func *= (lhs: inout IG.Money<C>, rhs: Double) {
-//        lhs.amount = IG.Money<C>(lhs.amount * Decimal(rhs)).rounded.amount
+//    public static func *= (lhs: inout Self, rhs: Double) {
+//        lhs.amount = Self(lhs.amount * Decimal(rhs)).rounded.amount
 //    }
-    
-    /// Multiplies a monetary amount by a scalar value.
-    public static func *= (lhs: inout IG.Money<C>, rhs: Int) {
-        lhs.amount *= Decimal(rhs)
-    }
-}
+//}

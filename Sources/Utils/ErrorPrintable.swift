@@ -1,8 +1,6 @@
 import Foundation
 
 internal protocol ErrorPrintable: IG.DebugDescriptable {
-    /// The human readable error domain.
-    static var printableDomain: String { get }
     /// The human readable error type.
     var printableType: String { get }
     /// Multiple line of text representing the error,

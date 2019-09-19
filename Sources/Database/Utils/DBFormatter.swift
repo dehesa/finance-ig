@@ -9,13 +9,13 @@ extension IG.DB {
             return IG.Formatter.fullDate
         }
         
-        /// Database *date* formatter.
+        /// Database *date* formatter (only giving `yyyy-MM-dd`).
         /// - Example: `2019-09-09`
         static var date: DateFormatter {
             return IG.Formatter.yearMonthDay
         }
         
-        /// Database *time* formatter.
+        /// Database *time* formatter (only giving `HH:mm:ss`).
         /// - Example: `11:43:09`
         static var time: DateFormatter {
             return IG.Formatter.time

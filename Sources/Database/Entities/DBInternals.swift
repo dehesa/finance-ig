@@ -1,5 +1,3 @@
-import Foundation
-
 extension IG.DB {
     /// Domain namespace retaining anything related to DB requests.
     public enum Request {}
