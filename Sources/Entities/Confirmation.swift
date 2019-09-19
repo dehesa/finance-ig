@@ -257,15 +257,19 @@ extension IG.Confirmation {
     }
 }
 
-extension IG.Confirmation: CustomDebugStringConvertible {
+extension IG.Confirmation: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return IG.API.printableDomain.appending(".\(Self.self)")
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("Confirmation")
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("date", self.date, formatter: IG.Formatter.date(localize: true))
         result.append("deal ID", self.dealIdentifier)
         result.append("deal reference", self.dealReference)
-        result.append("date", self.date, formatter: IG.Formatter.date(localize: true))
         result.append("epic", self.epic)
         result.append("expiry", self.expiry.debugDescription)
-        
+
         switch self.status {
         case .rejected(let reason):
             result.append("rejected", reason.rawValue)

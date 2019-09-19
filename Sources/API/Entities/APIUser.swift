@@ -20,7 +20,7 @@ extension IG.API {
         /// - parameter name: The user's platform name.
         /// - parameter password: The user's password.
         /// - returns: `nil` if the objects were malformed.
-        public init?(name: String, passsword: String) {
+        public init?(name: Self.Name.RawValue, passsword: String) {
             guard let username = Self.Name(rawValue: name),
                   let pass = Self.Password(rawValue: passsword) else { return nil }
             self.name = username
@@ -44,17 +44,21 @@ extension IG.API {
 
 extension IG.API.User {
     /// The user identifier within the platform.
-    public struct Name: RawRepresentable, ExpressibleByStringLiteral, Codable, Hashable, CustomStringConvertible {
+    public struct Name: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
         public let rawValue: String
+        
+        public init(stringLiteral value: String) {
+            guard Self.validate(value) else { fatalError(#"The username "\#(value)" is not in a valid format"#) }
+            self.rawValue = value
+        }
         
         public init?(rawValue: String) {
             guard Self.validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
-        public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The username "\#(value)" is not in a valid format"#) }
-            self.rawValue = value
+        public init?(_ description: String) {
+            self.init(rawValue: description)
         }
         
         public init(from decoder: Decoder) throws {
@@ -67,13 +71,17 @@ extension IG.API.User {
             self.rawValue = name
         }
         
-        public var description: String {
-            return self.rawValue
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
         }
         
         public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
+        }
+        
+        public var description: String {
+            return self.rawValue
         }
         
         private static func validate(_ value: String) -> Bool {
@@ -97,14 +105,14 @@ extension IG.API.User {
     public struct Password: ExpressibleByStringLiteral, Codable {
         fileprivate let rawValue: String
         
-        public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
-            self.rawValue = rawValue
-        }
-        
         public init(stringLiteral value: String) {
             guard Self.validate(value) else { fatalError("The password is not in a valid format") }
             self.rawValue = value
+        }
+        
+        public init?(rawValue: String) {
+            guard Self.validate(rawValue) else { return nil }
+            self.rawValue = rawValue
         }
         
         public init(from decoder: Decoder) throws {

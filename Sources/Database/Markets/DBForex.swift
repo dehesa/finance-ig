@@ -53,7 +53,7 @@ extension IG.DB.Request.Markets.Forex {
                 return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
-            sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient)
             
             switch sqlite3_step(statement).result {
             case .row: return .success(.init(statement: statement!))
@@ -82,7 +82,7 @@ extension IG.DB.Request.Markets.Forex {
             }
             
             for (index, currency) in binds {
-                sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
             }
             
             var result: [IG.DB.Market.Forex] = .init()
@@ -122,7 +122,7 @@ extension IG.DB.Request.Markets.Forex {
             }
             
             for (index, currency) in binds {
-                sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
             }
             
             var result: [IG.DB.Market.Forex] = .init()
@@ -399,9 +399,9 @@ fileprivate extension IG.DB.Market.Forex {
     
     
     func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5, 6, 7), (8, 9, 10, 11, 12, 13, 14, 15, 16), (17, 18, 19, 20, 21, 22, 23))) {
-        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, indices.base, self.currencies.base.rawValue, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, indices.counter, self.currencies.counter.rawValue, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.base, self.currencies.base.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.counter, self.currencies.counter.rawValue, -1, SQLite.Destructor.transient)
         self.identifiers.bind(to: statement, indices: indices.identifiers)
         self.information.bind(to: statement, indices: indices.information)
         self.restrictions.bind(to: statement, indices: indices.restrictions)
@@ -419,11 +419,11 @@ fileprivate extension IG.DB.Market.Forex.Identifiers {
     }
     
     func bind(to statement: SQLite.Statement, indices: Self.Indices) {
-        sqlite3_bind_text(statement, indices.name, self.name, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, indices.market, self.market, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, indices.name, self.name, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.market, self.market, -1, SQLite.Destructor.transient)
         self.chart.unwrap(none: { sqlite3_bind_null(statement, indices.chart) },
-                          some: { sqlite3_bind_text(statement, indices.chart, $0, -1, SQLITE_TRANSIENT) })
-        sqlite3_bind_text (statement, indices.reuters, self.reuters, -1, SQLITE_TRANSIENT)
+                          some: { sqlite3_bind_text(statement, indices.chart, $0, -1, SQLite.Destructor.transient) })
+        sqlite3_bind_text (statement, indices.reuters, self.reuters, -1, SQLite.Destructor.transient)
     }
 }
 
@@ -451,7 +451,7 @@ fileprivate extension IG.DB.Market.Forex.DealingInformation {
         sqlite3_bind_int64(statement, indices.premium,      Int64(clamping: self.guaranteedStop.premium, multiplyingByPowerOf10: 2))
         sqlite3_bind_int64(statement, indices.extra,        Int64(clamping: self.guaranteedStop.extraSpread, multiplyingByPowerOf10: 2))
         sqlite3_bind_int64(statement, indices.factor,       Int64(clamping: self.margin.factor, multiplyingByPowerOf10: 3))
-        sqlite3_bind_text (statement, indices.bands, self.margin.depositBands.encode(), -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text (statement, indices.bands, self.margin.depositBands.encode(), -1, SQLite.Destructor.transient)
     }
 }
 

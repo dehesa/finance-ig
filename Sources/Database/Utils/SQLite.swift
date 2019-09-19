@@ -1,17 +1,20 @@
 import Foundation
 import SQLite3
 
-/// Special value for memory destructors, which indicates that the content pointer is constant and will never change.
-internal let SQLITE_STATIC = unsafeBitCast(OpaquePointer(bitPattern: 0), to: sqlite3_destructor_type.self)
-/// Special value for memory destructors, which indicates that the content will likely change in the near future and the SQLite should make its own private copy of the content before returning.
-internal let SQLITE_TRANSIENT = unsafeBitCast(OpaquePointer(bitPattern: -1), to: sqlite3_destructor_type.self)
-
 /// Namespace for `SQLite` related entities and functionality.
 internal enum SQLite {
     /// Database connection pointing to underlying SQL structure.
     typealias Database = OpaquePointer
     /// Pointer to a compiled SQL statement.
     typealias Statement = OpaquePointer
+    
+    /// List of supported destructors
+    internal enum Destructor {
+        /// Special value for memory destructors, which indicates that the content pointer is constant and will never change.
+        static let `static` = unsafeBitCast(OpaquePointer(bitPattern: 0), to: sqlite3_destructor_type.self)
+        /// Special value for memory destructors, which indicates that the content will likely change in the near future and the SQLite should make its own private copy of the content before returning.
+        static let transient = unsafeBitCast(OpaquePointer(bitPattern: -1), to: sqlite3_destructor_type.self)
+    }
 }
 
 extension SQLite.Result {

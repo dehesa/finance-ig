@@ -15,34 +15,68 @@ public protocol CurrencyType {
 /// Namespace for currencies.
 public enum Currency {
     /// ISO 4217 currency codes.
-    public enum Code: String, ExpressibleByStringLiteral, CustomStringConvertible, Hashable, Comparable, Codable {
+    public enum Code: String, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
+        /// Canadian Dollar.
         case cad = "CAD"
+        /// United States Dollar.
         case usd = "USD"
+        /// Mexican Peso.
         case mxn = "MXN"
+        /// Brazilian Real.
         case brl = "BRL"
+        /// British Pound Sterling.
         case gbp = "GBP"
+        /// Norwegian Krone.
         case nok = "NOK"
+        /// Swedish Krona.
         case sek = "SEK"
+        /// Danish Krone.
         case dkk = "DKK"
+        /// European Union Euro.
         case eur = "EUR"
+        /// Swiss Franc.
         case chf = "CHF"
+        /// Czech Koruna.
         case czk = "CZK"
+        /// Hungarian Forint.
         case huf = "HUF"
+        /// Polish Zloty.
         case pln = "PLN"
+        /// Russian Ruble.
         case rub = "RUB"
+        /// Turkish Lira.
         case `try` = "TRY"
+        /// South African Rand.
         case zar = "ZAR"
+        /// Indian Rupee.
         case inr = "INR"
+        /// Singapore Dollar.
         case sgd = "SGD"
+        /// Chinese Yuan Renminbi
         case cny = "CNY"
+        /// Hong Kong Dollar
         case hkd = "HKD"
+        /// New Taiwan Dollar.
         case twd = "TWD"
+        /// South Korean Won.
         case krw = "KRW"
+        /// Japanese Yen.
         case jpy = "JPY"
+        /// Philippine Piso.
         case php = "PHP"
+        /// Indonesian Rupiah.
         case idr = "IDR"
+        /// Australian Dollar.
         case aud = "AUD"
+        /// New Zealand Dollar.
         case nzd = "NZD"
+        
+        public init(stringLiteral value: String) {
+            guard let currency = Self.init(rawValue: value) else {
+                fatalError("The given string \"\(value)\" couldn't be identified as a currency")
+            }
+            self = currency
+        }
         
         public init?(rawValue: String) {
             guard rawValue.utf8.count == 3 else { return nil }
@@ -79,34 +113,21 @@ public enum Currency {
             }
         }
         
-        public init(stringLiteral value: String) {
-            guard let currency = Self.init(rawValue: value) else {
-                fatalError("The given string \"\(value)\" couldn't be identified as a currency")
-            }
-            self = currency
+        public init?(_ description: String) {
+            self.init(rawValue: description)
+        }
+        
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            return lhs.rawValue < rhs.rawValue
         }
         
         public var description: String {
             return self.rawValue
         }
-        
-        public static func < (lhs: Currency.Code, rhs: Currency.Code) -> Bool {
-            return lhs.rawValue < rhs.rawValue
-        }
     }
 }
 
 // MARK: - Currency List
-
-// MARK: Alias
-
-public typealias `$` = IG.Currency.USD
-public typealias € = IG.Currency.EUR
-public typealias ￥ = IG.Currency.JPY
-public typealias ￡ = IG.Currency.EUR
-
-
-// MARK: Types
 
 extension IG.Currency {
     /// Canadian Dollar.

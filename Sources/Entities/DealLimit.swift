@@ -2,7 +2,7 @@ import Foundation
 
 extension IG.Deal {
     /// The limit at which the user is taking profit.
-    public struct Limit {
+    public struct Limit: Hashable {
         /// The type of limit being defined.
         public let type: Self.Kind
         
@@ -16,17 +16,47 @@ extension IG.Deal {
 }
 
 extension IG.Deal.Limit {
-    /// Check whether the receiving limit is valid in reference to the given base level and direction.
+    /// The type of limit level.
+    public enum Kind: Hashable {
+        /// Specifies the limit as a given absolute level.
+        /// - parameter level: The absolute level where the limit will be set.
+        case position(level: Decimal)
+        /// Relative limit over an undisclosed reference level.
+        /// - parameter _: The relative value where the limit will be set.
+        case distance(Decimal)
+    }
+}
+
+// MARK: - Factories
+
+extension IG.Deal.Limit {
+    /// Factory function creating a limit of *position* type.
+    /// - parameter level: A finite number reflecting an absolute level.
+    public static func position(level: Decimal) -> Self? {
+        guard Self.isValid(level: level) else { return nil }
+        return .init(.position(level: level))
+    }
+    
+    /// Factory function creating a limit of *position* type.
+    /// - parameter level: A finite number reflecting an absolute level.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
-    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        switch self.type {
-        case .position(let level):
-            return Self.isValid(level: level, direction, from: base)
-        case .distance:
-            return true
-        }
+    public static func position(level: Decimal, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
+        guard Self.isValid(level: level, direction, from: base) else { return nil }
+        return .init(.position(level: level))
     }
+    
+    /// Factory function creating a limit of *distance* type.
+    /// - parameter distance: A positive (non-zero) number reflecting a relative distance.
+    public static func distance(_ distance: Decimal) -> Self? {
+        guard Self.isValid(distance: distance) else { return nil }
+        return .init(.distance(distance))
+    }
+}
+
+// MARK: - Functionality
+
+extension IG.Deal.Limit {
     
     /// The `Decimal` value stored with the limit type (whether a relative distance or a level.
     internal var value: Decimal {
@@ -69,36 +99,21 @@ extension IG.Deal.Limit {
     }
 }
 
-// MARK: - Factories
-
-extension IG.Deal.Limit {
-    /// Factory function creating a limit of *position* type.
-    /// - parameter level: A finite number reflecting an absolute level.
-    public static func position(level: Decimal) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        return .init(.position(level: level))
-    }
-    
-    /// Factory function creating a limit of *position* type.
-    /// - parameter level: A finite number reflecting an absolute level.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public static func position(level: Decimal, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
-        guard Self.isValid(level: level, direction, from: base) else { return nil }
-        return .init(.position(level: level))
-    }
-    
-    /// Factory function creating a limit of *distance* type.
-    /// - parameter distance: A positive (non-zero) number reflecting a relative distance.
-    public static func distance(_ distance: Decimal) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        return .init(.distance(distance))
-    }
-}
-
 // MARK: - Validation
 
 extension IG.Deal.Limit {
+    /// Check whether the receiving limit is valid in reference to the given base level and direction.
+    /// - parameter direction: The deal direction.
+    /// - parameter base: The deal/base level.
+    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
+        switch self.type {
+        case .position(let level):
+            return Self.isValid(level: level, direction, from: base)
+        case .distance:
+            return true
+        }
+    }
+    
     /// Checks that the absolute level is finite.
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
@@ -123,20 +138,6 @@ extension IG.Deal.Limit {
     /// - Boolean indicating whether the argument will work as a *distance* level.
     public static func isValid(distance: Decimal) -> Bool {
         return distance.isFinite
-    }
-}
-
-// MARK: - Supporting Entities
-
-extension IG.Deal.Limit {
-    /// The type of limit level.
-    public enum Kind {
-        /// Specifies the limit as a given absolute level.
-        /// - parameter level: The absolute level where the limit will be set.
-        case position(level: Decimal)
-        /// Relative limit over an undisclosed reference level.
-        /// - parameter _: The relative value where the limit will be set.
-        case distance(Decimal)
     }
 }
 
@@ -188,7 +189,6 @@ extension KeyedDecodingContainer {
 extension IG.Deal.Limit: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = "Limit "
-        
         switch self.type {
         case .position(let level): result.append("position at \(level)")
         case .distance(let dista): result.append("distance of \(dista) pips")

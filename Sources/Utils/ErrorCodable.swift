@@ -1,6 +1,6 @@
 import Foundation
 
-extension Swift.EncodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
+extension Swift.EncodingError: IG.ErrorPrintable {
     internal static var printableDomain: String {
         return "Swift.\(EncodingError.self)"
     }

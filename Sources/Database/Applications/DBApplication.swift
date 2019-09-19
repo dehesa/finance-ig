@@ -51,7 +51,7 @@ extension IG.DB.Request.Applications {
                 return .failure(.callFailed(.compilingSQL, code: compileError))
             }
             
-            sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient)
             
             switch sqlite3_step(statement).result {
             case .row:  return .success(.init(statement: statement!))
@@ -213,12 +213,12 @@ fileprivate extension IG.DB.Application {
     }
     
     func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5), (6, (7, 8, 9), 10), 11, 12)) {
-        sqlite3_bind_text(statement, indices.key,    self.key.rawValue, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_text(statement, indices.name,   self.name, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, indices.key,    self.key.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.name,   self.name, -1, SQLite.Destructor.transient)
         sqlite3_bind_int (statement, indices.status, status.rawValue)
         self.permission.bind(to: statement, indices: indices.permission)
         self.allowance.bind(to: statement, indices: indices.allowance)
-        sqlite3_bind_text(statement, indices.created, IG.DB.Formatter.date.string(from: self.created), -1, SQLITE_TRANSIENT)
+        sqlite3_bind_text(statement, indices.created, IG.DB.Formatter.date.string(from: self.created), -1, SQLite.Destructor.transient)
     }   // Updated is not written for now.
 }
 

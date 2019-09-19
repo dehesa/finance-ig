@@ -12,11 +12,6 @@ internal func ?!<T>(lhs: T?, rhs: @autoclosure ()->Swift.Error) throws -> T {
     return result
 }
 
-internal enum OptionalTernary<W,T> {
-    case none(T)
-    case some(W)
-}
-
 extension Optional {
     /// Unwraps the receiving optional and execute the appropriate closure depending on whether the value is `.none` or `.some`.
     @discardableResult @inlinable
