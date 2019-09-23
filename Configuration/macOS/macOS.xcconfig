@@ -7,5 +7,5 @@ MACOSX_DEPLOYMENT_TARGET = 10.14.5
 // Packaging
 INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS.plist
 
-// Search Paths
-FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)/Dependencies/Lightstreamer"
+// Signing
+CODE_SIGN_IDENTITY = -

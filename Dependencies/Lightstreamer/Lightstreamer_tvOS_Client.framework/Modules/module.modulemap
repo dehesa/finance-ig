@@ -1,0 +1,6 @@
+framework module Lightstreamer_tvOS_Client {
+  umbrella header "Lightstreamer_tvOS_Client.h"
+
+  export *
+  module * { export * }
+}

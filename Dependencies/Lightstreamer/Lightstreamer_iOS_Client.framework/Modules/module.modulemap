@@ -1,0 +1,6 @@
+framework module Lightstreamer_iOS_Client {
+  umbrella header "Lightstreamer_iOS_Client.h"
+
+  export *
+  module * { export * }
+}

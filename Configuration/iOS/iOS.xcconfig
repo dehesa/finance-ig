@@ -1,0 +1,9 @@
+// Architecture
+SDKROOT = iphoneos
+
+// Deployment
+TARGETED_DEVICE_FAMILY = 1,2
+IPHONEOS_DEPLOYMENT_TARGET = 13.0
+
+// Packaging
+INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/iOS/iOS.plist

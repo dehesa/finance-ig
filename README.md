@@ -2,7 +2,7 @@
     <img src="Assets/IG.svg" alt="Codable CSV"/>
 </p>
 
-![Swift 5.1](https://img.shields.io/badge/Swift-5.1-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS-lightgrey.svg) ![Xcode 11](https://img.shields.io/badge/Xcode-11-blueviolet.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
+![Swift 5.1](https://img.shields.io/badge/Swift-5.1-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS-lightgrey.svg) ![Xcode 11](https://img.shields.io/badge/Xcode-11-blueviolet.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
 
 This framework provides:
 
@@ -99,10 +99,11 @@ services.streamer.confirmations.subscribe(to: "ABC12").startWithValues {
 
 -   [x] Map all HTTP endpoints.
 -   [x] Map all streamer events.
--   [x] Support different ways to sign in.
+-   [x] Support OAuth & Certificate to sign in.
 -   [x] Create `Services` helper.
 -   [x] Test all HTTP endpoints.
 -   [x] Test all streamer events.
--   [x] Optimize endpoint calls.
--   [ ] Support iOS, tvOS, watchOS.
--   [ ] Support Linux.
+-   [x] Support iOS.
+-   [x] Add SQLite database.
+-   [ ] Migrate from ReactiveSwift to Combine.
+-   [ ] Interconnect services.
