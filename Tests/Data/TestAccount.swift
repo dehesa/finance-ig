@@ -170,8 +170,12 @@ extension Test.Account {
                 guard url.isFileURL else { throw Test.Account.Error.invalidURL(url.path) }
                 
                 if let host = url.host, host == "~" {
+                    #if os(macOS)
                     let absolutePath = url.absoluteString.replacingOccurrences(of: "~", with: FileManager.default.homeDirectoryForCurrentUser.path)
                     url = URL(string: absolutePath)!
+                    #else
+                    fatalError("Handle this case")
+                    #endif
                 }
                 self.rootURL = url.standardizedFileURL
             } else {

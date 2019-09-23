@@ -1,4 +1,10 @@
+#if os(macOS)
 import Lightstreamer_macOS_Client
+#elseif os(iOS)
+import Lightstreamer_iOS_Client
+#else
+#error("OS currently not supported")
+#endif
 import ReactiveSwift
 import Foundation
 

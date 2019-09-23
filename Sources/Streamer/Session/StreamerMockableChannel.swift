@@ -1,4 +1,3 @@
-import Lightstreamer_macOS_Client
 import ReactiveSwift
 import Foundation
 
