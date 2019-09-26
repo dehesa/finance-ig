@@ -1,27 +1,24 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API.Request.Session {
-    
+
     // MARK: POST /session
-    
-    /// Performs the OAuth login request to the dealing system with the login credential passed as parameter.
+
+    /// Performs the OAuth login request with the login credential passed as parameter.
     /// - note: No credentials are needed for this endpoint.
-    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
-    /// - parameter user: User name and password to log in into an IG account.
-    /// - returns: `SignalProducer` with the new refreshed credentials.
-    internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> SignalProducer<IG.API.Credentials,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.post, "session", version: 3, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
+    /// - parameter key: API key given by the platform identifying the endpoint usage.
+    /// - parameter user: User name and password to log in into an account.
+    /// - returns: `Future` related type forwarding the platform credentials if the login was successful.
+    internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> IG.API.Publishers.Decode<Void,IG.API.Credentials> {
+        self.api.publisher
+            .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = Self.PayloadOAuth(user: user)
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (r: IG.API.Session.OAuth) in
+                return (.json, try JSONEncoder().encode(payload))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth) -> IG.API.Credentials in
                 let token = IG.API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-                return IG.API.Credentials(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
     }
 
@@ -31,25 +28,20 @@ extension IG.API.Request.Session {
     /// - note: No credentials are needed for this endpoint.
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
-    /// - returns: SignalProducer with the new refreshed credentials.
-    internal func refreshOAuth(token: String, key: IG.API.Key) -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.TemporaryRefresh in
-                guard !token.isEmpty else {
-                    let error: IG.API.Error = .invalidRequest("The OAuth refresh token cannot be empty", suggestion: IG.API.Error.Suggestion.readDocs)
-                    throw error
-                }
-            
-                return .init(refreshToken: token, apiKey: key)
-            }.request(.post, "session/refresh-token", version: 1, credentials: false, headers: { (_, values: TemporaryRefresh) in
-                [.apiKey: values.apiKey.rawValue]
-            }, body: { (_, values: TemporaryRefresh) in
-                (.json, try JSONEncoder().encode(["refresh_token": values.refreshToken]))
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (r: IG.API.Session.OAuth.Token) in
-                return .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
+    /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
+    internal func refreshOAuth(token: String, key: IG.API.Key) -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> {
+        self.api.publisher { _ -> Self.TemporaryRefresh in
+                guard !token.isEmpty else { throw IG.API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
+                return Self.TemporaryRefresh(refreshToken: token, apiKey: key)
             }
+            .makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
+                let payload = ["refresh_token": $0.refreshToken]
+                return (.json, try JSONEncoder().encode(payload))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth.Token) in
+                .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
+            }
+            .eraseToAnyPublisher()
     }
 }
 
@@ -100,7 +92,7 @@ extension IG.API.Session {
             self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             
-            /// - bug: The server returns one hour less for the timezone offset. I believe this is due not accounting for the summer time. Check in winter!
+            /// - bug: The server returns one hour less for the timezone offset. I believe this is due to not accounting for the summer time. Check in winter!
             let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             

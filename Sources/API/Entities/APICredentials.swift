@@ -81,9 +81,13 @@ extension IG.API.Credentials.Token {
 
 // MARK: - Debug helpers
 
-extension IG.API.Credentials: CustomDebugStringConvertible {
+extension IG.API.Credentials: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Credentials")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("client ID", self.client)
         result.append("account ID", self.account)
         result.append("API key", self.key)
@@ -108,13 +112,14 @@ extension IG.API.Credentials: CustomDebugStringConvertible {
 extension IG.API.Credentials.Token.Kind: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: IG.DebugDescription
+        let title = "\(IG.API.Credentials.printableDomain).Token"
         switch self {
         case .certificate(let access, let security):
-            result = .init("API CST Token")
+            result = .init(title + " - Certificate")
             result.append("cst", access)
             result.append("security", security)
         case .oauth(let access, let refresh, let scope, let type):
-            result = .init("API OAuth Token")
+            result = .init(title + " - OAuth")
             result.append("access", access)
             result.append("refresh", refresh)
             result.append("scope", scope)

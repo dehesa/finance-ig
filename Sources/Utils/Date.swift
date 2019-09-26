@@ -2,15 +2,14 @@ import Foundation
 
 /// UTC related variables.
 internal enum UTC {
-    /// The default calendar to be used in the API date formatters.
-    static let calendar = Calendar(identifier: .iso8601).set {
-        $0.timeZone = IG.UTC.timezone
-        // The locale is not added here on purpose.
-    }
-    /// The default timezone to be used in the API date formatters.
-    static let timezone = TimeZone(abbreviation: "UTC")!
     /// The default date formatter locale for UTC dates.
-    static let locale = Locale(identifier: "en_US_POSIX")
+    internal static let locale = Locale(identifier: "en_US_POSIX")
+    /// The default timezone to be used in the API date formatters.
+    internal static let timezone = TimeZone(abbreviation: "UTC")!
+    /// The default calendar to be used in the API date formatters.
+    internal static let calendar = Calendar(identifier: .iso8601).set {
+        $0.timeZone = Self.timezone // The locale isn't set on purpose.
+    }
 }
 
 extension Date {
@@ -65,7 +64,7 @@ extension Date {
     }
 }
 
-// MARK: - Codable Functionality
+// MARK: - Codable
 
 extension DateFormatter {
     /// Debug error line to be used within the file's decoding functions.
@@ -75,7 +74,7 @@ extension DateFormatter {
     }
 }
 
-// MARK: - Decoder
+// MARK: Decodable
 
 extension SingleValueDecodingContainer {
     /// Decodes a string value and tries to transform it into a date.
@@ -165,7 +164,7 @@ extension KeyedDecodingContainer {
     }
 }
 
-// MARK: - Encoder
+// MARK: Encodable
 
 extension SingleValueEncodingContainer {
     /// Encodes a single value of the given type.

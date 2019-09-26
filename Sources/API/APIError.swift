@@ -21,7 +21,7 @@ extension IG.API {
         /// If the error contains a `responseData`, this data may be decoded into a server code message.
         public var serverCode: String? {
             guard let data = self.responseData,
-                let payload = try? JSONDecoder().decode(Self.Payload.self, from: data) else { return nil }
+                  let payload = try? JSONDecoder().decode(Self.Payload.self, from: data) else { return nil }
             return payload.code
         }
         
@@ -33,7 +33,7 @@ extension IG.API {
         /// - parameter response: The response that raised the error.
         /// - parameter data: The response data accompaigning the response.
         /// - parameter error: The underlying error that happened right before this error was created.
-        internal init(_ type: Self.Kind, _ message: String, suggestion: String, request: URLRequest? = nil, response: HTTPURLResponse? = nil, data: Data? = nil, underlying error: Swift.Error? = nil) {
+        fileprivate init(_ type: Self.Kind, _ message: String, suggestion: String, request: URLRequest? = nil, response: HTTPURLResponse? = nil, data: Data? = nil, underlying error: Swift.Error? = nil) {
             self.type = type
             self.message = message
             self.suggestion = suggestion
@@ -41,6 +41,15 @@ extension IG.API {
             self.request = request
             self.response = response
             self.responseData = data
+        }
+        
+        /// Wrap the argument error in a `API` error.
+        /// - parameter error: Swift error to be wrapped.
+        static func transform(_ error: Swift.Error) -> Self {
+            switch error {
+            case let e as Self: return e
+            case let e: return .unknown(message: "An unknown error has occurred", underlyingError: e, suggestion: .reviewError)
+            }
         }
     }
 }
@@ -56,54 +65,74 @@ extension IG.API.Error {
         case callFailed
         /// The received response was invalid.
         case invalidResponse
+        /// Unknown (not recognized) error.
+        case unknown
     }
     
     /// A factory function for `.sessionExpired` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func sessionExpired(message: String = Self.Message.sessionExpired, suggestion: String = Self.Suggestion.keepSession) -> Self {
-        self.init(.sessionExpired, message, suggestion: suggestion)
+    internal static func sessionExpired(message: Self.Message = .sessionExpired, suggestion: Self.Suggestion = .keepSession) -> Self {
+        self.init(.sessionExpired, message.rawValue, suggestion: suggestion.rawValue)
     }
     
     /// A factory function for `.invalidRequest` API errors.
     /// - parameter message: A brief explanation on what happened.
+    /// - parameter request: The request that raised the error.
+    /// - parameter error: The underlying error that happened right before this error was created.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidRequest(_ message: String, request: URLRequest? = nil, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.invalidRequest, message, suggestion: suggestion, request: request, underlying: error)
+    internal static func invalidRequest(_ message: Self.Message, request: URLRequest? = nil, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.invalidRequest, message.rawValue, suggestion: suggestion.rawValue, request: request, underlying: error)
     }
     
     /// A factory function for `.callFailed` API errors.
     /// - parameter message: A brief explanation on what happened.
+    /// - parameter request: The request that raised the error.
+    /// - parameter error: The underlying error that happened right before this error was created.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func callFailed(message: String, request: URLRequest, response: HTTPURLResponse?, data: Data?, underlying error: Swift.Error?, suggestion: String) -> Self {
-        self.init(.callFailed, message, suggestion: suggestion, request: request, response: response, data: data, underlying: error)
+    internal static func callFailed(message: Self.Message, request: URLRequest, response: HTTPURLResponse?, data: Data?, underlying error: Swift.Error?, suggestion: Self.Suggestion) -> Self {
+        self.init(.callFailed, message.rawValue, suggestion: suggestion.rawValue, request: request, response: response, data: data, underlying: error)
     }
     
     /// A factory function for `.invalidResponse` API errors.
     /// - parameter message: A brief explanation on what happened.
+    /// - parameter request: The request that raised the error. 
+    /// - parameter error: The underlying error that happened right before this error was created.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidResponse(message: String, request: URLRequest, response: HTTPURLResponse, data: Data? = nil, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.invalidResponse, message, suggestion: suggestion, request: request, response: response, data: data, underlying: error)
+    internal static func invalidResponse(message: Self.Message, request: URLRequest, response: HTTPURLResponse, data: Data? = nil, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, request: request, response: response, data: data, underlying: error)
+    }
+    
+    /// A factory function for `.unknown` API errors.
+    /// - parameter message: A brief explanation on what happened.
+    /// - parameter error: The underlying error that happened right before this error was created.
+    /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+    internal static func unknown(message: Self.Message, underlyingError error: Swift.Error?, suggestion: Self.Suggestion) -> Self {
+        self.init(.unknown, message.rawValue, suggestion: suggestion.rawValue, request: nil, response: nil, data: nil, underlying: error)
     }
 }
 
 extension IG.API.Error {
     /// Namespace for messages reused over the framework.
-    internal enum Message {
-        static var sessionExpired: String { "The API instance was not found" }
-        static var noCredentials: String  { "No credentials were found on the API instance" }
-        static var invalidTrailingStop: String { "Invalid trailing stop setting" }
+    internal struct Message: IG.ErrorNameSpace {
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var sessionExpired: Self { "The API instance was not found" }
+        static var noCredentials: Self  { "No credentials were found on the API instance" }
+//        static var invalidTrailingStop: String { "Invalid trailing stop setting" }
     }
     
     /// Namespace for suggestions reused over the framework.
-    internal enum Suggestion {
-        static var logIn: String       { "Log in before calling this request" }
-        static var keepSession: String { "API functionality is asynchronous; keep around the API instance while a response hasn't been received" }
-        static var readDocs: String    { "Read the request documentation and be sure to follow all requirements" }
-        static var reviewError: String { "Review the returned error and try to fix the problem" }
-        static var fileBug: String     { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
-        static var validLimit: String  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
-        static var validStop: String   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
+    internal struct Suggestion: IG.ErrorNameSpace {
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var logIn: Self       { "Log in before calling this request" }
+        static var keepSession: Self { "API functionality is asynchronous; keep around the API instance while a response hasn't been received" }
+        static var readDocs: Self    { "Read the request documentation and be sure to follow all requirements" }
+        static var reviewError: Self { "Review the returned error and try to fix the problem" }
+        static var fileBug: Self     { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
+//        static var validLimit: String  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
+//        static var validStop: String   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
     }
 
     /// A typical server error payload.
@@ -130,7 +159,7 @@ extension IG.API.Error {
 
 extension IG.API.Error: IG.ErrorPrintable {
     internal static var printableDomain: String {
-        return "IG.\(IG.API.self).\(IG.API.Error.self)"
+        return "\(IG.API.printableDomain).\(Self.self)"
     }
     
     internal var printableType: String {
@@ -139,6 +168,7 @@ extension IG.API.Error: IG.ErrorPrintable {
         case .invalidRequest:  return "Invalid request"
         case .callFailed:      return "HTTP call failed"
         case .invalidResponse: return "Invalid HTTP response"
+        case .unknown:         return "Unknown"
         }
     }
     

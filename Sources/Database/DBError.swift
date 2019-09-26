@@ -99,7 +99,7 @@ extension IG.DB.Error {
 
 extension IG.DB.Error: IG.ErrorPrintable {
     static var printableDomain: String {
-        return "IG.\(IG.DB.self).\(IG.DB.Error.self)"
+        return "\(IG.DB.printableDomain).\(IG.DB.Error.self)"
     }
     
     var printableType: String {

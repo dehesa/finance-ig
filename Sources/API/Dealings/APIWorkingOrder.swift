@@ -122,7 +122,7 @@ extension IG.API {
 
 extension IG.API.WorkingOrder: CustomDebugStringConvertible {
     public var debugDescription: String {
-        let formatter = IG.Formatter.date(.yearMonthDay, time: .normal, localize: true)
+        let formatter = IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current }
         
         var result = IG.DebugDescription("API Working Order (\(self.type))")
         result.append("deal ID", self.identifier)

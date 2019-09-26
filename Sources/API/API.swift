@@ -1,4 +1,3 @@
-import ReactiveSwift
 import Foundation
 
 /// The API instance is the bridge to the HTTP endpoints provided by the platform.
@@ -11,31 +10,27 @@ public final class API {
     public let rootURL: URL
     /// The queue processing all API requests and responses.
     private let queue: DispatchQueue
-    /// Represents this instances lifetime. It will be triggered when the instance is deallocated.
-    internal let lifetime: Lifetime
-    /// The token that when triggered, will trigger all `Lifetime` observers. It is triggered (automatically) when the instance is deallocated.
-    private let lifetimeToken: Lifetime.Token
     /// The URL Session instance for performing HTTPS requests.
     internal let channel: URLSession
-    
+    #warning("API: Uncomment")
     /// It holds data and functionality related to the user's session.
     public internal(set) var session: IG.API.Request.Session
-    /// It holds functionality related to the user's applications.
-    public var applications: IG.API.Request.Applications { return .init(api: self) }
-    /// It holds functionality related to the user's accounts.
-    public var accounts: IG.API.Request.Accounts { return .init(api: self) }
-    /// It holds functionality related to the user's activity & transactions, and market prices.
-    public var history: IG.API.Request.History { return .init(api: self) }
-    /// It holds functionality related to market navigation nodes.
-    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
-    /// It holds functionality related to platform market.
-    public var markets: IG.API.Request.Markets { return .init(api: self) }
-    /// It holds functionality related to watchlists.
-    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
-    /// It holds functionality related to positions.
-    public var positions: IG.API.Request.Positions { return .init(api: self) }
-    /// It holds functionality related to working orders.
-    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
+//    /// It holds functionality related to the user's applications.
+//    public var applications: IG.API.Request.Applications { return .init(api: self) }
+//    /// It holds functionality related to the user's accounts.
+//    public var accounts: IG.API.Request.Accounts { return .init(api: self) }
+//    /// It holds functionality related to the user's activity & transactions, and market prices.
+//    public var history: IG.API.Request.History { return .init(api: self) }
+//    /// It holds functionality related to market navigation nodes.
+//    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
+//    /// It holds functionality related to platform market.
+//    public var markets: IG.API.Request.Markets { return .init(api: self) }
+//    /// It holds functionality related to watchlists.
+//    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
+//    /// It holds functionality related to positions.
+//    public var positions: IG.API.Request.Positions { return .init(api: self) }
+//    /// It holds functionality related to working orders.
+//    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -57,7 +52,6 @@ public final class API {
     internal init(rootURL: URL, credentials: IG.API.Credentials?, channel: URLSession, queue: DispatchQueue) {
         self.rootURL = rootURL
         self.queue = queue
-        (self.lifetime, self.lifetimeToken) = Lifetime.make()
         self.channel = channel
         self.session = .init(credentials: credentials)
         self.session.api = self
@@ -74,7 +68,7 @@ extension IG.API {
     
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
-        return IG.bundleIdentifier() + ".api"
+        return IG.Bundle.identifier + ".api"
     }
     
     /// Default configuration for the underlying URLSession
@@ -89,14 +83,16 @@ extension IG.API {
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.waitsForConnectivity = false
+        #warning("API: Check")
         configuration.tlsMinimumSupportedProtocol = .tlsProtocol12
+//        configuration.tlsMinimumSupportedProtocolVersion = .TLSv12
         return configuration
     }
 }
 
 extension IG.API: IG.DebugDescriptable {
     static var printableDomain: String {
-        return "IG.\(Self.self)"
+        return "\(IG.Bundle.name).\(Self.self)"
     }
     
     public var debugDescription: String {

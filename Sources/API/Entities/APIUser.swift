@@ -2,7 +2,7 @@ import Foundation
 
 extension IG.API {
     /// A user within the platform.
-    public struct User: ExpressibleByArrayLiteral, CustomDebugStringConvertible {
+    public struct User: ExpressibleByArrayLiteral {
         /// Platform's username.
         public let name: Self.Name
         /// The user's given password.
@@ -31,13 +31,6 @@ extension IG.API {
             guard elements.count == 2 else { fatalError(#"A "\#(Self.self)" type can only be initialized with an array with two non-empty strings"#)}
             self.name = .init(stringLiteral: elements[0])
             self.password = .init(stringLiteral: elements[1])
-        }
-        
-        public var debugDescription: String {
-            var result = IG.DebugDescription("API User")
-            result.append("name", self.name)
-            result.append("password", String(repeating: "*", count: self.password.rawValue.count))
-            return result.generate()
         }
     }
 }
@@ -83,26 +76,12 @@ extension IG.API.User {
         public var description: String {
             return self.rawValue
         }
-        
-        private static func validate(_ value: String) -> Bool {
-            let allowedRange = 1...30
-            return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
-        }
-        
-        /// The allowed character set for username. It is used on validation.
-        private static let allowedSet: CharacterSet = {
-            var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
-            result.formUnion(CharacterSet.lowercaseANSI)
-            result.formUnion(CharacterSet.uppercaseANSI)
-            result.formUnion(CharacterSet.decimalDigits)
-            return result
-        }()
     }
 }
 
 extension IG.API.User {
     /// The user's password within the platform.
-    public struct Password: ExpressibleByStringLiteral, Codable {
+    public struct Password: ExpressibleByStringLiteral, Encodable {
         fileprivate let rawValue: String
         
         public init(stringLiteral value: String) {
@@ -115,24 +94,45 @@ extension IG.API.User {
             self.rawValue = rawValue
         }
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let password = try container.decode(String.self)
-            guard Self.validate(password) else {
-                let reason = "The password being decoded doesn't conform to the validation function"
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
-            }
-            self.rawValue = password
-        }
-        
         public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
         }
-        
-        private static func validate(_ value: String) -> Bool {
-            let allowedRange = 1...350
-            return allowedRange.contains(value.count)
-        }
+    }
+}
+
+extension IG.API.User: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("name", self.name)
+        result.append("password", String(repeating: "*", count: self.password.rawValue.count))
+        return result.generate()
+    }
+}
+
+extension IG.API.User.Name {
+    private static func validate(_ value: String) -> Bool {
+        let allowedRange = 1...30
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+    }
+    
+    /// The allowed character set for username. It is used on validation.
+    private static let allowedSet: CharacterSet = {
+        var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
+        result.formUnion(CharacterSet.lowercaseANSI)
+        result.formUnion(CharacterSet.uppercaseANSI)
+        result.formUnion(CharacterSet.decimalDigits)
+        return result
+    }()
+}
+
+extension IG.API.User.Password {
+    private static func validate(_ value: String) -> Bool {
+        let allowedRange = 1...350
+        return allowedRange.contains(value.count)
     }
 }

@@ -3,7 +3,7 @@ import Foundation
 extension Int {
     /// Convenience initializer to clamp a `Decimal` to an integer.
     /// - parameter source: The argument will lose all decimal places.
-    init(clamping source: Decimal) {
+    internal init(clamping source: Decimal) {
         #if canImport(Darwin)
         self = (source as NSDecimalNumber).intValue
         #else
@@ -15,7 +15,7 @@ extension Int {
 extension Int32 {
     /// Convenience initializer to clamp a `Decimal` to an integer.
     /// - parameter source: The argument will lose all decimal places.
-    init(clamping source: Decimal) {
+    internal init(clamping source: Decimal) {
         #if canImport(Darwin)
         self = (source as NSDecimalNumber).int32Value
         #else
@@ -34,7 +34,7 @@ extension Int32 {
 extension Int64 {
     /// Convenience initializer to clamp a `Decimal` to an integer.
     /// - parameter source: The argument will lose all decimal places.
-    init(clamping source: Decimal) {
+    internal init(clamping source: Decimal) {
         #if canImport(Darwin)
         self = (source as NSDecimalNumber).int64Value
         #else
@@ -44,7 +44,7 @@ extension Int64 {
     /// Convenience initializer to multiply a `Decimal` by `10^power` and then clamp all decimal places.
     /// - parameter source: The decimal value from where the transformations will take place.
     /// - parameter power: The power to raise 10 to.
-    init(clamping source: Decimal, multiplyingByPowerOf10 power: Int) {
+    internal init(clamping source: Decimal, multiplyingByPowerOf10 power: Int) {
         let rhs = pow(10 as Decimal, power)
         self = .init(clamping: source * rhs)
     }
@@ -53,7 +53,7 @@ extension Int64 {
 extension Double {
     /// Convenience initializer to transform a decimal into a double.
     /// - parameter source: The argument will lose all decimal places.
-    init(_ source: Decimal) {
+    internal init(_ source: Decimal) {
         #if canImport(Darwin)
         self = (source as NSDecimalNumber).doubleValue
         #else
@@ -63,7 +63,7 @@ extension Double {
 }
 
 extension Decimal {
-    init<I>(_ value: I, divingByPowerOf10 power: Int) where I:BinaryInteger {
+    internal init<I>(_ value: I, divingByPowerOf10 power: Int) where I:BinaryInteger {
         var tenthPower = power
         tenthPower.negate()
         
@@ -77,7 +77,7 @@ extension Decimal {
     /// The operation is: `Decimal(value) * (10^power)`
     /// - parameter value: The integer value being transformed to a `Decimal`.
     /// - parameter power: The power which ten is being raised to (i.e. `10^power`).
-    init(_ value: Int32, divingByPowerOf10 power: Int) {
+    internal init(_ value: Int32, divingByPowerOf10 power: Int) {
         var tenthPower = power
         tenthPower.negate()
         
@@ -91,7 +91,7 @@ extension Decimal {
     /// The operation is: `Decimal(value) * (10^power)`
     /// - parameter value: The integer value being transformed to a `Decimal`.
     /// - parameter power: The power which ten is being raised to (i.e. `10^power`).
-    init(_ value: Int64, divingByPowerOf10 power: Int) {
+    internal init(_ value: Int64, divingByPowerOf10 power: Int) {
         var tenthPower = power
         tenthPower.negate()
         
@@ -101,7 +101,7 @@ extension Decimal {
     }
     
     /// Boolean indicating whether the number has no decimals (is whole).
-    var isWhole: Bool {
+    internal var isWhole: Bool {
         var original = self.magnitude
         var rounded = Decimal()
         #if canImport(Darwin)

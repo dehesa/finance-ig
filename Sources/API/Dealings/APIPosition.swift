@@ -123,7 +123,7 @@ extension IG.API.Position: CustomDebugStringConvertible {
         var result = IG.DebugDescription("API Position")
         result.append("deal ID", self.identifier)
         result.append("deal reference", self.reference)
-        result.append("date", self.date, formatter: IG.Formatter.date(.yearMonthDay, time: .normal, localize: true))
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
         result.append("epic", self.market.instrument.epic)
         result.append("currency", self.currencyCode)
         result.append("direction", self.direction)

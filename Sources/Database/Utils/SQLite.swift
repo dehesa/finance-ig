@@ -1,4 +1,3 @@
-import Foundation
 import SQLite3
 
 /// Namespace for `SQLite` related entities and functionality.

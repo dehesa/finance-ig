@@ -1,33 +1,6 @@
 import Foundation
 
-internal protocol ErrorPrintable: IG.DebugDescriptable {
-    /// The human readable error type.
-    var printableType: String { get }
-    /// Multiple line of text representing the error,
-    func printableMultiline(level: Int) -> String
-}
-
-extension IG.ErrorPrintable {
-    public var debugDescription: String {
-        var result = Self.debugPrefix(level: 0)
-        result.append(self.printableMultiline(level: 0))
-        result.append("\n")
-        return result
-    }
-    
-    /// Maximum number of characters per debug line (suggestion).
-    internal static var maxCharsPerLine: Int { 180 }
-    /// Returns the prefixes to be appended to each debug line.
-    /// - parameter level: The prefix indentation level.
-    internal static func debugPrefix(level: Int) -> String {
-        guard level > 0 else { return "" }
-        var result = "\n"
-        result.append(String(repeating: "|   ", count: level-1))
-        result.append("|-- ")
-        return result
-    }
-}
-
+/// List of functionality helping to translate errors into `String`s.
 internal enum ErrorHelper {
     /// Returns a single-line `String` representation of the passed value taking a given prefix and a maximum number of characters per line.
     internal static func representation(of value: Any, prefixCount: Int, maxCharacters: Int, replacingNewLinesWith replace: String? = " ") -> String {
@@ -68,7 +41,7 @@ internal enum ErrorHelper {
             case let decimal as Decimal:
                 result.append(String(describing: decimal))
             case let date as Date:
-                result.append(IG.API.Formatter.humanReadableLong.deepCopy.string(from: date))
+                result.append(IG.Formatter.timestamp.string(from: date))
             case let request as URLRequest:
                 var stringValue = String()
                 if let method = request.httpMethod { stringValue.append("\(method) ") }
@@ -111,19 +84,20 @@ internal enum ErrorHelper {
                 }
             case let code as IG.SQLite.Result:
                 result.append("\(code.rawValue) -> \(code.description)")
-            case let errors as [IG.Streamer.Error]:
-                let string = errors.map {
-                    var s = $0.printableType
-                    if let item = $0.item { s.append(" for \(item)") }
-                    return s
-                }.joined(separator: ", ")
-                result.append("[\(string)]")
-            case let statuses as [IG.Streamer.Session.Status]:
-                let string = statuses.map { $0.rawValue }.joined(separator: ", ")
-                result.append("[\(string)]")
-            case let updates as [String:IG.Streamer.Subscription.Update]:
-                let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
-                result.append("[\(string)]")
+            #warning("Streamer: Uncomment")
+//            case let errors as [IG.Streamer.Error]:
+//                let string = errors.map {
+//                    var s = $0.printableType
+//                    if let item = $0.item { s.append(" for \(item)") }
+//                    return s
+//                }.joined(separator: ", ")
+//                result.append("[\(string)]")
+//            case let statuses as [IG.Streamer.Session.Status]:
+//                let string = statuses.map { $0.rawValue }.joined(separator: ", ")
+//                result.append("[\(string)]")
+//            case let updates as [String:IG.Streamer.Subscription.Update]:
+//                let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
+//                result.append("[\(string)]")
             default:
                 result.append(IG.ErrorHelper.representation(of: value, prefixCount: beginning.count, maxCharacters: maxCharacters))
             }

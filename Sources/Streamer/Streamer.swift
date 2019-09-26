@@ -1,4 +1,3 @@
-import ReactiveSwift
 import Foundation
 
 /// The Streamer instance is the bridge to the Streaming service provided by IG.
@@ -58,13 +57,13 @@ public final class Streamer {
 extension IG.Streamer {
     /// The reverse DNS identifier for the `Streamer` instance.
     internal static var reverseDNS: String {
-        return IG.bundleIdentifier() + ".streamer"
+        return IG.Bundle.identifier + ".streamer"
     }
 }
 
 extension IG.Streamer: IG.DebugDescriptable {
     static var printableDomain: String {
-        return "IG.\(Self.self)"
+        return "\(IG.Bundle.name).\(Self.self)"
     }
     
     public var debugDescription: String {

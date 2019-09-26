@@ -7,12 +7,12 @@ public final class DB {
     ///
     /// If `nil` the database is created "in memory".
     public let rootURL: URL?
+    /// The queue restricting database entry.
+    private let queue: DispatchQueue
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
     ///
     /// The access is restricted by the database queue. Only access this pointer from there.
     private let channel: SQLite.Database
-    /// The queue restricting database entry.
-    private let queue: DispatchQueue
     
     /// It holds data and functionality related to the user's applications.
     public var applications: IG.DB.Request.Applications { return .init(database: self) }
@@ -97,13 +97,13 @@ extension IG.DB {
     
     /// The reverse DNS identifier for the `DB` instance.
     internal static var reverseDNS: String {
-        return IG.bundleIdentifier() + ".db"
+        return IG.Bundle.identifier + ".db"
     }
 }
 
 extension IG.DB: DebugDescriptable {
     static var printableDomain: String {
-        return "IG.\(Self.self)"
+        return "\(IG.Bundle.name).\(Self.self)"
     }
     
     public var debugDescription: String {

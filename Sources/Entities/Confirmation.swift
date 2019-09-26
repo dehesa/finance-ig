@@ -19,7 +19,7 @@ public struct Confirmation: Decodable {
         let container = try decoder.container(keyedBy: Self.CodingKeys.self)
         self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
         self.dealReference = try container.decode(IG.Deal.Reference.self, forKey: .dealReference)
-        self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601miliseconds)
+        self.date = try container.decode(Date.self, forKey: .date, with: IG.Formatter.iso8601)
         
         self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
         self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
@@ -70,7 +70,7 @@ extension IG.Confirmation {
     /// The confirmation details if it has been accepted.
     public struct Details: Decodable {
         /// Deal status.
-        public let dealStatus: IG.API.Deal.Status
+        public let dealStatus: IG.Deal.Status
         /// Affected deals.
         public let affectedDeals: [IG.Confirmation.AffectedDeal]
         /// Deal direction.
@@ -84,11 +84,11 @@ extension IG.Confirmation {
         /// The level at which the user doesn't want to incur more losses.
         public let stop: IG.Deal.Stop?
         /// Profit (value and currency).
-        public let profit: IG.API.Deal.ProfitLoss?
+        public let profit: IG.Deal.ProfitLoss?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.dealStatus = try container.decode(IG.API.Deal.Status.self, forKey: .dealStatus)
+            self.dealStatus = try container.decode(IG.Deal.Status.self, forKey: .dealStatus)
             self.affectedDeals = try container.decode([IG.Confirmation.AffectedDeal].self, forKey: .affectedDeals)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
             self.size = try container.decode(Decimal.self, forKey: .size)
@@ -124,7 +124,7 @@ extension IG.Confirmation {
         /// Deal identifier.
         public let identifier: String
         /// Deal current status.
-        public let status: IG.API.Deal.Status
+        public let status: IG.Deal.Status
         
         private enum CodingKeys: String, CodingKey {
             case identifier = "dealId"
@@ -259,12 +259,12 @@ extension IG.Confirmation {
 
 extension IG.Confirmation: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return IG.API.printableDomain.appending(".\(Self.self)")
+        return "\(IG.Bundle.name).\(Self.self)"
     }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.date(localize: true))
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
         result.append("deal ID", self.dealIdentifier)
         result.append("deal reference", self.dealReference)
         result.append("epic", self.epic)
