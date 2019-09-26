@@ -1,46 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Applications {
-    
-    // MARK: GET /operations/application
-    
-    /// Returns a list of client-owned applications.
-    public func getAll() -> SignalProducer<[IG.API.Application],IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "operations/application", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-
-    // MARK: PUT /operations/application
-
-    /// Alters the details of a given user application.
-    /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
-    /// - parameter status: The status to apply to the receiving application.
-    /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> SignalProducer<IG.API.Application,IG.API.Error> {
-        return SignalProducer(api: self.api) { (api) -> Self.PayloadUpdate in
-                let apiKey: IG.API.Key
-                if let key = key {
-                    apiKey = key
-                } else if let key = api.session.credentials?.key {
-                    apiKey = key
-                } else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
-                }
-                return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
-            }.request(.put, "operations/application", version: 1, credentials: true, body: { (_,payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// Contains all functionality related to API applications.
@@ -56,7 +15,42 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.API.Request.Applications {
+    
+    // MARK: GET /operations/application
+
+    /// Returns a list of client-owned applications.
+    /// - returns: `Future` related type forwarding all user's applications.
+    public func getAll() -> AnyPublisher<[IG.API.Application],IG.API.Error> {
+        self.api.publisher
+            .makeRequest(.get, "operations/application", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    // MARK: PUT /operations/application
+
+    /// Alters the details of a given user application.
+    /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
+    /// - parameter status: The status to apply to the receiving application.
+    /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
+    /// - returns: `Future` related type forwarding the newly set values of the targeted application.
+    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<IG.API.Application,IG.API.Error> {
+        self.api.publisher { (api) throws -> Self.PayloadUpdate in
+                let apiKey = try (key ?? api.session.credentials?.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
+            }.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { (payload) in
+                return (.json, try JSONEncoder().encode(payload))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
 
 extension IG.API.Request.Applications {
     /// Let the user updates one parameter of its application.
@@ -77,8 +71,6 @@ extension IG.API.Request.Applications {
         }
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API {
     /// Client application.
@@ -188,9 +180,15 @@ extension IG.API.Application.Allowance {
     }
 }
 
-extension IG.API.Application: CustomDebugStringConvertible {
+// MARK: - Functionality
+
+extension IG.API.Application: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Application")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("key", self.key)
         result.append("name", self.name)
         result.append("status", self.status)

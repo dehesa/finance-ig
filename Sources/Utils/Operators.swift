@@ -60,4 +60,4 @@ extension Calendar: SettableValue {}
 //extension IG.API.Error: SetUp {}
 
 extension DateFormatter: SettableReference {}
-extension JSONDecoder: SettableReference {}
+//extension JSONDecoder: SettableReference {}

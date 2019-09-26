@@ -145,13 +145,13 @@ extension Publishers.FlatMap {
     /// - parameter decoder: Enum indicating how the `JSONDecoder` is created/obtained.
     /// - parameter transform: Transformation to be applied to the result of the JSON decoding.
     /// - returns: A `Future` related type forwarding the result of decoding network response and performing a transformation on it.
-    internal func decodeJSON<T,R:Decodable,W>(decoder: IG.API.JSON.Decoder<T>, transform: @escaping (R) throws -> W) -> IG.API.Publishers.Decode<T,W> where Upstream==IG.API.Publishers.Request<T>, NewPublisher==Publishers.MapError<Publishers.TryMap<URLSession.DataTaskPublisher,(request:URLRequest,response:HTTPURLResponse,data:Data,values:T)>,Swift.Error> {
+    internal func decodeJSON<T,R:Decodable,W>(decoder: IG.API.JSON.Decoder<T>, transform: @escaping (_ decoded: R, _ call: (request: URLRequest, response: HTTPURLResponse)) throws -> W) -> IG.API.Publishers.Decode<T,W> where Upstream==IG.API.Publishers.Request<T>, NewPublisher==Publishers.MapError<Publishers.TryMap<URLSession.DataTaskPublisher,(request:URLRequest,response:HTTPURLResponse,data:Data,values:T)>,Swift.Error> {
         self.tryMap { (request, response, data, values) -> W in
             var stage: Int = 0
             do {
                 let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values); stage += 1
                 let payload = try jsonDecoder.decode(R.self, from: data); stage += 2
-                return try transform(payload)
+                return try transform(payload, (request, response))
             } catch var error as IG.API.Error {
                 if case .none = error.request { error.request = request }
                 if case .none = error.response { error.response = response }
