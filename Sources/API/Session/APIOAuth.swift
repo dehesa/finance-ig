@@ -16,7 +16,7 @@ extension IG.API.Request.Session {
                 let payload = Self.PayloadOAuth(user: user)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth) -> IG.API.Credentials in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth, _) -> IG.API.Credentials in
                 let token = IG.API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }
@@ -33,21 +33,18 @@ extension IG.API.Request.Session {
         self.api.publisher { _ -> Self.TemporaryRefresh in
                 guard !token.isEmpty else { throw IG.API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
                 return Self.TemporaryRefresh(refreshToken: token, apiKey: key)
-            }
-            .makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
+            }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth.Token) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth.Token, _) in
                 .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }
             .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Request Entities
+// MARK: - Entities
 
 extension IG.API.Request.Session {
     private struct PayloadOAuth: Encodable {

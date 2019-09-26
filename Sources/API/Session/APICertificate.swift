@@ -20,7 +20,7 @@ extension IG.API.Request.Session {
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate, _) in
                 let token = IG.API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 let credentials = IG.API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
                 return (credentials, r.session.settings)
@@ -35,7 +35,7 @@ extension IG.API.Request.Session {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] })
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate, _) in
                 .init(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
             }.eraseToAnyPublisher()
     }
@@ -58,7 +58,7 @@ extension IG.API.Request.Session {
                 }
                 return result
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate, _) in
                 let token = IG.API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
             }.mapError(IG.API.Error.transform)

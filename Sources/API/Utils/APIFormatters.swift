@@ -10,14 +10,14 @@ extension IG.API {
 //        static var time: DateFormatter {
 //            return IG.Formatter.time
 //        }
-//
-//        /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
-//        /// - Format: `yyyy-MM-dd`
-//        /// - Example: `2019-11-25`
-//        static var date: DateFormatter {
-//            return IG.Formatter.date
-//        }
-//
+
+        /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd`
+        /// - Example: `2019-11-25`
+        static var date: DateFormatter {
+            return IG.Formatter.date
+        }
+
 //        /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.
 //        /// - Format: `MMM-yy`
 //        /// - Example: `DEC-19`
