@@ -284,7 +284,7 @@ fileprivate extension IG.DB.Application.Status {
 
 extension IG.DB.Application: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return IG.DB.printableDomain.appending(".\(Self.self)")
+        return "\(IG.DB.printableDomain).\(Self.self)"
     }
     
     public var debugDescription: String {
@@ -311,8 +311,8 @@ extension IG.DB.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
         }
-        result.append("created", self.created, formatter: IG.Formatter.date(time: nil))
-        result.append("updated", self.updated, formatter: IG.Formatter.date(localize: true))
+        result.append("created", self.created, formatter: IG.Formatter.date)
+        result.append("updated", self.updated, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
         return result.generate()
     }
 }

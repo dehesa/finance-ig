@@ -6,13 +6,13 @@ extension IG.DB {
         /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
         /// - Example: `2019-09-09 11:43:09`
         static var timestamp: DateFormatter {
-            return IG.Formatter.fullDate
+            return IG.Formatter.timestamp
         }
         
         /// Database *date* formatter (only giving `yyyy-MM-dd`).
         /// - Example: `2019-09-09`
         static var date: DateFormatter {
-            return IG.Formatter.yearMonthDay
+            return IG.Formatter.date
         }
         
         /// Database *time* formatter (only giving `HH:mm:ss`).

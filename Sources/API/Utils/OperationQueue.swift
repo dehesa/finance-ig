@@ -8,15 +8,17 @@ extension OperationQueue {
     /// - parameter startSuspended: Booleain indicating whether the queue starts suspended.
     convenience init(name: String, maxConcurrentOperationCount: Int = OperationQueue.defaultMaxConcurrentOperationCount, underlyingQueue: DispatchQueue, startSuspended: Bool = false) {
         self.init()
-        self.qualityOfService = Self.qos(of: underlyingQueue)
+        self.qualityOfService = Self.map(qos: underlyingQueue.qos)
         self.maxConcurrentOperationCount = maxConcurrentOperationCount
         self.underlyingQueue = underlyingQueue
         self.name = name
         self.isSuspended = startSuspended
     }
     
-    private static func qos(of queue: DispatchQueue) -> QualityOfService {
-        let priority = queue.qos.relativePriority
+    /// Transforms a `DispatchQUeue` quality of service into an `OperationQueue` quality of service.
+    /// - parameter qos: The `DispatchQueue` relative quality of service.
+    private static func map(qos: DispatchQoS) -> QualityOfService {
+        let priority = qos.relativePriority
         
         if priority >= DispatchQoS.userInteractive.relativePriority {
             return .userInteractive

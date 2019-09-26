@@ -2,14 +2,6 @@ import Foundation
 
 /// Reusable date and number formatters.
 internal enum Formatter {
-    /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
-    /// - Example: `2019-09-09 11:43:09`
-    static let fullDate = DateFormatter().set {
-        $0.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        $0.calendar = IG.UTC.calendar
-        $0.timeZone = IG.UTC.timezone
-    }
-    
     /// Time formatter using the UTC calendar and timezone as `DateFormatter` base.
     /// - Format: `HH:mm:ss`
     /// - Example: `18:30:02`
@@ -19,66 +11,78 @@ internal enum Formatter {
         $0.timeZone = IG.UTC.timezone
     }
     
+    /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.
+    /// - Format: `MMM-yy`
+    /// - Example: `DEC-19`
+    static var dateDenormalBroad: DateFormatter {
+        DateFormatter().set {
+            $0.dateFormat = "MMM-yy"
+            $0.calendar = IG.UTC.calendar
+            $0.timeZone = IG.UTC.timezone
+        }
+    }
+    
+    /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
+    /// - Format: `dd-MM-yy`
+    /// - Example: `2019-11-25`
+    internal static var dateDenormal: DateFormatter {
+        DateFormatter().set {
+            $0.dateFormat = "dd-MMM-yy"
+            $0.calendar = IG.UTC.calendar
+            $0.timeZone = IG.UTC.timezone
+        }
+    }
+    
     /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
     /// - Format: `yyyy-MM-dd`
     /// - Example: `2019-11-25`
-    internal static let yearMonthDay = DateFormatter().set {
+    internal static let date = DateFormatter().set {
         $0.dateFormat = "yyyy-MM-dd"
+        $0.calendar = IG.UTC.calendar
+        $0.timeZone = IG.UTC.timezone
+    }
+    
+    /// Date and hours/seconds using UTC calendar and timezone as `DateFormatter` base.
+    /// - Example: `2019-09-09 11:43`
+    internal static var timestampBroad: DateFormatter {
+        DateFormatter().set {
+            $0.dateFormat = "yyyy-MM-dd HH:mm"
+            $0.calendar = IG.UTC.calendar
+            $0.timeZone = IG.UTC.timezone
+        }
+    }
+    
+    /// Date and time using the UTC calendar and timezone as `DateFormatter` base.
+    /// - Example: `2019-09-09 11:43:09`
+    internal static let timestamp = DateFormatter().set {
+        $0.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        $0.calendar = IG.UTC.calendar
+        $0.timeZone = IG.UTC.timezone
+    }
+    
+    /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+    /// - Format: `yyyy-MM-dd'T'HH:mm:ss`
+    /// - Example: `2019-11-25T22:33:11`
+    static let iso8601Broad = DateFormatter().set {
+        $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        $0.calendar = IG.UTC.calendar
+        $0.timeZone = IG.UTC.timezone
+    }
+    
+    /// ISO 8601 (with milliseconds and without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+    /// - Format: `yyyy-MM-dd'T'HH:mm:ss.SSS`
+    /// - Example: `2019-11-25T22:33:11.100`
+    internal static let iso8601 = DateFormatter().set {
+        $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
         $0.calendar = IG.UTC.calendar
         $0.timeZone = IG.UTC.timezone
     }
 }
 
-extension IG.Formatter {
-    enum DateFormat {
-        case yearMonth
-        case yearMonthDay
-    }
-    
-    enum TimeFormat {
-        case hoursMinutes
-        case normal
-        case detailed
-    }
-    
-    /// - precondition: Either `dateFormat` or `timeFormat` must be set. If not, this function will return the normal ISO date formatter.
-    internal static func date(_ dateFormat: Self.DateFormat? = .yearMonthDay, time timeFormat: Self.TimeFormat? = .normal, localize: Bool = false) -> DateFormatter {
-        var format: String
-        let space: String
-        
-        switch dateFormat {
-        case .none:
-            format = String()
-            space = String()
-        case .yearMonthDay:
-            format = "yyyy.MM.dd"
-            space = " "
-        case .yearMonth:
-            format = "yyyy.MM"
-            space = " "
-        }
-        
-        switch timeFormat {
-        case .none: break
-        case .normal:
-            format.append(space)
-            format.append("HH:mm:ss")
-        case .detailed:
-            format.append(space)
-            format.append("HH:mm:ss.SSS")
-        case .hoursMinutes:
-            format.append(space)
-            format.append("HH:mm")
-        }
-        
-        guard !format.isEmpty else {
-            return IG.Formatter.fullDate
-        }
-        
-        let result = DateFormatter()
-        result.calendar = Calendar(identifier: .iso8601)
-        result.timeZone = (localize) ? .current : IG.UTC.timezone
-        result.dateFormat = format
-        return result
+extension DateFormatter {
+    /// Makes a deep copy of the passed `DateFormatter`.
+    /// - requires: `NSCopying` inheritance to work.
+    internal var deepCopy: DateFormatter {
+        return self.copy() as! DateFormatter
     }
 }

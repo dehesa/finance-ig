@@ -4,7 +4,7 @@ import SQLite3
 extension SQLite {
     /// A result code retrieve from a low-level SQLite routine.
     internal struct Result: RawRepresentable, Equatable, CustomStringConvertible {
-        private var value: Int32
+        private(set) var rawValue: Int32
         
         init?(rawValue: Int32) {
             guard Self.primary[rawValue] != nil || Self.extended[rawValue] != nil else { return nil }
@@ -13,19 +13,16 @@ extension SQLite {
         
         /// Designated initializer trusting the given value.
         fileprivate init(trusted rawValue: Int32) {
-            self.value = rawValue
+            self.rawValue = rawValue
         }
         
-        var rawValue: Int32 {
-            return self.value
-        }
         // Returns the constant name of the result code.
         var name: String? {
             return Self.primary[self.rawValue]?.name ?? Self.extended[self.rawValue]?.name
         }
         
         var description: String {
-            guard let pointer = sqlite3_errstr(self.value) else { fatalError("The receiving result \"\(self.value)\" is not an SQLite result") }
+            guard let pointer = sqlite3_errstr(self.rawValue) else { fatalError("The receiving result \"\(self.rawValue)\" is not an SQLite result") }
             return .init(cString: pointer)
         }
         
@@ -40,17 +37,17 @@ extension SQLite {
 extension IG.SQLite.Result {
     /// Booleain indicating whether the receiving result is "just" a primary result or it is a extended result.
     var isPrimary: Bool {
-        return self.value >> 8 == 0
+        return self.rawValue >> 8 == 0
     }
     /// Boolean indicating whether the result code is in the extended error category.
     var isExtended: Bool {
-        return self.value >> 8 > 0
+        return self.rawValue >> 8 > 0
     }
     /// Returns the primary result of the given result.
     ///
     /// If the result is already primary, it returns itself.
     var primary: Self {
-        return .init(trusted: self.value & 0xFF)
+        return .init(trusted: self.rawValue & 0xFF)
     }
     /// Boolean indicating whether the receiving result is from the category/primary of any of the given as argument.
     /// - parameter primaries: Primary results that the receiving result may be related to.

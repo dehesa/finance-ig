@@ -142,7 +142,7 @@ extension IG.API {
         /// Close position level/price and date.
         public let close: (date: Date, level: Decimal?)
         /// Realised profit and loss is the amount of money you have made or lost on a bet once the bet has been closed. Realised profit or loss will add or subtract from your cash balance.
-        public let profitLoss: IG.API.Deal.ProfitLoss
+        public let profitLoss: IG.Deal.ProfitLoss
         /// Boolean indicating whether this was a cash transaction.
         public let isCash: Bool
         

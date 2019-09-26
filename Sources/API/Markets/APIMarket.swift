@@ -550,8 +550,8 @@ extension IG.API.Market.Instrument {
             default: throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range")
             }
 
-            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.monthYear)
-            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.monthYear)
+            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.dateDenormalBroad)
+            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.dateDenormalBroad)
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -778,8 +778,8 @@ extension IG.API.Market: CustomDebugStringConvertible {
         result.append("chart code", self.instrument.chartCode)
         result.append("news code", self.instrument.newsCode)
         
-        let dayMonthYear = IG.Formatter.date(time: nil, localize: false)
-        let dateTime = IG.Formatter.date(localize: true)
+        let dayMonthYear = IG.Formatter.date
+        let dateTime = IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current }
         result.append("instrument", self.instrument) {
             $0.append("type", $1.type)
             $0.append("unit", $1.unit)

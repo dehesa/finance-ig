@@ -132,4 +132,61 @@ extension IG.Deal {
             }
         }
     }
+    
+    /// Position status.
+    public enum Status: Decodable, CustomDebugStringConvertible {
+        case open
+        case amended
+        case partiallyClosed
+        case closed
+        case deleted
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            switch value {
+            case Self.CodingKeys.openA.rawValue, Self.CodingKeys.openB.rawValue: self = .open
+            case Self.CodingKeys.amended.rawValue: self = .amended
+            case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
+            case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
+            case Self.CodingKeys.deleted.rawValue: self = .deleted
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The status value "\#(value)" couldn't be parsed"#)
+            }
+        }
+        
+        private enum CodingKeys: String, CodingKey {
+            case openA = "OPEN", openB = "OPENED"
+            case amended = "AMENDED"
+            case partiallyClosed = "PARTIALLY_CLOSED"
+            case closedA = "FULLY_CLOSED", closedB = "CLOSED"
+            case deleted = "DELETED"
+        }
+        
+        public var debugDescription: String {
+            switch self {
+            case .open: return "opened"
+            case .amended: return "amended"
+            case .partiallyClosed: return "closed (partially)"
+            case .closed: return "closed (fully)"
+            case .deleted: return "deleted"
+            }
+        }
+    }
+    
+    /// Profit value and currency.
+    public struct ProfitLoss: CustomStringConvertible {
+        /// The actual profit value (it can be negative).
+        public let value: Decimal
+        /// The profit currency.
+        public let currencyCode: IG.Currency.Code
+        /// Designated initializer
+        internal init(value: Decimal, currency: IG.Currency.Code) {
+            self.value = value
+            self.currencyCode = currency
+        }
+        
+        public var description: String {
+            return "\(self.currencyCode)\(self.value)"
+        }
+    }
 }

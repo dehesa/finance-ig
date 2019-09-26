@@ -1,8 +1,8 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API.Request.Session {
-    
+
     // MARK: POST /session
 
     /// Creates a trading session, obtaining session tokens for subsequent API access.
@@ -13,50 +13,42 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
-    /// - returns: `SignalProducer` that when started it will log in the user passed in the `info` parameter.
-    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> SignalProducer<(credentials: IG.API.Credentials, settings: IG.API.Session.Settings),IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.post, "session", version: 2, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] }, body: { (_,_) in
+    /// - returns: `Future` related type forwarding platform credentials if the login was successful.
+    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> IG.API.Publishers.Decode<Void,(credentials: IG.API.Credentials, settings: IG.API.Session.Settings)> {
+        self.api.publisher
+            .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (r: IG.API.Session.Certificate) in
+                return (.json, try JSONEncoder().encode(payload))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate) in
                 let token = IG.API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 let credentials = IG.API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
                 return (credentials, r.session.settings)
             }
     }
-    
+
     // MARK: GET /session?fetchSessionTokens=true
-    
+
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
-    /// - returns: `API.Credentials.Token` always returning a `.certificate`.
-    internal func refreshCertificate() -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "session", version: 1, credentials: true, queries: { (_,_) in
-                [URLQueryItem(name: "fetchSessionTokens", value: "true")]
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (r: IG.API.Session.WrapperCertificate) in
+    /// - returns: `Future` related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
+    internal func refreshCertificate() -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> {
+        self.api.publisher
+            .makeRequest(.get, "session", version: 1, credentials: true, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] })
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate) in
                 .init(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
-            }
+            }.eraseToAnyPublisher()
     }
-    
+
     /// Returns the user's session details for the credentials given as arguments and regenerates the certificate tokens.
     /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
-    /// - parameter apiKey: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
-    /// - returns: The session data and `API.Credentials.Token` always set up to `.certificate`.
-    internal func refreshCertificate(apiKey: String, token: IG.API.Credentials.Token) -> SignalProducer<(IG.API.Session,IG.API.Credentials.Token),IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "session", version: 1, credentials: false, queries: { (_,_) in
-                [URLQueryItem(name: "fetchSessionTokens", value: "true")]
-            }, headers: { (_,_) in
-                var result = [IG.API.HTTP.Header.Key.apiKey: apiKey]
+    /// - returns: `Future` related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
+    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> AnyPublisher<(IG.API.Session,IG.API.Credentials.Token),IG.API.Error> {
+        self.api.publisher
+            .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
+                var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -65,38 +57,36 @@ extension IG.API.Request.Session {
                     result[.authorization] = "\(type) \(access)"
                 }
                 return result
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (r: IG.API.Session.WrapperCertificate) in
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate) in
                 let token = IG.API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
-            }
+            }.mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
-    
+
     // MARK: GET /session/encryptionKey
-    
+
     /// Returns an encryption key to use in order to send the user password in an encrypted form.
     ///
     /// To encrypt a password:
     /// 1. call /session/encryptionKey which gives a key and timestamp
     /// 2. create a RSA token using the key.
     /// 3. encrypt password + "|" + timestamp
-    /// - parameter key: The API key which the encryption key will be associated to.
-    /// - returns: `SignalProducer` returning the session's encryption key with the key's timestamp.
     /// - note: No credentials are needed for this endpoint.
-    fileprivate func generateEncryptionKey(key: IG.API.Key) -> SignalProducer<IG.API.Session.EncryptionKey,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "session/encryptionKey", version: 1, credentials: false, headers: { (_,_) in [.apiKey: key.rawValue] })
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
+    /// - parameter key: The API key which the encryption key will be associated to.
+    /// - returns: `Future` related type forwarding the session's encryption key with the key's timestamp.
+    fileprivate func generateEncryptionKey(key: IG.API.Key) -> AnyPublisher<IG.API.Session.EncryptionKey,IG.API.Error> {
+        self.api.publisher
+            .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.rawValue] })
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Request Entities
+// MARK: - Entities
 
 extension IG.API.Request.Session {
     /// Log-in through certificate required payload.
@@ -116,8 +106,6 @@ extension IG.API.Request.Session {
         }
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API.Session {
     /// CST credentials used to access the IG platform.

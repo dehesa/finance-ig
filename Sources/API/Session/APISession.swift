@@ -1,179 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Session {
-    
-    // MARK: POST /session
-    
-    /// Logs a user in the platform and stores the credentials within the API instance.
-    ///
-    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
-    /// - note: No credentials are needed for this endpoint.
-    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
-    /// - parameter user: User name and password to log in into an IG account.
-    /// - returns: `SignalProducer` indicating whether the endpoint was successful. If the login is of `.certificate` type, extra information on the session settings is forwarded to the result. The `.oauth` login type will have this *settings* result set to `nil`.
-    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> SignalProducer<IG.API.Session.Settings?,IG.API.Error> {
-        switch type {
-        case .certificate:
-            return self.loginCertificate(key: key, user: user, encryptPassword: false)
-                .attemptMap { [weak weakAPI = self.api] (credentials, settings) -> Result<IG.API.Session.Settings?,IG.API.Error> in
-                    guard let api = weakAPI else { return .failure(.sessionExpired()) }
-                    api.session.credentials = credentials
-                    return .success(settings)
-            }
-        case .oauth:
-            return self.loginOAuth(key: key, user: user)
-                .attemptMap { [weak weakAPI = self.api] (credentials) -> Result<IG.API.Session.Settings?,IG.API.Error> in
-                    guard let api = weakAPI else { return .failure(.sessionExpired()) }
-                    api.session.credentials = credentials
-                    return .success(.none)
-            }
-        }
-    }
-    
-    /// Refreshes the underlying secret token so the session can remain longer connected.
-    ///
-    /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials). Please note, that OAuth refresh are intended to happen often, while cretificate refresh should happen quite infrequently).
-    /// - note: If there is no credentials (i.e. the session gets logged out)  before, or during this endpoint an error is forwarded.
-    public func refresh() -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer(api: self.api) { (api) -> IG.API.Credentials in
-            guard let credentials = api.session.credentials else {
-                throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
-            }
-            return credentials
-        }.flatMap(.latest) { (api, credentials) -> SignalProducer<IG.API.Credentials.Token,IG.API.Error> in
-            switch credentials.token.value {
-            case .certificate: return api.session.refreshCertificate()
-            case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
-            }
-        }.attemptMap { [weak weakAPI = self.api] (token) -> Result<Void,IG.API.Error> in
-            guard let api = weakAPI else { return .failure(.sessionExpired()) }
-            guard var credentials = api.session.credentials else {
-                let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
-                return .failure(.sessionExpired(message: IG.API.Error.Message.noCredentials, suggestion: suggestion))
-            }
-            credentials.token = token
-            api.session.credentials = credentials
-            return .success(())
-        }
-        
-    }
-
-    // MARK: GET /session
-
-    /// Returns the user's session details.
-    /// - returns: `SignalProducer` returning information about the current user's session.
-    public func get() -> SignalProducer<IG.API.Session,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "session", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-    
-    /// Returns the user's session details for the given credentials.
-    /// - note: No credentials needed (besides the provided ones as parameter). That is the API instance doesn't need to be logged in.
-    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
-    /// - parameter token: The credentials for the user session to query.
-    /// - returns: `SignalProducer` returning information about the current user's session.
-    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> SignalProducer<IG.API.Session,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "session", version: 1, credentials: false, headers: { (_,_) in
-                var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
-                switch token.value {
-                case .certificate(let access, let security):
-                    result[.clientSessionToken] = access
-                    result[.securityToken] = security
-                case .oauth(let access, _, _, let type):
-                    result[.authorization] = "\(type) \(access)"
-                }
-                return result
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-
-    // MARK: PUT /session
-    
-    /// Switches active accounts, optionally setting the default account.
-    ///
-    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
-    /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
-    /// - parameter accountId: The identifier for the account that the user want to switch to.
-    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<IG.API.Session.Settings,IG.API.Error> {
-        var stored: (request: URLRequest, response: HTTPURLResponse)! = nil
-        return SignalProducer(api: self.api)
-            .request(.put, "session", version: 1, credentials: true, body: { (_,_) in
-                let payload = Self.PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON { (request, response) -> JSONDecoder in
-                stored = (request, response)
-                return JSONDecoder()
-            }
-            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings) -> Result<IG.API.Session.Settings,IG.API.Error> in
-                guard let api = weakAPI else {
-                    return .failure(.sessionExpired())
-                }
-                
-                guard var credentials = api.session.credentials else {
-                    let error: IG.API.Error = .invalidResponse(message: IG.API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation")
-                    return .failure(error)
-                }
-                credentials.account = accountId
-                
-                api.session.credentials = credentials
-                return .success(sessionSwitch)
-            }
-    }
-
-    // MARK: DELETE /session
-    
-    /// Log out from the current session.
-    ///
-    /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
-    /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func logout() -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer { [weak weakAPI = self.api] (input, lifetime) in
-            guard let api = weakAPI else {
-                return input.send(error: .sessionExpired())
-            }
-            
-            guard let creds = api.session.credentials else {
-                input.send(value: ())
-                return input.sendCompleted()
-            }
-            
-            let url = api.rootURL.appendingPathComponent("session")
-            let request = URLRequest(url: url).set {
-                $0.httpMethod = IG.API.HTTP.Method.delete.rawValue
-                $0.addHeaders(version: 1, credentials: creds)
-            }
-            
-            let disposable = SignalProducer<IG.API.Request.Wrapper,IG.API.Error>(value: (api,request))
-                .send()
-                .validate(statusCodes: 204)
-                .start {
-                    switch $0 {
-                    case .value:
-                        weakAPI?.session.credentials = nil
-                        input.send(value: ())
-                    case .completed: input.sendCompleted()
-                    case .failed(let e): input.send(error: e)
-                    case .interrupted: input.sendInterrupted()
-                    }
-                }
-            lifetime.observeEnded(disposable.dispose)
-        }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// Contains all functionality related to the API session.
@@ -213,7 +39,181 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.API.Request.Session {
+
+    // MARK: POST /session
+
+    /// Logs a user in the platform and stores the credentials within the API instance.
+    ///
+    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+    /// - note: No credentials are needed for this endpoint.
+    /// - parameter key: API key given by the platform identifying the usage of the IG endpoints.
+    /// - parameter user: User name and password to log in into an IG account.
+    /// - returns: `Future` related type indicating whether the endpoint was successful. If the login is of `.certificate` type, extra information on the session settings is forwarded as a value. The `.oauth` login type will simply complete successfully for successful operations (without forwarding any value).
+    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.API.Session.Settings,IG.API.Error> {
+        switch type {
+        case .certificate:
+            return self.loginCertificate(key: key, user: user, encryptPassword: false)
+                .tryMap { [weak weakAPI = self.api] (credentials, settings) in
+                    guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                    api.session.credentials = credentials
+                    return settings
+                }.mapError(IG.API.Error.transform)
+                .eraseToAnyPublisher()
+        case .oauth:
+            return self.loginOAuth(key: key, user: user)
+                .tryMap { [weak weakAPI = self.api] (credentials) in
+                    guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                    api.session.credentials = credentials
+                }.flatMap(maxPublishers: .max(1), { _ in Empty<IG.API.Session.Settings,Swift.Error>(completeImmediately: true) })
+                .mapError(IG.API.Error.transform)
+                .eraseToAnyPublisher()
+        }
+    }
+
+    /// Refreshes the underlying secret token so the session can remain longer connected.
+    ///
+    /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials). Please note, that OAuth refreshes are intended to happen often, while cretificate refresh should happen quite infrequently).
+    /// - note: If there is no credentials (i.e. the session gets logged out)  before, or during this endpoint an error is forwarded.
+    /// - returns: `Future` related type that indicates a successful refresh with a successful complete.
+    public func refresh() -> AnyPublisher<Never,IG.API.Error> {
+        self.api.publisher { (api) -> IG.API.Credentials in
+                try api.session.credentials ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+            }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> in
+                switch credentials.token.value {
+                case .certificate: return api.session.refreshCertificate()
+                case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
+                }
+            }.tryMap { [weak weakAPI = self.api] (token) -> Void in
+                guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                guard var credentials = api.session.credentials else {
+                    let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
+                    throw IG.API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
+                }
+                credentials.token = token
+                api.session.credentials = credentials
+            }.ignoreOutput()
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    // MARK: GET /session
+
+    /// Returns the user's session details.
+    /// - returns: `Future` related type forwarding the user's session details.
+    public func get() -> AnyPublisher<IG.API.Session,IG.API.Error> {
+        self.api.publisher
+            .makeRequest(.get, "session", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    /// Returns the user's session details for the given credentials.
+    /// - note: No credentials needed (besides the provided ones as parameter). That is the API instance doesn't need to be logged in.
+    /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter token: The credentials for the user session to query.
+    /// - returns: `SignalProducer` returning information about the current user's session.
+    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> AnyPublisher<IG.API.Session,IG.API.Error> {
+        self.api.publisher
+            .makeRequest(.get, "session", version: 1, credentials: false, headers: {
+                var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
+                switch token.value {
+                case .certificate(let access, let security):
+                    result[.clientSessionToken] = access
+                    result[.securityToken] = security
+                case .oauth(let access, _, _, let type):
+                    result[.authorization] = "\(type) \(access)"
+                }
+                return result
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+//    // MARK: PUT /session
+//
+//    /// Switches active accounts, optionally setting the default account.
+//    ///
+//    /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+//    /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
+//    /// - parameter accountId: The identifier for the account that the user want to switch to.
+//    /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
+//    /// - returns: `SignalProducer` indicating the success of the operation.
+//    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> SignalProducer<IG.API.Session.Settings,IG.API.Error> {
+//        var stored: (request: URLRequest, response: HTTPURLResponse)! = nil
+//        return SignalProducer(api: self.api)
+//            .request(.put, "session", version: 1, credentials: true, body: { (_,_) in
+//                let payload = Self.PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
+//                let data = try JSONEncoder().encode(payload)
+//                return (.json, data)
+//            }).send(expecting: .json)
+//            .validateLadenData(statusCodes: 200)
+//            .decodeJSON { (request, response) -> JSONDecoder in
+//                stored = (request, response)
+//                return JSONDecoder()
+//            }
+//            .attemptMap { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings) -> Result<IG.API.Session.Settings,IG.API.Error> in
+//                guard let api = weakAPI else {
+//                    return .failure(.sessionExpired())
+//                }
+//
+//                guard var credentials = api.session.credentials else {
+//                    let error: IG.API.Error = .invalidResponse(message: IG.API.Error.Message.noCredentials, request: stored.request, response: stored.response, suggestion: "Don't log out in the middle of an asynchronous account switch operation")
+//                    return .failure(error)
+//                }
+//                credentials.account = accountId
+//
+//                api.session.credentials = credentials
+//                return .success(sessionSwitch)
+//            }
+//    }
+//
+//    // MARK: DELETE /session
+//
+//    /// Log out from the current session.
+//    ///
+//    /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
+//    /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
+//    /// - returns: `SignalProducer` indicating the success of the operation.
+//    public func logout() -> SignalProducer<Void,IG.API.Error> {
+//        return SignalProducer { [weak weakAPI = self.api] (input, lifetime) in
+//            guard let api = weakAPI else {
+//                return input.send(error: .sessionExpired())
+//            }
+//
+//            guard let creds = api.session.credentials else {
+//                input.send(value: ())
+//                return input.sendCompleted()
+//            }
+//
+//            let url = api.rootURL.appendingPathComponent("session")
+//            let request = URLRequest(url: url).set {
+//                $0.httpMethod = IG.API.HTTP.Method.delete.rawValue
+//                $0.addHeaders(version: 1, credentials: creds)
+//            }
+//
+//            let disposable = SignalProducer<IG.API.Request.Wrapper,IG.API.Error>(value: (api,request))
+//                .send()
+//                .validate(statusCodes: 204)
+//                .start {
+//                    switch $0 {
+//                    case .value:
+//                        weakAPI?.session.credentials = nil
+//                        input.send(value: ())
+//                    case .completed: input.sendCompleted()
+//                    case .failed(let e): input.send(error: e)
+//                    case .interrupted: input.sendInterrupted()
+//                    }
+//                }
+//            lifetime.observeEnded(disposable.dispose)
+//        }
+//    }
+}
+
+// MARK: - Entities
 
 extension IG.API.Request.Session {
     /// Type of sessions available
@@ -291,15 +291,34 @@ extension IG.API.Session {
     }
 }
 
-extension IG.API.Session: CustomDebugStringConvertible {
+extension IG.API.Session: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Session")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("client ID", self.client)
         result.append("account ID", self.account)
-        result.append("streamer URL", self.streamerURL.path)
+        result.append("streamer URL", self.streamerURL.absoluteString)
         result.append("timezone", self.timezone.description)
         result.append("locale", self.locale.description)
         result.append("currency code", self.currencyCode)
+        return result.generate()
+    }
+}
+
+extension IG.API.Session.Settings: IG.DebugDescriptable {
+    static var printableDomain: String {
+        return "\(IG.API.Session.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("trailing stops", self.isTrailingStopEnabled)
+        result.append("dealing", self.isDealingEnabled)
+        result.append("active demo account", self.hasActiveDemoAccounts)
+        result.append("active live account", self.hasActiveLiveAccounts)
         return result.generate()
     }
 }

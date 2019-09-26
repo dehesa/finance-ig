@@ -1,74 +1,24 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API {
     /// Domain namespace retaining anything related to API requests.
     public enum Request {}
-    /// Domain namespace retaining anything related to API responses.
-    public enum Response {}
+//    /// Domain namespace retaining anything related to API responses.
+//    public enum Response {}
+    /// List of publishers supported by API instances.
+    internal enum Publishers {}
 }
 
-// MARK: - Request types
-
-extension IG.API.Request {
-    /// Wrapper around a `URLRequest` and the API instance that will (most probably) execute such request.
-    /// - returns: A `URLRequest` and an `API` instance.
-    internal typealias Wrapper = (api: IG.API, request: URLRequest)
-    /// Request values that have been verified/validated.
-    internal typealias WrapperValid<T> = (api: IG.API, values: T)
-    /// Wrapper around the request for a paginated endpoint.
-    internal typealias WrapperPage<M> = (request: URLRequest, meta: M)
-    
-    /// List of typealias representing closures which generate a specific data type.
-    internal enum Generator {
-        /// Closure receiving a valid API session and returning validated values.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - returns: The validated values.
-        typealias Validation<T> = (_ api: IG.API) throws -> T
-        /// Closure which returns a newly created `URLRequest` and provides with it an API instance.
-        /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: A newly created `URLRequest`.
-        typealias Request<T> = (_ api: IG.API, _ values: T) throws -> URLRequest
-        /// Closure executed before each page to determine if the request must be performed and if so, which shape does it take.
-        /// - parameter api: The API instance from where credentials and other temporal priviled information is being retrieved.
-        /// - parameter initialRequest: The base request for all pages.
-        /// - parameter previous: The request and (typically) metadata for the previous page.
-        typealias RequestPage<M> = (_ api: IG.API, _ initialRequest: URLRequest, _ previous: IG.API.Request.WrapperPage<M>?) throws -> URLRequest?
-        /// Closure which returns a bunch of query items to be used in a `URLRequest`.
-        /// - parameter api: The API instance from where credentials and other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Array of `URLQueryItem`s to be added to a `URLRequest`.
-        typealias Query<T> = (_ api: IG.API, _ values: T) throws -> [URLQueryItem]
-        /// Closure which returns a bunch of header key-values to be used in a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Key-value pairs to be added to a `URLRequest`.
-        typealias Header<T> = (_ api: IG.API, _ values: T) throws -> [IG.API.HTTP.Header.Key:String]
-        /// Closure which returns a body to be appended to a `URLRequest`.
-        /// - parameter api: The API instance from where credentials an other temporal priviledge information is being retrieved.
-        /// - parameter values: Values that have been validated in a previous step.
-        /// - returns: Tuple containing information about what type of body has been compiled and its data.
-        typealias Body<T>  = (_ api: IG.API, _ values: T) throws -> (contentType: IG.API.HTTP.Header.Value.ContentType, data: Data)
-        /// Closure which given a request and its actual response, generates a JSON decoder (typically to decode the responses payload).
-        /// - parameter request: The URL request that returned the `response`.
-        /// - parameter response: The HTTP response received from the execution of `request`.
-        /// - returns: A JSON decoder (to typically decode the response's payload).
-        typealias Decoder = (_ request: URLRequest, _ response: HTTPURLResponse) throws -> JSONDecoder
-        /// Closure which receives a `SignalProducer` with an already formatted page request and it is suppose to send it and decode the data into a value `V` (which will be pass along) and a metadata `M` (which will be retrofeed into the following page request generation.
-        /// - parameter requestSignal: The signal to be send and value decoded.
-        /// - returns: The signal returing the response value and metadata.
-        typealias SignalPage<M,V> = (_ requestSignal: SignalProducer<IG.API.Request.Wrapper,IG.API.Error>) -> SignalProducer<(M,V),IG.API.Error>
-    }
-}
-
-// MARK: - Response Types
-
-extension IG.API.Response {
-    /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and optional data payload.
-    internal typealias Wrapper = (request: URLRequest, header: HTTPURLResponse, data: Data?)
-    /// Wrapper around a `URLRequest` and the received `HTTPURLResponse` and a data payload.
-    internal typealias WrapperData = (request: URLRequest, header: HTTPURLResponse, data: Data)
+extension IG.API.Publishers {
+    /// `Future` forwarding an `API` instance and some computed values (to use further downstream).
+    internal typealias Instance<T> = Future<(api:IG.API,values:T),Swift.Error>
+    /// `Future` forwarding an `API` instance, some computed values (to use further downstream), and a valid `URLRequest`.
+    internal typealias Request<T> = Publishers.TryMap<Instance<T>,(api:IG.API,request:URLRequest,values:T)>
+    /// A `Future` related type forwarding downstream the endpoint request, response, received blob/data, and any pre-computed values.
+    internal typealias Call<T> = Publishers.FlatMap<Publishers.MapError<Publishers.TryMap<URLSession.DataTaskPublisher,(request:URLRequest,response:HTTPURLResponse,data:Data,values:T)>,Swift.Error>,Request<T>>
+    /// A `Future` related type forwarding downstream the decoded network response.
+    internal typealias Decode<T,R> = Publishers.TryMap<Call<T>,R>
 }
 
 // MARK: - Constant Types
@@ -84,8 +34,36 @@ extension IG.API {
             static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
             /// Key for JSON decoders under which the URL response data will be stored.
             static let responseDate = CodingUserInfoKey(rawValue: "urlResponseDate")!
+            /// Key for JSON decoders under which the pre-computed values will be stored.
+            static let computedValues = CodingUserInfoKey(rawValue: "computedValues")!
+            #warning("API: Delete this and include it as values")
             /// Key for JSON decoders under which a date formatter will be stored.
             static let dateFormatter = CodingUserInfoKey(rawValue: "APIDateFormatter")!
+        }
+        /// Specifies a `JSONDecoder` to use in further operations.
+        enum Decoder<T> {
+            /// The default `JSONDecoder` that has attached as `userInfo` any of the indicated associated values.
+            case `default`(request: Bool = false, response: Bool = false, values: Bool = false)
+            /// A custom `JSONDecoder` generated through the provided closure.
+            case custom((_ request: URLRequest, _ response: HTTPURLResponse, _ values: T) throws -> JSONDecoder)
+            /// A custom already-generated `JSONDecoder`.
+            case predefined(JSONDecoder)
+            
+            /// Factory function creating a `JSONDecoder` from the receiving enum value.
+            func makeDecoder(request: URLRequest, response: HTTPURLResponse, values: T) throws -> JSONDecoder {
+                switch self {
+                case .default(let includeRequest, let includeResponse, let includeValues):
+                    let decoder = JSONDecoder()
+                    if includeRequest  { decoder.userInfo[IG.API.JSON.DecoderKey.request] = request }
+                    if includeResponse { decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] = response }
+                    if includeValues   { decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] = values }
+                    return decoder
+                case .custom(let g):
+                    return try g(request, response, values)
+                case .predefined(let decoder):
+                    return decoder
+                }
+            }
         }
     }
     

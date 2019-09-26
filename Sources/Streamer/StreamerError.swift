@@ -100,7 +100,7 @@ extension IG.Streamer.Error {
 
 extension IG.Streamer.Error: IG.ErrorPrintable {
     static var printableDomain: String {
-        return "IG.\(IG.Streamer.self).\(IG.Streamer.Error.self)"
+        return "\(IG.Streamer.printableDomain).\(Self.self)"
     }
     
     var printableType: String {

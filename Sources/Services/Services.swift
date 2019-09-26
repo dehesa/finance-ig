@@ -138,7 +138,7 @@ public final class Services {
 extension Services {
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
-        return IG.bundleIdentifier() + ".services"
+        return IG.Bundle.identifier + ".services"
     }
     
     /// Wrapper for errors generated in one of the IG services.
@@ -162,7 +162,7 @@ extension Services {
 
 extension Services: IG.DebugDescriptable {
     static var printableDomain: String {
-        return "IG.\(Self.self)"
+        return "\(IG.Bundle.name).\(Self.self)"
     }
     
     public var debugDescription: String {
@@ -174,12 +174,4 @@ extension Services: IG.DebugDescriptable {
         result.append("databse", self.database.rootURL?.absoluteString ?? ":memory:")
         return result.generate()
     }
-}
-
-/// Returns the module's bundle identifier.
-internal func bundleIdentifier() -> String {
-    guard let identifier = Bundle(for: IG.Services.self).bundleIdentifier else {
-        fatalError("The module's bundle identifier hasn't been set")
-    }
-    return identifier
 }
