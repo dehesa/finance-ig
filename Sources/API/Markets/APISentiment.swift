@@ -61,9 +61,7 @@ extension IG.API.Request.Markets {
     
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Response Entities
+// MARK: - Entities
 
 extension IG.API.Request.Markets {
     private struct WrapperList: Decodable {
@@ -91,6 +89,8 @@ extension IG.API.Market {
         }
     }
 }
+
+// MARK: - Functionality
 
 extension IG.API.Market.Sentiment: CustomDebugStringConvertible {
     public var debugDescription: String {

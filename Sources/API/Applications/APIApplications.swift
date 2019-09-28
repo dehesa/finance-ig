@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 extension IG.API.Request {
-    /// Contains all functionality related to API applications.
+    /// List of endpoints related to API applications.
     public struct Applications {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         fileprivate unowned let api: IG.API
@@ -20,8 +20,8 @@ extension IG.API.Request.Applications {
     // MARK: GET /operations/application
 
     /// Returns a list of client-owned applications.
-    /// - returns: `Future` related type forwarding all user's applications.
-    public func getAll() -> AnyPublisher<[IG.API.Application],IG.API.Error> {
+    /// - returns: *Future* forwarding all user's applications.
+    public func getAll() -> IG.API.Future<[IG.API.Application]> {
         self.api.publisher
             .makeRequest(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -36,8 +36,8 @@ extension IG.API.Request.Applications {
     /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
-    /// - returns: `Future` related type forwarding the newly set values of the targeted application.
-    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<IG.API.Application,IG.API.Error> {
+    /// - returns: *Future* forwarding the newly set targeted application values.
+    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Future<IG.API.Application> {
         self.api.publisher { (api) throws -> Self.PayloadUpdate in
                 let apiKey = try (key ?? api.session.credentials?.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)

@@ -76,7 +76,7 @@ extension IG.API.Request.Markets {
 // MARK: - Supporting Entities
 
 extension IG.API.Request {
-    /// Contains all functionality related to API markets.
+    /// List of endpoints related to API markets.
     public struct Markets {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API

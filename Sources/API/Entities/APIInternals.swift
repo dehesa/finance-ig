@@ -4,21 +4,28 @@ import Foundation
 extension IG.API {
     /// Domain namespace retaining anything related to API requests.
     public enum Request {}
-//    /// Domain namespace retaining anything related to API responses.
-//    public enum Response {}
-    /// List of publishers supported by API instances.
-    internal enum Publishers {}
+    
+    /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
+    /// This behavior is guaranteed when you see this type.
+    public typealias Future<T> = Combine.AnyPublisher<T,IG.API.Error>
+    /// Publisher that can send zero, one, or many values followed by a successful completion.
+    ///
+    /// This type is typically semantically used for paginated requests.
+    public typealias ContinuousPublisher<T> = Combine.AnyPublisher<T,IG.API.Error>
 }
 
-extension IG.API.Publishers {
-    /// `Future` forwarding an `API` instance and some computed values (to use further downstream).
-    internal typealias Instance<T> = Future<(api:IG.API,values:T),Swift.Error>
-    /// `Future` forwarding an `API` instance, some computed values (to use further downstream), and a valid `URLRequest`.
-    internal typealias Request<T> = Publishers.TryMap<Instance<T>,(api:IG.API,request:URLRequest,values:T)>
-    /// A `Future` related type forwarding downstream the endpoint request, response, received blob/data, and any pre-computed values.
-    internal typealias Call<T> = Publishers.FlatMap<Publishers.MapError<Publishers.TryMap<URLSession.DataTaskPublisher,(request:URLRequest,response:HTTPURLResponse,data:Data,values:T)>,Swift.Error>,Request<T>>
-    /// A `Future` related type forwarding downstream the decoded network response.
-    internal typealias Decode<T,R> = Publishers.TryMap<Call<T>,R>
+extension IG.API {
+    /// Publisher's output types.
+    internal enum Output {
+        /// API pipeline's first stage variables: the API instance to use and some computed values (or `Void`)
+        internal typealias Instance<T> = (api:IG.API,values:T)
+        /// API pipeline's second stage variables: the API instance to use, the URL request to perform, and some computed values (or `Void`)
+        internal typealias Request<T> = (api:IG.API,request:URLRequest,values:T)
+        /// API pipeline's third stage variables: the request that has been performed, the response and payload received, and some computed values (or `Void`).
+        internal typealias Call<T> = (request:URLRequest,response:HTTPURLResponse,data:Data,values:T)
+        /// Previous paginated page values: the previous successful request and its metadata.
+        internal typealias PreviousPage<M> = (request: URLRequest, metadata: M)
+    }
 }
 
 // MARK: - Constant Types
@@ -29,14 +36,13 @@ extension IG.API {
         /// Namesapce for JSON decoding keys.
         enum DecoderKey {
             /// Key for JSON decoders under which the URL response will be stored.
-            static let request = CodingUserInfoKey(rawValue: "urlRequest")!
+            static let request = CodingUserInfoKey(rawValue: "APIRequest")!
             /// Key for JSON decoders under which the URL response will be stored.
-            static let responseHeader = CodingUserInfoKey(rawValue: "urlResponse")!
+            static let responseHeader = CodingUserInfoKey(rawValue: "APIResponse")!
             /// Key for JSON decoders under which the URL response data will be stored.
-            static let responseDate = CodingUserInfoKey(rawValue: "urlResponseDate")!
+            static let responseDate = CodingUserInfoKey(rawValue: "APIData")!
             /// Key for JSON decoders under which the pre-computed values will be stored.
-            static let computedValues = CodingUserInfoKey(rawValue: "computedValues")!
-            #warning("API: Delete this and include it as values")
+            static let computedValues = CodingUserInfoKey(rawValue: "APIValues")!
             /// Key for JSON decoders under which a date formatter will be stored.
             static let dateFormatter = CodingUserInfoKey(rawValue: "APIDateFormatter")!
         }

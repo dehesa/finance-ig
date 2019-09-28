@@ -312,7 +312,7 @@ extension IG.DB.Application: IG.DebugDescriptable {
             $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
         }
         result.append("created", self.created, formatter: IG.Formatter.date)
-        result.append("updated", self.updated, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
+        result.append("updated", self.updated, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         return result.generate()
     }
 }

@@ -1,5 +1,19 @@
-import ReactiveSwift
+import Combine
 import Foundation
+
+extension IG.API.Request {
+    /// List of endpoints related to a user's activity.
+    public struct History {
+        /// Pointer to the actual API instance in charge of calling the endpoints.
+        internal unowned let api: IG.API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoints.
+        init(api: IG.API) {
+            self.api = api
+        }
+    }
+}
 
 extension IG.API.Request.History {
     
@@ -14,93 +28,75 @@ extension IG.API.Request.History {
     /// - parameter detailed: Boolean indicating whether to retrieve additional details about the activity.
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
     /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
-    /// - todo: validate `dealId` and `FIQL` on SignalProducer(api: self, validating: {})
-    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> SignalProducer<[IG.API.Activity],IG.API.Error> {
-        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601.deepCopy
-        
-        return SignalProducer(api: self.api) { (api) -> DateFormatter in
+    /// - todo: validate `FIQL` on SignalProducer(api: self, validating: {})
+    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> IG.API.ContinuousPublisher<[IG.API.Activity]> {
+        self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                dateFormatter.timeZone = timezone
-                return dateFormatter
-            }.request(.get, "history/activity", version: 3, credentials: true, queries: { (api,formatter) in
-                var queries = [URLQueryItem(name: "from", value: formatter.string(from: from))]
                 
+                if let fiql = filterBy.FIQL, !fiql.isEmpty {
+                    throw IG.API.Error.invalidRequest("THE FIQL filter cannot be empty", suggestion: .readDocs)
+                }
+                
+                return IG.API.Formatter.iso8601Broad.deepCopy.set { $0.timeZone = timezone }
+            }.makeRequest(.get, "history/activity", version: 3, credentials: true, queries: { (dateFormatter) in
+                var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
+
                 if let to = to {
-                    queries.append(URLQueryItem(name: "to", value: formatter.string(from: to)))
+                    queries.append(.init(name: "to", value: dateFormatter.string(from: to)))
                 }
-                
+
                 if detailed {
-                    queries.append(URLQueryItem(name: "detailed", value: "true"))
+                    queries.append(.init(name: "detailed", value: "true"))
                 }
-                
+
                 if let dealIdentifier = filterBy.identifier {
-                    queries.append(URLQueryItem(name: "dealId", value: dealIdentifier.rawValue))
+                    queries.append(.init(name: "dealId", value: dealIdentifier.rawValue))
                 }
-                
+
                 if let filter = filterBy.FIQL {
-                    queries.append(URLQueryItem(name: "filter", value: filter))
+                    queries.append(.init(name: "filter", value: filter))
                 }
-                
+
                 let size: UInt = (pageSize < 500) ? 500 :
                                  (pageSize > 10)  ? 10  : pageSize
-                queries.append(URLQueryItem(name: "pageSize", value: String(size)))
+                queries.append(.init(name: "pageSize", value: String(size)))
                 return queries
-            }).paginate(request: { (api, initialRequest, previous) in
+            }).sendPaginating(request: { (api, initial, previous) -> URLRequest? in
                 guard let previous = previous else {
-                    return initialRequest
+                    return initial.request
                 }
                 
-                guard let next = previous.meta.next else {
+                guard let next = previous.metadata.next else {
                     return nil
                 }
-                
+
                 guard let queries = URLComponents(string: next)?.queryItems else {
                     let message = #"The paginated request for activities couldn't be processed because there were no "next" queries"#
-                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.fileBug)
+                    throw IG.API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
                 }
-                
+
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
                     let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found"#
-                    throw IG.API.Error.invalidRequest(message, request: previous.request, suggestion: IG.API.Error.Suggestion.fileBug)
+                    throw IG.API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
                 }
-                
-                var nextRequest = initialRequest
-                try nextRequest.addQueries([from, to])
-                return nextRequest
-            }, endpoint: { (producer) -> SignalProducer<(Self.PagedActivities.Metadata.Page,[IG.API.Activity]),IG.API.Error> in
-                return producer.send(expecting: .json)
-                    .validateLadenData(statusCodes: 200)
-                    .decodeJSON { (_,_) -> JSONDecoder in
-                        let decoder = JSONDecoder()
-                        decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
-                        return decoder
-                    }.map { (response: Self.PagedActivities) in
+
+                return try initial.request.set { try $0.addQueries([from, to])}
+            }, call: { (publisher, _) in
+                publisher.send(expecting: .json, statusCode: 200)
+                    .decodeJSON(decoder: .custom( { (request, response, dateFormatter) -> JSONDecoder in
+                        return JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter }
+                    } )) { (response: Self.PagedActivities, _) in
                         (response.metadata.paging, response.activities)
-                    }
-            })
+                }.mapError(IG.API.Error.transform)
+            }).mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-extension IG.API.Request {
-    /// Contains all functionality related to a user's activity.
-    public struct History {
-        /// Pointer to the actual API instance in charge of calling the endpoints.
-        internal unowned let api: IG.API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) {
-            self.api = api
-        }
-    }
-}
-
-// MARK: Response Entities
+// MARK: - Entities
 
 extension IG.API.Request.History {
     /// A single page of activity requests.
@@ -344,5 +340,38 @@ extension IG.API.Activity {
             case rolled
             case deleted
         }
+    }
+}
+
+// MARK: - Functionality
+
+extension IG.API.Activity: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("title", self.title)
+        result.append("type", self.type)
+        result.append("status", self.status)
+        result.append("channel", self.channel)
+        result.append("deal ID", self.dealIdentifier)
+        result.append("epic", self.epic)
+        result.append("expiry", self.expiry.debugDescription)
+        result.append("details", self.details) {
+            $0.append("deal reference", $1.dealReference)
+            $0.append("actions", $1.<#T##value: [RawRepresentable]?##[RawRepresentable]?#>)
+            $0.append("market name", $1.marketName)
+            $0.append("currency", $1.currencyCode)
+            $0.append("direction", $1.direction)
+            $0.append("size", $1.size)
+            $0.append("level", $1.level)
+            $0.append("limit", $1.limit?.debugDescription)
+            $0.append("stop", $1.stop?.debugDescription)
+            $0.append("working order expiration", $1.workingOrderExpiration)
+        }
+        return result.generate()
     }
 }

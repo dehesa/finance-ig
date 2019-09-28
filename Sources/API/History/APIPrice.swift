@@ -20,7 +20,7 @@ extension IG.API.Request.History {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
             
-                let formatter = IG.API.Formatter.iso8601.deepCopy.set { $0.timeZone = timezone }
+                let formatter = IG.API.Formatter.iso8601Broad.deepCopy.set { $0.timeZone = timezone }
                 guard let page = page else { return (0, 1, formatter) }
                 let pageNumber = (page.number > 0) ? page.number : 1
                 return (page.size, pageNumber, formatter)
@@ -162,7 +162,7 @@ extension IG.API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)

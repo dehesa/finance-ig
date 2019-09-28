@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 extension IG.API.Request {
-    /// Contains all functionality related to user accounts.
+    /// List of endpoints related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         fileprivate unowned let api: IG.API
@@ -20,8 +20,8 @@ extension IG.API.Request.Accounts {
     // MARK:  GET /accounts
     
     /// Returns a list of accounts belonging to the logged-in client.
-    /// - returns: `Future` related type forwarding a list of user's accounts.
-    public func getAll() -> AnyPublisher<[IG.API.Account],IG.API.Error> {
+    /// - returns: *Future* forwarding a list of user's accounts.
+    public func getAll() -> IG.API.Future<[IG.API.Account]> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -34,8 +34,8 @@ extension IG.API.Request.Accounts {
     // MARK:  GET /accounts/preferences
     
     /// Returns the targeted account preferences.
-    /// - returns: `Future` related type forwarding the current account's pereferences.
-    public func preferences() -> AnyPublisher<IG.API.Account.Preferences,IG.API.Error> {
+    /// - returns: *Future* forwarding the current account's pereferences.
+    public func preferences() -> IG.API.Future<IG.API.Account.Preferences> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -48,8 +48,8 @@ extension IG.API.Request.Accounts {
     
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
-    /// - returns: `Future` related type indicating the success of the operation with a successful complete.
-    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,IG.API.Error> {
+    /// - returns: *Future* indicating the success of the operation with a successful complete.
+    public func updatePreferences(trailingStops: Bool) -> IG.API.Future<Never> {
         self.api.publisher { (_) -> Self.PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
             }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in

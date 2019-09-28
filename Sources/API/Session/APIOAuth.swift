@@ -6,11 +6,11 @@ extension IG.API.Request.Session {
     // MARK: POST /session
 
     /// Performs the OAuth login request with the login credential passed as parameter.
-    /// - note: No credentials are needed for this endpoint.
+    /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: API key given by the platform identifying the endpoint usage.
     /// - parameter user: User name and password to log in into an account.
     /// - returns: `Future` related type forwarding the platform credentials if the login was successful.
-    internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> IG.API.Publishers.Decode<Void,IG.API.Credentials> {
+    internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.API.Credentials,Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = Self.PayloadOAuth(user: user)
@@ -19,13 +19,13 @@ extension IG.API.Request.Session {
             .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth, _) -> IG.API.Credentials in
                 let token = IG.API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
-            }
+            }.eraseToAnyPublisher()
     }
 
     // MARK: POST /session/refresh-token
 
     /// Refreshes a trading session token, obtaining new session for subsequent API.
-    /// - note: No credentials are needed for this endpoint.
+    /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
@@ -39,8 +39,7 @@ extension IG.API.Request.Session {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth.Token, _) in
                 .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
-            }
-            .eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
     }
 }
 
