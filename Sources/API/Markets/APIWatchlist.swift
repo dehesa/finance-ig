@@ -115,7 +115,7 @@ extension IG.API.Request.Watchlists {
 // MARK: - Supporting Entities
 
 extension IG.API.Request {
-    /// Contains all functionality related to API watchlists.
+    /// List of endpoints related to API watchlists.
     public struct Watchlists {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         fileprivate unowned let api: IG.API

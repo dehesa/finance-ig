@@ -54,6 +54,7 @@
 		8D452677233A6F640034D577 /* Confirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24D0D1230EF496003D25EA /* Confirmation.swift */; };
 		8D45267B233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
 		8D45267C233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
+		8D7AB05C233F43AE00439CA1 /* APIActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA782149A6CE00344CBF /* APIActivity.swift */; };
 		8D84AB1C233A029600DFAFFF /* PlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF75CDB2322A85100130229 /* PlaygroundTests.swift */; };
 		8DA398C02338E3EA007B918F /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DA398B72338E3EA007B918F /* IG.framework */; platformFilter = ios; };
 		8DA398D32338ED1A007B918F /* Lightstreamer_iOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DA398D12338ED1A007B918F /* Lightstreamer_iOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -124,7 +125,6 @@
 		8D1CC9732299EE6C009AB4D3 /* AnyDecodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyDecodable.swift; sourceTree = "<group>"; };
 		8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyEncodable.swift; sourceTree = "<group>"; };
-		8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+API.swift"; sourceTree = "<group>"; };
 		8D24D0D1230EF496003D25EA /* Confirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Confirmation.swift; sourceTree = "<group>"; };
 		8D2C214723313BFF006F8C41 /* Reactive+DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reactive+DB.swift"; sourceTree = "<group>"; };
 		8D2EA939233B605C0004A4C2 /* APIAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIAccount.swift; sourceTree = "<group>"; };
@@ -646,7 +646,6 @@
 				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
 				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
 				8D2EA93B233B6C0C0004A4C2 /* Combine+API.swift */,
-				8D1CC97C229B0706009AB4D3 /* Reactive+API.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -1081,6 +1080,7 @@
 				8D2EA938233B5CBB0004A4C2 /* APIOAuth.swift in Sources */,
 				8DAC346D233D15A90082DB1C /* APIApplications.swift in Sources */,
 				8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */,
+				8D7AB05C233F43AE00439CA1 /* APIActivity.swift in Sources */,
 				8D452657233A3D270034D577 /* SQLite.swift in Sources */,
 				8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */,
 			);

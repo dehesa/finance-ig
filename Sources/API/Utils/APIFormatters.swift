@@ -24,14 +24,14 @@ extension IG.API {
 //        static var dateDenormalBroad: DateFormatter {
 //            return IG.Formatter.dateDenormalBroad
 //        }
-//
-//        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
-//        /// - Format: `yyyy-MM-dd'T'HH:mm:ss`
-//        /// - Example: `2019-11-25T22:33:11`
-//        static let iso8601 = DateFormatter().set {
-//            return IG.Formatter.iso8601Broad
-//        }
-//
+
+        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Format: `yyyy-MM-dd'T'HH:mm:ss`
+        /// - Example: `2019-11-25T22:33:11`
+        static var iso8601Broad: DateFormatter {
+            return IG.Formatter.iso8601Broad
+        }
+
 //        /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
 //        /// - Format: `yyyy-MM-dd'T'HH:mm`
 //        /// - Example: `2019-11-25T22:33`

@@ -33,7 +33,7 @@ extension IG.API.Request.Positions {
 // MARK: - Supporting Entities
 
 extension IG.API.Request {
-    /// Contains all functionality related to API positions.
+    /// List of endpoints related to API positions.
     public struct Positions {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API
@@ -87,7 +87,7 @@ extension IG.API {
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
             self.identifier = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
-            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
+            self.date = try nestedContainer.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
             self.currencyCode = try nestedContainer.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try nestedContainer.decode(IG.Deal.Direction.self, forKey: .direction)
             self.contractSize = try nestedContainer.decode(Decimal.self, forKey: .contractSize)

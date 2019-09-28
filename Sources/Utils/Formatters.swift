@@ -85,4 +85,10 @@ extension DateFormatter {
     internal var deepCopy: DateFormatter {
         return self.copy() as! DateFormatter
     }
+    
+    /// Makes a deep copy of the passed `DateFormatter` and sets the time zone on the copy.
+    /// - requires: `NSCopying` inheritance to work. 
+    internal func deepCopy(timeZone: TimeZone) -> DateFormatter {
+        return self.deepCopy.set { $0.timeZone = timeZone }
+    }
 }

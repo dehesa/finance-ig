@@ -146,7 +146,7 @@ extension IG.API.Request.Nodes {
 // MARK: - Supporting Entities
 
 extension IG.API.Request {
-    /// Contains all functionality related to navigation nodes.
+    /// List of endpoints related to navigation nodes.
     public struct Nodes {
         /// Pointer to the actual API instance in charge of calling the endpoints.
         fileprivate unowned let api: IG.API

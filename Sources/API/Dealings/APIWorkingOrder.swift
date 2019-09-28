@@ -21,7 +21,7 @@ extension IG.API.Request.WorkingOrders {
 // MARK: - Supporting Entities
 
 extension IG.API.Request {
-    /// Contains all functionality related to API working orders.
+    /// List of endpoints related to API working orders.
     public struct WorkingOrders {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API
@@ -78,7 +78,7 @@ extension IG.API {
             
             let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
-            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)

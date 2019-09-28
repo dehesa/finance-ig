@@ -12,15 +12,15 @@ public final class API {
     private let queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
     internal let channel: URLSession
-    #warning("API: Uncomment")
     /// It holds data and functionality related to the user's session.
     public internal(set) var session: IG.API.Request.Session
     /// It holds functionality related to the user's applications.
     public var applications: IG.API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
     public var accounts: IG.API.Request.Accounts { return .init(api: self) }
-//    /// It holds functionality related to the user's activity & transactions, and market prices.
-//    public var history: IG.API.Request.History { return .init(api: self) }
+    /// It holds functionality related to the user's activity & transactions, and market prices.
+    public var history: IG.API.Request.History { return .init(api: self) }
+    #warning("API: Uncomment")
 //    /// It holds functionality related to market navigation nodes.
 //    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
 //    /// It holds functionality related to platform market.

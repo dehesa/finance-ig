@@ -8,23 +8,23 @@ extension IG.API.Request.Session {
     /// Creates a trading session, obtaining session tokens for subsequent API access.
     ///
     /// Region-specific login restrictions may apply.
-    /// - note: No credentials are needed for this endpoint.
+    /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - todo: Password encryption doesn't work! Currently it is ignoring the parameter.
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `Future` related type forwarding platform credentials if the login was successful.
-    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> IG.API.Publishers.Decode<Void,(credentials: IG.API.Credentials, settings: IG.API.Session.Settings)> {
+    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> AnyPublisher<(credentials: API.Credentials, settings: API.Session.Settings), Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate, _) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate, _) -> (credentials: IG.API.Credentials, settings: IG.API.Session.Settings) in
                 let token = IG.API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 let credentials = IG.API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
                 return (credentials, r.session.settings)
-            }
+            }.eraseToAnyPublisher()
     }
 
     // MARK: GET /session?fetchSessionTokens=true
@@ -41,11 +41,11 @@ extension IG.API.Request.Session {
     }
 
     /// Returns the user's session details for the credentials given as arguments and regenerates the certificate tokens.
-    /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint.
+    /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
-    /// - returns: `Future` related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
-    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> AnyPublisher<(IG.API.Session,IG.API.Credentials.Token),IG.API.Error> {
+    /// - returns: *Future* forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
+    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.Future<(IG.API.Session,IG.API.Credentials.Token)> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
                 var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
@@ -70,13 +70,14 @@ extension IG.API.Request.Session {
     /// Returns an encryption key to use in order to send the user password in an encrypted form.
     ///
     /// To encrypt a password:
-    /// 1. call /session/encryptionKey which gives a key and timestamp
+    /// 1. call this endpoint which gives a key and timestamp
     /// 2. create a RSA token using the key.
-    /// 3. encrypt password + "|" + timestamp
-    /// - note: No credentials are needed for this endpoint.
+    /// 3. encrypt password + `|` + timestamp
+    /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: The API key which the encryption key will be associated to.
-    /// - returns: `Future` related type forwarding the session's encryption key with the key's timestamp.
-    fileprivate func generateEncryptionKey(key: IG.API.Key) -> AnyPublisher<IG.API.Session.EncryptionKey,IG.API.Error> {
+    /// - returns: *Future* forwarding the session's encryption key with the key's timestamp.
+    /// - todo: Use this to encrypt the password.
+    fileprivate func generateEncryptionKey(key: IG.API.Key) -> IG.API.Future<IG.API.Session.EncryptionKey> {
         self.api.publisher
             .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.rawValue] })
             .send(expecting: .json, statusCode: 200)
