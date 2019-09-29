@@ -102,7 +102,7 @@ extension IG.API.User {
 }
 
 extension IG.API.User: IG.DebugDescriptable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(IG.API.printableDomain).\(Self.self)"
     }
     

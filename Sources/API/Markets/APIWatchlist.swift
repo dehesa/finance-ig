@@ -1,118 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Watchlists {
-    
-    // MARK: POST /watchlists
-    
-    /// Creates a watchlist.
-    /// - parameter name: Watchlist given name.
-    /// - parameter epics: List of market epics to be associated to this new watchlist.
-    /// - returns: SignalProducer with the watchlist identifier as its value.
-    public func create(name: String, epics: [IG.Market.Epic]) -> SignalProducer<(identifier: String, areAllInstrumentsAdded: Bool),IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
-                guard !name.isEmpty else {
-                    let message = "The watchlist name cannot be empty"
-                    throw IG.API.Error.invalidRequest(message, suggestion: "The watchlist name must contain at least one character")
-                }
-                return .init(name: name, epics: epics.uniqueElements)
-            }.request(.post, "watchlists", version: 1, credentials: true, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperCreation) in (w.identifier, w.areAllInstrumentsAdded) }
-    }
-
-    
-    // MARK: GET /watchlists
-    
-    /// Returns all watchlists belonging to the active account.
-    public func getAll() -> SignalProducer<[IG.API.Watchlist],IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "watchlists", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperList) in w.watchlists }
-    }
-    
-    // MARK: GET /watchlists/{watchlistId}
-    
-    /// Returns the targeted watchlist.
-    /// - parameter identifier: The identifier for the watchlist being targeted.
-    public func getMarkets(from identifier: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Void in
-                guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
-                }
-            }.request(.get, "watchlists/\(identifier)", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperWatchlist) in w.markets }
-    }
-    
-    // MARK: PUT /watchlists/{watchlistId}
-    
-    /// Adds a market to a watchlist.
-    /// - parameter identifier: The identifier for the watchlist being targeted.
-    /// - parameter epic: The market epic to be added to the watchlist.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ in
-                guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
-                }
-            }.request(.put, "watchlists/\(identifier)", version: 1, credentials: true, body: { (_,_) in
-                let payload = ["epic": epic]
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (_: Self.WrapperUpdate) in return }
-    }
-
-    
-    // MARK: DELETE /watchlists/{watchlistId}/{epic}
-    
-    /// Removes a market from a watchlist.
-    /// - parameter identifier: The identifier for the watchlist being targeted.
-    /// - parameter epic: The market epic to be removed from the watchlist.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ in
-                guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
-                }
-            }.request(.delete, "watchlists/\(identifier)/\(epic.rawValue)", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (_: Self.WrapperUpdate) in return }
-    }
-    
-    // MARK: DELETE /watchlists/{watchlistId}
-    
-    /// Deletes the targeted watchlist.
-    /// - parameter id: The identifier for the watchlist being targeted.
-    /// - returns: `SignalProducer` indicating the success of the operation.
-    public func delete(identifier watchlistIdentifier: String) -> SignalProducer<Void,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ in
-                guard !watchlistIdentifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
-                }
-            }.request(.delete, "watchlists/\(watchlistIdentifier)", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperUpdate) in return }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// List of endpoints related to API watchlists.
@@ -128,15 +15,119 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.API.Request.Watchlists {
+    
+    // MARK: POST /watchlists
+    
+    /// Creates a watchlist.
+    /// - parameter name: Watchlist given name.
+    /// - parameter epics: List of market epics to be associated to this new watchlist.
+    /// - returns: *Future* forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
+    public func create(name: String, epics: [IG.Market.Epic]) -> IG.API.Future<(identifier: String, areAllInstrumentsAdded: Bool)> {
+        self.api.publisher { (_) -> Self.PayloadCreation in
+                guard !name.isEmpty else {
+                    throw IG.API.Error.invalidRequest("The watchlist name cannot be empty", suggestion: "The watchlist name must contain at least one character")
+                }
+                return .init(name: name, epics: epics.uniqueElements)
+            }.makeRequest(.post, "watchlists", version: 1, credentials: true, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperCreation, _) in (w.identifier, w.areAllInstrumentsAdded) }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
 
-extension IG.API.Error.Message {
-    fileprivate static var emptyWatchlistIdentifier: String { "The watchlist identifier cannot be empty" }
+    
+    // MARK: GET /watchlists
+    
+    /// Returns all watchlists belonging to the active account.
+    /// - returns: *Future* forwarding an array of watchlists.
+    public func getAll() -> IG.API.Future<[IG.API.Watchlist]> {
+        self.api.publisher
+            .makeRequest(.get, "watchlists", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperList, _) in w.watchlists }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: GET /watchlists/{watchlistId}
+    
+    /// Returns the targeted watchlist.
+    /// - parameter identifier: The identifier for the watchlist being targeted.
+    /// - returns: *Future* forwarding all markets under the targeted watchlist.
+    public func getMarkets(from identifier: String) -> IG.API.Future<[IG.API.Node.Market]> {
+        self.api.publisher { (_) -> Void in
+                guard !identifier.isEmpty else {
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
+                }
+            }.makeRequest(.get, "watchlists/\(identifier)", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperWatchlist, _) in w.markets }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: PUT /watchlists/{watchlistId}
+    
+    /// Adds a market to a watchlist.
+    /// - parameter identifier: The identifier for the watchlist being targeted.
+    /// - parameter epic: The market epic to be added to the watchlist.
+    /// - returns: *Future* indicating the success of the operation.
+    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> IG.API.Future<Never> {
+        self.api.publisher { (_) in
+                guard !identifier.isEmpty else {
+                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                }
+            }.makeRequest(.put, "watchlists/\(identifier)", version: 1, credentials: true, body: {
+                (.json, try JSONEncoder().encode(["epic": epic]))
+            }).send(expecting: .json, statusCode: 200)
+            //.decodeJSON(decoder: .default()) { (_: Self.WrapperUpdate, _) in return }
+            .ignoreOutput()
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    
+    // MARK: DELETE /watchlists/{watchlistId}/{epic}
+    
+    /// Removes a market from a watchlist.
+    /// - parameter identifier: The identifier for the watchlist being targeted.
+    /// - parameter epic: The market epic to be removed from the watchlist.
+    /// - returns: *Future* indicating the success of the operation.
+    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> IG.API.Future<Never> {
+        self.api.publisher { (_) in
+                guard !identifier.isEmpty else {
+                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                }
+            }.makeRequest(.delete, "watchlists/\(identifier)/\(epic.rawValue)", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            //.decodeJSON(decoder: .default()) { (_: Self.WrapperUpdate, _) in return }
+            .ignoreOutput()
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: DELETE /watchlists/{watchlistId}
+    
+    /// Deletes the targeted watchlist.
+    /// - parameter identifier: The identifier for the watchlist being targeted.
+    /// - returns: *Future* indicating the success of the operation.
+    public func delete(identifier: String) -> IG.API.Future<Never> {
+        self.api.publisher { (_) in
+                guard !identifier.isEmpty else {
+                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                }
+            }.makeRequest(.delete, "watchlists/\(identifier)", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            //.decodeJSON(decoder: .default()) { (w: Self.WrapperUpdate, _) in return }
+            .ignoreOutput()
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
 }
 
-extension IG.API.Error.Suggestion {
-    fileprivate static var emptyWatchlistIdentifier: String { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
-}
+// MARK: - Entities
 
 extension IG.API.Request.Watchlists {
     private struct PayloadCreation: Encodable {
@@ -144,8 +135,6 @@ extension IG.API.Request.Watchlists {
         let epics: [IG.Market.Epic]
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API.Request.Watchlists {
     private struct WrapperCreation: Decodable {
@@ -214,14 +203,28 @@ extension IG.API {
     }
 }
 
-extension IG.API.Watchlist: CustomDebugStringConvertible {
+// MARK: - Functionality
+
+extension IG.API.Error.Message {
+    fileprivate static var emptyWatchlistIdentifier: Self { "The watchlist identifier cannot be empty" }
+}
+
+extension IG.API.Error.Suggestion {
+    fileprivate static var emptyWatchlistIdentifier: Self { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
+}
+
+extension IG.API.Watchlist: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Watchlist")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("watchlist ID", self.identifier)
         result.append("name", self.name)
-        result.append("is owned by user", !self.isOwnedBySystem)
-        result.append("is editable", self.isEditable)
-        result.append("is deleteable", self.isDeleteable)
+        result.append("owned by user", !self.isOwnedBySystem)
+        result.append("editable", self.isEditable)
+        result.append("deleteable", self.isDeleteable)
         return result.generate()
     }
 }

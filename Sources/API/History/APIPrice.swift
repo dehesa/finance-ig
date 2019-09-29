@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API.Request.History {
@@ -7,56 +7,77 @@ extension IG.API.Request.History {
     
     /// Returns historical prices for a particular instrument.
     ///
-    /// **This is a paginated-request**, which means that the `SignalProducer` will return several value events with an array of prices (as indicated by the `page.size`).
-    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// The *constinuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may fail.
+    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter page: Paging variables for the transactions page received. If `nil`, paging is disabled.
-    /// - todo: The request may accept a further `max` option specifying the maximum amount of price points that should be loaded if a data range hasn't been given.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, page: (size: UInt, number: UInt)? = (20, 1)) -> SignalProducer<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
-        return SignalProducer(api: self.api, validating: { (api) -> (pageSize: UInt, pageNumber: UInt, formatter: DateFormatter) in
+    /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.Future<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+        api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
+                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-            
-                let formatter = IG.API.Formatter.iso8601Broad.deepCopy.set { $0.timeZone = timezone }
-                guard let page = page else { return (0, 1, formatter) }
-                let pageNumber = (page.number > 0) ? page.number : 1
-                return (page.size, pageNumber, formatter)
-            }).request(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (_,validated) in
-                return [URLQueryItem(name: "from", value: validated.formatter.string(from: from)),
-                        URLQueryItem(name: "to", value: validated.formatter.string(from: to)),
-                        URLQueryItem(name: "resolution", value: resolution.rawValue),
-                        URLQueryItem(name: "pageSize", value: String(validated.pageSize)),
-                        URLQueryItem(name: "pageNumber", value: String(validated.pageNumber)) ]
-            }).paginate(request: { (api, initialRequest, previous) in
-                guard let previous = previous else {
-                    return initialRequest
+                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+            }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
+                [.init(name: "from", value: values.string(from: from)),
+                 .init(name: "to", value: values.string(from: to)),
+                 .init(name: "resolution", value: resolution.rawValue),
+                 .init(name: "pageSize", value: "0"),
+                 .init(name: "pageNumber", value: "1") ]
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (response: Self.PagedPrices, _) in
+                (response.prices, response.metadata.allowance)
+            }.mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: GET /prices/{epic}
+    
+    /// Returns historical prices for a particular instrument.
+    ///
+    /// **This is a paginated-request**, which means that the returned `Publisher` will forward downstream several value each one with an array (of size `array.size`).
+    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
+    /// - parameter from: The date from which to start the query.
+    /// - parameter to: The date from which to end the query.
+    /// - parameter resolution: It defines the resolution of requested prices.
+    /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
+    /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
+    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.ContinuousPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+        api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                
-                guard let pageNumber = previous.meta.next else {
-                    return nil
+                guard page.size > 0 else {
+                    throw IG.API.Error.invalidRequest(.init(#"The page size must be greater than zero; however, "\#(page.size)" was provided instead"#), suggestion: .readDocs)
                 }
-                
-                var request = initialRequest
-                try request.addQueries( [URLQueryItem(name: "pageNumber", value: String(pageNumber))] )
-                return request
-            }, endpoint: { (producer) -> SignalProducer<(Self.PagedPrices.Metadata.Page, (prices: [IG.API.Price], allowance: IG.API.Price.Allowance)), IG.API.Error> in
-                producer.send(expecting: .json)
-                    .validateLadenData(statusCodes: 200)
-                    .decodeJSON()
-                    .map { (response: Self.PagedPrices) in
-                        let result = (response.prices, allowance: response.metadata.allowance)
-                        return (response.metadata.page, result)
-                    }
-            })
+                guard page.number > 0 else {
+                    throw IG.API.Error.invalidRequest(.init(#"The page number must be greater than zero; however, "\#(page.number)" was provided instead"#), suggestion: .readDocs)
+                }
+
+                let formatter = IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return (page.size, page.number, formatter)
+            }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
+                [.init(name: "from", value: values.formatter.string(from: from)),
+                 .init(name: "to", value: values.formatter.string(from: to)),
+                 .init(name: "resolution", value: resolution.rawValue),
+                 .init(name: "pageSize", value: String(values.pageSize)),
+                 .init(name: "pageNumber", value: String(values.pageNumber)) ]
+            }).sendPaginating(request: { (_, initial, previous) -> URLRequest? in
+                guard let previous = previous else { return initial.request }
+                guard let pageNumber = previous.metadata.next else { return nil }
+                return try initial.request.set { try $0.addQueries([URLQueryItem(name: "pageNumber", value: String(pageNumber))]) }
+            }, call: { (publisher, _) in
+                publisher.send(expecting: .json, statusCode: 200)
+                    .decodeJSON(decoder: .default(response: true)) { (response: Self.PagedPrices, _) in
+                        (response.metadata.page, (response.prices, response.metadata.allowance))
+                    }.mapError(IG.API.Error.transform)
+            }).mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Request Entities
+// MARK: - Entities
 
 extension IG.API.Request.History {
     /// Resolution of requested prices.
@@ -104,8 +125,6 @@ extension IG.API.Request.History {
         }
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API.Request.History {
     /// Single page of prices request.
@@ -236,5 +255,28 @@ extension IG.API.Price {
             case remainingDataPoints = "remainingAllowance"
             case totalDataPoints = "totalAllowance"
         }
+    }
+}
+
+// MARK: - Functionality
+
+extension IG.API.Price: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("open", Self.represent(self.open))
+        result.append("close", Self.represent(self.close))
+        result.append("lowest", Self.represent(self.lowest))
+        result.append("highest", Self.represent(self.highest))
+        result.append("volume", self.volume)
+        return result.generate()
+    }
+    
+    private static func represent(_ point: Self.Point) -> String {
+        return "\(point.ask) ask, \(point.bid) bid"
     }
 }

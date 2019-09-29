@@ -119,7 +119,7 @@ extension IG.API.Error {
         
         static var sessionExpired: Self { "The API instance was not found" }
         static var noCredentials: Self  { "No credentials were found on the API instance" }
-//        static var invalidTrailingStop: String { "Invalid trailing stop setting" }
+        static var invalidTrailingStop: Self { "Invalid trailing stop setting" }
     }
     
     /// Namespace for suggestions reused over the framework.
@@ -131,8 +131,8 @@ extension IG.API.Error {
         static var readDocs: Self    { "Read the request documentation and be sure to follow all requirements" }
         static var reviewError: Self { "Review the returned error and try to fix the problem" }
         static var fileBug: Self     { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
-//        static var validLimit: String  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
-//        static var validStop: String   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
+        static var validLimit: Self  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
+        static var validStop: Self   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
     }
 
     /// A typical server error payload.

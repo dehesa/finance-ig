@@ -172,7 +172,7 @@ fileprivate extension IG.DB.Price.Point {
 // MARK: Debuggin
 
 extension IG.DB.Price: IG.DebugDescriptable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return IG.DB.printableDomain.appending(".\(Self.self)")
     }
     

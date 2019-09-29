@@ -264,7 +264,7 @@ extension IG.Confirmation: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("deal ID", self.dealIdentifier)
         result.append("deal reference", self.dealReference)
         result.append("epic", self.epic)

@@ -85,15 +85,15 @@ extension IG.Streamer.Formatter {
 }
 
 extension IG.Streamer.Formatter.Update.Error: IG.ErrorPrintable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(Streamer.printableDomain).\(Streamer.Formatter.self).\(Streamer.Formatter.Update.self).\(Self.self)"
     }
     
-    var printableType: String {
+    internal var printableType: String {
         return self.type
     }
     
-    func printableMultiline(level: Int) -> String {
+    internal func printableMultiline(level: Int) -> String {
         let prefix = Self.debugPrefix(level: level+1)
         
         var result = Self.printableDomain

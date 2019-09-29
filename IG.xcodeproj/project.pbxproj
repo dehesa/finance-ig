@@ -69,6 +69,17 @@
 		8DE1B2B9214A639E00C1FF13 /* API in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFD2149AB1200344CBF /* API */; };
 		8DE1B2BA214A639F00C1FF13 /* Environment in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFE2149AB1200344CBF /* Environment */; };
 		8DE1B2BB214A639F00C1FF13 /* Streamer in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFF2149AB1200344CBF /* Streamer */; };
+		8DFEC5F1234078F7005906B3 /* APITransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA772149A6CE00344CBF /* APITransaction.swift */; };
+		8DFEC5F2234080B7005906B3 /* APIPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA762149A6CE00344CBF /* APIPrice.swift */; };
+		8DFEC5F323408459005906B3 /* APIMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA722149A6CE00344CBF /* APIMarket.swift */; };
+		8DFEC5F423409600005906B3 /* APINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA732149A6CE00344CBF /* APINode.swift */; };
+		8DFEC5F52340DE14005906B3 /* APIWatchlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA742149A6CE00344CBF /* APIWatchlist.swift */; };
+		8DFEC5F62340E743005906B3 /* APISentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF93B9722E757B4001B9412 /* APISentiment.swift */; };
+		8DFEC5F72340E9DF005906B3 /* APIConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA662149A6CE00344CBF /* APIConfirmation.swift */; };
+		8DFEC5F82340EC41005906B3 /* APIPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA692149A6CE00344CBF /* APIPosition.swift */; };
+		8DFEC5F92340EECE005906B3 /* APIWorkingOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA682149A6CE00344CBF /* APIWorkingOrder.swift */; };
+		8DFEC5FA2340F299005906B3 /* APIPositionOTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA672149A6CE00344CBF /* APIPositionOTC.swift */; };
+		8DFEC5FB2340F7BB005906B3 /* APIWorkingOrderOTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA652149A6CE00344CBF /* APIWorkingOrderOTC.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -250,7 +261,6 @@
 		8DC4CBFE2149AB1200344CBF /* Environment */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Environment; sourceTree = "<group>"; };
 		8DC4CBFF2149AB1200344CBF /* Streamer */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Streamer; sourceTree = "<group>"; };
 		8DC4CC052149AF2500344CBF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		8DCE0CA7232BAB11001FE16E /* Array.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Array.swift; sourceTree = "<group>"; };
 		8DD468D322F1C70100134B67 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
 		8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFormatters.swift; sourceTree = "<group>"; };
 		8DE2C3DD22FC72E400BB6261 /* DealLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealLimit.swift; sourceTree = "<group>"; };
@@ -708,7 +718,6 @@
 		8DC4CA832149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DCE0CA7232BAB11001FE16E /* Array.swift */,
 				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8D819E1622F2E3100031A9D5 /* Reactive+Timeout.swift */,
 				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
@@ -1081,6 +1090,17 @@
 				8DAC346D233D15A90082DB1C /* APIApplications.swift in Sources */,
 				8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */,
 				8D7AB05C233F43AE00439CA1 /* APIActivity.swift in Sources */,
+				8DFEC5F1234078F7005906B3 /* APITransaction.swift in Sources */,
+				8DFEC5F2234080B7005906B3 /* APIPrice.swift in Sources */,
+				8DFEC5F423409600005906B3 /* APINode.swift in Sources */,
+				8DFEC5F323408459005906B3 /* APIMarket.swift in Sources */,
+				8DFEC5F52340DE14005906B3 /* APIWatchlist.swift in Sources */,
+				8DFEC5F62340E743005906B3 /* APISentiment.swift in Sources */,
+				8DFEC5F72340E9DF005906B3 /* APIConfirmation.swift in Sources */,
+				8DFEC5F82340EC41005906B3 /* APIPosition.swift in Sources */,
+				8DFEC5FA2340F299005906B3 /* APIPositionOTC.swift in Sources */,
+				8DFEC5F92340EECE005906B3 /* APIWorkingOrder.swift in Sources */,
+				8DFEC5FB2340F7BB005906B3 /* APIWorkingOrderOTC.swift in Sources */,
 				8D452657233A3D270034D577 /* SQLite.swift in Sources */,
 				8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */,
 			);
