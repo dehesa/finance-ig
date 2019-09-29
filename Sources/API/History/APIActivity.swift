@@ -21,15 +21,16 @@ extension IG.API.Request.History {
     
     /// Returns the account's activity history.
     ///
-    /// **This is a paginated-request**, which means that the `SignalProducer` will return several value events with an array of activities (as indicated by the `pageSize`).
+    /// **This is a paginated-request**, which means that the returned `Publisher` will forward downstream several values. Each value is actually an array of activities with `pageSize` number of elements.
     /// - attention: The results are returned from newest to oldest.
     /// - parameter from: The start date.
     /// - parameter to: The end date (if `nil` means the end of `from` date).
     /// - parameter detailed: Boolean indicating whether to retrieve additional details about the activity.
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
-    /// - parameter pageSize: The number of activities returned per *page* (or `SignalProducer` value).
-    /// - todo: validate `FIQL` on SignalProducer(api: self, validating: {})
-    public func getActivity(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), pageSize: UInt = 50) -> IG.API.ContinuousPublisher<[IG.API.Activity]> {
+    /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value).
+    /// - todo: validate `FIQL`.
+    /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
+    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> IG.API.ContinuousPublisher<[IG.API.Activity]> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -39,7 +40,7 @@ extension IG.API.Request.History {
                     throw IG.API.Error.invalidRequest("THE FIQL filter cannot be empty", suggestion: .readDocs)
                 }
                 
-                return IG.API.Formatter.iso8601Broad.deepCopy.set { $0.timeZone = timezone }
+                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/activity", version: 3, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -86,11 +87,11 @@ extension IG.API.Request.History {
                 return try initial.request.set { try $0.addQueries([from, to])}
             }, call: { (publisher, _) in
                 publisher.send(expecting: .json, statusCode: 200)
-                    .decodeJSON(decoder: .custom( { (request, response, dateFormatter) -> JSONDecoder in
-                        return JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter }
+                    .decodeJSON(decoder: .custom( { (request, response, values) -> JSONDecoder in
+                        JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.computedValues] = values }
                     } )) { (response: Self.PagedActivities, _) in
                         (response.metadata.paging, response.activities)
-                }.mapError(IG.API.Error.transform)
+                    }.mapError(IG.API.Error.transform)
             }).mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -141,7 +142,7 @@ extension IG.API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.title = try container.decode(String.self, forKey: .title)
@@ -244,7 +245,7 @@ extension IG.API.Activity {
                 case .none: return nil
                 case "GTC": return .tillCancelled
                 case let dateString?:
-                    guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
+                    guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter else {
                         throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
                     }
                     let date = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
@@ -352,7 +353,8 @@ extension IG.API.Activity: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        result.append("date", self.date, formatter: formatter)
         result.append("title", self.title)
         result.append("type", self.type)
         result.append("status", self.status)
@@ -362,7 +364,7 @@ extension IG.API.Activity: IG.DebugDescriptable {
         result.append("expiry", self.expiry.debugDescription)
         result.append("details", self.details) {
             $0.append("deal reference", $1.dealReference)
-            $0.append("actions", $1.<#T##value: [RawRepresentable]?##[RawRepresentable]?#>)
+            $0.append("actions", $1.actions.map({ "\($0.dealIdentifier.rawValue) \($0.type)" }))
             $0.append("market name", $1.marketName)
             $0.append("currency", $1.currencyCode)
             $0.append("direction", $1.direction)
@@ -370,7 +372,13 @@ extension IG.API.Activity: IG.DebugDescriptable {
             $0.append("level", $1.level)
             $0.append("limit", $1.limit?.debugDescription)
             $0.append("stop", $1.stop?.debugDescription)
-            $0.append("working order expiration", $1.workingOrderExpiration)
+            
+            let title = "working order expiration"
+            switch $1.workingOrderExpiration {
+            case .none: $0.append(title, IG.DebugDescription.Symbol.nil)
+            case .tillCancelled: $0.append(title, "till cancelled")
+            case .tillDate(let d): $0.append(title, d, formatter: formatter)
+            }
         }
         return result.generate()
     }

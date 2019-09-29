@@ -73,11 +73,11 @@ extension IG.Streamer.Subscription {
 }
 
 extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(IG.Streamer.printableDomain).\(IG.Streamer.Subscription.self).\(Self.self)"
     }
     
-    var printableType: String {
+    internal var printableType: String {
         switch self.type {
         case .unknown: return "Unknown"
         case .invalidAdapterName: return "Invalid adapter name"
@@ -96,7 +96,7 @@ extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
         }
     }
     
-    func printableMultiline(level: Int) -> String {
+    internal func printableMultiline(level: Int) -> String {
         let levelPrefix = Self.debugPrefix(level: level+1)
         
         var result = "\(Self.printableDomain) (\(self.code) -> \(self.printableType))"

@@ -98,11 +98,11 @@ extension IG.DB.Error {
 }
 
 extension IG.DB.Error: IG.ErrorPrintable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(IG.DB.printableDomain).\(IG.DB.Error.self)"
     }
     
-    var printableType: String {
+    internal var printableType: String {
         switch self.type {
         case .sessionExpired:  return "Session expired"
         case .invalidRequest:  return "Invalid request"
@@ -111,7 +111,7 @@ extension IG.DB.Error: IG.ErrorPrintable {
         }
     }
     
-    func printableMultiline(level: Int) -> String {
+    internal func printableMultiline(level: Int) -> String {
         let levelPrefix    = Self.debugPrefix(level: level+1)
         let sublevelPrefix = Self.debugPrefix(level: level+2)
         

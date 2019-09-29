@@ -1,36 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Positions {
-    
-    // MARK: GET /positions
-    
-    /// Returns all open positions for the active account.
-    ///
-    /// A position is a running bet, which may be long (buy) or short (sell).
-    public func getAll() -> SignalProducer<[IG.API.Position],IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "positions", version: 2, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperList) in w.positions }
-    }
-    
-    // MARK: GET /positions/{dealId}
-    
-    /// Returns an open position for the active account by deal identifier.
-    /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
-    public func get(identifier: IG.Deal.Identifier) -> SignalProducer<IG.API.Position,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// List of endpoints related to API positions.
@@ -46,7 +15,39 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Response Entities
+extension IG.API.Request.Positions {
+    
+    // MARK: GET /positions
+    
+    /// Returns all open positions for the active account.
+    ///
+    /// A position is a running bet, which may be long (buy) or short (sell).
+    /// - returns: *Future* forwarding a list of open positions.
+    public func getAll() -> IG.API.Future<[IG.API.Position]> {
+        self.api.publisher
+            .makeRequest(.get, "positions", version: 2, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true)) { (w: Self.WrapperList, _) in w.positions }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: GET /positions/{dealId}
+    
+    /// Returns an open position for the active account by deal identifier.
+    /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
+    /// - returns: *Future* forwarding the targeted position.
+    public func get(identifier: IG.Deal.Identifier) -> IG.API.Future<IG.API.Position> {
+        self.api.publisher
+            .makeRequest(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default(response: true))
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
 
 extension IG.API.Request.Positions {
     private struct WrapperList: Decodable {
@@ -118,12 +119,18 @@ extension IG.API {
     }
 }
 
-extension IG.API.Position: CustomDebugStringConvertible {
+// MARK: - Functionality
+
+extension IG.API.Position: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Position")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("deal ID", self.identifier)
         result.append("deal reference", self.reference)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current })
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("epic", self.market.instrument.epic)
         result.append("currency", self.currencyCode)
         result.append("direction", self.direction)

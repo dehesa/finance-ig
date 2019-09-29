@@ -20,17 +20,16 @@ public final class API {
     public var accounts: IG.API.Request.Accounts { return .init(api: self) }
     /// It holds functionality related to the user's activity & transactions, and market prices.
     public var history: IG.API.Request.History { return .init(api: self) }
-    #warning("API: Uncomment")
-//    /// It holds functionality related to market navigation nodes.
-//    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
-//    /// It holds functionality related to platform market.
-//    public var markets: IG.API.Request.Markets { return .init(api: self) }
-//    /// It holds functionality related to watchlists.
-//    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
-//    /// It holds functionality related to positions.
-//    public var positions: IG.API.Request.Positions { return .init(api: self) }
-//    /// It holds functionality related to working orders.
-//    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
+    /// It holds functionality related to market navigation nodes.
+    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
+    /// It holds functionality related to platform market.
+    public var markets: IG.API.Request.Markets { return .init(api: self) }
+    /// It holds functionality related to watchlists.
+    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
+    /// It holds functionality related to positions.
+    public var positions: IG.API.Request.Positions { return .init(api: self) }
+    /// It holds functionality related to working orders.
+    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -41,7 +40,7 @@ public final class API {
     public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
         let dispatchQueue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
         let operationQueue = OperationQueue(name: dispatchQueue.label + ".operationQueue", underlyingQueue: dispatchQueue)
-        let channel = URLSession(configuration: API.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
+        let channel = URLSession(configuration: IG.API.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
         self.init(rootURL: rootURL, credentials: credentials, channel: channel, queue: dispatchQueue)
     }
     
@@ -91,7 +90,7 @@ extension IG.API {
 }
 
 extension IG.API: IG.DebugDescriptable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(IG.Bundle.name).\(Self.self)"
     }
     

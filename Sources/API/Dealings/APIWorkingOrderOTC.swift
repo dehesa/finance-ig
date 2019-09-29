@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API.Request.WorkingOrders {
@@ -18,19 +18,27 @@ extension IG.API.Request.WorkingOrders {
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market.
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
-    /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func create(epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
-                       type: IG.API.WorkingOrder.Kind, size: Decimal, level: Decimal, limit: IG.Deal.Limit?, stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?, forceOpen: Bool = true,
-                       expiration: IG.API.WorkingOrder.Expiration, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
-                return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
-            }.request(.post, "workingorders/otc", version: 2, credentials: true, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
+    public func create(epic: IG.Market.Epic,
+                       expiry: IG.Market.Expiry = .none,
+                       currency: IG.Currency.Code,
+                       direction: IG.Deal.Direction,
+                       type: IG.API.WorkingOrder.Kind,
+                       size: Decimal,
+                       level: Decimal,
+                       limit: IG.Deal.Limit?,
+                       stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?,
+                       forceOpen: Bool = true,
+                       expiration: IG.API.WorkingOrder.Expiration,
+                       reference: IG.Deal.Reference? = nil) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher { (_) in
+                try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
+            }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     // MARK: PUT /workingorders/otc/{dealId}
@@ -42,35 +50,35 @@ extension IG.API.Request.WorkingOrders {
     /// - parameter limit: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the working order.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
-    /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.PayloadUpdate in
-                return try .init(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
-            }.request(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
+    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher { (_) in
+                try Self.PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
+            }.makeRequest(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     // MARK: DELETE /workingorders/otc/{dealId}
     
     /// Deletes an OTC working order.
     /// - parameter identifier: A permanent deal reference for a confirmed working order.
-    public func delete(identifier: IG.Deal.Identifier) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    /// - returns: *Future* forwarding the deal reference.
+    public func delete(identifier: IG.Deal.Identifier) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher
+            .makeRequest(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
     
 }
 
-// MARK: - Supporting Entities
+// MARK: - Entities
 
 extension IG.API.Request.WorkingOrders {
     private struct PayloadCreation: Encodable {
@@ -107,7 +115,7 @@ extension IG.API.Request.WorkingOrders {
             }()
             self.limit = try limit.map { (limit) in
                 guard limit.isValid(on: direction, from: level) else {
-                    throw IG.API.Error.invalidRequest("The given limit is invalid", suggestion: IG.API.Error.Suggestion.validLimit).set { $0.context.append(("Working order limit", limit)) }
+                    throw IG.API.Error.invalidRequest("The given limit is invalid", suggestion: .validLimit).set { $0.context.append(("Working order limit", limit)) }
                 }
                 return limit
             }
@@ -119,7 +127,7 @@ extension IG.API.Request.WorkingOrders {
                 }
                 
                 guard let result = entity else {
-                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: IG.API.Error.Suggestion.validStop)
+                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: .validStop)
                 }
                 
                 if case .limited = stop.risk, case .position = stop.type {
@@ -228,7 +236,7 @@ extension IG.API.Request.WorkingOrders {
                 case .position(let l): result = .position(level: l)
                 case .distance(let d): result = .distance(d)
                 }
-                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid", suggestion: IG.API.Error.Suggestion.validStop).set { $0.context.append(("Working order stop", type)) }
+                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid", suggestion: .validStop).set { $0.context.append(("Working order stop", type)) }
             }
             self.expiration = expiration
         }
@@ -268,8 +276,6 @@ extension IG.API.Request.WorkingOrders {
         }
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API.Request.WorkingOrders {
     private struct WrapperReference: Decodable {

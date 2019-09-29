@@ -57,7 +57,7 @@ extension SettableReference {
 extension Calendar: SettableValue {}
 //extension DateComponents: SettableValue {}
 extension URLRequest: SettableValue {}
-//extension IG.API.Error: SetUp {}
+extension IG.API.Error: SettableValue {}
 
 extension DateFormatter: SettableReference {}
 extension JSONDecoder: SettableReference {}

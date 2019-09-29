@@ -10,6 +10,35 @@ extension Array where Element: Equatable {
     }
 }
 
+extension RangeReplaceableCollection where Index==Int {
+    /// Split an array into chunks.
+    /// ```swift
+    /// let num = Array(1...50)
+    /// let chunks = numbers.chunked(into: 10)
+    /// ```
+    /// - parameter size: The size of each chunk.
+    internal func chunked(into size: Int) -> [Self] {
+        return stride(from: 0, to: self.count, by: size).map {
+            Self(self[$0 ..< Swift.min($0 + size, count)])
+        }
+    }
+}
+
+extension Set {
+    /// Split a set into chunks.
+    /// - parameter size: The size of each chunk.
+    internal func chunked(into size: Int) -> [Self] {
+        var next = self.startIndex
+        return stride(from: 0, to: self.count, by: size).map { _ -> Self in
+            let start = next
+            let end = self.index(next, offsetBy: size, limitedBy: self.endIndex) ?? self.endIndex
+            next = end
+            
+            return Self.init(self[start..<end])
+        }
+    }
+}
+
 extension CharacterSet {
     /// Lowercase ANSI letters `a` to `z`.
     internal static let lowercaseANSI = CharacterSet(charactersIn: "a"..."z")

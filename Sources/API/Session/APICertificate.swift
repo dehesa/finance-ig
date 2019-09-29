@@ -14,7 +14,7 @@ extension IG.API.Request.Session {
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
     /// - returns: `Future` related type forwarding platform credentials if the login was successful.
-    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> AnyPublisher<(credentials: API.Credentials, settings: API.Session.Settings), Swift.Error> {
+    internal func loginCertificate(key: IG.API.Key, user: IG.API.User, encryptPassword: Bool = false) -> AnyPublisher<(credentials: IG.API.Credentials, settings: IG.API.Session.Settings), Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = Self.PayloadCertificate(user: user, encryptedPassword: encryptPassword)

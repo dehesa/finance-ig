@@ -151,7 +151,7 @@ extension IG.API.Request.Session {
                 let payload = Self.PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(request: true, response: true)) { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings, call) throws in
+            .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings, call) throws in
                 guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
                 guard var credentials = api.session.credentials else { throw IG.API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession) }
                 

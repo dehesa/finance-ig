@@ -99,11 +99,11 @@ extension IG.Streamer.Error {
 }
 
 extension IG.Streamer.Error: IG.ErrorPrintable {
-    static var printableDomain: String {
+    internal static var printableDomain: String {
         return "\(IG.Streamer.printableDomain).\(Self.self)"
     }
     
-    var printableType: String {
+    internal var printableType: String {
         switch self.type {
         case .sessionExpired: return "Session expired"
         case .invalidRequest: return "Invalid request"
@@ -112,7 +112,7 @@ extension IG.Streamer.Error: IG.ErrorPrintable {
         }
     }
     
-    func printableMultiline(level: Int) -> String {
+    internal func printableMultiline(level: Int) -> String {
         let levelPrefix    = Self.debugPrefix(level: level+1)
         let sublevelPrefix = Self.debugPrefix(level: level+2)
         

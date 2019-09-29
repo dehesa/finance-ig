@@ -35,21 +35,17 @@ extension IG.API {
     internal enum JSON {
         /// Namesapce for JSON decoding keys.
         enum DecoderKey {
-            /// Key for JSON decoders under which the URL response will be stored.
-            static let request = CodingUserInfoKey(rawValue: "APIRequest")!
-            /// Key for JSON decoders under which the URL response will be stored.
-            static let responseHeader = CodingUserInfoKey(rawValue: "APIResponse")!
-            /// Key for JSON decoders under which the URL response data will be stored.
-            static let responseDate = CodingUserInfoKey(rawValue: "APIData")!
+            /// Key for JSON decoders under which the URL response (`HTTPURLResponse`' will be stored.
+            static let responseHeader = CodingUserInfoKey(rawValue: "IG_APIResponseHeader")!
+            /// Key for JSON decoders under which the URL response date (`Date`) will be stored.
+            static let responseDate = CodingUserInfoKey(rawValue: "IG_APIResponseDate")!
             /// Key for JSON decoders under which the pre-computed values will be stored.
-            static let computedValues = CodingUserInfoKey(rawValue: "APIValues")!
-            /// Key for JSON decoders under which a date formatter will be stored.
-            static let dateFormatter = CodingUserInfoKey(rawValue: "APIDateFormatter")!
+            static let computedValues = CodingUserInfoKey(rawValue: "IG_APIComputedValues")!
         }
         /// Specifies a `JSONDecoder` to use in further operations.
         enum Decoder<T> {
             /// The default `JSONDecoder` that has attached as `userInfo` any of the indicated associated values.
-            case `default`(request: Bool = false, response: Bool = false, values: Bool = false)
+            case `default`(response: Bool = false, values: Bool = false)
             /// A custom `JSONDecoder` generated through the provided closure.
             case custom((_ request: URLRequest, _ response: HTTPURLResponse, _ values: T) throws -> JSONDecoder)
             /// A custom already-generated `JSONDecoder`.
@@ -58,9 +54,8 @@ extension IG.API {
             /// Factory function creating a `JSONDecoder` from the receiving enum value.
             func makeDecoder(request: URLRequest, response: HTTPURLResponse, values: T) throws -> JSONDecoder {
                 switch self {
-                case .default(let includeRequest, let includeResponse, let includeValues):
+                case .default(let includeResponse, let includeValues):
                     let decoder = JSONDecoder()
-                    if includeRequest  { decoder.userInfo[IG.API.JSON.DecoderKey.request] = request }
                     if includeResponse { decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] = response }
                     if includeValues   { decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] = values }
                     return decoder

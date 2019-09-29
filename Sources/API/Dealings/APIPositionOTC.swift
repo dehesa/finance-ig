@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.API.Request.Positions {
@@ -8,7 +8,6 @@ extension IG.API.Request.Positions {
     /// Creates a new position.
     ///
     /// This endpoint creates a "transient" position (identified by the returned deal reference).
-    /// The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
     /// - parameter currency: The currency code (3 letters).
@@ -21,24 +20,31 @@ extension IG.API.Request.Positions {
     /// - parameter forceOpen: (default `true`). Enabling force open when creating a new position will enable a second position to be opened on a market. This variable must be `true` if the limit and/or the stop are set.
     /// - parameter reference: (default `nil`). A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade). If `reference` was set as an argument, that same value will be returned.
-    /// - note: Some variables require specific toggles/settings:<br>
-    ///         - All `Decimal` values must be positive numbers and greater than zero.
-    ///         - Setting a limit or a stop requires `force` open to be `true`. If not, an error will be returned.
-    ///         - If a trailing stop is chosen, the trailing behavior must be set.
-    ///         - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
-    public func create(epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: IG.Currency.Code, direction: IG.Deal.Direction,
-                       order: IG.API.Position.Order, strategy: IG.API.Position.Order.Strategy,
-                       size: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?,
-                       forceOpen: Bool = true, reference: IG.Deal.Reference? = nil) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.PayloadCreation in
-                return try .init(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
-            }.request(.post, "positions/otc", version: 2, credentials: true, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    /// - note: The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
+    ///
+    /// Some variables require specific toggles/settings:<br>
+    /// - All `Decimal` values must be positive numbers and greater than zero.
+    /// - Setting a limit or a stop requires `force` open to be `true`. If not, an error will be returned.
+    /// - If a trailing stop is chosen, the trailing behavior must be set.
+    /// - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
+    public func create(epic: IG.Market.Epic,
+                       expiry: IG.Market.Expiry = .none,
+                       currency: IG.Currency.Code,
+                       direction: IG.Deal.Direction,
+                       order: IG.API.Position.Order,
+                       strategy: IG.API.Position.Order.Strategy,
+                       size: Decimal, limit: IG.Deal.Limit?,
+                       stop: IG.Deal.Stop?,
+                       forceOpen: Bool = true,
+                       reference: IG.Deal.Reference? = nil) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher { (_) in
+                try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
+            }.makeRequest(.post, "positions/otc", version: 2, credentials: true, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     // MARK: PUT /positions/otc/{dealId}
@@ -49,18 +55,19 @@ extension IG.API.Request.Positions {
     /// - parameter identifier: A permanent deal reference for a confirmed trade.
     /// - parameter limitLevel: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing values will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
-    /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
+    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
     /// - note: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
-    public func update(identifier: IG.Deal.Identifier, limitLevel: Decimal?, stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api)  { _ -> Self.PayloadUpdate in
-                return try .init(limit: limitLevel, stop: stop)
-            }.request(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    public func update(identifier: IG.Deal.Identifier,
+                       limitLevel: Decimal?,
+                       stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher { (_) in
+                try Self.PayloadUpdate(limit: limitLevel, stop: stop)
+            }.makeRequest(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 
     
@@ -69,25 +76,23 @@ extension IG.API.Request.Positions {
     /// Closes one or more positions.
     /// - parameter request: A filter to match the positions to be deleted.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func delete(matchedBy identification: Self.Identification, direction: IG.Deal.Direction,
-                       order: IG.API.Position.Order, strategy: IG.API.Position.Order.Strategy, size: Decimal) -> SignalProducer<IG.Deal.Reference,IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> Self.PayloadDeletion in
-                return try .init(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
-            }.request(.post, "positions/otc", version: 1, credentials: true, headers: { (_,_) in
-                [._method: IG.API.HTTP.Method.delete.rawValue]
-            }, body: { (_, payload) in
-                let data = try JSONEncoder().encode(payload)
-                return (.json, data)
-            }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON()
-            .map { (w: Self.WrapperReference) in w.dealReference }
+    public func delete(matchedBy identification: Self.Identification,
+                       direction: IG.Deal.Direction,
+                       order: IG.API.Position.Order,
+                       strategy: IG.API.Position.Order.Strategy,
+                       size: Decimal) -> IG.API.Future<IG.Deal.Reference> {
+        self.api.publisher { (_) in
+                try Self.PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
+            }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
+                (.json, try JSONEncoder().encode($0))
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Request Entities
+// MARK: - Entities
 
 extension IG.API.Request.Positions {
     private struct PayloadCreation: Encodable {
@@ -131,32 +136,32 @@ extension IG.API.Request.Positions {
             /// Check for limit validation.
             let limitValidation: (IG.Deal.Direction, Decimal, IG.Deal.Limit) throws -> Void = { (direction, base, limit) in
                 guard limit.isValid(on: direction, from: base) else {
-                    throw E.invalidRequest("The given limit is invalid", suggestion: E.Suggestion.validLimit).set { $0.context.append(("Position limit", limit)) }
+                    throw E.invalidRequest("The given limit is invalid", suggestion: .validLimit).set { $0.context.append(("Position limit", limit)) }
                 }
             }
             /// Check for stop validation.
             let stopValidation: (IG.Deal.Direction, Decimal, IG.Deal.Stop) throws -> Void = { (direction, base, stop) in
                 guard stop.isValid(on: direction, from: base) else {
-                    throw E.invalidRequest("The given stop is invalid", suggestion: E.Suggestion.validStop).set { $0.context.append(("Position stop", stop)) }
+                    throw E.invalidRequest("The given stop is invalid", suggestion: .validStop).set { $0.context.append(("Position stop", stop)) }
                 }
             }
             /// Check for trailing validation.
             let trailingValidation: (IG.Deal.Stop) throws -> Void = { (stop) in
                 if case .dynamic(let settings) = stop.trailing {
                     guard case .some(let trailing) = settings else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified").set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard case .distance(let stopDistance) = stop.type else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: #"If a trailing stop is chosen, only the stop type ".distance" is allowed as a stop level"#).set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(.invalidTrailingStop, suggestion: #"If a trailing stop is chosen, only the stop type ".distance" is allowed as a stop level"#).set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard trailing.distance.isEqual(to: stopDistance) else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the stop distance and the trailing distance must match on position creation time").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the stop distance and the trailing distance must match on position creation time").set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard trailing.increment.isNormal, case .plus = trailing.increment.sign else {
-                        throw E.invalidRequest(E.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero").set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero").set { $0.context.append(("Position stop", stop)) }
                     }
                 }
             }
@@ -267,7 +272,7 @@ extension IG.API.Request.Positions {
         init(limit: Decimal?, stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) throws {
             if let stop = stop, case .dynamic(let settings) = stop.trailing {
                 guard case .some(let settings) = settings else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified")
+                    var error: IG.API.Error = .invalidRequest(.invalidTrailingStop, suggestion: "If a trailing stop is chosen, the trailing distance and increment must be specified")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
@@ -275,14 +280,14 @@ extension IG.API.Request.Positions {
                 
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.distance) else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing disance provided must be a positive number and greater than zero")
+                    var error: IG.API.Error = .invalidRequest(.invalidTrailingStop, suggestion: "The trailing disance provided must be a positive number and greater than zero")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
                 }
                 
                 guard IG.Deal.Stop.Trailing.Settings.isValid(settings.increment) else {
-                    var error: IG.API.Error = .invalidRequest(IG.API.Error.Message.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero")
+                    var error: IG.API.Error = .invalidRequest(.invalidTrailingStop, suggestion: "The trailing increment provided must be a positive number and greater than zero")
                     error.context.append(("Position stop level", stop.level))
                     error.context.append(("Position stop trailing", stop.trailing))
                     throw error
@@ -416,8 +421,6 @@ extension IG.API.Position.Order {
         }
     }
 }
-
-// MARK: Response Entities
 
 extension IG.API.Request.Positions {
     private struct WrapperReference: Decodable {

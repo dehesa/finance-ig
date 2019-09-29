@@ -1,149 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Nodes {
-    
-    // MARK: GET Aggregator
-    
-    /// Returns the navigation node with the given id and all the children till a specified depth.
-    /// - attention: For depths bigger than 0, several endpoints are hit; thus, the callback may be received later on in the future.
-    /// - parameter identifier: The identifier for the targeted node. If `nil`, the top-level nodes are returned.
-    /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
-    /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
-    /// - returns: Signal giving the nodes and/or markets directly under the navigation node given as the parameter.
-    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> SignalProducer<IG.API.Node,IG.API.Error> {
-        let layers = depth.value
-        guard layers > 0 else {
-            return self.get(node: .init(identifier: identifier, name: name))
-        }
-        
-        return self.iterate(node: .init(identifier: identifier, name: name), depth: layers)
-    }
-
-    // MARK: GET /markets/{searchTerm}
-    
-    /// Returns all markets matching the search term.
-    ///
-    /// The search term cannot be an empty string.
-    /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
-    public func getMarkets(matching searchTerm: String) -> SignalProducer<[IG.API.Node.Market],IG.API.Error> {
-        return SignalProducer(api: self.api) { _ -> String in
-            guard !searchTerm.isEmpty else {
-                let message = "Search for markets failed! The search term cannot be empty"
-                throw IG.API.Error.invalidRequest(message, suggestion: IG.API.Error.Suggestion.readDocs)
-            }
-            return searchTerm
-        }.request(.get, "markets", version: 1, credentials: true, queries: { (_,searchTerm) in
-            [URLQueryItem(name: "searchTerm", value: searchTerm)]
-        }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header"
-                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
-                }
-                
-                let decoder = JSONDecoder()
-                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
-                return decoder
-            }
-            .map { (w: Self.WrapperSearch) in w.markets }
-    }
-
-    // MARK: GET /marketnavigation/{nodeId}
-    
-    /// Returns the navigation node described by the given entity.
-    /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
-    /// - returns: Signal returning the node as a value and completing right after that.
-    private func get(node: IG.API.Node) -> SignalProducer<IG.API.Node,IG.API.Error> {
-        return SignalProducer(api: self.api)
-            .request(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON { (_, responseHeader) -> JSONDecoder in
-                let decoder = JSONDecoder()
-                
-                if let identifier = node.identifier {
-                    decoder.userInfo[IG.API.JSON.DecoderKey.nodeIdentifier] = identifier
-                }
-                if let name = node.name {
-                    decoder.userInfo[IG.API.JSON.DecoderKey.nodeName] = name
-                }
-                
-                return decoder
-            }
-    }
-    
-    // MARK: GET Recursive
-    
-    /// Returns the navigation node indicated by the given node argument as well as all its children till a given depth.
-    /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
-    /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
-    /// - returns: Signal returning the node as a value and completing right after that.
-    private func iterate(node: IG.API.Node, depth: Int) -> SignalProducer<IG.API.Node,IG.API.Error> {
-        return SignalProducer { (generator, lifetime) in
-            var parent = node
-            var detacher: Disposable? = nil
-            var childrenIterator: ((_ index: Int, _ depth: Int) -> ())! = nil
-            
-            detacher = lifetime += self.get(node: node).start { (event) in
-                switch event {
-                case .value(let node):
-                    parent = node;
-                    return
-                case .completed:
-                    detacher?.dispose()
-                    detacher = nil
-                    break
-                case .failed(let error):
-                    return generator.send(error: error)
-                case .interrupted:
-                    return generator.sendInterrupted()
-                }
-                
-                let inverseCounter = depth - 1
-                guard inverseCounter >= 0,
-                      let subnodes = parent.subnodes, !subnodes.isEmpty else {
-                    generator.send(value: parent)
-                    generator.sendCompleted()
-                    return
-                }
-                
-                childrenIterator(0, inverseCounter)
-            }
-            
-            childrenIterator = { (index, depth) in
-                detacher = lifetime += self.iterate(node: parent.subnodes![index], depth: depth).start { (event) in
-                    switch event {
-                    case .value(let node):
-                        parent.subnodes![index] = node
-                        return
-                    case .completed:
-                        detacher?.dispose()
-                        detacher = nil
-                        break
-                    case .failed(let error):
-                        return generator.send(error: error)
-                    case .interrupted:
-                        return generator.sendInterrupted()
-                    }
-                    
-                    let nextChild = index + 1
-                    guard nextChild < parent.subnodes!.count else {
-                        generator.send(value: parent)
-                        generator.sendCompleted()
-                        return
-                    }
-                    
-                    childrenIterator(nextChild, depth)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// List of endpoints related to navigation nodes.
@@ -159,7 +15,136 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.API.Request.Nodes {
+    /// Returns the navigation node with the given id and all the children till a specified depth.
+    /// - attention: For depths bigger than 0, several endpoints are hit; thus, the callback may take a while. Be mindful of bigger depths.
+    /// - parameter identifier: The identifier for the targeted node. If `nil`, the top-level nodes are returned.
+    /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
+    /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
+    /// - returns: *Future* forwarding the node identified by the parameters recursively filled with the subnodes and submarkets till the given `depth`.
+    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> IG.API.Future<IG.API.Node> {
+        let layers = depth.value
+        guard layers > 0 else {
+            return Self.get(api: self.api, node: .init(identifier: identifier, name: name))
+        }
+        
+        return Self.iterate(api: self.api, node: .init(identifier: identifier, name: name), depth: layers)
+    }
+
+    // MARK: GET /markets/{searchTerm}
+    
+    /// Returns all markets matching the search term.
+    ///
+    /// The search term cannot be an empty string.
+    /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
+    /// - returns: *Future* forwarding all markets matching the search term.
+    public func getMarkets(matching searchTerm: String) -> IG.API.Future<[IG.API.Node.Market]> {
+        self.api.publisher { (api) -> String in
+                guard !searchTerm.isEmpty else {
+                    let message = "Search for markets failed! The search term cannot be empty"
+                    throw IG.API.Error.invalidRequest(.init(message), suggestion: .readDocs)
+                }
+                return searchTerm
+            }.makeRequest(.get, "markets", version: 1, credentials: true, queries: { [.init(name: "searchTerm", value: $0)] })
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                    let message = "The response date couldn't be extracted from the response header"
+                    throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                }
+
+                return JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.responseDate] = date }
+            })) { (w: Self.WrapperSearch, _) in w.markets }
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    // MARK: GET /marketnavigation/{nodeId}
+    
+    /// Returns all data of the given navigation node.
+    ///
+    /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint..
+    /// - parameter node: The entity targeting a specific node. Only the identifier is used.
+    /// - returns: *Future* forwarding a *full* node.
+    private static func get(api: API, node: IG.API.Node) -> IG.API.Future<IG.API.Node> {
+        api.publisher
+            .makeRequest(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
+                JSONDecoder().set {
+                    if let identifier = node.identifier {
+                        $0.userInfo[IG.API.JSON.DecoderKey.nodeIdentifier] = identifier
+                    }
+                    if let name = node.name {
+                        $0.userInfo[IG.API.JSON.DecoderKey.nodeName] = name
+                    }
+                }
+            }))
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    /// Returns the navigation node indicated by the given node argument as well as all its children till a given depth.
+    /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
+    /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
+    /// - returns: *Future* forwarding the node given as an argument with complete subnodes and submarkets information.
+    private static func iterate(api: API, node: IG.API.Node, depth: Int) -> IG.API.Future<IG.API.Node> {
+        // 1. Retrieve the targeted node.
+        return Self.get(api: api, node: node).flatMap { [weak weakAPI = api] (node) -> AnyPublisher<IG.API.Node,IG.API.Error> in
+            let countdown = depth - 1
+            // 2. If there aren't any more levels to drill down into or the target node doesn't have subnodes, send the targeted node.
+            guard countdown >= 0, let subnodes = node.subnodes, !subnodes.isEmpty else {
+                return Just(node).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
+            }
+            
+            /// The result of this combine pipeline.
+            let subject = PassthroughSubject<IG.API.Node,IG.API.Error>()
+            /// The root node from which to look for subnodes.
+            var parent = node
+            /// This closure retrieves the child node at the `parent` index `childIndex` and calls itself recursively until there are no more children in `parent.subnodes`.
+            var fetchChildren: ((_ childIndex: Int, _ childDepth: Int) -> AnyCancellable?)! = nil
+            /// `Cancellable` to stop fetching the `parent.subnodes`.
+            var childrenFetchingCancellable: AnyCancellable? = nil
+            
+            fetchChildren = { (childIndex, childDepth) in
+                // 4. If the API instance has been deallocated, forward an error downstream.
+                guard let api = weakAPI else {
+                    subject.send(completion: .failure(.sessionExpired()))
+                    childrenFetchingCancellable?.cancel()
+                    return nil
+                }
+                // 5. Retrieve the child node indicated by the index.
+                return Self.iterate(api: api, node: parent.subnodes![childIndex], depth: childDepth).sink(receiveCompletion: { (completion) in
+                    if case .failure(let error) = completion {
+                        subject.send(completion: .failure(error))
+                        childrenFetchingCancellable = nil
+                        return
+                    }
+                    // 6. Check if there is a "next" sibling.
+                    let nextChildIndex = childIndex + 1
+                    // 7. If there aren't any more siblings, forward the parent downstream since we have retrieved all the information.
+                    guard nextChildIndex < parent.subnodes!.count else {
+                        subject.send(parent)
+                        subject.send(completion: .finished)
+                        childrenFetchingCancellable = nil
+                        return
+                    }
+                    // 8. If there are more siblings, keep iterating.
+                    childrenFetchingCancellable = fetchChildren(nextChildIndex, childDepth)
+                }, receiveValue: { (childNode) in
+                    parent.subnodes![childIndex] = childNode
+                })
+            }
+            
+            // 3. Retrieve children nodes, starting by the first one.
+            childrenFetchingCancellable = fetchChildren(0, countdown)
+            return subject.eraseToAnyPublisher()
+        }.eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
 
 extension IG.API.Request.Nodes {
     /// Express the depth of a computed tree.
@@ -196,19 +181,10 @@ extension IG.API.Request.Nodes {
     }
 }
 
-// MARK: Response Entities
-
 extension IG.API.Request.Nodes {
     private struct WrapperSearch: Decodable {
         let markets: [IG.API.Node.Market]
     }
-}
-
-extension IG.API.JSON.DecoderKey {
-    /// Key for JSON decoders under which a node identifier will be stored.
-    fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "APINodeId")!
-    /// Key for JSON decoders under which a node name will be stored.
-    fileprivate static let nodeName = CodingUserInfoKey(rawValue: "APINodeName")!
 }
 
 extension IG.API {
@@ -224,14 +200,14 @@ extension IG.API {
         /// There can be three possible options:
         /// - `nil`if there hasn't be a query to ask for this node's subnodes.
         /// - Empty array if this node doesn't have any subnode.
-        /// - Filled array if the node has children.
+        /// - Non-empty array if the node has children.
         public internal(set) var subnodes: [Self]?
         /// The markets organized under `self`
         ///
         /// There can be three possible options:
         /// - `nil`if there hasn't be a query to ask for this node's markets..
         /// - Empty array if this node doesn't have any market..
-        /// - Filled array if the node has markets..
+        /// - Non-empty array if the node has markets..
         public internal(set) var markets: [Self.Market]?
         
         fileprivate init(identifier: String?, name: String?) {
@@ -276,9 +252,22 @@ extension IG.API {
     }
 }
 
-extension API.Node: CustomDebugStringConvertible {
+// MARK: - Functionality
+
+extension IG.API.JSON.DecoderKey {
+    /// Key for JSON decoders under which a node identifier will be stored.
+    fileprivate static let nodeIdentifier = CodingUserInfoKey(rawValue: "IG_APINodeId")!
+    /// Key for JSON decoders under which a node name will be stored.
+    fileprivate static let nodeName = CodingUserInfoKey(rawValue: "IG_APINodeName")!
+}
+
+extension IG.API.Node: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Node")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("node ID", self.identifier)
         result.append("name", self.name)
         result.append("subnodes IDs", self.subnodes?.map { $0.identifier ?? IG.DebugDescription.Symbol.nil })

@@ -1,79 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.API.Request.Markets {
-    
-    // MARK: GET /markets/{epic}
-    
-    /// Returns the details of a given market.
-    /// - parameter epic: The market epic to target onto. It cannot be empty.
-    /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> SignalProducer<IG.API.Market,IG.API.Error> {
-        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601noSeconds.deepCopy
-        
-        return SignalProducer(api: self.api) { (api) in
-                guard let timezone = api.session.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
-                }
-                dateFormatter.timeZone = timezone
-            }.request(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
-            .send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header"
-                    throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
-                }
-                
-                let decoder = JSONDecoder()
-                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
-                decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
-                return decoder
-            }
-    }
-    
-    // MARK: GET /markets
-    
-    /// Returns the details of the given markets.
-    /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
-    /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> SignalProducer<[IG.API.Market],IG.API.Error> {
-        let dateFormatter: DateFormatter = IG.API.Formatter.iso8601noSeconds
-        
-        return SignalProducer(api: self.api) { (api) in
-            let epicRange = 1...50
-            guard epicRange.contains(epics.count) else {
-                let message = "Only between 1 to 50 markets can be queried at the same time"
-                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)"
-                throw IG.API.Error.invalidRequest(message, suggestion: suggestion)
-            }
-            
-            guard let timezone = api.session.credentials?.timezone else {
-                throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
-            }
-            dateFormatter.timeZone = timezone
-        }.request(.get, "markets", version: 2, credentials: true, queries: { (_,_) -> [URLQueryItem] in
-            [URLQueryItem(name: "filter", value: "ALL"),
-             URLQueryItem(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
-        }).send(expecting: .json)
-            .validateLadenData(statusCodes: 200)
-            .decodeJSON { (request, response) in
-                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                    let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                        let message = "The response date couldn't be extracted from the response header"
-                        throw IG.API.Error.invalidResponse(message: message, request: request, response: response, suggestion: IG.API.Error.Suggestion.fileBug)
-                }
-                
-                let decoder = JSONDecoder()
-                decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
-                decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] = dateFormatter
-                return decoder
-            }.map { (list: Self.WrapperList) in list.marketDetails }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.API.Request {
     /// List of endpoints related to API markets.
@@ -89,7 +15,88 @@ extension IG.API.Request {
     }
 }
 
-// MARK: Response Entities
+extension IG.API.Request.Markets {
+    
+    // MARK: GET /markets/{epic}
+    
+    /// Returns the details of a given market.
+    /// - parameter epic: The market epic to target onto. It cannot be empty.
+    /// - returns: Information about the targeted market.
+    public func get(epic: IG.Market.Epic) -> IG.API.Future<IG.API.Market> {
+        self.api.publisher { (api) -> DateFormatter in
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
+                }
+                return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
+            }.makeRequest(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
+            .send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .custom({ (request, response, values) -> JSONDecoder in
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                    let message = "The response date couldn't be extracted from the response header"
+                    throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                }
+                
+                return JSONDecoder().set {
+                    $0.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                    $0.userInfo[IG.API.JSON.DecoderKey.computedValues] = values
+                }
+            })).mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+        
+    }
+    
+    // MARK: GET /markets
+    
+    /// Returns the details of the given markets.
+    /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
+    /// - returns: Extended information of all the requested markets.
+    public func get(epics: Set<IG.Market.Epic>) -> IG.API.Future<[IG.API.Market]> {
+        self.api.publisher { (api) -> DateFormatter in
+                let epicRange = 1...50
+                guard epicRange.contains(epics.count) else {
+                    let message = "Only between 1 to 50 markets can be queried at the same time"
+                    let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)"
+                    throw IG.API.Error.invalidRequest(.init(message), suggestion: .init(suggestion))
+                }
+                
+                guard let timezone = api.session.credentials?.timezone else {
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
+                }
+                return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
+            }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { (_) in
+                [.init(name: "filter", value: "ALL"),
+                 .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .custom({ (request, response, values) -> JSONDecoder in
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                    let message = "The response date couldn't be extracted from the response header"
+                    throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                }
+                
+                return JSONDecoder().set {
+                    $0.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                    $0.userInfo[IG.API.JSON.DecoderKey.computedValues] = values
+                }
+            }), transform: { (list: Self.WrapperList, _) in
+                list.marketDetails
+            }).mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    /// Returns the details of the given markets.
+    ///
+    /// This endpoint circumvents `get(epics:)` limitation of quering for 50 markets and publish the results as several values.
+    /// - parameter epics: The market epics to target onto. It cannot be empty.
+    /// - returns: Extended information of all the requested markets.
+//    public func getContinuously(epics: Set<IG.Market.Epic>) -> IG.API.ContinuousPublisher<[IG.API.Market]> {
+//        epics.chunked(into: 50)
+        #warning("API: Implement")
+//    }
+}
+
+// MARK: - Entities
 
 extension IG.API.Request.Markets {
     private struct WrapperList: Decodable {
@@ -407,7 +414,7 @@ extension IG.API.Market.Instrument {
             let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .expirationDetails)
             self.settlementInfo = try nestedContainer.decodeIfPresent(String.self, forKey: .settlementInfo)
             
-            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter
+            let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter
                 ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.lastDealingDate = try nestedContainer.decodeIfPresent(Date.self, forKey: .lastDealingDate, with: formatter)
         }
@@ -520,7 +527,7 @@ extension IG.API.Market.Instrument {
 
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.dateFormatter] as? DateFormatter else {
+            guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .lastDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             }
             
@@ -769,9 +776,15 @@ extension IG.API.Market {
     }
 }
 
-extension IG.API.Market: CustomDebugStringConvertible {
+// MARK: - Functionality
+
+extension IG.API.Market: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("API Market")
+        var result = IG.DebugDescription(Self.printableDomain)
         result.append("epic", self.instrument.epic)
         result.append("name", self.instrument.name)
         result.append("market ID", self.identifier)
@@ -779,7 +792,7 @@ extension IG.API.Market: CustomDebugStringConvertible {
         result.append("news code", self.instrument.newsCode)
         
         let dayMonthYear = IG.Formatter.date
-        let dateTime = IG.Formatter.timestamp.deepCopy.set { $0.timeZone = .current }
+        let dateTime = IG.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("instrument", self.instrument) {
             $0.append("type", $1.type)
             $0.append("unit", $1.unit)

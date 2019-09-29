@@ -48,7 +48,7 @@ extension IG.API.Request.Accounts {
     
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
-    /// - returns: *Future* indicating the success of the operation with a successful complete.
+    /// - returns: *Future* indicating the success of the operation.
     public func updatePreferences(trailingStops: Bool) -> IG.API.Future<Never> {
         self.api.publisher { (_) -> Self.PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
