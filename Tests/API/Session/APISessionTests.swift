@@ -1,26 +1,34 @@
 @testable import IG
-import ReactiveSwift
 import XCTest
 
 /// Tests API Session related endpoints.
 final class APISessionTests: XCTestCase {
     /// Tests the Session information retrieval mechanisms.
     func testAPISession() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
-        
-        let key = Test.account.api.key
-        let account = Test.account.identifier
-        guard case .user(let user) = Test.account.api.credentials else {
-            return XCTFail("Session (OAuth) tests can't be performed without username and password")
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
+
+        guard let user = acc.api.user else {
+            return XCTFail("Session tests can't be performed without username and password")
         }
+
+        api.session.login(type: .oauth, key: acc.api.key, user: user).wait()
+        XCTAssertNotNil(api.session.credentials)
         
-        let sessionSettings = try! api.session.login(type: .oauth, key: key, user: user).single()!.get()
-        XCTAssertNil(sessionSettings)
-        let session = try! api.session.get().single()!.get()
-        XCTAssertFalse(session.client.rawValue.isEmpty)
-        XCTAssertEqual(session.account, account)
-        XCTAssertNotNil(session.streamerURL.scheme)
-        XCTAssertEqual(session.streamerURL.scheme!, "https")
-        try! api.session.logout().single()!.get()
+        let credentials = api.session.credentials!
+        XCTAssertEqual(acc.api.key, credentials.key)
+        XCTAssertEqual(acc.api.rootURL, api.rootURL)
+        
+        let session = api.session.get().waitForOne()
+        XCTAssertEqual(session.account, credentials.account)
+        XCTAssertEqual(session.client, credentials.client)
+        XCTAssertEqual(session.streamerURL, credentials.streamerURL)
+        XCTAssertEqual(session.timezone, credentials.timezone)
+        
+        api.session.refresh().wait()
+        XCTAssertNotNil(api.session.credentials)
+        XCTAssertGreaterThanOrEqual(api.session.credentials!.token.expirationDate, credentials.token.expirationDate)
+        
+        api.session.logout().wait()
     }
 }

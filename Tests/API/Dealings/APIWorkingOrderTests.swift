@@ -1,13 +1,13 @@
-@testable import IG
-import ReactiveSwift
+import IG
 import XCTest
 
 final class APIWorkingOrderTests: XCTestCase {
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
 
-        let market = try! api.markets.get(epic: "CS.D.EURUSD.MINI.IP").single()!.get()
+        let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP").waitForOne()
         let epic = market.instrument.epic
         let expiry = market.instrument.expiration.expiry
         let currency = market.instrument.currencies[0].code
@@ -21,18 +21,18 @@ final class APIWorkingOrderTests: XCTestCase {
         let expiration: API.WorkingOrder.Expiration = .tillDate(Date().addingTimeInterval(60 * 60 * 2))
         //let scalingFactor: Decimal = 10000
         
-        let reference = try! api.workingOrders.create(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: .distance(limitDistance), stop: (.distance(stopDistance), .exposed), forceOpen: forceOpen, expiration: expiration, reference: nil).single()!.get()
-        let confirmation = try! api.confirm(reference: reference).single()!.get()
+        let reference = api.workingOrders.create(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: .distance(limitDistance), stop: (.distance(stopDistance), .exposed), forceOpen: forceOpen, expiration: expiration, reference: nil).waitForOne()
+        let confirmation = api.confirm(reference: reference).waitForOne()
         let identifier = confirmation.dealIdentifier
         XCTAssertEqual(confirmation.dealReference, reference)
         XCTAssertTrue(confirmation.isAccepted)
         
-        let orders = try! api.workingOrders.getAll().single()!.get()
+        let orders = api.workingOrders.getAll().waitForOne()
         XCTAssertNotNil(orders.first { $0.identifier == identifier })
 
-        let deleteReference = try! api.workingOrders.delete(identifier: confirmation.dealIdentifier).single()!.get()
+        let deleteReference = api.workingOrders.delete(identifier: confirmation.dealIdentifier).waitForOne()
         XCTAssertEqual(deleteReference, reference)
-        let deleteConfirmation = try! api.confirm(reference: deleteReference).single()!.get()
+        let deleteConfirmation = api.confirm(reference: deleteReference).waitForOne()
         XCTAssertTrue(deleteConfirmation.isAccepted)
     }
 }

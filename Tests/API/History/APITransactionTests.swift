@@ -1,12 +1,12 @@
 @testable import IG
-import ReactiveSwift
 import XCTest
 
 /// Tests API transaction retrieval
 final class APITransactionTests: XCTestCase {
     /// Tests paginated transaction retrieval.
     func testTransactions() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
         let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
             $0.timeZone = TimeZone.current
@@ -14,8 +14,13 @@ final class APITransactionTests: XCTestCase {
             ($0.hour, $0.minute) = (0, 0)
         })!
         
-        let transactions = (try! api.history.getTransactions(from: date).collect().single()!.get()).flatMap { $0 }
+        let transactions = api.history.getTransactionsContinuously(from: date).waitForAll().flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
-        XCTAssertNil(transactions.first(where: { $0.title.isEmpty || $0.reference.isEmpty }))
+        
+        for transaction in transactions {
+            XCTAssertFalse(transaction.title.isEmpty)
+            XCTAssertFalse(transaction.reference.isEmpty)
+            XCTAssertFalse(transaction.debugDescription.isEmpty)
+        }
     }
 }

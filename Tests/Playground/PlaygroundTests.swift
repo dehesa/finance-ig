@@ -1,4 +1,3 @@
-//@testable import IG
 import IG
 import XCTest
 import Combine
@@ -9,8 +8,6 @@ final class PlaygroundTests: XCTestCase {
 //        
 //        let expectationA = self.expectation(description: "Wait A")
 //        var cancellables = Set<AnyCancellable>()
-//        
-//        let publisher: Publisher
 //        
 //        let api = API(rootURL: URL(string: "https://demo-api.ig.com/gateway/deal")!, credentials: nil, targetQueue: nil)
 //        let user = API.User("<#fill_me#>", "<#fill_me#>")

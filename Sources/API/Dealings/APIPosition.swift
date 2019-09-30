@@ -27,7 +27,7 @@ extension IG.API.Request.Positions {
         self.api.publisher
             .makeRequest(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (w: Self.WrapperList, _) in w.positions }
+            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperList, _) in w.positions }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -41,7 +41,7 @@ extension IG.API.Request.Positions {
         self.api.publisher
             .makeRequest(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true))
+            .decodeJSON(decoder: .default(date: true))
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }

@@ -17,7 +17,7 @@ extension IG.API.Request {
 
 extension IG.API.Request.Nodes {
     /// Returns the navigation node with the given id and all the children till a specified depth.
-    /// - attention: For depths bigger than 0, several endpoints are hit; thus, the callback may take a while. Be mindful of bigger depths.
+    /// - attention: For depths bigger than 0, several endpoints are hit (one for each node, it can easily be 100); thus, the callback may take a while. Be mindful of bigger depths.
     /// - parameter identifier: The identifier for the targeted node. If `nil`, the top-level nodes are returned.
     /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
@@ -47,15 +47,7 @@ extension IG.API.Request.Nodes {
                 return searchTerm
             }.makeRequest(.get, "markets", version: 1, credentials: true, queries: { [.init(name: "searchTerm", value: $0)] })
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
-                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header"
-                    throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
-                }
-
-                return JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.responseDate] = date }
-            })) { (w: Self.WrapperSearch, _) in w.markets }
+            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperSearch, _) in w.markets }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -72,7 +64,15 @@ extension IG.API.Request.Nodes {
             .makeRequest(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
-                JSONDecoder().set {
+                guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                      let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                    let message = "The response date couldn't be extracted from the response header"
+                    throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                }
+                
+                return JSONDecoder().set {
+                    $0.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                    
                     if let identifier = node.identifier {
                         $0.userInfo[IG.API.JSON.DecoderKey.nodeIdentifier] = identifier
                     }
@@ -97,48 +97,51 @@ extension IG.API.Request.Nodes {
             guard countdown >= 0, let subnodes = node.subnodes, !subnodes.isEmpty else {
                 return Just(node).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
             }
+            // 3. Check the API instance is still there.
+            guard let api = weakAPI else {
+                return Fail<IG.API.Node,IG.API.Error>(error: .sessionExpired()).eraseToAnyPublisher()
+            }
             
             /// The result of this combine pipeline.
             let subject = PassthroughSubject<IG.API.Node,IG.API.Error>()
             /// The root node from which to look for subnodes.
             var parent = node
             /// This closure retrieves the child node at the `parent` index `childIndex` and calls itself recursively until there are no more children in `parent.subnodes`.
-            var fetchChildren: ((_ childIndex: Int, _ childDepth: Int) -> AnyCancellable?)! = nil
+            var fetchChildren: ((_ api: API, _ childIndex: Int, _ childDepth: Int) -> AnyCancellable?)! = nil
             /// `Cancellable` to stop fetching the `parent.subnodes`.
             var childrenFetchingCancellable: AnyCancellable? = nil
             
-            fetchChildren = { (childIndex, childDepth) in
-                // 4. If the API instance has been deallocated, forward an error downstream.
-                guard let api = weakAPI else {
-                    subject.send(completion: .failure(.sessionExpired()))
-                    childrenFetchingCancellable?.cancel()
-                    return nil
-                }
+            fetchChildren = { (childAPI, childIndex, childDepth) in
                 // 5. Retrieve the child node indicated by the index.
-                return Self.iterate(api: api, node: parent.subnodes![childIndex], depth: childDepth).sink(receiveCompletion: { (completion) in
-                    if case .failure(let error) = completion {
-                        subject.send(completion: .failure(error))
-                        childrenFetchingCancellable = nil
-                        return
-                    }
-                    // 6. Check if there is a "next" sibling.
-                    let nextChildIndex = childIndex + 1
-                    // 7. If there aren't any more siblings, forward the parent downstream since we have retrieved all the information.
-                    guard nextChildIndex < parent.subnodes!.count else {
-                        subject.send(parent)
-                        subject.send(completion: .finished)
-                        childrenFetchingCancellable = nil
-                        return
-                    }
-                    // 8. If there are more siblings, keep iterating.
-                    childrenFetchingCancellable = fetchChildren(nextChildIndex, childDepth)
-                }, receiveValue: { (childNode) in
-                    parent.subnodes![childIndex] = childNode
-                })
+                Self.iterate(api: childAPI, node: parent.subnodes![childIndex], depth: childDepth)
+                    .sink(receiveCompletion: {
+                        if case .failure(let error) = $0 {
+                            subject.send(completion: .failure(error))
+                            childrenFetchingCancellable = nil
+                            return
+                        }
+                        // 6. Check if there is a "next" sibling.
+                        let nextChildIndex = childIndex + 1
+                        // 7. If there aren't any more siblings, forward the parent downstream since we have retrieved all the information.
+                        guard nextChildIndex < parent.subnodes!.count else {
+                            subject.send(parent)
+                            subject.send(completion: .finished)
+                            childrenFetchingCancellable = nil
+                            return
+                        }
+                        // 8. If the API instance has been deallocated, forward an error downstream.
+                        guard let api = weakAPI else {
+                            subject.send(completion: .failure(.sessionExpired()))
+                            childrenFetchingCancellable?.cancel()
+                            return
+                        }
+                        // 9. If there are more siblings, keep iterating.
+                        childrenFetchingCancellable = fetchChildren(api, nextChildIndex, childDepth)
+                    }, receiveValue: { parent.subnodes![childIndex] = $0 })
             }
             
-            // 3. Retrieve children nodes, starting by the first one.
-            childrenFetchingCancellable = fetchChildren(0, countdown)
+            // 4. Retrieve children nodes, starting by the first one.
+            defer { childrenFetchingCancellable = fetchChildren(api, 0, countdown) }
             return subject.eraseToAnyPublisher()
         }.eraseToAnyPublisher()
     }

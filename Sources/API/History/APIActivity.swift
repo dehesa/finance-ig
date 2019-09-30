@@ -27,7 +27,7 @@ extension IG.API.Request.History {
     /// - parameter to: The end date (if `nil` means the end of `from` date).
     /// - parameter detailed: Boolean indicating whether to retrieve additional details about the activity.
     /// - parameter filterBy: The filters that can be applied to the search. FIQL filter supporst operators: `==`, `!=`, `,`, and `;`
-    /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value).
+    /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value). The valid range is between 10 and 500; anything beyond that will be clamped.
     /// - todo: validate `FIQL`.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
     public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> IG.API.ContinuousPublisher<[IG.API.Activity]> {
@@ -87,9 +87,7 @@ extension IG.API.Request.History {
                 return try initial.request.set { try $0.addQueries([from, to])}
             }, call: { (publisher, _) in
                 publisher.send(expecting: .json, statusCode: 200)
-                    .decodeJSON(decoder: .custom( { (request, response, values) -> JSONDecoder in
-                        JSONDecoder().set { $0.userInfo[IG.API.JSON.DecoderKey.computedValues] = values }
-                    } )) { (response: Self.PagedActivities, _) in
+                    .decodeJSON(decoder: .default(values: true)) { (response: Self.PagedActivities, _) in
                         (response.metadata.paging, response.activities)
                     }.mapError(IG.API.Error.transform)
             }).mapError(IG.API.Error.transform)

@@ -1,46 +1,51 @@
-@testable import IG
-import ReactiveSwift
+import IG
 import XCTest
 
 final class APIWatchlistTests: XCTestCase {
     /// Tests the various watchlist retrieval endpoints.
     func testWatchlistRetrieval() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
-        let watchlists = try! api.watchlists.getAll().single()!.get()
+        let watchlists = api.watchlists.getAll().waitForOne()
         XCTAssertFalse(watchlists.isEmpty)
+        for watchlist in watchlists {
+            XCTAssertFalse(watchlist.identifier.isEmpty)
+            XCTAssertFalse(watchlist.name.isEmpty)
+        }
         
         let target = watchlists.last!
-        let markets = try! api.watchlists.getMarkets(from: target.identifier).single()!.get()
+        let markets = api.watchlists.getMarkets(from: target.identifier).waitForOne()
         XCTAssertFalse(markets.isEmpty)
     }
 
     /// Tests to perform only on the server side.
     func testWatchlistLifecycle() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         /// Epics to be added to the watchlist.
         let startEpics: [IG.Market.Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0.rawValue > $1.rawValue }
         let addedEpic: IG.Market.Epic = "CS.D.GBPEUR.CFD.IP"
         let endEpics = (startEpics + [addedEpic]).sorted { $0.rawValue > $1.rawValue }
 
         // 1. Creates a watchlist.
-        let watchlist = try! api.watchlists.create(name: "Test Watchlist", epics: startEpics).single()!.get()
-        XCTAssertFalse(watchlist.identifier.isEmpty)
-        XCTAssertTrue(watchlist.areAllInstrumentsAdded)
+        let w = api.watchlists.create(name: "Test Watchlist", epics: startEpics).waitForOne()
+        XCTAssertFalse(w.identifier.isEmpty)
+        XCTAssertTrue(w.areAllInstrumentsAdded)
         // 2. Check the data of the created watchlist.
-        let startingMarkets = try! api.watchlists.getMarkets(from: watchlist.identifier).single()!.get()
+        let startingMarkets = api.watchlists.getMarkets(from: w.identifier).waitForOne()
         XCTAssertEqual(startEpics, startingMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 3. Add a new epic to the watchlist.
-        try! api.watchlists.update(identifier: watchlist.identifier, addingEpic: addedEpic).single()!.get()
+        api.watchlists.update(identifier: w.identifier, addingEpic: addedEpic).wait()
         // 4. Retrieve data from the watchlist.
-        let midMarkets = try! api.watchlists.getMarkets(from: watchlist.identifier).single()!.get()
+        let midMarkets = api.watchlists.getMarkets(from: w.identifier).waitForOne()
         XCTAssertEqual(endEpics, midMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 5. Removes the epic just added.
-        try! api.watchlists.update(identifier: watchlist.identifier, removingEpic: addedEpic).single()!.get()
+        api.watchlists.update(identifier: w.identifier, removingEpic: addedEpic).wait()
         // 6. Retrieve data from the watchlist.
-        let endMarkets = try! api.watchlists.getMarkets(from: watchlist.identifier).single()!.get()
+        let endMarkets = api.watchlists.getMarkets(from: w.identifier).waitForOne()
         XCTAssertEqual(startEpics, endMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 7. Deletes the whole test wachtlist.
-        try! api.watchlists.delete(identifier: watchlist.identifier).single()!.get()
+        api.watchlists.delete(identifier: w.identifier).wait()
     }
 }

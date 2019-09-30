@@ -8,7 +8,7 @@ class DBForexTests: XCTestCase {
         let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! }).sorted { $0 < $1 }
+        let epics = ((1...5).map { (_) in Test.Epic.forex.randomElement()! }).sorted { $0 < $1 }
         let apiForex = try! api.markets.get(epics: .init(epics)).single()!.get()
         try! db.markets.update(apiForex).single()!.get()
         
@@ -26,7 +26,7 @@ class DBForexTests: XCTestCase {
         let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! }).sorted { $0 < $1 }
+        let epics = ((1...5).map { (_) in Test.Epic.forex.randomElement()! }).sorted { $0 < $1 }
         let apiForex = try! api.markets.get(epics: .init(epics)).single()!.get()
         try! db.markets.update(apiForex).single()!.get()
         

@@ -82,8 +82,6 @@ extension IG.API {
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.waitsForConnectivity = false
-        #warning("API: Check")
-//        configuration.tlsMinimumSupportedProtocol = .tlsProtocol12
         configuration.tlsMinimumSupportedProtocolVersion = .TLSv12
         return configuration
     }

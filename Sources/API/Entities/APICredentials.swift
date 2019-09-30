@@ -66,6 +66,11 @@ extension IG.API.Credentials {
             self.expirationDate = Date(timeIntervalSinceNow: seconds)
             self.value = value
         }
+        
+        /// Returns `true` when the `expirationDate` is in the past.
+        public var isExpired: Bool {
+            return self.expirationDate < Date()
+        }
     }
 }
 

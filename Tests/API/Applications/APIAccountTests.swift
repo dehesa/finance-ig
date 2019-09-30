@@ -1,15 +1,17 @@
 @testable import IG
-import ReactiveSwift
 import XCTest
 
 /// Tests API Account related endpoints.
 final class APIAccountTests: XCTestCase {
     /// Tests Account information retrieval.
     func testAccounts() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
-        let accounts = try! api.accounts.getAll().single()!.get()
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
-        let account = accounts.first!
+        let accounts = api.accounts.getAll().waitForOne()
+        XCTAssertFalse(accounts.isEmpty)
+        
+        let account = accounts[0]
         XCTAssertEqual(account.identifier, api.session.credentials!.account)
         XCTAssertFalse(account.name.isEmpty)
         XCTAssertEqual(account.status, .enabled)
@@ -17,13 +19,15 @@ final class APIAccountTests: XCTestCase {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
-        let initial = try! api.accounts.preferences().single()!.get()
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
-        try! api.accounts.updatePreferences(trailingStops: !initial.trailingStops).single()!.get()
-        let updated = try! api.accounts.preferences().single()!.get()
+        let initial = api.accounts.preferences().waitForOne()
+        
+        api.accounts.updatePreferences(trailingStops: !initial.trailingStops).wait()
+        let updated = api.accounts.preferences().waitForOne()
         XCTAssertNotEqual(initial.trailingStops, updated.trailingStops)
         
-        try! api.accounts.updatePreferences(trailingStops: initial.trailingStops).single()!.get()
+        api.accounts.updatePreferences(trailingStops: initial.trailingStops).wait()
     }
 }

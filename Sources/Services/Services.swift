@@ -35,7 +35,7 @@ public final class Services {
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
         return api.session.login(type: .certificate, key: key, user: user)
             .mapError(Self.Error.api)
-            .flatMap(.merge) { _ in Self.make(with: api, queue: queue, databaseURL: databaseURL, autoconnect: autoconnect) }
+            .flatMap(.merge) { (_) in Self.make(with: api, queue: queue, databaseURL: databaseURL, autoconnect: autoconnect) }
     }
     
     /// Factory method for all services, which are log into with the provided user token (whether OAuth or Certificate).

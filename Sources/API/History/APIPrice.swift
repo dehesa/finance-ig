@@ -280,3 +280,17 @@ extension IG.API.Price: IG.DebugDescriptable {
         return "\(point.ask) ask, \(point.bid) bid"
     }
 }
+
+extension IG.API.Price.Allowance: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("reset date", self.resetDate, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("data points (remaining)", self.remaining)
+        result.append("data points (total)", self.total)
+        return result.generate()
+    }
+}

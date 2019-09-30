@@ -1,14 +1,14 @@
-@testable import IG
-import ReactiveSwift
+import IG
 import XCTest
 
 final class APISentimentTests: XCTestCase {
     /// Tests the platform's sentiment list call.
     func testSentiments() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
         let ids = ["EURGBP", "GC", "VOD-UK"].sorted { $0 > $1 }
-        let markets = try! api.markets.getSentiment(from: ids).single()!.get()
+        let markets = api.markets.getSentiment(from: ids).waitForOne()
         XCTAssertEqual(markets.map { $0.marketIdentifier }.sorted { $0 > $1 }, ids)
         
         let market = markets.first!
@@ -19,20 +19,22 @@ final class APISentimentTests: XCTestCase {
     
     /// Tests the platform's sentiment call.
     func testSentiment() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
 
         let id = "EURGBP"
-        let market = try! api.markets.getSentiment(from: id).single()!.get()
+        let market = api.markets.getSentiment(from: id).waitForOne()
         XCTAssertGreaterThan(market.longs, 0)
         XCTAssertGreaterThan(market.shorts, 0)
         XCTAssertEqual(market.longs + market.shorts, 100)
     }
 
     func testMarketRelations() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
         let id = "EURGBP"
-        let markets = try! api.markets.getSentimentRelated(to: id).single()!.get()
+        let markets = api.markets.getSentiment(relatedTo: id).waitForOne()
         XCTAssertFalse(markets.isEmpty)
         
         let market = markets.first!
