@@ -1,99 +1,62 @@
-@testable import IG
-import ReactiveSwift
+import IG
 import XCTest
 
 final class APINavigationNodeTests: XCTestCase {
     /// Tests navigation nodes retrieval.
-    func testNavigationNodes() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
-
-        let nodeId: String? = nil
-        let nodeGivenName = "Root"
+    func testNavigationRootNodes() {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
         
-        let rootNode = try! api.nodes.get(identifier: nodeId, name: nodeGivenName, depth: .none).single()!.get()
-        XCTAssertEqual(rootNode.identifier, nodeId)
-        XCTAssertEqual(rootNode.name, nodeGivenName)
+        let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none).waitForOne()
+        XCTAssertNil(rootNode.identifier)
+        XCTAssertEqual(rootNode.name, "Root")
         
         XCTAssertFalse(rootNode.subnodes!.isEmpty)
         XCTAssertTrue(rootNode.subnodes!.allSatisfy { $0.identifier != nil && $0.name != nil && $0.subnodes == nil && $0.markets == nil })
         XCTAssertTrue(rootNode.markets!.isEmpty)
+        XCTAssertFalse(rootNode.debugDescription.isEmpty)
+    }
+    
+    // Tests the major forex node.
+    func testNavigationMarketsSubtree() {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        
+        let target: (identifier: String, name: String) = ("264134", "Major FX")
+        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none).waitForOne()
+        XCTAssertEqual(node.identifier, target.identifier)
+        XCTAssertEqual(node.name, target.name)
+        XCTAssertNotNil(node.subnodes)
+        XCTAssertTrue(node.subnodes!.isEmpty)
+        XCTAssertNotNil(node.markets)
+        XCTAssertFalse(node.markets!.isEmpty)
+    }
+    
+    /// Drill down two levels in the navigation nodes tree.
+    func testNavigationSubtree() {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        
+        let target: (identifier: String, name: String) = ("195235", "FX")
+        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all).waitForOne(timeout: .seconds(8))
+        XCTAssertEqual(node.identifier, target.identifier)
+        XCTAssertEqual(node.name, target.name)
+        XCTAssertNotNil(node.subnodes)
+        XCTAssertFalse(node.subnodes!.isEmpty)
+        XCTAssertNotNil(node.markets)
     }
 
     /// Test the market search capabilities.
     func testMarketTermSearch() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+
+        let markets = api.nodes.getMarkets(matching: "NZD").waitForOne()
+        XCTAssertFalse(markets.isEmpty)
         
-        let markets = try! api.nodes.getMarkets(matching: "NZD").single()!.get()
-//        print(markets.map { $0.instrument.epic.rawValue + "\t->\t" + $0.instrument.name }.joined(separator: "\n"))
-        XCTAssertNil(markets.first(where: { $0.instrument.isOTCTradeable != nil || $0.instrument.lotSize != nil || $0.instrument.exchangeIdentifier != nil }))
+        let now = Date()
+        for market in markets {
+            XCTAssertLessThanOrEqual(market.snapshot.date, now)
+        }
     }
-    
-//    func testExtractNodes() {
-//        print()
-//
-//        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api)
-//        let rootNode = try! api.nodes.get(identifier: "184730", name: "ETFs, ETCs & Trackers", depth: .all).single()!.get()
-//
-//        var parsing: [API.Node] = [rootNode]
-//        var parsed: Set<String> = .init()
-//
-//        while let node = parsing.popLast() {
-//            if let identifier = node.identifier {
-//                guard parsed.insert(identifier).inserted else {
-//                    print("\t\(identifier) has already been parsed")
-//                    continue
-//                }
-//            }
-//
-//            if let subnodes = node.subnodes {
-//                parsing.insert(contentsOf: subnodes, at: 0)
-//            }
-//
-//            print(representation(node: node))
-//        }
-//
-//        print()
-//        print("\(parsed.count + 1) nodes has been parsed")
-//        print()
-//    }
-//
-//    private func representation(node: API.Node) -> String {
-//        let (nothing, separator) = ("NULL", ", ")
-//        var result = String()
-//
-//        if let identifier = node.identifier {
-//            result.append(identifier)
-//        } else {
-//            result.append(nothing)
-//        }
-//
-//        result.append(separator)
-//
-//        if let name = node.name {
-//            result.append("\"")
-//            result.append(name)
-//            result.append("\"")
-//        } else {
-//            result.append(nothing)
-//        }
-//
-//        result.append(separator)
-//
-//        if let subnodes = node.subnodes {
-//            let value = subnodes.map { $0.identifier ?? nothing }.joined(separator: ",")
-//            result.append("[\(value)]")
-//        } else {
-//            result.append(nothing)
-//        }
-//
-//        result.append(separator)
-//
-//        if let markets = node.markets {
-//            let value = markets.map { "\"\($0.instrument.epic.rawValue)\"" }.joined(separator: ",")
-//            result.append("[\(value)]")
-//        } else {
-//            result.append(nothing)
-//        }
-//        return result
-//    }
 }

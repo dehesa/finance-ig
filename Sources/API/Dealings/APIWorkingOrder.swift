@@ -25,7 +25,7 @@ extension IG.API.Request.WorkingOrders {
         self.api.publisher
             .makeRequest(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (w: Self.WrapperList, _) in w.workingOrders }
+            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperList, _) in w.workingOrders }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }

@@ -78,7 +78,7 @@ extension IG.API.Node.Market {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
 
-            let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date ?? Date()
+            let responseDate = try decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date ?! DecodingError.valueNotFound(Date.self, .init(codingPath: container.codingPath, debugDescription: "The decoder was expected to have the response date in its userInfo dictionary"))
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
             let update = try responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) ?!
                 DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
@@ -103,5 +103,38 @@ extension IG.API.Node.Market {
             case status = "marketStatus"
             case scalingFactor
         }
+    }
+}
+
+extension IG.API.Node.Market: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("instrument", self.instrument) {
+            $0.append("epic", $1.epic)
+            $0.append("exchange ID", $1.exchangeIdentifier)
+            $0.append("name", $1.name)
+            $0.append("type", $1.type)
+            $0.append("expiry", $1.expiry.debugDescription)
+            $0.append("lot size", $1.lotSize)
+            $0.append("available by streaming", $1.isAvailableByStreaming)
+            $0.append("OTC tradeable", $1.isOTCTradeable)
+        }
+        result.append("snapshot", self.snapshot) {
+            $0.append("date", $1.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+            $0.append("delay", $1.delay)
+            $0.append("status", $1.status)
+            $0.append("price", $1.price) {
+                $0.append("ask", $1.ask)
+                $0.append("bid", $1.bid)
+                $0.append("range", "\($1.lowest)...\($1.highest)")
+                $0.append("change", "\($1.change.net) (net) or \($1.change.percentage) %")
+            }
+            $0.append("scaling factor", $1.scalingFactor)
+        }
+        return result.generate()
     }
 }

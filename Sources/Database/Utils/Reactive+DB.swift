@@ -109,7 +109,7 @@
 //    ///
 //    internal func bind<T>(_ binder: @escaping IG.DB.Request.Generator.Binder<T>) -> SignalProducer<Self.Value,Self.Error> where Value==IG.DB.Request.WrapperCompiled<T> {
 //        return self.attemptMap { (database, statement, validated) -> Result<IG.DB.Request.WrapperCompiled<T>,Self.Error> in
-//            let result: Result<(),Self.Error> = database.interact { _ in
+//            let result: Result<(),Self.Error> = database.interact { (_) in
 //                do {
 //                    return .success(try binder(statement, validated))
 //                } catch let error as Self.Error {

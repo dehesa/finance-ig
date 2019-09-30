@@ -63,7 +63,7 @@ extension IG.API.Request.Watchlists {
                 }
             }.makeRequest(.get, "watchlists/\(identifier)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperWatchlist, _) in w.markets }
+            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperWatchlist, _) in w.markets }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }

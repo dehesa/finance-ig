@@ -83,7 +83,7 @@ extension IG.API.Request.Positions {
                        size: Decimal) -> IG.API.Future<IG.Deal.Reference> {
         self.api.publisher { (_) in
                 try Self.PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
-            }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
+            }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { (_) in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }

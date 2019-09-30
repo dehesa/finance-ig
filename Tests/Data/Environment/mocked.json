@@ -20,12 +20,10 @@
     },
     "streamer": {
         "url": "file://Streamer",
-        "user": {
-            "identifier": "",
-            "password": {
-                "access": "",
-                "security": ""
-            }
+        "identifier": "",
+        "password": {
+            "access": "",
+            "security": ""
         }
     },
     "database": {

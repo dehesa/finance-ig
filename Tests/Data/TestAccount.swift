@@ -1,28 +1,25 @@
-import Foundation
 @testable import IG
+import Combine
+import Foundation
 
 extension Test {
     /// Structure containing the loging information for the testing environment.
-    struct Account: Decodable {
+    final class Account {
         /// The target account identifier.
         let identifier: IG.Account.Identifier
         /// List of variables required to connect to the API.
-        let api: Self.APIData
+        var api: APIData
         /// List of variables required to connect to the Streamer.
-        let streamer: Self.StreamerData?
+        var streamer: StreamerData?
         /// List of variables required to open the underlying database file.
-        let database: Self.DatabaseData?
+        var database: DatabaseData?
         
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
-            self.api = try container.decode(Self.APIData.self, forKey: .api)
-            self.streamer = try container.decodeIfPresent(Self.StreamerData.self, forKey: .streamer)
-            self.database = try container.decodeIfPresent(Self.DatabaseData.self, forKey: .database)
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case accountId, api, streamer, database
+        /// Designated initializer letting you pass the test account data you want.
+        init(identifier: IG.Account.Identifier, api: APIData, streamer: StreamerData? = nil, database: DatabaseData? = nil) {
+            self.identifier = identifier
+            self.api = api
+            self.streamer = streamer
+            self.database = database
         }
     }
 }
@@ -31,7 +28,9 @@ extension Test {
 
 extension Test.Account {
     /// Account test environment API information.
-    struct APIData: Decodable {
+    final class APIData {
+        typealias TokenCertificate = (access: String, security: String)
+        typealias TokenOAuth = (access: String, refresh: String, scope: String, type: String)
         /// The root URL from where to call the endpoints.
         ///
         /// If this references a folder in the bundles file system, it shall be of type:
@@ -40,56 +39,60 @@ extension Test.Account {
         /// ```
         let rootURL: URL
         /// The API API key used to identify the developer.
-        let key: IG.API.Key
-        /// Credentials used on the API server
-        let credentials: Self.Credentials
+        let key: API.Key
+        /// The actual user name and password used for this test account.
+        let user: API.User?
+        /// The certificate token being appended to all API endpoints.
+        let certificate: TokenCertificate?
+        /// The OAuth token being appended to all API endpoints.
+        let oauth: TokenOAuth?
         
-        /// Credentials for the API differentiating between User (name & password), CST, and OAuth.
-        enum Credentials {
-            case user(IG.API.User)
-            case certificate(access: String, security: String)
-            case oauth(access: String, refresh: String, scope: String, type: String)
+        init(url: URL, key: API.Key, user: API.User? = nil, certificate: TokenCertificate? = nil, oauth: TokenOAuth? = nil) {
+            self.rootURL = url
+            self.key = key
+            self.user = user
+            self.certificate = certificate
+            self.oauth = oauth
         }
         
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.rootURL = try Test.Account.parse(path: try container.decode(String.self, forKey: .rootURL))
-            guard let processedScheme = Test.Account.SupportedScheme(url: self.rootURL) else {
-                throw DecodingError.dataCorruptedError(forKey: .rootURL, in: container, debugDescription: "The API scheme couldn't be inferred from the API root URL: \(self.rootURL)")
+        /// Semaphore used to modified the data.
+        private let semaphore = DispatchSemaphore(value: 1)
+        /// Cached credentials
+        private var cached: API.Credentials? = nil
+        /// Returns the API credentials for this Test account.
+        var credentials: API.Credentials {
+            let timeout = 3
+            guard case .success = self.semaphore.wait(timeout: .now() + .seconds(timeout)) else {
+                fatalError("The semaphore for accessing the API credentials timeout (\(timeout) seconds)")
             }
-            self.key = try container.decode(IG.API.Key.self, forKey: .key)
+            defer { self.semaphore.signal() }
             
-            if container.contains(.user) {
-                let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .user)
-                let username = try nested.decode(IG.API.User.Name.self, forKey: .name)
-                let password = try nested.decode(IG.API.User.Password.self, forKey: .password)
-                self.credentials = .user(.init(username, password))
-            } else if container.contains(.certificate) {
-                let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .certificate)
-                let access = try nested.decode(String.self, forKey: .access)
-                let security = try nested.decode(String.self, forKey: .security)
-                self.credentials = .certificate(access: access, security: security)
-            } else if container.contains(.oauth) {
-                let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .oauth)
-                let access = try nested.decode(String.self, forKey: .access)
-                let refresh = try nested.decode(String.self, forKey: .refresh)
-                let scope = try nested.decode(String.self, forKey: .scope)
-                let type = try nested.decode(String.self, forKey: .type)
-                self.credentials = .oauth(access: access, refresh: refresh, scope: scope, type: type)
-            } else if case .file = processedScheme {
-                self.credentials = .user(.init("fake_user", "fake_password"))
+            if let credentials = self.cached {
+                guard credentials.token.isExpired else { return credentials }
+            }
+            
+            let api: API = .init(rootURL: self.rootURL, credentials: self.cached, targetQueue: nil)
+            let result: API.Credentials
+            if case .some = api.session.credentials {
+                api.session.refresh().wait()
+                result = api.session.credentials!
+            } else if let cer = self.certificate {
+                let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
+                let s = api.session.get(key: self.key, token: token).waitForOne()
+                result = .init(client: s.client, account: s.account, key: self.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
+            } else if let oau = self.oauth {
+                let token: API.Credentials.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
+                let s = api.session.get(key: self.key, token: token).waitForOne()
+                result = .init(client: s.client, account: s.account, key: self.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
+            } else if let user = self.user {
+                api.session.login(type: .certificate, key: self.key, user: user).wait()
+                result = api.session.credentials!
             } else {
-                let ctx = DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "There were no credentials on the test account file")
-                throw DecodingError.keyNotFound(Self.CodingKeys.user, ctx)
+                fatalError("Some type of information must be provided to retrieve the API credentials.")
             }
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case rootURL = "url", key, user, certificate, oauth
             
-            enum NestedKeys: String, CodingKey {
-                case name, password, access, security, refresh, scope, type
-            }
+            self.cached = result
+            return result
         }
     }
 }
@@ -98,57 +101,24 @@ extension Test.Account {
 
 extension Test.Account {
     /// Account test environment Streamer information.
-    struct StreamerData: Decodable {
-        /// Whether mocked files or actuall lightstreamer calls.
-        let scheme: Test.Account.SupportedScheme
+    final class StreamerData {
+        /// Semaphore used to modified the data.
+        private let semaphore = DispatchSemaphore(value: 1)
         /// The root URL from where to get the streaming messages.
         ///
         /// It can be one of the followings:
         /// - a forlder in the test bundle file system (e.g. `file://Streamer`).
         /// - a https URL (e.g. `https://demo-apd.marketdatasystems.com`).
         let rootURL: URL
-        /// The Lightstreamer identifier and password.
-        let credentials: (identifier: IG.Account.Identifier, password: String)?
+        /// The Lightstreamer identifier
+        var identifier: IG.Account.Identifier?
+        /// The Lightstreamer password
+        var password: String?
         
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.rootURL = try Test.Account.parse(path: try container.decode(String.self, forKey: .rootURL))
-            guard let processedScheme = Test.Account.SupportedScheme(url: self.rootURL) else {
-                throw DecodingError.dataCorruptedError(forKey: .rootURL, in: container, debugDescription: "The API scheme couldn't be inferred from the API root URL: \(self.rootURL)")
-            }
-            self.scheme = processedScheme
-            
-            if container.contains(.user) {
-                let nested = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .user)
-                let identifier = try nested.decode(IG.Account.Identifier.self, forKey: .identifier)
-                guard nested.contains(.password) else {
-                    let ctx = DecodingError.Context(codingPath: nested.codingPath, debugDescription: "The password key was not found")
-                    throw DecodingError.keyNotFound(Self.CodingKeys.NestedKeys.password, ctx)
-                }
-                
-                if let password = try? nested.decode(String.self, forKey: .password) {
-                    self.credentials = (identifier, password)
-                } else {
-                    let passwordContainer = try nested.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .password)
-                    let access = try passwordContainer.decode(String.self, forKey: .access)
-                    let security = try passwordContainer.decode(String.self, forKey: .security)
-                    let password = try IG.Streamer.Credentials.password(fromCST: access, security: security)
-                        ?! DecodingError.dataCorrupted(.init(codingPath: passwordContainer.codingPath, debugDescription: "The streamer password couldnt' be formed"))
-                    self.credentials = (identifier, password)
-                }
-            } else if case .file = self.scheme {
-                self.credentials = ("fake_identifier", "fake_password")
-            }else {
-                self.credentials = nil
-            }
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case rootURL = "url", user
-            
-            enum NestedKeys: String, CodingKey {
-                case identifier, password, access, security
-            }
+        init(url: URL, identifier: IG.Account.Identifier? = nil, password: String? = nil) {
+            self.rootURL = url
+            self.identifier = nil
+            self.password = nil
         }
     }
 }
@@ -157,39 +127,19 @@ extension Test.Account {
 
 extension Test.Account {
     /// Account test environment Database information.
-    struct DatabaseData: Decodable {
+    final class DatabaseData {
         /// The file URL where the database file is located.
         ///
         /// If `nil` an "in memory" database will be opened.
         let rootURL: URL?
         
-        init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            
-            if var url = try container.decodeIfPresent(URL.self, forKey: .rootURL) {
-                guard url.isFileURL else { throw Test.Account.Error.invalidURL(url.path) }
-                
-                if let host = url.host, host == "~" {
-                    #if os(macOS)
-                    let absolutePath = url.absoluteString.replacingOccurrences(of: "~", with: FileManager.default.homeDirectoryForCurrentUser.path)
-                    url = URL(string: absolutePath)!
-                    #else
-                    fatalError("Handle this case")
-                    #endif
-                }
-                self.rootURL = url.standardizedFileURL
-            } else {
-                self.rootURL = nil
-            }
-        }
-        
-        private enum CodingKeys: String, CodingKey {
-            case rootURL = "url"
+        init(url: URL?) {
+            self.rootURL = url
         }
     }
 }
 
-// MARK: - Supporting Entities
+// MARK: - Functionality
 
 extension Test.Account {
     /// Supported URL schemes for the rootURL
@@ -203,80 +153,4 @@ extension Test.Account {
             self = result
         }
     }
-}
-
-// MARK: Interface
-
-extension Test.Account {
-    /// Load data to use as testing account/environment.
-    /// - parameter environmentKey: Build variable key, which value gives the location of the account swift file.
-    /// - returns: Representation of the account file.
-    static func make(from environmentKey: String) -> Self {
-        guard let accountPath = ProcessInfo.processInfo.environment[environmentKey] else {
-            fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
-        }
-        
-        let accountFileURL: URL
-        do {
-            accountFileURL = try Self.parse(path: accountPath)
-        } catch let error {
-            fatalError((error as! Self.Error).debugDescription)
-        }
-        
-        let data: Data
-        do {
-            data = try Data(contentsOf: accountFileURL)
-        } catch let error {
-            fatalError(Error.dataLoadFailed(url: accountFileURL, underlyingError: error).debugDescription)
-        }
-        
-        do {
-            return try JSONDecoder().decode(Self.self, from: data)
-        } catch let error {
-            fatalError(Error.accountParsingFailed(url: accountFileURL, underlyingError: error).debugDescription)
-        }
-    }
-    
-    /// Parse a URL represented as a string into a proper URL.
-    ///
-    /// If `path` is a relative file path; that path is appended to the test bundle resource URL.
-    ///
-    /// In the following scenarios, this function will throw an error:
-    /// - if `path` is `nil`,
-    /// - if `path` doesn't have a scheme (e.g. `https://`) or the scheme is not supported,
-    /// - if `path` is empty after the scheme,
-    /// - parameter path: A string representing a local or remote URL.
-    /// - throws: `Account.Error` type.
-    fileprivate static func parse(path: String) throws -> URL {
-        // Retrieve the schema (e.g. "file://") and see whether the path type is supported.
-        guard let url = URL(string: path),
-              let schemeString = url.scheme,
-              let scheme = SupportedScheme(rawValue: schemeString) else {
-                throw Self.Error.invalidURL(path)
-        }
-        
-        // Check that the url is bigger than just the scheme.
-        let substring = path.dropFirst("\(scheme.rawValue)://".count)
-        guard let first = substring.first else {
-            throw Self.Error.invalidURL(path)
-        }
-        
-        // If the scheme is a web URL or a local path pointing to the root folder (i.e. "/"), return the URL without further modifications.
-        guard case .file = scheme, first != "/" else {
-            return url
-        }
-        
-        let resourcesURL = try bundleResourceURL()
-        return resourcesURL.appendingPathComponent(String(substring))
-    }
-    
-    /// Returns the URL for the test bundle resource.
-    private static func bundleResourceURL() throws -> URL {
-        let bundle = Bundle(for: UselessClass.self)
-        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound() }
-        return url
-    }
-    
-    /// Empty class exclusively used to figure out the test bundle URL.
-    private final class UselessClass {}
 }

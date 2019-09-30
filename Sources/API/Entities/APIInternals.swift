@@ -45,7 +45,7 @@ extension IG.API {
         /// Specifies a `JSONDecoder` to use in further operations.
         enum Decoder<T> {
             /// The default `JSONDecoder` that has attached as `userInfo` any of the indicated associated values.
-            case `default`(response: Bool = false, values: Bool = false)
+            case `default`(values: Bool = false, response: Bool = false, date: Bool = false)
             /// A custom `JSONDecoder` generated through the provided closure.
             case custom((_ request: URLRequest, _ response: HTTPURLResponse, _ values: T) throws -> JSONDecoder)
             /// A custom already-generated `JSONDecoder`.
@@ -54,13 +54,25 @@ extension IG.API {
             /// Factory function creating a `JSONDecoder` from the receiving enum value.
             func makeDecoder(request: URLRequest, response: HTTPURLResponse, values: T) throws -> JSONDecoder {
                 switch self {
-                case .default(let includeResponse, let includeValues):
+                case .default(let includeValues, let includeResponse, let includeDate):
                     let decoder = JSONDecoder()
-                    if includeResponse { decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] = response }
-                    if includeValues   { decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] = values }
+                    if includeResponse {
+                        decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] = response
+                    }
+                    if includeValues {
+                        decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] = values
+                    }
+                    if includeDate {
+                        guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
+                              let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                            let message = "The response date couldn't be extracted from the response header"
+                            throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                        }
+                        decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                    }
                     return decoder
-                case .custom(let g):
-                    return try g(request, response, values)
+                case .custom(let closure):
+                    return try closure(request, response, values)
                 case .predefined(let decoder):
                     return decoder
                 }

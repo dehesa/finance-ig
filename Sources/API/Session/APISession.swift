@@ -65,7 +65,7 @@ extension IG.API.Request.Session {
                 .tryMap { [weak weakAPI = self.api] (credentials) in
                     guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
                     api.session.credentials = credentials
-                }.flatMap(maxPublishers: .max(1), { _ in
+                }.flatMap(maxPublishers: .max(1), { (_) in
                     Empty(completeImmediately: true)
                 }).mapError(IG.API.Error.transform)
                 .eraseToAnyPublisher()
@@ -75,7 +75,7 @@ extension IG.API.Request.Session {
     /// Refreshes the underlying secret token so the session can remain connected for longer time.
     ///
     /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials).
-    /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while cretificate refresh should happen infrequently (every 3 to 4 hours).
+    /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while certificate refresh should happen infrequently (every 3 to 4 hours).
     /// - returns: *Future* indicating a successful token refresh with a successful complete.
     public func refresh() -> IG.API.Future<Never> {
         self.api.publisher { (api) -> IG.API.Credentials in

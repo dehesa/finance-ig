@@ -1,23 +1,22 @@
 @testable import IG
-import ReactiveSwift
 import XCTest
 
 /// Tests for the API OAuth endpoints.
 final class APIOAuthTests: XCTestCase {
     /// Test the OAuth lifecycle: session creation, refresh, and disconnection.
     func testOAuth() {
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: nil, targetQueue: nil)
-        let account = Test.account.identifier
-        let key = Test.account.api.key
-        guard case .user(let user) = Test.account.api.credentials else {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
+        
+        guard let user = acc.api.user else {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         
-        let credentials = try! api.session.loginOAuth(key: key, user: user).single()!.get()
+        let credentials = api.session.loginOAuth(key: acc.api.key, user: user).waitForOne()
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
-        XCTAssertEqual(credentials.key, key)
-        XCTAssertEqual(credentials.account, account)
-        XCTAssertGreaterThan(credentials.token.expirationDate, Date())
+        XCTAssertEqual(credentials.key, acc.api.key)
+        XCTAssertEqual(credentials.account, acc.identifier)
+        XCTAssertFalse(credentials.token.isExpired)
         guard case .oauth(let access, let refresh, let scope, let type) = credentials.token.value else {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
         }
@@ -25,12 +24,13 @@ final class APIOAuthTests: XCTestCase {
         XCTAssertFalse(refresh.isEmpty)
         XCTAssertFalse(scope.isEmpty)
         XCTAssertFalse(type.isEmpty)
+        
         let headers = credentials.requestHeaders
         XCTAssertEqual(headers[.authorization], "\(type) \(access)")
-        XCTAssertEqual(headers[.account], account.rawValue)
+        XCTAssertEqual(headers[.account], acc.identifier.rawValue)
 
-        let token = try! api.session.refreshOAuth(token: refresh, key: key).single()!.get()
-        XCTAssertGreaterThan(token.expirationDate, Date())
+        let token = api.session.refreshOAuth(token: refresh, key: acc.api.key).waitForOne()
+        XCTAssertFalse(token.isExpired)
         guard case .oauth(let newAccess, let newRefresh, let newScope, let newType) = token.value else {
             fatalError()
         }
@@ -43,7 +43,7 @@ final class APIOAuthTests: XCTestCase {
         newCredentials.token = token
         api.session.credentials = newCredentials
         
-        try! api.session.logout().single()!.get()
+        api.session.logout().wait()
         XCTAssertNil(api.session.credentials)
     }
 }
