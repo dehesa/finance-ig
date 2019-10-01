@@ -70,7 +70,7 @@ extension Publisher {
         }, receiveValue: { result.append($0) })
         
         guard case .success = semaphore.wait(timeout: .now() + timeout) else {
-            fatalError("The publisher didn't complete before the timeout ellapsed.", file: file, line: line)
+            fatalError("The publisher didn't complete before the timeout ellapsed", file: file, line: line)
         }
         cancellable?.cancel()
         return result

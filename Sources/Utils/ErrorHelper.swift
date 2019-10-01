@@ -84,20 +84,19 @@ internal enum ErrorHelper {
                 }
             case let code as IG.SQLite.Result:
                 result.append("\(code.rawValue) -> \(code.description)")
-            #warning("Streamer: Uncomment")
-//            case let errors as [IG.Streamer.Error]:
-//                let string = errors.map {
-//                    var s = $0.printableType
-//                    if let item = $0.item { s.append(" for \(item)") }
-//                    return s
-//                }.joined(separator: ", ")
-//                result.append("[\(string)]")
-//            case let statuses as [IG.Streamer.Session.Status]:
-//                let string = statuses.map { $0.rawValue }.joined(separator: ", ")
-//                result.append("[\(string)]")
-//            case let updates as [String:IG.Streamer.Subscription.Update]:
-//                let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
-//                result.append("[\(string)]")
+            case let errors as [IG.Streamer.Error]:
+                let string = errors.map {
+                    var s = $0.printableType
+                    if let item = $0.item { s.append(" for \(item)") }
+                    return s
+                }.joined(separator: ", ")
+                result.append("[\(string)]")
+            case let statuses as [IG.Streamer.Session.Status]:
+                let string = statuses.map { $0.rawValue }.joined(separator: ", ")
+                result.append("[\(string)]")
+            case let updates as [String:IG.Streamer.Subscription.Update]:
+                let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
+                result.append("[\(string)]")
             default:
                 result.append(IG.ErrorHelper.representation(of: value, prefixCount: beginning.count, maxCharacters: maxCharacters))
             }

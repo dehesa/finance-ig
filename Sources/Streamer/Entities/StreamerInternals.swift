@@ -1,8 +1,17 @@
+import Combine
 import Foundation
 
 extension IG.Streamer {
     /// List of request data needed to make subscriptions.
     public enum Request {}
+    
+    /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
+    /// This behavior is guaranteed when you see this type.
+    public typealias Future<T> = Combine.AnyPublisher<T,IG.Streamer.Error>
+    /// Publisher that can send zero, one, or many values followed by a successful completion.
+    ///
+    /// This type is typically semantically used for paginated requests.
+    public typealias ContinuousPublisher<T> = Combine.AnyPublisher<T,IG.Streamer.Error>
 }
 
 extension IG.Streamer {
