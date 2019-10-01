@@ -53,7 +53,11 @@ extension Streamer {
     }
 }
 
-extension IG.Streamer.Credentials: CustomDebugStringConvertible {
+extension IG.Streamer.Credentials: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.Streamer.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
         var result = IG.DebugDescription("Streamer Credentials")
         result.append("identifier", self.identifier)

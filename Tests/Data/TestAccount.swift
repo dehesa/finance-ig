@@ -88,7 +88,7 @@ extension Test.Account {
                 api.session.login(type: .certificate, key: self.key, user: user).wait()
                 result = api.session.credentials!
             } else {
-                fatalError("Some type of information must be provided to retrieve the API credentials.")
+                fatalError("Some type of information must be provided to retrieve the API credentials")
             }
             
             self.cached = result
@@ -120,6 +120,22 @@ extension Test.Account {
             self.identifier = nil
             self.password = nil
         }
+        
+        /// Returns the Streamer credentials for this Test account.
+        var credentials: Streamer.Credentials? {
+            guard let identifier = self.identifier, let password = self.password else { return nil }
+            return .init(identifier: identifier, password: password)
+        }
+    }
+    
+    /// Try to get the Streamer credentials from the test data, and if it is not there it lets the API compute them.
+    var streamerCredentials: (rootURL: URL, credentials: Streamer.Credentials) {
+        guard case .some(let data) = self.streamer else {
+            let credentials = self.api.credentials
+            return (credentials.streamerURL, try! .init(credentials: credentials))
+        }
+        
+        return (data.rootURL, data.credentials ?? (try! Streamer.Credentials(credentials: self.api.credentials)))
     }
 }
 

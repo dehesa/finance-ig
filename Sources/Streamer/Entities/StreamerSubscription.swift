@@ -5,7 +5,7 @@ import Lightstreamer_iOS_Client
 #else
 #error("OS currently not supported")
 #endif
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.Streamer {
@@ -19,10 +19,13 @@ extension IG.Streamer {
         @nonobjc let lowlevel: LSSubscription
         /// The dispatch queue processing the events and data.
         @nonobjc private let queue: DispatchQueue
-        /// It forwards the lowlevel lightstreamer subscription events.
-        @nonobjc private let events: MutableProperty<IG.Streamer.Subscription.Event>
-        /// Interface for the subscription state.
-        @nonobjc internal let status: Property<IG.Streamer.Subscription.Event>
+        
+        /// Subject managing the current channel status and its publisher.
+        @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Subscription.Event,Never>
+        /// Returns a publisher to subscribe to status events (the current value is sent first).
+        @nonobjc internal let statusPublisher: AnyPublisher<IG.Streamer.Subscription.Event,Never>
+        /// Returns the current subscription status.
+        @nonobjc internal var status: IG.Streamer.Subscription.Event { self.mutableStatus.value }
         
         /// Initializes a subscription which is not yet connected to the server.
         ///
@@ -33,22 +36,21 @@ extension IG.Streamer {
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
         @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool, targetQueue: DispatchQueue) {
-            self.events = .init(.unsubscribed)
-            self.status = self.events.skipRepeats { (lhs, rhs) -> Bool in
-                switch (lhs, rhs) {
-                case (.subscribed, .subscribed),
-                     (.error, .error),
-                     (.unsubscribed, .unsubscribed): return true
-                default: return false
-                }
-            }
-            
             let childLabel = targetQueue.label + "." + mode.rawValue.lowercased()
             self.queue = DispatchQueue(label: childLabel, qos: targetQueue.qos, autoreleaseFrequency: .workItem, target: targetQueue)
+            
+            self.mutableStatus = .init(.unsubscribed)
+            self.statusPublisher = self.mutableStatus.removeDuplicates {
+                switch ($0, $1) {
+                case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed): return true
+                default: return false
+                }
+            }.eraseToAnyPublisher()
             
             self.item = item
             self.fields = fields
             self.lowlevel = LSSubscription(mode: mode.rawValue, item: item, fields: fields)
+            #warning("Streamer: Check whether snapshoting works")
             self.lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
             super.init()
             
@@ -63,25 +65,25 @@ extension IG.Streamer {
 
 extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
-        self.queue.async { [property = self.events] in
+        self.queue.async { [property = self.mutableStatus] in
             property.value = .subscribed
         }
     }
     
     @objc func didUnsubscribe(from subscription: LSSubscription) {
-        self.queue.async { [property = self.events] in
+        self.queue.async { [property = self.mutableStatus] in
             property.value = .unsubscribed
         }
     }
     
     @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
-        self.queue.async { [property = self.events] in
+        self.queue.async { [property = self.mutableStatus] in
             property.value = .error(.init(code: code, message: message))
         }
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
-        self.queue.async { [property = self.events, fields = self.fields] in
+        self.queue.async { [property = self.mutableStatus, fields = self.fields] in
             var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
             for field in fields {
                 let value = itemUpdate.value(withFieldName: field)
@@ -92,7 +94,7 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     }
     
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
-        self.queue.async { [property = self.events] in
+        self.queue.async { [property = self.mutableStatus] in
             property.value = .updateLost(count: lostUpdates, item: itemName)
         }
     }

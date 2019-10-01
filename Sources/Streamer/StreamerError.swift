@@ -28,6 +28,15 @@ extension IG.Streamer {
             self.underlyingError = error
             self.suggestion = suggestion
         }
+        
+        /// Wrap the argument error in a `Streamer` error.
+        /// - parameter error: Swift error to be wrapped.
+        static func transform(_ error: Swift.Error) -> Self {
+            switch error {
+            case let e as Self: return e
+            case let e: return .unknown(message: "An unknown error has occurred", underlyingError: e, suggestion: .reviewError)
+            }
+        }
     }
 }
 
@@ -42,59 +51,73 @@ extension IG.Streamer.Error {
         case subscriptionFailed
         /// The received response was invalid.
         case invalidResponse
+        /// Unknown (not recognized) error.
+        case unknown
     }
     
     /// A factory function for `.sessionExpired` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func sessionExpired(message: String = Self.Message.sessionExpired, suggestion: String = Self.Suggestion.keepSession) -> Self {
-        self.init(.sessionExpired, message, suggestion: suggestion)
+    internal static func sessionExpired(message: Self.Message = .sessionExpired, suggestion: Self.Suggestion = .keepSession) -> Self {
+        self.init(.sessionExpired, message.rawValue, suggestion: suggestion.rawValue)
     }
     
     /// A factory function for `.invalidRequest` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidRequest(_ message: String, underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.invalidRequest, message, suggestion: suggestion, underlying: error)
+    internal static func invalidRequest(_ message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.invalidRequest, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
     
     /// A factory function for `.subscriptionFailed` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func subscriptionFailed(_ message: String, item: String, fields: [String], underlying error: Swift.Error? = nil, suggestion: String) -> Self {
-        self.init(.subscriptionFailed, message, suggestion: suggestion, item: item, fields: fields, underlying: error)
+    internal static func subscriptionFailed(_ message: Self.Message, item: String, fields: [String], underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+        self.init(.subscriptionFailed, message.rawValue, suggestion: suggestion.rawValue, item: item, fields: fields, underlying: error)
     }
     
     /// A factory function for `.invalidResponse` API errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidResponse(_ message: String, item: String, update: [String:IG.Streamer.Subscription.Update], underlying error: Swift.Error? = nil, suggestion: String) -> Self {
+    internal static func invalidResponse(_ message: Self.Message, item: String, update: [String:IG.Streamer.Subscription.Update], underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
         let fields = update.keys.map { $0 }
-        var error = self.init(.invalidResponse, message, suggestion: suggestion, item: item, fields: fields, underlying: error)
+        var error = self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, item: item, fields: fields, underlying: error)
         error.context.append(("Update", update))
         return error
+    }
+    
+    /// A factory function for `.unknown` API errors.
+    /// - parameter message: A brief explanation on what happened.
+    /// - parameter error: The underlying error that happened right before this error was created.
+    /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+    internal static func unknown(message: Self.Message, underlyingError error: Swift.Error, suggestion: Self.Suggestion) -> Self {
+        self.init(.unknown, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
 }
 
 extension IG.Streamer.Error {
     /// Namespace for messages reused over the framework.
-    internal enum Message {
-        static var sessionExpired: String { "The \(IG.Streamer.self) instance was not found" }
-        static var noCredentials: String  { "No credentials were found on the \(IG.Streamer.self) instance" }
-        static var unknownParsing: String { "An unknown error occur while parsing a subscription update" }
-        static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> String {
-            #"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type"#
+    internal struct Message: IG.ErrorNameSpace {
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var sessionExpired: Self { "The Streamer instance was not found" }
+        static var noCredentials: Self  { "No credentials were found on the Streamer instance" }
+        static var unknownParsing: Self { "An unknown error occur while parsing a subscription update" }
+        static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> Self {
+            .init(#"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type"#)
         }
     }
     
     /// Namespace for suggestions reused over the framework.
-    internal enum Suggestion {
-        static var keepSession: String { "The \(IG.Streamer.self) functionality is asynchronous; keep around the \(IG.Streamer.self) instance while a response hasn't been received" }
-        static var reviewError: String { "Review the returned error and try to fix the problem" }
-        static var fileBug: String     { IG.API.Error.Suggestion.fileBug }
+    internal struct Suggestion: IG.ErrorNameSpace {
+        let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
+        
+        static var keepSession: Self { "The Streamer functionality is asynchronous; keep around the Streamer instance while a response hasn't been received" }
+        static var reviewError: Self { .init(IG.API.Error.Suggestion.reviewError.rawValue) }
+        static var fileBug: Self     { .init(IG.API.Error.Suggestion.fileBug.rawValue) }
     }
 }
 
@@ -109,6 +132,7 @@ extension IG.Streamer.Error: IG.ErrorPrintable {
         case .invalidRequest: return "Invalid request"
         case .subscriptionFailed: return "Subscription failed"
         case .invalidResponse: return "Invalid response"
+        case .unknown:         return "Unknown"
         }
     }
     
