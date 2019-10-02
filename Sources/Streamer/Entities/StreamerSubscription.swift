@@ -21,8 +21,12 @@ extension IG.Streamer {
         @nonobjc private let queue: DispatchQueue
         
         /// Subject managing the current channel status and its publisher.
+        ///
+        /// This subject may publish duplicates.
         @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Subscription.Event,Never>
         /// Returns a publisher to subscribe to status events (the current value is sent first).
+        ///
+        /// This publisher remove duplicates (i.e. there aren't any repeating statuses).
         @nonobjc internal let statusPublisher: AnyPublisher<IG.Streamer.Subscription.Event,Never>
         /// Returns the current subscription status.
         @nonobjc internal var status: IG.Streamer.Subscription.Event { self.mutableStatus.value }
@@ -65,37 +69,37 @@ extension IG.Streamer {
 
 extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
-        self.queue.async { [property = self.mutableStatus] in
-            property.value = .subscribed
+        self.queue.async { [subject = self.mutableStatus] in
+            subject.value = .subscribed
         }
     }
     
     @objc func didUnsubscribe(from subscription: LSSubscription) {
-        self.queue.async { [property = self.mutableStatus] in
-            property.value = .unsubscribed
+        self.queue.async { [subject = self.mutableStatus] in
+            subject.value = .unsubscribed
         }
     }
     
     @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
-        self.queue.async { [property = self.mutableStatus] in
-            property.value = .error(.init(code: code, message: message))
+        self.queue.async { [subject = self.mutableStatus] in
+            subject.value = .error(.init(code: code, message: message))
         }
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
-        self.queue.async { [property = self.mutableStatus, fields = self.fields] in
+        self.queue.async { [subject = self.mutableStatus, fields = self.fields] in
             var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
             for field in fields {
                 let value = itemUpdate.value(withFieldName: field)
                 result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
             }
-            property.value = .updateReceived(result)
+            subject.value = .updateReceived(result)
         }
     }
     
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
-        self.queue.async { [property = self.mutableStatus] in
-            property.value = .updateLost(count: lostUpdates, item: itemName)
+        self.queue.async { [subject = self.mutableStatus] in
+            subject.value = .updateLost(count: lostUpdates, item: itemName)
         }
     }
 //    @objc func didAddDelegate(to subscription: LSSubscription) {}

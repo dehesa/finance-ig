@@ -76,3 +76,12 @@ extension Publisher {
         return result
     }
 }
+
+extension Empty where Output==Never, Failure==Never {
+    /// Locks the current queue for `interval` amount of time.
+    static func wait(for interval: DispatchTimeInterval, on queue: DispatchQueue = .init(label: "Wait queue")) {
+        let semaphore = DispatchSemaphore(value: 0)
+        queue.asyncAfter(deadline: .now() + interval) { semaphore.signal() }
+        semaphore.wait()
+    }
+}

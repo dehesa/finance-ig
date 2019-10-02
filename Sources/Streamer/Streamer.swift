@@ -11,9 +11,9 @@ public final class Streamer {
     
     /// Holds functionality related to the current streamer session.
     public var session: IG.Streamer.Request.Session { return .init(streamer: self) }
+    /// Holds functionality related to markets.
+    public var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
     #warning("Streamer: Uncomment")
-//    /// Holds functionality related to markets.
-//    public var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
 //    /// Holds functionality related to charts.
 //    public var charts: IG.Streamer.Request.Charts { return .init(streamer: self) }
 //    /// Hold functionality related to accounts.
@@ -45,8 +45,8 @@ public final class Streamer {
     }
 
     deinit {
-        let _ = self.channel.unsubscribeAll()
-        self.channel.disconnect()
+        _ = self.channel.unsubscribeAll()
+        _ = self.channel.disconnect()
     }
 }
 

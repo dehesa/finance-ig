@@ -22,10 +22,10 @@ extension IG.Streamer {
         @nonobjc private var subscriptions: Set<IG.Streamer.Subscription> = .init()
         
         /// Subject managing the current channel status and its publisher.
+        ///
+        /// This publisher remove duplicates (i.e. there aren't any repeating statuses).
         @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Session.Status,Never>
-        /// Returns a publisher to subscribe to status events (the current value is sent first).
         @nonobjc let statusPublisher: AnyPublisher<IG.Streamer.Session.Status,Never>
-        /// Returns the current streamer status.
         @nonobjc var status: IG.Streamer.Session.Status { self.mutableStatus.value }
         
         @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials, queue: DispatchQueue) {
@@ -85,76 +85,86 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
     }
     
     @nonobjc func subscribe(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> IG.Streamer.ContinuousPublisher<[String:IG.Streamer.Subscription.Update]> {
-        typealias SubscribeSubject = PassthroughSubject<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error>
-        #warning("Streamer: When I cancel, everything is cancelled")
-        var sharedSubject: SubscribeSubject? = nil
-        return Future<SubscribeSubject,IG.Streamer.Error> { [weak self] (promise) in
+        /// The type of publisher passed by the future
+        typealias SubscriptionPublisher = PassthroughSubject<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error>
+        
+        var cancellable: AnyCancellable? = nil
+        var subscription: IG.Streamer.Subscription? = nil
+        
+        let cleanup: ()->Void = { [weak self] in
+            defer { cancellable = nil; subscription = nil}
+            cancellable?.cancel()
+            guard let representation = subscription, let self = self,
+                  let lowlevel = self.subscriptions.remove(representation)?.lowlevel,
+                  lowlevel.isActive else { return }
+            dispatchPrecondition(condition: .notOnQueue(self.queue))
+            self.queue.sync { self.client.unsubscribe(lowlevel) }
+        }
+        
+        return Future<SubscriptionPublisher,IG.Streamer.Error> { [weak self] (promise) in
                 guard let self = self else {
                     return promise(.failure(.sessionExpired()))
                 }
             
-                if let subject = sharedSubject {
-                    return promise(.success(subject))
+                let representation = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, targetQueue: self.queue)
+                subscription = representation
+                self.subscriptions.insert(representation)
+                defer {
+                    dispatchPrecondition(condition: .notOnQueue(self.queue))
+                    self.queue.sync { self.client.subscribe(representation.lowlevel) }
                 }
-            
-                let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, targetQueue: self.queue)
-                self.subscriptions.insert(subscription)
                 
-                promise(.success(sharedSubject!))
-            }.switchToLatest().eraseToAnyPublisher()
-        
-//            let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, targetQueue: self.queue)
-//            self.subscriptions.insert(subscription)
-//            /// When triggered, it stops listening to the subscription's statuses.
-//            var detacher: Disposable? = nil
-//            /// Cleans up everything related with the subscription (i.e. listeners, intermediate storage, and unsubscribes).
-//            let cleanup: ()->Void = { [weak self, weak subscription] in
-//                detacher?.dispose()
-//                guard let self = self, let subscription = subscription else { return }
-//                self.subscriptions.remove(subscription)
-//                self.client.unsubscribe(subscription.lowlevel)
-//            }
-//
-//            detacher = lifetime += subscription.status.signal.observe {
-//                switch $0 {
-//                case .value(let event):
-//                    switch event {
-//                    case .updateReceived(let update):
-//                        return generator.send(value: update)
-//                    case .updateLost(let count, _):
-//                        #if DEBUG
-//                        debugPrint("Streamer subscription lost \(count) updates from \(item) [\(fields.joined(separator: ","))]")
-//                        #endif
-//                        return
-//                    case .error(let error):
-//                        let message = "The subscription couldn't be established"
-//                        let error: IG.Streamer.Error = .subscriptionFailed(message, item: item, fields: fields, underlying: error, suggestion: IG.Streamer.Error.Suggestion.reviewError)
-//                        generator.send(error: error)
-//                    case .subscribed, .unsubscribed: // Subscription and unsubscription may happen for temporary loss of connection.
-//                        return
-//                    }
-//                case .completed: // The signal shall only complete when the subscription instance is deinitialized (i.e. when `unsubscribeAll()` is used)
-//                    generator.sendInterrupted()
-//                case .interrupted: // The signal shall only be interrupted by stopping the result producer's lifetime
-//                    break
-//                case .failed: // The signal shall never fail
-//                    fatalError("A subscription status property cannot fail")
-//                }
-//
-//                return cleanup()
-//            }
-//
-//            self.client.subscribe(subscription.lowlevel)
+                let subject: SubscriptionPublisher = .init()
+            
+                var receivedFirstStatus = false
+                cancellable = representation.statusPublisher.drop {
+                    guard !receivedFirstStatus else { return false }
+                    receivedFirstStatus = true
+                    return $0 == .unsubscribed
+                }.sink {
+                    switch $0 {
+                    case .updateReceived(let update):
+                        subject.send(update)
+                    case .subscribed:
+                        #if DEBUG
+                        print("\(IG.Streamer.printableDomain): Subscription to \(item) established")
+                        #endif
+                        break
+                    case .updateLost(let count, let receivedItem):
+                        #if DEBUG
+                        print("\(IG.Streamer.printableDomain): Subscription to \(receivedItem ?? item) lost \(count) updates. Fields: [\(fields.joined(separator: ","))]")
+                        #endif
+                        break
+                    case .error(let e):
+                        let message = "The subscription couldn't be established"
+                        let error: IG.Streamer.Error = .subscriptionFailed(.init(message), item: item, fields: fields, underlying: e, suggestion: .reviewError)
+                        subject.send(completion: .failure(error))
+                    case .unsubscribed:
+                        #if DEBUG
+                        print("\(IG.Streamer.printableDomain): Unsubscribed to \(item)")
+                        #endif
+                        subject.send(completion: .finished)
+                    }
+                }
+                
+                promise(.success(subject))
+            }.flatMap(maxPublishers: .max(1)) {$0 }
+            .handleEvents(receiveCompletion: { (_) in cleanup() }, receiveCancel: cleanup)
+            .eraseToAnyPublisher()
     }
     
     @nonobjc func unsubscribeAll() -> [IG.Streamer.Subscription] {
-        let subscriptions = self.subscriptions
-        self.subscriptions.removeAll()
+        dispatchPrecondition(condition: .notOnQueue(self.queue))
         
-        return subscriptions.filter {
-            guard $0.lowlevel.isActive else { return false }
-            self.client.unsubscribe($0.lowlevel)
-            return true
+        return queue.sync {
+            let subscriptions = self.subscriptions
+            self.subscriptions.removeAll()
+            
+            return subscriptions.filter {
+                guard $0.lowlevel.isActive else { return false }
+                self.client.unsubscribe($0.lowlevel)
+                return true
+            }
         }
     }
 }

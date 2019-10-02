@@ -1,16 +1,27 @@
 import XCTest
-import ReactiveSwift
+import Combine
 @testable import IG
 
 final class StreamerMarketTests: XCTestCase {
     /// Tests the market info subscription.
     func testMarketSubscriptions() {
-        let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
+        let (rootURL, creds) = Test.account(environmentKey: "io.dehesa.money.ig.tests.account").streamerCredentials
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+        
+        _ = streamer.session.connect().waitForAll()
+        XCTAssertTrue(streamer.session.status.isReady)
 
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        self.test( streamer.markets.subscribe(to: epic, fields: .all), value: { (market) in
+        let expectation = self.expectation(description: "Testing market: \(epic)")
+        
+        var values = 0
+        #warning("Tests: Build functionality to waitForN()")
+        let cancellable = streamer.markets.subscribe(to: epic, fields: .all).sink(receiveCompletion: {
+            guard case .failure(let error) = $0 else { return }
+            XCTFail(error.debugDescription)
+        }, receiveValue: { (market) in
+            values += 1
+            print(values)
             XCTAssertEqual(market.epic, epic)
             XCTAssertNotNil(market.status)
             XCTAssertNotNil(market.date)
@@ -22,15 +33,16 @@ final class StreamerMarketTests: XCTestCase {
             XCTAssertNotNil(market.day.highest)
             XCTAssertNotNil(market.day.changeNet)
             XCTAssertNotNil(market.day.changePercentage)
-        }, take: 3, timeout: 6, on: scheduler)
+            
+            if values == 2 { expectation.fulfill() }
+        })
         
-        self.test( streamer.session.unsubscribeAll(), take: 1, timeout: 2, on: scheduler) {
-            XCTAssertEqual($0.count, 1)
-        }
+        self.wait(for: [expectation], timeout: 6)
         
-        self.test( streamer.session.disconnect(), timeout: 2, on: scheduler) {
-            XCTAssertNotNil($0.last)
-            XCTAssertEqual($0.last!, .disconnected(isRetrying: false))
-        }
+        let items = streamer.session.unsubscribeAll().waitForAll(timeout: .seconds(10))
+        XCTAssertEqual(items.count, 1)
+        
+        _ = streamer.session.disconnect().waitForAll()
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 }
