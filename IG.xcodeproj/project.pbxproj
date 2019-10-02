@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		8D193F4F2339513D00036C54 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8D193F4D2339513D00036C54 /* Lightstreamer_macOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8D286D272344C8D000D582AE /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
+		8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
 		8D2EA92B233B4E030004A4C2 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
 		8D2EA92C233B4E070004A4C2 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA632149A6CE00344CBF /* APIError.swift */; };
 		8D2EA92D233B545E0004A4C2 /* APIUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0A232B22EB9600001853E7 /* APIUser.swift */; };
@@ -55,7 +57,7 @@
 		8D45267B233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
 		8D45267C233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
 		8D6DB859234245FB0042F330 /* TestEpics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5B3E1B232F855E0022959F /* TestEpics.swift */; };
-		8D6DB85B2342474D0042F330 /* Tests+Combine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6DB85A2342474D0042F330 /* Tests+Combine.swift */; };
+		8D6DB85B2342474D0042F330 /* Combine+Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6DB85A2342474D0042F330 /* Combine+Tests.swift */; };
 		8D6DB85C234247AB0042F330 /* APIOAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */; };
 		8D6DB85D23424AC10042F330 /* APICertificateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA32149A6CE00344CBF /* APICertificateTests.swift */; };
 		8D6DB85E23424E990042F330 /* APIApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA02149A6CE00344CBF /* APIApplicationTests.swift */; };
@@ -194,7 +196,7 @@
 		8D6BD9FD22EF447600156512 /* APIDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDeal.swift; sourceTree = "<group>"; };
 		8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSubscription.swift; sourceTree = "<group>"; };
 		8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerEvent.swift; sourceTree = "<group>"; };
-		8D6DB85A2342474D0042F330 /* Tests+Combine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Tests+Combine.swift"; sourceTree = "<group>"; };
+		8D6DB85A2342474D0042F330 /* Combine+Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Combine+Tests.swift"; sourceTree = "<group>"; };
 		8D74741422E8439B00B0BA41 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		8D80CFD42341FDC300E63411 /* TestAccountDecodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestAccountDecodable.swift; sourceTree = "<group>"; };
 		8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSessionTests.swift; sourceTree = "<group>"; };
@@ -750,7 +752,7 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA872149A6CE00344CBF /* String.swift */,
-				8D6DB85A2342474D0042F330 /* Tests+Combine.swift */,
+				8D6DB85A2342474D0042F330 /* Combine+Tests.swift */,
 				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
 			);
 			path = Utils;
@@ -1143,6 +1145,7 @@
 				8D89C7942343210B00FD0F3D /* StreamerSession.swift in Sources */,
 				8D89C7952343210B00FD0F3D /* StreamerChannel.swift in Sources */,
 				8D89C7962343210B00FD0F3D /* StreamerMockableChannel.swift in Sources */,
+				8D286D272344C8D000D582AE /* StreamerMarket.swift in Sources */,
 				8D452657233A3D270034D577 /* SQLite.swift in Sources */,
 				8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */,
 			);
@@ -1159,7 +1162,7 @@
 				8D80CFD52341FDC300E63411 /* TestAccountDecodable.swift in Sources */,
 				8D80CFCF2341E8D800E63411 /* TestAccountError.swift in Sources */,
 				8D6DB859234245FB0042F330 /* TestEpics.swift in Sources */,
-				8D6DB85B2342474D0042F330 /* Tests+Combine.swift in Sources */,
+				8D6DB85B2342474D0042F330 /* Combine+Tests.swift in Sources */,
 				8D80CFD623421B2D00E63411 /* APISessionTests.swift in Sources */,
 				8D6DB85C234247AB0042F330 /* APIOAuthTests.swift in Sources */,
 				8D6DB85D23424AC10042F330 /* APICertificateTests.swift in Sources */,
@@ -1175,6 +1178,7 @@
 				8D89C78C234314A800FD0F3D /* APIPositionTests.swift in Sources */,
 				8D89C78D234317BD00FD0F3D /* APIWorkingOrderTests.swift in Sources */,
 				8D89C7982343A41700FD0F3D /* StreamerSessionTests.swift in Sources */,
+				8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

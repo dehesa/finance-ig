@@ -1,41 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.Streamer.Request.Markets {
-    
-    // MARK: MARKET:EPIC
-    
-    /// Subscribes to the given market and returns in the response the specified attributes/fields.
-    ///
-    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter epic: The epic identifying the targeted market.
-    /// - parameter fields: The market properties/fields bieng targeted.
-    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Market,IG.Streamer.Error> {
-        typealias E = IG.Streamer.Error
-        
-        let item = "MARKET:\(epic.rawValue)"
-        let properties = fields.map { $0.rawValue }
-        let timeFormatter = IG.Streamer.Formatter.time
-        
-        return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .attemptMap { (update) in
-                do {
-                    return .success(try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter))
-                } catch var error as E {
-                    if case .none = error.item { error.item = item }
-                    if case .none = error.fields { error.fields = properties }
-                    return .failure(error)
-                } catch let underlyingError {
-                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
-                    return .failure(error)
-                }
-            }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer markets.
@@ -51,7 +15,39 @@ extension IG.Streamer.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.Streamer.Request.Markets {
+    
+    // MARK: MARKET:EPIC
+    
+    /// Subscribes to the given market and returns in the response the specified attributes/fields.
+    ///
+    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
+    /// - parameter epic: The epic identifying the targeted market.
+    /// - parameter fields: The market properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Market> {
+        let item = "MARKET:\(epic.rawValue)"
+        let properties = fields.map { $0.rawValue }
+        let timeFormatter = IG.Streamer.Formatter.time
+        
+        return self.streamer.channel
+            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .tryMap { (update) in
+                do {
+                    return try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter)
+                } catch var error as IG.Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
+                    throw error
+                } catch let underlyingError {
+                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                }
+            }.mapError(IG.Streamer.Error.transform)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
 
 extension IG.Streamer.Market {
     /// All available fields/properties to query data from a given market.
