@@ -6,9 +6,10 @@ final class APIAccountTests: XCTestCase {
     /// Tests Account information retrieval.
     func testAccounts() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let accounts = api.accounts.getAll().waitForOne()
+        let accounts = api.accounts.getAll()
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(accounts.isEmpty)
         
         let account = accounts[0]
@@ -20,14 +21,18 @@ final class APIAccountTests: XCTestCase {
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let initial = api.accounts.preferences().waitForOne()
+        let initial = api.accounts.preferences()
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         
-        api.accounts.updatePreferences(trailingStops: !initial.trailingStops).wait()
-        let updated = api.accounts.preferences().waitForOne()
+        api.accounts.updatePreferences(trailingStops: !initial.trailingStops)
+            .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+        let updated = api.accounts.preferences()
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertNotEqual(initial.trailingStops, updated.trailingStops)
         
-        api.accounts.updatePreferences(trailingStops: initial.trailingStops).wait()
+        api.accounts.updatePreferences(trailingStops: initial.trailingStops)
+            .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
     }
 }

@@ -6,7 +6,7 @@ final class APIPriceTests: XCTestCase {
     /// Tests paginated activity retrieval.
     func testPrices() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let components = DateComponents().set {
             $0.timeZone = .current
@@ -18,7 +18,8 @@ final class APIPriceTests: XCTestCase {
         let fromDate = calendar.date(from: components)!
         let toDate = calendar.date(from: components.set { $0.minute = 59 })!
         
-        let events = api.history.getPrices(epic: "CS.D.EURUSD.MINI.IP", from: fromDate, to: toDate, resolution: .minute10).waitForAll()
+        let events = api.history.getPrices(epic: "CS.D.EURUSD.MINI.IP", from: fromDate, to: toDate, resolution: .minute10)
+            .expectsAll { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(events.isEmpty)
         
         let prices = events.flatMap { $0.prices }

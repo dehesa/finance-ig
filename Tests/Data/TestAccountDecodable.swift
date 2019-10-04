@@ -1,4 +1,4 @@
-import IG
+@testable import IG
 import Foundation
 
 extension Test.Account: Decodable {
@@ -99,12 +99,11 @@ extension Test.Account.StreamerData: Decodable {
             if let pass = try? container.decode(String.self, forKey: .password) {
                 password = pass
             } else {
-                #warning("Test: Uncomment & Fix")
-////                let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .password)
-////                let access = try nestedContainer.decode(String.self, forKey: .access)
-////                let security = try nestedContainer.decode(String.self, forKey: .security)
-////                password = try IG.Streamer.Credentials.password(fromCST: access, security: security) ?! DecodingError.dataCorrupted(.init(codingPath: nestedContainer.codingPath, debugDescription: "The streamer password couldnt' be formed"))
-                password = nil
+                let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .password)
+                let access = try nestedContainer.decode(String.self, forKey: .access)
+                let security = try nestedContainer.decode(String.self, forKey: .security)
+                password = try IG.Streamer.Credentials.password(fromCST: access, security: security)
+                    ?! DecodingError.dataCorrupted(.init(codingPath: nestedContainer.codingPath, debugDescription: "The streamer password couldnt' be formed"))
             }
         }
 

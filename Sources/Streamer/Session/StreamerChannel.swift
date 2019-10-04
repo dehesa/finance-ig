@@ -97,6 +97,7 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
             guard let representation = subscription, let self = self,
                   let lowlevel = self.subscriptions.remove(representation)?.lowlevel,
                   lowlevel.isActive else { return }
+            #warning("Streamer: It gets triggered. I need One queue to synchronize access and one queue to send data")
             dispatchPrecondition(condition: .notOnQueue(self.queue))
             self.queue.sync { self.client.unsubscribe(lowlevel) }
         }

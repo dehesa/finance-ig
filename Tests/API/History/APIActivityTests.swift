@@ -6,7 +6,7 @@ final class APIActivityTests: XCTestCase {
     /// Tests paginated activity retrieval.
     func testActivities() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
             $0.timeZone = .current
@@ -14,7 +14,9 @@ final class APIActivityTests: XCTestCase {
             ($0.hour, $0.minute) = (0, 0)
         })!
         
-        let activities = api.history.getActivityContinuously(from: date, detailed: true).waitForAll().flatMap { $0 }
+        let activities = api.history.getActivityContinuously(from: date, detailed: true)
+            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .flatMap { $0 }
         XCTAssertFalse(activities.isEmpty)
         
         for activity in activities {

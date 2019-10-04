@@ -56,6 +56,7 @@
 		8D452677233A6F640034D577 /* Confirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24D0D1230EF496003D25EA /* Confirmation.swift */; };
 		8D45267B233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
 		8D45267C233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
+		8D490ACD2345DD610008ED18 /* Combine+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D490ACB2345DD4D0008ED18 /* Combine+Utils.swift */; };
 		8D6DB859234245FB0042F330 /* TestEpics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5B3E1B232F855E0022959F /* TestEpics.swift */; };
 		8D6DB85B2342474D0042F330 /* Combine+Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6DB85A2342474D0042F330 /* Combine+Tests.swift */; };
 		8D6DB85C234247AB0042F330 /* APIOAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA52149A6CE00344CBF /* APIOAuthTests.swift */; };
@@ -185,6 +186,7 @@
 		8D452667233A67960034D577 /* Bundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bundle.swift; sourceTree = "<group>"; };
 		8D45267A233AC0190034D577 /* MarketExpiry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketExpiry.swift; sourceTree = "<group>"; };
 		8D47E0D623159C8900AD53A2 /* Market.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Market.swift; sourceTree = "<group>"; };
+		8D490ACB2345DD4D0008ED18 /* Combine+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Combine+Utils.swift"; sourceTree = "<group>"; };
 		8D4B971422F1C995002B267F /* TestAccount.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestAccount.swift; sourceTree = "<group>"; };
 		8D50EE7E22FBE4B500F82671 /* StreamerMockableChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMockableChannel.swift; sourceTree = "<group>"; };
 		8D520C0123326A4100BDF54D /* DBPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBPrice.swift; sourceTree = "<group>"; };
@@ -609,6 +611,7 @@
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
 				8D19C51A2326459000F029B3 /* ErrorHelper.swift */,
 				8D30D082232566D900D83E0A /* ErrorCodable.swift */,
+				8D490ACB2345DD4D0008ED18 /* Combine+Utils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -751,8 +754,8 @@
 		8DC4CA832149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8D6DB85A2342474D0042F330 /* Combine+Tests.swift */,
+				8DC4CA872149A6CE00344CBF /* String.swift */,
 				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
 			);
 			path = Utils;
@@ -1094,6 +1097,7 @@
 				8D33B8D3233967E1002B524B /* Error.swift in Sources */,
 				8D45266A233A69390034D577 /* ErrorHelper.swift in Sources */,
 				8D45266B233A693C0034D577 /* ErrorCodable.swift in Sources */,
+				8D490ACD2345DD610008ED18 /* Combine+Utils.swift in Sources */,
 				8D33B8D62339689E002B524B /* Account.swift in Sources */,
 				8D33B8D72339689E002B524B /* Client.swift in Sources */,
 				8D45266E233A6A740034D577 /* Market.swift in Sources */,

@@ -12,7 +12,8 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         
-        let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: acc.api.key, user: user).waitForOne()
+        let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: acc.api.key, user: user)
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, acc.api.key)
         XCTAssertEqual(credentials.account, acc.identifier)
@@ -28,7 +29,8 @@ final class APICertificateTests: XCTestCase {
         XCTAssertEqual(headers[.securityToken], security)
         
         api.session.credentials = credentials
-        api.session.logout().wait()
+        api.session.logout()
+            .expectsCompletion { self.wait(for: [$0], timeout: 1) }
         XCTAssertNil(api.session.credentials)
     }
     
@@ -41,14 +43,16 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         
-        let credentials = api.session.loginOAuth(key: acc.api.key, user: user).waitForOne()
+        let credentials = api.session.loginOAuth(key: acc.api.key, user: user)
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         guard case .oauth = credentials.token.value else {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
         }
         XCTAssertFalse(credentials.token.isExpired)
         api.session.credentials = credentials
 
-        let token = api.session.refreshCertificate().waitForOne()
+        let token = api.session.refreshCertificate()
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         guard case .certificate(let access, let security) = token.value else { return XCTFail("A certificate token hasn't been regenerated") }
         XCTAssertFalse(access.isEmpty)
         XCTAssertFalse(security.isEmpty)

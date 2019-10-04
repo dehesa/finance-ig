@@ -6,7 +6,7 @@ final class APITransactionTests: XCTestCase {
     /// Tests paginated transaction retrieval.
     func testTransactions() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
             $0.timeZone = TimeZone.current
@@ -14,7 +14,9 @@ final class APITransactionTests: XCTestCase {
             ($0.hour, $0.minute) = (0, 0)
         })!
         
-        let transactions = api.history.getTransactionsContinuously(from: date).waitForAll().flatMap { $0 }
+        let transactions = api.history.getTransactionsContinuously(from: date)
+            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
         
         for transaction in transactions {

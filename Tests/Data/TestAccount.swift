@@ -1,4 +1,5 @@
 @testable import IG
+import XCTest
 import Combine
 import Foundation
 
@@ -56,44 +57,9 @@ extension Test.Account {
         }
         
         /// Semaphore used to modified the data.
-        private let semaphore = DispatchSemaphore(value: 1)
+        fileprivate let semaphore = DispatchSemaphore(value: 1)
         /// Cached credentials
-        private var cached: API.Credentials? = nil
-        /// Returns the API credentials for this Test account.
-        var credentials: API.Credentials {
-            let timeout = 3
-            guard case .success = self.semaphore.wait(timeout: .now() + .seconds(timeout)) else {
-                fatalError("The semaphore for accessing the API credentials timeout (\(timeout) seconds)")
-            }
-            defer { self.semaphore.signal() }
-            
-            if let credentials = self.cached {
-                guard credentials.token.isExpired else { return credentials }
-            }
-            
-            let api: API = .init(rootURL: self.rootURL, credentials: self.cached, targetQueue: nil)
-            let result: API.Credentials
-            if case .some = api.session.credentials {
-                api.session.refresh().wait()
-                result = api.session.credentials!
-            } else if let cer = self.certificate {
-                let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
-                let s = api.session.get(key: self.key, token: token).waitForOne()
-                result = .init(client: s.client, account: s.account, key: self.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
-            } else if let oau = self.oauth {
-                let token: API.Credentials.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
-                let s = api.session.get(key: self.key, token: token).waitForOne()
-                result = .init(client: s.client, account: s.account, key: self.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
-            } else if let user = self.user {
-                api.session.login(type: .certificate, key: self.key, user: user).wait()
-                result = api.session.credentials!
-            } else {
-                fatalError("Some type of information must be provided to retrieve the API credentials")
-            }
-            
-            self.cached = result
-            return result
-        }
+        fileprivate var cached: API.Credentials? = nil
     }
 }
 
@@ -127,16 +93,6 @@ extension Test.Account {
             return .init(identifier: identifier, password: password)
         }
     }
-    
-    /// Try to get the Streamer credentials from the test data, and if it is not there it lets the API compute them.
-    var streamerCredentials: (rootURL: URL, credentials: Streamer.Credentials) {
-        guard case .some(let data) = self.streamer else {
-            let credentials = self.api.credentials
-            return (credentials.streamerURL, try! .init(credentials: credentials))
-        }
-        
-        return (data.rootURL, data.credentials ?? (try! Streamer.Credentials(credentials: self.api.credentials)))
-    }
 }
 
 // MARK: - Database Data
@@ -168,5 +124,67 @@ extension Test.Account {
                   let result = Self.init(rawValue: urlScheme) else { return nil }
             self = result
         }
+    }
+}
+
+// MARK: Testing
+
+extension XCTestCase {
+    /// Returns the API credentials for this Test account.
+    func apiCredentials(from testAccount: Test.Account) -> API.Credentials {
+        let data: Test.Account.APIData = testAccount.api
+        
+        let timeout = 3
+        guard case .success = data.semaphore.wait(timeout: .now() + .seconds(timeout)) else {
+            fatalError("The semaphore for accessing the API credentials timeout (\(timeout) seconds)")
+        }
+        defer { data.semaphore.signal() }
+        
+        if let credentials = data.cached {
+            guard credentials.token.isExpired else { return credentials }
+        }
+        
+        let api: API = .init(rootURL: data.rootURL, credentials: data.cached, targetQueue: nil)
+        let result: API.Credentials
+        if case .some = api.session.credentials {
+            api.session.refresh()
+                .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+            result = api.session.credentials!
+        } else if let cer = data.certificate {
+            let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
+            let s = api.session.get(key: data.key, token: token)
+                .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
+        } else if let oau = data.oauth {
+            let token: API.Credentials.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
+            let s = api.session.get(key: data.key, token: token)
+                .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
+        } else if let user = data.user {
+            api.session.login(type: .certificate, key: data.key, user: user)
+                .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+            result = api.session.credentials!
+        } else {
+            fatalError("Some type of information must be provided to retrieve the API credentials")
+        }
+        
+        data.cached = result
+        return result
+    }
+}
+
+extension XCTestCase {
+    /// Try to get the Streamer credentials from the test data, and if it is not there it lets the API compute them.
+    func streamerCredentials(from testAccount: Test.Account) -> (rootURL: URL, credentials: Streamer.Credentials) {
+        guard case .some(let data) = testAccount.streamer else {
+            let credentials = self.apiCredentials(from: testAccount)
+            return (credentials.streamerURL, try! .init(credentials: credentials))
+        }
+        
+        if let creds = data.credentials {
+            return (data.rootURL, creds)
+        }
+        
+        return (data.rootURL, try! .init(credentials: self.apiCredentials(from: testAccount)))
     }
 }

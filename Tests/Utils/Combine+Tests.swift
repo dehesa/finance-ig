@@ -1,87 +1,141 @@
+import XCTest
 import Combine
 import Foundation
 
 extension Publisher {
-    /// Locks the current queue waiting for the receiving publisher to finish.
-    /// - precondition: The publisher must finish successfully and it must not input any value. In any other case a `fatalError` is produced.
-    /// - parameter timeout: The maximum time the semaphore will be waiting.
-    func wait(timeout: DispatchTimeInterval = .seconds(2), file: StaticString = #file, line: UInt = #line) {
-        let semaphore = DispatchSemaphore(value: 0)
+    /// Expects the receiving publisher to complete with the timeout (and on the test) given in the `wait` closure.
+    ///
+    /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
+    /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
+    /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
+    func expectsCompletion(_ description: String = "The publisher shall complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) {
+        let e = XCTestExpectation(description: description)
         
         var cancellable: AnyCancellable?
         cancellable = self.sink(receiveCompletion: {
             cancellable = nil
             switch $0 {
-            case .finished: semaphore.signal()
-            case .failure(let e): fatalError("The publisher forwarded an error\n\(e)\n", file: file, line: line)
+            case .finished: e.fulfill()
+            case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected.\n\(e)\n", file: file, line: line)
             }
         }, receiveValue: { (_) in return })
         
-        guard case .success = semaphore.wait(timeout: .now() + timeout) else {
-            fatalError("The publisher didn't complete before the timeout ellapsed.", file: file, line: line)
-        }
+        wait(e)
         cancellable?.cancel()
     }
     
-    /// Locks the current queue waiting for the receiving publisher to finish.
-    /// - precondition: The publisher must finish successfully and it must input ONE value. In any other case a `fatalError` is produced.
-    /// - parameter timeout: The maximum time the semaphore will be waiting.
+    /// Expects the receiving publisher to produce a single value and then complete within the timeout (and on the test) given in the `wait` closure.
+    ///
+    /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
+    /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
+    /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     /// - returns: The value forwarded by the publisher.
-    func waitForOne(timeout: DispatchTimeInterval = .seconds(2), file: StaticString = #file, line: UInt = #line) -> Self.Output {
-        let semaphore = DispatchSemaphore(value: 0)
+    func expectsSuccess(_ description: String = "The publisher shall send a single value and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> Self.Output {
+        let e = XCTestExpectation(description: description)
         
-        var result: Self.Output? = nil
         var cancellable: AnyCancellable?
+        var result: Self.Output? = nil
+        
         cancellable = self.sink(receiveCompletion: {
             cancellable = nil
             switch $0 {
-            case .finished: semaphore.signal()
-            case .failure(let e): fatalError("The publisher forwarded an error:\n\n\(e)\n", file: file, line: line)
+            case .finished: e.fulfill()
+            case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
             }
         }, receiveValue: {
             guard case .none = result else {
-                fatalError("The publisher returned more than one value", file: file, line: line)
+                cancellable?.cancel()
+                cancellable = nil
+                return XCTFail("The publisher produced more than one value when only one was expected", file: file, line: line)
             }
             result = $0
         })
         
-        guard case .success = semaphore.wait(timeout: .now() + timeout) else {
-            fatalError("The publisher didn't complete before the timeout ellapsed.", file: file, line: line)
-        }
+        wait(e)
         cancellable?.cancel()
         return result!
     }
     
-    /// Locks the current queue waiting for the receiving publisher to finish.
-    /// - precondition: The publisher must finish successfully and it must not input any value. In any other case a `fatalError` is produced.
-    /// - parameter timeout: The maximum time the semaphore will be waiting.
-    /// - returns: An array of all the values forwarded by the publisher.
-    func waitForAll(timeout: DispatchTimeInterval = .seconds(2), file: StaticString = #file, line: UInt = #line) -> [Self.Output] {
-        let semaphore = DispatchSemaphore(value: 0)
+    /// Expects the receiving publisher to produce zero, one, or many values and then complete within the timeout (and on the test) given in the `wait` closure.
+    ///
+    /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
+    /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
+    /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
+    /// - returns: The forwarded values by the publisher (it can be empty).
+    func expectsAll(_ description: String = "The publisher produces zero or more values and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
+        let e = XCTestExpectation(description: description)
+        
+        var cancellable: AnyCancellable?
+        var result: [Self.Output] = []
+        
+        cancellable = self.sink(receiveCompletion: {
+            cancellable = nil
+            switch $0 {
+            case .finished: e.fulfill()
+            case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
+            }
+        }, receiveValue: { result.append($0) })
+        
+        wait(e)
+        cancellable?.cancel()
+        return result
+    }
+    
+    /// Expects the receiving publisher to produce at least a given number of values.
+    ///
+    /// Once the publisher has produced the given amount of values, it will get cancel by this function.
+    /// - precondition: `values` must be greater than zero.
+    /// - parameter values: The number of values that will be checked and that the expectation is waiting for.
+    /// - parameter timeout: The maximum number of seconds waiting (must be greater than zero).
+    /// - parameter test: The `XCTestCase` where this expectation waiting is performed.
+    /// - parameter check: The closure to be executed per value received.
+    /// - returns: An array of all the values forwarded by the publisher. 
+    @discardableResult
+    func expectsAtLeast(_ values: Int, _ description: String = "The publisher shall produce a givan amount of values", each check: ((Output)->Void)? = nil, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
+        precondition(values > 0)
+        
+        let e = XCTestExpectation(description: "Waiting for \(values) values")
         
         var result: [Self.Output] = []
         var cancellable: AnyCancellable?
         cancellable = self.sink(receiveCompletion: {
             cancellable = nil
             switch $0 {
-            case .finished: semaphore.signal()
-            case .failure(let e): fatalError("The publisher forwarded an error:\n\n\(e)\n", file: file, line: line)
+            case .finished: if result.count == values { return e.fulfill() }
+            case .failure(let e): XCTFail(String(describing: e))
             }
-        }, receiveValue: { result.append($0) })
+        }, receiveValue: { (output) in
+            result.append(output)
+            check?(output)
+            guard result.count == values else { return }
+            cancellable?.cancel()
+            cancellable = nil
+            e.fulfill()
+        })
         
-        guard case .success = semaphore.wait(timeout: .now() + timeout) else {
-            fatalError("The publisher didn't complete before the timeout ellapsed", file: file, line: line)
-        }
+        wait(e)
         cancellable?.cancel()
         return result
     }
 }
 
-extension Empty where Output==Never, Failure==Never {
-    /// Locks the current queue for `interval` amount of time.
-    static func wait(for interval: DispatchTimeInterval, on queue: DispatchQueue = .init(label: "Wait queue")) {
-        let semaphore = DispatchSemaphore(value: 0)
-        queue.asyncAfter(deadline: .now() + interval) { semaphore.signal() }
-        semaphore.wait()
+extension XCTestCase {
+    /// Locks the current queue for `interval` seconds.
+    /// - parameter timeout: The maximum number of seconds waiting (must be greater than zero).
+    /// - parameter test: The `XCTestCase` where this expectation waiting is performed.
+    func wait(for interval: TimeInterval) {
+        precondition(interval > 0)
+        
+        let e = self.expectation(description: "Waiting for \(interval) seconds")
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) {
+            $0.invalidate()
+            e.fulfill()
+        }
+        
+        self.wait(for: [e], timeout: interval)
+        timer.invalidate()
     }
 }

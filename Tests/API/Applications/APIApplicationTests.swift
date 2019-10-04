@@ -6,9 +6,10 @@ final class APIApplicationTests: XCTestCase {
     /// Tests the retrieval of all applications accessible by the given user.
     func testApplications() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let applications = api.applications.getAll().waitForOne()
+        let applications = api.applications.getAll()
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         guard let app = applications.first else { return XCTFail("No applications were found") }
         XCTAssertEqual(app.key, acc.api.key)
         XCTAssertFalse(app.name.isEmpty)
@@ -25,12 +26,13 @@ final class APIApplicationTests: XCTestCase {
     /// Tests the application configuration capabilities.
     func testApplicationSettings() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: acc.api.credentials, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let status: API.Application.Status = .enabled
         let allowance: (overall: UInt, trading: UInt) = (60, 100)
 
-        let app = api.applications.update(key: acc.api.key, status: status, accountAllowance: allowance).waitForOne()
+        let app = api.applications.update(key: acc.api.key, status: status, accountAllowance: allowance)
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(app.key, acc.api.key)
         XCTAssertEqual(app.status, status)
         XCTAssertEqual(app.allowance.account.overallRequests, Int(allowance.overall))
