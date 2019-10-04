@@ -12,7 +12,8 @@ final class APIOAuthTests: XCTestCase {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         
-        let credentials = api.session.loginOAuth(key: acc.api.key, user: user).waitForOne()
+        let credentials = api.session.loginOAuth(key: acc.api.key, user: user)
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, acc.api.key)
         XCTAssertEqual(credentials.account, acc.identifier)
@@ -29,7 +30,8 @@ final class APIOAuthTests: XCTestCase {
         XCTAssertEqual(headers[.authorization], "\(type) \(access)")
         XCTAssertEqual(headers[.account], acc.identifier.rawValue)
 
-        let token = api.session.refreshOAuth(token: refresh, key: acc.api.key).waitForOne()
+        let token = api.session.refreshOAuth(token: refresh, key: acc.api.key)
+            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(token.isExpired)
         guard case .oauth(let newAccess, let newRefresh, let newScope, let newType) = token.value else {
             fatalError()
@@ -43,7 +45,8 @@ final class APIOAuthTests: XCTestCase {
         newCredentials.token = token
         api.session.credentials = newCredentials
         
-        api.session.logout().wait()
+        api.session.logout()
+            .expectsCompletion { self.wait(for: [$0], timeout: 1) }
         XCTAssertNil(api.session.credentials)
     }
 }

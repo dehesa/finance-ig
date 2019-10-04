@@ -1,6 +1,8 @@
 @testable import IG
 import XCTest
 
+#warning("Test: Support API & Streamer File tests")
+
 extension Test {
     /// Creates an API instance with the given data.
     /// - precondition: This function expect the root URL to be valid or the test will crash.
@@ -16,7 +18,6 @@ extension Test {
 //            let configuration = API.defaultSessionConfigurations
 //            configuration.protocolClasses = [APIFileProtocol.self]
 //            return .init(rootURL: rootURL, credentials: credentials, configuration: configuration)
-            #warning("Test: Support API File tests")
             fatalError(file: file, line: line)
         case .none:
             fatalError(#"The API rootURL "\#(rootURL)" is invalid"#, file: file, line: line)
@@ -30,7 +31,7 @@ extension Test {
     /// - parameter credentials: The credentials to use to authenticate on the server.
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - parameter autoconnect: Whether the connection shall be performed automatically within this function.
-    static func makeStreamer(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?, _ autoconnect: Self.Autoconnection = nil, file: StaticString = #file, line: UInt = #line) -> IG.Streamer {
+    static func makeStreamer(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> IG.Streamer {
         let streamer: IG.Streamer
 
         switch Self.Account.SupportedScheme(url: rootURL) {
@@ -43,11 +44,7 @@ extension Test {
         case .none:
             fatalError("The root URL is invalid. No scheme could be found.\n\(rootURL)", file: file, line: line)
         }
-
-        if case .autoconnect(let timeout) = autoconnect {
-            #warning("Tests: Add a bit of padding to the timeout here")
-            _ = streamer.session.connect(timeout: timeout).waitForAll(timeout: timeout)
-        }
+        
         return streamer
     }
 
