@@ -13,7 +13,7 @@ final class APICertificateTests: XCTestCase {
         }
         
         let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: acc.api.key, user: user)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, acc.api.key)
         XCTAssertEqual(credentials.account, acc.identifier)
@@ -44,7 +44,7 @@ final class APICertificateTests: XCTestCase {
         }
         
         let credentials = api.session.loginOAuth(key: acc.api.key, user: user)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         guard case .oauth = credentials.token.value else {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
         }
@@ -52,7 +52,7 @@ final class APICertificateTests: XCTestCase {
         api.session.credentials = credentials
 
         let token = api.session.refreshCertificate()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         guard case .certificate(let access, let security) = token.value else { return XCTFail("A certificate token hasn't been regenerated") }
         XCTAssertFalse(access.isEmpty)
         XCTAssertFalse(security.isEmpty)

@@ -32,6 +32,7 @@ extension IG.Streamer.Request.Markets {
         
         return self.streamer.channel
             .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .receive(on: self.streamer.queue)
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter)

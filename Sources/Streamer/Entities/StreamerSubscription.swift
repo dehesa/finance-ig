@@ -12,24 +12,17 @@ extension IG.Streamer {
     /// Holds information about an ongoing subscription.
     internal final class Subscription: NSObject {
         /// The item being subscribed to.
-        @nonobjc let item: String
+        @nonobjc final let item: String
         /// The fields being subscribed to.
-        @nonobjc let fields: [String]
+        @nonobjc final let fields: [String]
         /// The underlying Lightstreamer instance.
-        @nonobjc let lowlevel: LSSubscription
-        /// The dispatch queue processing the events and data.
-        @nonobjc private let queue: DispatchQueue
+        @nonobjc final let lowlevel: LSSubscription
         
-        /// Subject managing the current channel status and its publisher.
+        /// `CurrentValueSubject` managing the current channel status and its publisher.
         ///
-        /// This subject may publish duplicates.
+        /// This subject may publish duplicates and it always returns the current status upon activation.
+        /// - important: This publisher returns values on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
         @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Subscription.Event,Never>
-        /// Returns a publisher to subscribe to status events (the current value is sent first).
-        ///
-        /// This publisher remove duplicates (i.e. there aren't any repeating statuses).
-        @nonobjc internal let statusPublisher: AnyPublisher<IG.Streamer.Subscription.Event,Never>
-        /// Returns the current subscription status.
-        @nonobjc internal var status: IG.Streamer.Subscription.Event { self.mutableStatus.value }
         
         /// Initializes a subscription which is not yet connected to the server.
         ///
@@ -39,22 +32,11 @@ extension IG.Streamer {
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool, targetQueue: DispatchQueue) {
-            let childLabel = targetQueue.label + "." + mode.rawValue.lowercased()
-            self.queue = DispatchQueue(label: childLabel, qos: targetQueue.qos, autoreleaseFrequency: .workItem, target: targetQueue)
-            
+        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
             self.mutableStatus = .init(.unsubscribed)
-            self.statusPublisher = self.mutableStatus.removeDuplicates {
-                switch ($0, $1) {
-                case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed): return true
-                default: return false
-                }
-            }.eraseToAnyPublisher()
-            
             self.item = item
             self.fields = fields
             self.lowlevel = LSSubscription(mode: mode.rawValue, item: item, fields: fields)
-            #warning("Streamer: Check whether snapshoting works")
             self.lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
             super.init()
             
@@ -64,46 +46,63 @@ extension IG.Streamer {
         deinit {
             self.lowlevel.remove(delegate: self)
         }
+        
+        /// Returns a publisher to subscribe to status events (the current value is sent first).
+        ///
+        /// This publisher remove duplicates (i.e. there aren't any repeating statuses) and it always returns the current status upon activation.
+        /// - important: This publisher returns values on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
+        @nonobjc final var status: some CurrentEventPublisher {
+            return self.mutableStatus
+        }
+        
+        private final func receive(_ status: IG.Streamer.Subscription.Event) {
+            switch (self.mutableStatus.value, status) {
+            case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed): break
+            default: self.mutableStatus.send(status)
+            }
+        }
     }
 }
 
+// MARK: - Lightstreamer Delegate
+
 extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
-        self.queue.async { [subject = self.mutableStatus] in
-            subject.value = .subscribed
-        }
+        self.receive(.subscribed)
     }
     
     @objc func didUnsubscribe(from subscription: LSSubscription) {
-        self.queue.async { [subject = self.mutableStatus] in
-            subject.value = .unsubscribed
-        }
+        self.receive(.unsubscribed)
     }
     
     @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
-        self.queue.async { [subject = self.mutableStatus] in
-            subject.value = .error(.init(code: code, message: message))
-        }
+        self.receive(.error(.init(code: code, message: message)))
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
-        self.queue.async { [subject = self.mutableStatus, fields = self.fields] in
-            var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
-            for field in fields {
-                let value = itemUpdate.value(withFieldName: field)
-                result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
-            }
-            subject.value = .updateReceived(result)
+        var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
+        for field in fields {
+            let value = itemUpdate.value(withFieldName: field)
+            result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
         }
+        self.receive(.updateReceived(result))
     }
     
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
-        self.queue.async { [subject = self.mutableStatus] in
-            subject.value = .updateLost(count: lostUpdates, item: itemName)
-        }
+        self.receive(.updateLost(count: lostUpdates, item: itemName))
     }
 //    @objc func didAddDelegate(to subscription: LSSubscription) {}
 //    @objc func didRemoveDelegate(from subscription: LSSubscription) {}
 //    @objc func subscription(_ subscription: LSSubscription, didEndSnapshotForItemName itemName: String?, itemPos: UInt) {}
 //    @objc func subscription(_ subscription: LSSubscription, didClearSnapshotForItemName itemName: String?, itemPos: UInt) {}
 }
+
+// MARK: - Combine Extensions
+
+/// Returns the receiving's publisher current value.
+internal protocol CurrentEventPublisher: Publisher where Output==IG.Streamer.Subscription.Event, Failure==Never {
+    /// The value wrapped by this subject, published as a new element whenever it changes.
+    var value: Output { get }
+}
+
+extension CurrentValueSubject: CurrentEventPublisher where Output==IG.Streamer.Subscription.Event, Failure==Never {}

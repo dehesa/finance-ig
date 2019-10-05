@@ -153,12 +153,12 @@ extension XCTestCase {
         } else if let cer = data.certificate {
             let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
             let s = api.session.get(key: data.key, token: token)
-                .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+                .expectsOne { self.wait(for: [$0], timeout: 2) }
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
         } else if let oau = data.oauth {
             let token: API.Credentials.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
             let s = api.session.get(key: data.key, token: token)
-                .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+                .expectsOne { self.wait(for: [$0], timeout: 2) }
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
         } else if let user = data.user {
             api.session.login(type: .certificate, key: data.key, user: user)

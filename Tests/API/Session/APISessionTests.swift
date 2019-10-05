@@ -21,7 +21,7 @@ final class APISessionTests: XCTestCase {
         XCTAssertEqual(acc.api.rootURL, api.rootURL)
         
         let session = api.session.get()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(session.account, credentials.account)
         XCTAssertEqual(session.client, credentials.client)
         XCTAssertEqual(session.streamerURL, credentials.streamerURL)

@@ -1,42 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.Streamer.Request.Charts {
-    
-    // MARK: CHART:EPIC:SCALE
-    
-    /// Subscribes to a given market and returns aggreagated chart data for a specific time interval.
-    ///
-    /// For example, if subscribed to EUR/USD on the 5-minute interval; the data received will be the one of the last 5-minute candle and some statistics of the day.
-    /// - parameter epic: The epic identifying the targeted market.
-    /// - parameter interval: The aggregation interval for the candle.
-    /// - parameter fields: The chart properties/fields bieng targeted.
-    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
-    /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Chart.Aggregated,IG.Streamer.Error> {
-        typealias E = IG.Streamer.Error
-        
-        let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
-        let properties = fields.map { $0.rawValue }
-        
-        return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .attemptMap { (update) in
-                do {
-                    return .success(try .init(epic: epic, interval: interval, item: item, update: update))
-                } catch var error as E {
-                    if case .none = error.item { error.item = item }
-                    if case .none = error.fields { error.fields = properties }
-                    return .failure(error)
-                } catch let underlyingError {
-                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
-                    return .failure(error)
-                }
-            }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer charts.
@@ -52,7 +15,41 @@ extension IG.Streamer.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.Streamer.Request.Charts {
+    
+    // MARK: CHART:EPIC:SCALE
+    
+    /// Subscribes to a given market and returns aggreagated chart data for a specific time interval.
+    ///
+    /// For example, if subscribed to EUR/USD on the 5-minute interval; the data received will be the one of the last 5-minute candle and some statistics of the day.
+    /// - parameter epic: The epic identifying the targeted market.
+    /// - parameter interval: The aggregation interval for the candle.
+    /// - parameter fields: The chart properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
+    /// - returns: Signal producer that can be started at any time.
+    public func subscribe(to epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Chart.Aggregated> {
+        let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
+        let properties = fields.map { $0.rawValue }
+        
+        return self.streamer.channel
+            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .receive(on: self.streamer.queue)
+            .tryMap { (update) in
+                do {
+                    return try .init(epic: epic, interval: interval, item: item, update: update)
+                } catch var error as IG.Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
+                    throw error
+                } catch let underlyingError {
+                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                }
+            }.mapError(IG.Streamer.Error.transform)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
 
 extension IG.Streamer.Chart.Aggregated {
     /// The time interval used for aggregation.

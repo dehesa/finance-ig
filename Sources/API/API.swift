@@ -55,7 +55,7 @@ public final class API {
         self.session = .init(credentials: credentials)
         self.session.api = self
     }
-    
+    #warning("API: Check proper DispatchQueue reception and processing (like in Streamer). Probably is best to send all answers in a specific queue and handle logins, etc in a priviledge queue.")
     deinit {
         self.channel.invalidateAndCancel()
     }
