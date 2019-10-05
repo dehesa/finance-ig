@@ -19,9 +19,9 @@ final class APIPositionTests: XCTestCase {
         //let scalingFactor: Double = 10000
         
         let reference = api.positions.create(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let creationConfirmation = api.confirm(reference: reference)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(reference, creationConfirmation.dealReference)
         XCTAssertLessThan(creationConfirmation.date, Date())
         XCTAssertEqual(epic, creationConfirmation.epic)
@@ -37,11 +37,11 @@ final class APIPositionTests: XCTestCase {
         XCTAssertNotNil(details.stop)
         
         let _ = api.positions.get(identifier: identifier)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let deletionReference = api.positions.delete(matchedBy: .identifier(identifier), direction: direction.oppossite, order: order, strategy: strategy, size: size)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let deletionConfirmation = api.confirm(reference: deletionReference)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertTrue(deletionConfirmation.isAccepted)
     }
 }

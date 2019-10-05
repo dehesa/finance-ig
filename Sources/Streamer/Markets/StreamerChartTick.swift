@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 
 extension IG.Streamer.Request.Charts {
@@ -10,26 +10,25 @@ extension IG.Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Chart.Tick,IG.Streamer.Error> {
-        typealias E = IG.Streamer.Error
-        
+    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Chart.Tick> {
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
             .subscribe(mode: .distinct, item: item, fields: properties, snapshot: snapshot)
-            .attemptMap { (update) in
+            .receive(on: self.streamer.queue)
+            .tryMap { (update) in
                 do {
-                    return .success(try .init(epic: epic, item: item, update: update))
-                } catch var error as E {
+                    return try .init(epic: epic, item: item, update: update)
+                } catch var error as IG.Streamer.Error {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
-                    return .failure(error)
+                    throw error
                 } catch let underlyingError {
-                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
-                    return .failure(error)
+                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
                 }
-        }
+            }.mapError(IG.Streamer.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 

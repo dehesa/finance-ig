@@ -16,127 +16,90 @@ extension IG.Streamer.Request {
 }
 
 extension IG.Streamer.Request.Session {
-    /// Returns the current streamer status.
-    public var status: IG.Streamer.Session.Status {
-        self.streamer.channel.status
-    }
-    
     /// Returns a publisher to subscribe to the streamer's statuses.
     ///
     /// This is a multicast publisher, meaning all subscriber will receive the same status in the same order.
-    public var statusPublisher: AnyPublisher<IG.Streamer.Session.Status,Never> {
-        self.streamer.channel.statusPublisher
+    /// - returns: Publisher forwarding values/completion in the `Streamer` queue.
+    public var status: AnyPublisher<IG.Streamer.Session.Status,Never> {
+        return self.streamer.channel.status
+            .receive(on: self.streamer.queue)
+            .eraseToAnyPublisher()
     }
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
     ///
-    /// - If the `Streamer` is already connected, then the connected status is forward and the publisher completes immediately.
-    /// - If the `Streamer` is already *connecting*, the events from that publisher are forwarded here and the `timeout` paramter is ignored (in favor of the previously set one).
-    ///
-    /// - parameter timeout: The maximum waiting for connection time before an error is sent.
+    /// If the `Streamer` is already connected, then the connected status is forwarded and the publisher completes immediately.
     /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the publisher completes). If the connection is not possible, there is a timeout, or the session has expired, an error is thrown.
-    public func connect(timeout: DispatchTimeInterval = .seconds(4)) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Session.Status> {
-        /// The type of publisher passed by the future.
-        typealias ConnectionPublisher = IG.Streamer.ContinuousPublisher<IG.Streamer.Session.Status>
-
-        var cancellable: AnyCancellable? = nil
-        let cleanup: ()->Void = {
-            cancellable?.cancel()
-            cancellable = nil
-        }
+    public func connect() -> IG.Streamer.ContinuousPublisher<IG.Streamer.Session.Status> {
+       typealias S = Subscribers.Sink<IG.Streamer.Session.Status,Never>
+        /// Keep the necessary state to clean up the *slate* once the publisher finishes or it is cancelled.
+        var state: S? = nil
+        /// When triggered, it stops the status monitoring and forwarding.
+        let cleanUp: ()->Void = { state?.cancel(); state = nil }
         
-        return Future<ConnectionPublisher,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (promise) in
-                guard let streamer = weakStreamer else {
-                    return promise(.failure(.sessionExpired()))
-                }
-                
-                let initialStatus: IG.Streamer.Session.Status
-                do {
-                    initialStatus = try streamer.channel.connect()
-                } catch let error {
-                    return promise(.failure(.transform(error)))
-                }
+        return PassthroughPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
+            guard let streamer = weakStreamer else {
+                return subject.send(completion: .failure(.sessionExpired()))
+            }
             
-                if initialStatus.isReady {
-                    let result = Just<IG.Streamer.Session.Status>(initialStatus)
-                        .setFailureType(to: IG.Streamer.Error.self)
-                        .eraseToAnyPublisher()
-                    return promise(.success(result))
+            let sink = S.init(receiveCompletion: { [weak subject] (_) in
+                subject?.send(completion: .finished)
+            }, receiveValue: { [weak subject] (status) in
+                subject?.send(status)
+                switch status {
+                case .connected(.sensing), .connecting, .disconnected(isRetrying: true):
+                    break
+                case .connected(.http), .connected(.websocket):
+                    subject?.send(completion: .finished)
+                case .stalled:
+                    let error = IG.Streamer.Error(.invalidResponse, "There is a connection established with the server, but it seems to be stalled", suggestion: "Manually disconnect and try again.")
+                    subject?.send(completion: .failure(error))
+                case .disconnected(isRetrying: false):
+                    let error = IG.Streamer.Error(.invalidResponse, "The connection to the server couldn't be established", suggestion: "Check there is connection and try again.")
+                    subject?.send(completion: .failure(error))
                 }
-                
-                let subject = PassthroughSubject<IG.Streamer.Session.Status,IG.Streamer.Error>()
+            })
             
-                var receivedFirstStatus = false
-                cancellable = streamer.channel.statusPublisher.drop {
-                    guard !receivedFirstStatus else { return false }
-                    receivedFirstStatus = true
-                    
-                    guard initialStatus == .disconnected(isRetrying: false) else { return false }
-                    return $0 == .disconnected(isRetrying: false)
-                }.sink { [weak weakSubject = subject] in
-                    guard let subject = weakSubject else { return }
-                    subject.send($0)
-                    
-                    switch $0 {
-                    case .connected(.sensing), .connecting, .disconnected(isRetrying: true):
-                        break
-                    case .connected(.http), .connected(.websocket):
-                        subject.send(completion: .finished)
-                    case .stalled:
-                        let message = "There is a connection established with the server, but it seems to be stalled"
-                        let suggestion = "Check there is connection and try again."
-                        subject.send(completion: .failure(.init(.invalidResponse, .init(message), suggestion: .init(suggestion))))
-                    case .disconnected(isRetrying: false):
-                        let message = "The connection to the server couldn't be established"
-                        let suggestion = "Check there is connection and try again."
-                        subject.send(completion: .failure(.init(.invalidResponse, .init(message), suggestion: .init(suggestion))))
-                    }
-                }
-            
-                return promise(.success(subject.eraseToAnyPublisher()))
-            }.flatMap(maxPublishers: .max(1)) { $0 }
-            .handleEvents(receiveCompletion: { (_) in cleanup() }, receiveCancel: cleanup)
-            .eraseToAnyPublisher()
+            state = sink
+            streamer.channel.status.drop(while: { $0 == .disconnected(isRetrying: false) }).subscribe(sink)
+            _ = try? streamer.channel.connect()
+        }.handleEvents(receiveCompletion: { (_) in cleanUp() }, receiveCancel: cleanUp)
+        .receive(on: self.streamer.queue)
+        .eraseToAnyPublisher()
     }
     
     /// Disconnects to the Lightstreamer server.
     ///
-    /// - If the `Streamer` is already disconnected, then the connected status is forward and the publisher completes immediately.
-    /// - If the `Streamer` is already is a connection process, the events from that publisher are forwarded here.
-    ///
+    /// If the `Streamer` is already disconnected, then the connected status is forwarded and the publisher completes immediately.
+    /// - note: This function also unsubscribe any ongoing subscription (i.e. cancels the subscription publishers).
     /// - returns: Forwards all statuses till it reliably disconnects from the server (in which case the status is sent and then the publisher completes). If the connection is not possible or the session has expired, an error is thrown.
     public func disconnect() -> IG.Streamer.ContinuousPublisher<IG.Streamer.Session.Status> {
-        Future<IG.Streamer.ContinuousPublisher<IG.Streamer.Session.Status>,IG.Streamer.Error> { [weak streamer = self.streamer] (promise) in
-                guard let streamer = streamer else {
-                    return promise(.failure(.sessionExpired()))
-                }
+        typealias S = Subscribers.Sink<IG.Streamer.Session.Status,Never>
+        /// Keep the necessary state to clean up the *slate* once the publisher finishes or it is cancelled.
+        var state: S? = nil
+        /// When triggered, it stops the status monitoring and forwarding.
+        let cleanUp: ()->Void = { state?.cancel(); state = nil }
+        
+        return PassthroughPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
+            guard let streamer = weakStreamer else {
+                return subject.send(completion: .failure(.sessionExpired()))
+            }
             
-                let initialStatus = streamer.channel.disconnect()
-                
-                if case .disconnected(isRetrying: false) = initialStatus {
-                    let result = Just<IG.Streamer.Session.Status>(initialStatus)
-                        .setFailureType(to: IG.Streamer.Error.self)
-                        .eraseToAnyPublisher()
-                    return promise(.success(result))
-                }
+            let sink = S.init(receiveCompletion: { [weak subject] (_) in
+                subject?.send(completion: .finished)
+            }, receiveValue: { [weak subject] (status) in
+                subject?.send(status)
+                guard case .disconnected(isRetrying: false) = status else { return }
+                subject?.send(completion: .finished)
+            })
             
-                var cancellable: AnyCancellable? = nil
-                
-                let subject = PassthroughSubject<IG.Streamer.Session.Status,IG.Streamer.Error>()
-                cancellable = streamer.channel.statusPublisher.sink { [weak weakSubject = subject] in
-                    if let generator = weakSubject {
-                        generator.send($0)
-                        guard case .disconnected(isRetrying: false) = $0 else { return }
-                        generator.send(completion: .finished)
-                    }
-                    
-                    cancellable?.cancel()
-                    cancellable = nil
-                }
-            
-                return promise(.success(subject.eraseToAnyPublisher()))
-            }.flatMap(maxPublishers: .max(1)) { $0 }
-            .eraseToAnyPublisher()
+            state = sink
+            _ = streamer.channel.unsubscribeAll()
+            streamer.channel.status.subscribe(sink)
+            streamer.channel.disconnect()
+        }.handleEvents(receiveCompletion: { (_) in cleanUp() }, receiveCancel: cleanUp)
+        .receive(on: self.streamer.queue)
+        .eraseToAnyPublisher()
     }
     
     /// Unsubscribes from all ongoing subscriptions.
@@ -147,83 +110,20 @@ extension IG.Streamer.Request.Session {
     /// - sends a complete event once everything is unsubscribed.
     ///
     /// - returns: Forwards all "items" that have been successfully unsubscribed, till there are no more, in which case it sends a *complete* event.
+    /// - todo: Figure out a way to communicate the ongoing unsubscriptions. Currently the implementation supposes unsubscription is immediate (which most times it is).
     public func unsubscribeAll() -> IG.Streamer.ContinuousPublisher<String> {
-        return PassthroughPublisher<String,IG.Streamer.Error> { [weak streamer = self.streamer] (subject) in
+        return Future<[String],IG.Streamer.Error> { [weak streamer = self.streamer] (promise) in
             guard let streamer = streamer else {
-                return subject.send(completion: .failure(.sessionExpired()))
+                return promise(.failure(.sessionExpired()))
             }
             
-            var unsubs: Dictionary<IG.Streamer.Subscription, Subscribers.Sink<Streamer.Subscription.Event,Never>> = [:]
-            var errors: [(item: String, error: IG.Streamer.Subscription.Error)] = .init()
-            var iterationsCompleted = false
-            
-            let handle: (_ sub: IG.Streamer.Subscription?, _ error: IG.Streamer.Subscription.Error?)->Void = {
-                if let sub = $0, let sink = unsubs.removeValue(forKey: sub) {
-                    sink.cancel()
-                    
-                    switch $1 {
-                    case .none:  subject.send(sub.item)
-                    case let e?: errors.append((sub.item, e))
-                    }
-                }
-                
-                guard iterationsCompleted, unsubs.isEmpty else { return }
-                guard !errors.isEmpty else { return subject.send(completion: .finished) }
-                
-                let suggestion = "No problems should stam from this; however, if it happens frequently, please contact the repository maintainer"
-                var error = IG.Streamer.Error(.invalidResponse, "Errors occurred while unsubscribing", suggestion: suggestion)
-                for (item, underlying) in errors {
-                    error.context.append(("Unsubscription error (item: \(item)", underlying))
-                }
-                subject.send(completion: .failure(error))
-            }
-            
-            unsubs = .init(uniqueKeysWithValues: streamer.channel.unsubscribeAll().map { (subscription) in
-                weak var sub = subscription
-                return (subscription, .init(receiveCompletion: { (_) in
-                    handle(sub, nil)
-                }, receiveValue: {
-                    switch $0 { // 4. All subscription events except `.unsubscribed` and `.error` are ignored
-                    case .unsubscribed: handle(sub, nil)
-                    case .error(let e): handle(sub, e)
-                    case .updateReceived, .updateLost, .subscribed: return
-                    }
-                }))
-            })
-            
-            iterationsCompleted = true
-            #warning("Streamer: Clean listening to the subscriptions if this publisher has ended before the unsubs ended.")
-            for (sub, sink) in unsubs {
-                sub.statusPublisher.subscribe(sink)
-            }
-            
-            handle(nil, nil)
+            let result = streamer.channel.unsubscribeAll().map { $0.item }
+            return promise(.success(result))
+        }.flatMap { (strings) -> Publishers.Sequence<[String],IG.Streamer.Error> in
+            return .init(sequence: strings)
         }.eraseToAnyPublisher()
     }
 }
-
-//var disposables: [IG.Streamer.Subscription:AnyCancellable] = .init()
-//var suberrors: [(item: String, error: IG.Streamer.Subscription.Error)] = .init()
-//// 5. This closure is only call when a subscription has ended (whether with `.unsubscribed` or `.error`
-//let handle: (_ subscription: IG.Streamer.Subscription, _ event: IG.Streamer.Subscription.Error?) -> Void = {
-//    guard let cancellable = disposables.removeValue(forKey: $0) else { return }
-//
-//    switch $1 {
-//    case .none:  subject.send($0.item)
-//    case let e?: suberrors.append(($0.item, e))
-//    }
-//
-//    cancellable.cancel()
-//    guard !disposables.isEmpty else { return }
-//    guard !suberrors.isEmpty else { return subject.send(completion: .finished) }
-//
-//    let suggestion = "No problems should stam from this; however, if it happens frequently, please contact the repository maintainer"
-//    var error = IG.Streamer.Error(.invalidResponse, "Errors occurred while unsubscribing", suggestion: suggestion)
-//    for (item, underlying) in suberrors {
-//        error.context.append(("Unsubscription error (item: \(item)", underlying))
-//    }
-//    subject.send(completion: .failure(error))
-//}
 
 // MARK: - Entities
 

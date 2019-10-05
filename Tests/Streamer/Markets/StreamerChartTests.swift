@@ -1,6 +1,6 @@
 import XCTest
-import ReactiveSwift
-@testable import IG
+import IG
+import Combine
 
 final class StreamerChartTests: XCTestCase {
     /// Tests subscription to candle charts.

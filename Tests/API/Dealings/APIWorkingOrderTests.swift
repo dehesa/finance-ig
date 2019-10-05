@@ -8,7 +8,7 @@ final class APIWorkingOrderTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let epic = market.instrument.epic
         let expiry = market.instrument.expiration.expiry
         let currency = market.instrument.currencies[0].code
@@ -23,22 +23,22 @@ final class APIWorkingOrderTests: XCTestCase {
         //let scalingFactor: Decimal = 10000
         
         let reference = api.workingOrders.create(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: .distance(limitDistance), stop: (.distance(stopDistance), .exposed), forceOpen: forceOpen, expiration: expiration, reference: nil)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let confirmation = api.confirm(reference: reference)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         let identifier = confirmation.dealIdentifier
         XCTAssertEqual(confirmation.dealReference, reference)
         XCTAssertTrue(confirmation.isAccepted)
         
         let orders = api.workingOrders.getAll()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertNotNil(orders.first { $0.identifier == identifier })
 
         let deleteReference = api.workingOrders.delete(identifier: confirmation.dealIdentifier)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(deleteReference, reference)
         let deleteConfirmation = api.confirm(reference: deleteReference)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertTrue(deleteConfirmation.isAccepted)
     }
 }

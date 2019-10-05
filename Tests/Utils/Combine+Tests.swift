@@ -3,7 +3,7 @@ import Combine
 import Foundation
 
 extension Publisher {
-    /// Expects the receiving publisher to complete with the timeout (and on the test) given in the `wait` closure.
+    /// Expects the receiving publisher to complete (with or without values) within the timeout on the `XCTestCase` given in the `wait` closure.
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
@@ -25,14 +25,14 @@ extension Publisher {
         cancellable?.cancel()
     }
     
-    /// Expects the receiving publisher to produce a single value and then complete within the timeout (and on the test) given in the `wait` closure.
+    /// Expects the receiving publisher to produce a single value and then complete within the timeout on the `XCTestCase` given in the `wait` closure.
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     /// - returns: The value forwarded by the publisher.
-    func expectsSuccess(_ description: String = "The publisher shall send a single value and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> Self.Output {
+    @discardableResult func expectsOne(_ description: String = "The publisher shall send a single value and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> Self.Output {
         let e = XCTestExpectation(description: description)
         
         var cancellable: AnyCancellable?
@@ -41,8 +41,13 @@ extension Publisher {
         cancellable = self.sink(receiveCompletion: {
             cancellable = nil
             switch $0 {
-            case .finished: e.fulfill()
-            case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
+            case .failure(let e):
+                return XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
+            case .finished:
+                guard case .some = result else {
+                    return XCTFail("The publisher completed without outputting any value", file: file, line: line)
+                }
+                e.fulfill()
             }
         }, receiveValue: {
             guard case .none = result else {
@@ -58,14 +63,14 @@ extension Publisher {
         return result!
     }
     
-    /// Expects the receiving publisher to produce zero, one, or many values and then complete within the timeout (and on the test) given in the `wait` closure.
+    /// Expects the receiving publisher to produce zero, one, or many values and then complete within the timeout on the `XCTestCase` given in the `wait` closure.
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     /// - returns: The forwarded values by the publisher (it can be empty).
-    func expectsAll(_ description: String = "The publisher produces zero or more values and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
+    @discardableResult func expectsAll(_ description: String = "The publisher produces zero or more values and complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
         let e = XCTestExpectation(description: description)
         
         var cancellable: AnyCancellable?
@@ -93,8 +98,7 @@ extension Publisher {
     /// - parameter test: The `XCTestCase` where this expectation waiting is performed.
     /// - parameter check: The closure to be executed per value received.
     /// - returns: An array of all the values forwarded by the publisher. 
-    @discardableResult
-    func expectsAtLeast(_ values: Int, _ description: String = "The publisher shall produce a givan amount of values", each check: ((Output)->Void)? = nil, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
+    @discardableResult func expectsAtLeast(_ values: Int, _ description: String = "The publisher shall produce a givan amount of values", each check: ((Output)->Void)? = nil, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
         precondition(values > 0)
         
         let e = XCTestExpectation(description: "Waiting for \(values) values")

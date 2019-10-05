@@ -9,7 +9,7 @@ final class APIApplicationTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let applications = api.applications.getAll()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         guard let app = applications.first else { return XCTFail("No applications were found") }
         XCTAssertEqual(app.key, acc.api.key)
         XCTAssertFalse(app.name.isEmpty)
@@ -32,7 +32,7 @@ final class APIApplicationTests: XCTestCase {
         let allowance: (overall: UInt, trading: UInt) = (60, 100)
 
         let app = api.applications.update(key: acc.api.key, status: status, accountAllowance: allowance)
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(app.key, acc.api.key)
         XCTAssertEqual(app.status, status)
         XCTAssertEqual(app.allowance.account.overallRequests, Int(allowance.overall))

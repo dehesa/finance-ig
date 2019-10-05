@@ -27,7 +27,7 @@ internal struct PassthroughPublisher<Output,Failure:Error>: Publisher {
     
     /// Internal Shadow subscription catching all messages from downstream and forwarding them upstream.
     private final class Conduit<Downstream>: Subscription, Subscriber where Downstream: Subscriber, Failure==Downstream.Failure, Output==Downstream.Input {
-        /// The Conduit acts as the origin of a shadow subscription change, but in reality it has a `PassthroughSubject` above it.
+        /// The Conduit acts as the origin of a shadow subscription chain, but actually it has a `PassthroughSubject` above it.
         var upstream: (subject: PassthroughSubject<Output,Failure>, subscription: Subscription?)?
         /// Any `Subscription/Subscriber` down the shadow subscription chain.
         private var downstream: Downstream?

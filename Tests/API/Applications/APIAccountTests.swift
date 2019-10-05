@@ -9,7 +9,7 @@ final class APIAccountTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let accounts = api.accounts.getAll()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(accounts.isEmpty)
         
         let account = accounts[0]
@@ -24,12 +24,12 @@ final class APIAccountTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let initial = api.accounts.preferences()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         
         api.accounts.updatePreferences(trailingStops: !initial.trailingStops)
             .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
         let updated = api.accounts.preferences()
-            .expectsSuccess { self.wait(for: [$0], timeout: 2) }
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertNotEqual(initial.trailingStops, updated.trailingStops)
         
         api.accounts.updatePreferences(trailingStops: initial.trailingStops)

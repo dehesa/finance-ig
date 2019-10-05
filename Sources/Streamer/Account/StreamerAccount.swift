@@ -1,42 +1,5 @@
-import ReactiveSwift
+import Combine
 import Foundation
-
-extension IG.Streamer.Request.Accounts {
-    
-    // MARK: ACCOUNT:ACCID
-    
-    /// Subscribes to the given account and returns in the response the specified attribute/fields.
-    ///
-    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter account: The Account identifier.
-    /// - parameter fields: The account properties/fields bieng targeted.
-    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> SignalProducer<IG.Streamer.Account,IG.Streamer.Error> {
-        typealias E = IG.Streamer.Error
-        
-        let item = "ACCOUNT:".appending(account.rawValue)
-        let properties = fields.map { $0.rawValue }
-        
-        return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .attemptMap { (update) in
-                do {
-                    let account = try IG.Streamer.Account(identifier: account, item: item, update: update)
-                    return .success(account)
-                } catch var error as E {
-                    if case .none = error.item { error.item = item }
-                    if case .none = error.fields { error.fields = properties }
-                    return .failure(error)
-                } catch let underlyingError {
-                    let error = E(.invalidResponse, E.Message.unknownParsing, suggestion: E.Suggestion.reviewError, item: item, fields: properties, underlying: underlyingError)
-                    return .failure(error)
-                }
-            }
-    }
-}
-
-// MARK: - Supporting Entities
 
 extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer accounts.
@@ -52,7 +15,40 @@ extension IG.Streamer.Request {
     }
 }
 
-// MARK: Request Entities
+extension IG.Streamer.Request.Accounts {
+    
+    // MARK: ACCOUNT:ACCID
+    
+    /// Subscribes to the given account and returns in the response the specified attribute/fields.
+    ///
+    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
+    /// - parameter account: The Account identifier.
+    /// - parameter fields: The account properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+    /// - returns: Signal producer that can be started at any time.
+    public func subscribe(to account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Account> {
+        let item = "ACCOUNT:".appending(account.rawValue)
+        let properties = fields.map { $0.rawValue }
+        
+        return self.streamer.channel
+            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .receive(on: self.streamer.queue)
+            .tryMap { (update) in
+                do {
+                    return try .init(identifier: account, item: item, update: update)
+                } catch var error as IG.Streamer.Error {
+                    if case .none = error.item { error.item = item }
+                    if case .none = error.fields { error.fields = properties }
+                    throw error
+                } catch let underlyingError {
+                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                }
+            }.mapError(IG.Streamer.Error.transform)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
     
 extension IG.Streamer.Account {
     /// Possible fields to subscribe to when querying account data.

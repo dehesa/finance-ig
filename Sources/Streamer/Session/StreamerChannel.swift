@@ -11,23 +11,30 @@ import Foundation
 extension IG.Streamer {
     /// Contains all functionality related to the Streamer session.
     internal final class Channel: NSObject {
+        /// The Combine's *subscriber* for a streamer subscription.
+        private typealias SubscriptionSink = Subscribers.Sink<IG.Streamer.Subscription.Event,Never>
+        
         /// Streamer credentials used to access the trading platform.
         @nonobjc private let credentials: IG.Streamer.Credentials
         /// The central queue handling all events within the Streamer flow.
-        @nonobjc private unowned let queue: DispatchQueue
+        @nonobjc private let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let client: LSLightstreamerClient
-        /// All ongoing/active subscriptions.
-        @nonobjc private var subscriptions: Set<IG.Streamer.Subscription> = .init()
+        /// All ongoing/active subscriptions paired with the cancellable that will make them stop.
+        @nonobjc private var subscriptions: [IG.Streamer.Subscription:SubscriptionSink] = .init()
         
-        /// Subject managing the current channel status and its publisher.
+        /// Returns a `CurrentValueSubject` to subscribe to  the current channel status.
         ///
-        /// This publisher remove duplicates (i.e. there aren't any repeating statuses).
+        /// This publisher remove duplicates (i.e. there aren't any repeating statuses) and it always returns the current status upon activation.
+        /// - important: This publisher returns value on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
         @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Session.Status,Never>
-        @nonobjc let statusPublisher: AnyPublisher<IG.Streamer.Session.Status,Never>
-        @nonobjc var status: IG.Streamer.Session.Status { self.mutableStatus.value }
         
+        /// Initializes the session setting up all parameters to be ready to connect.
+        /// - parameter rootURL: The URL where the streaming server is located.
+        /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
+        /// - parameter queue: The `DispatchQueue` processing all new packages. The higher its QoS, the faster packages will be processed.
+        /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
         @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials, queue: DispatchQueue) {
             self.credentials = credentials
             self.queue = queue
@@ -35,7 +42,6 @@ extension IG.Streamer {
             self.client.connectionDetails.user = credentials.identifier.rawValue
             self.client.connectionDetails.setPassword(credentials.password)
             self.mutableStatus = .init(.disconnected(isRetrying: false))
-            self.statusPublisher = self.mutableStatus.removeDuplicates().eraseToAnyPublisher()
             super.init()
             
             // The client stores the delegate weakly, therefore there is no reference cycle.
@@ -44,6 +50,8 @@ extension IG.Streamer {
         
         deinit {
             self.client.removeDelegate(self)
+            self.unsubscribeAll()
+            self.disconnect()
         }
         
         /// The Lightstreamer library version.
@@ -53,79 +61,86 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Channel: StreamerMockableChannel {
-    @nonobjc func connect() throws -> IG.Streamer.Session.Status {
+extension IG.Streamer.Channel {
+    /// Returns a publisher to subscribe to status events (the current value is sent first).
+    ///
+    /// This publisher remove duplicates (i.e. there aren't any repeating statuses) and it always returns the current status upon activation.
+    /// - important: This publisher returns value on the priviledge queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
+    @nonobjc var status: some CurrentStatusPublisher {
+        return self.mutableStatus
+    }
+    
+    /// Tries to connect the low-level client to the server and returns the current client status.
+    ///
+    /// The connection process takes some time; If the returned status is not `.connected`, then you need to subscribe to the client's statuses and wait for the proper status.
+    /// - returns: The client status at the time of the call.
+    @nonobjc @discardableResult func connect() throws -> IG.Streamer.Session.Status {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
         
         return try queue.sync {
             let currentValue = self.mutableStatus.value
             switch currentValue {
-            case .stalled:
-                let message = "The Streamer is connected, but silent"
-                let suggestion = "Disconnect and connect again"
-                throw IG.Streamer.Error.invalidRequest(.init(message), suggestion: .init(suggestion))
-            case .disconnected(isRetrying: false):
-                self.client.connect()
-                fallthrough
-            case .connected, .connecting, .disconnected(isRetrying: true):
-                return currentValue
+            case .stalled: throw IG.Streamer.Error.invalidRequest("The Streamer is connected, but silent", suggestion: "Disconnect and connect again")
+            case .disconnected(isRetrying: false): self.client.connect()
+            case .connected, .connecting, .disconnected(isRetrying: true): break
             }
+            return currentValue
         }
     }
     
-    @nonobjc func disconnect() -> IG.Streamer.Session.Status {
+    /// Tries to disconnect the low-level client from the server and returns the current client status.
+    /// - returns: The client status at the time of the call.
+    @nonobjc @discardableResult func disconnect() -> IG.Streamer.Session.Status {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
         
         return queue.sync {
             let currentStatus = self.mutableStatus.value
-            if case .disconnected(isRetrying: false) = currentStatus { return currentStatus }
-            self.client.disconnect()
+            if currentStatus != .disconnected(isRetrying: false) {
+                self.client.disconnect()
+            }
             return currentStatus
         }
     }
     
+    /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
+    /// - important: This publisher returns values on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
+    /// - parameter mode: The streamer subscription mode.
+    /// - parameter item: The item identfier (e.g. "MARKET", "ACCOUNT", etc).
+    /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
+    /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
+    /// - returns: A publisher forwarding updates as values. This publisher will only stop by not holding a reference to the signal, by interrupting it with a cancellable, or by calling `unsubscribeAll()`
     @nonobjc func subscribe(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> IG.Streamer.ContinuousPublisher<[String:IG.Streamer.Subscription.Update]> {
-        /// The type of publisher passed by the future
-        typealias SubscriptionPublisher = PassthroughSubject<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error>
-        
-        var cancellable: AnyCancellable? = nil
-        var subscription: IG.Streamer.Subscription? = nil
-        
-        let cleanup: ()->Void = { [weak self] in
-            defer { cancellable = nil; subscription = nil}
-            cancellable?.cancel()
-            guard let representation = subscription, let self = self,
-                  let lowlevel = self.subscriptions.remove(representation)?.lowlevel,
-                  lowlevel.isActive else { return }
-            #warning("Streamer: It gets triggered. I need One queue to synchronize access and one queue to send data")
+        /// Keeps the necessary state to clean up the *slate* once the subscription finishes or cancels.
+        var state: IG.Streamer.Subscription? = nil
+        /// When triggered, it unsubscribe and clean any possible state where the subscription has been.
+        let cleanUp: ()->Void = { [weak self] in
+            guard let self = self else { return }
+            
             dispatchPrecondition(condition: .notOnQueue(self.queue))
-            self.queue.sync { self.client.unsubscribe(lowlevel) }
+            self.queue.sync {
+                guard let subscription = state else { return }
+                state = nil
+                
+                self.subscriptions.removeValue(forKey: subscription)?.cancel()
+                if subscription.lowlevel.isActive {
+                    self.client.unsubscribe(subscription.lowlevel)
+                }
+            }
         }
         
-        return Future<SubscriptionPublisher,IG.Streamer.Error> { [weak self] (promise) in
+        return PassthroughPublisher<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error> { [weak self] (subject) in
                 guard let self = self else {
-                    return promise(.failure(.sessionExpired()))
-                }
-            
-                let representation = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot, targetQueue: self.queue)
-                subscription = representation
-                self.subscriptions.insert(representation)
-                defer {
-                    dispatchPrecondition(condition: .notOnQueue(self.queue))
-                    self.queue.sync { self.client.subscribe(representation.lowlevel) }
+                    return subject.send(completion: .failure(.sessionExpired()))
                 }
                 
-                let subject: SubscriptionPublisher = .init()
-            
-                var receivedFirstStatus = false
-                cancellable = representation.statusPublisher.drop {
-                    guard !receivedFirstStatus else { return false }
-                    receivedFirstStatus = true
-                    return $0 == .unsubscribed
-                }.sink {
-                    switch $0 {
+                let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot)
+                // The `sink` will only complete if `unsubscribeAll()` is called. In any other case, it is cancelled silently.
+                let sink = SubscriptionSink.init(receiveCompletion: { [weak subject] (_) in
+                    subject?.send(completion: .finished)
+                }, receiveValue: { [weak subject] (event) in
+                    switch event {
                     case .updateReceived(let update):
-                        subject.send(update)
+                        subject?.send(update)
                     case .subscribed:
                         #if DEBUG
                         print("\(IG.Streamer.printableDomain): Subscription to \(item) established")
@@ -139,34 +154,44 @@ extension IG.Streamer.Channel: StreamerMockableChannel {
                     case .error(let e):
                         let message = "The subscription couldn't be established"
                         let error: IG.Streamer.Error = .subscriptionFailed(.init(message), item: item, fields: fields, underlying: e, suggestion: .reviewError)
-                        subject.send(completion: .failure(error))
+                        subject?.send(completion: .failure(error))
                     case .unsubscribed:
                         #if DEBUG
                         print("\(IG.Streamer.printableDomain): Unsubscribed to \(item)")
                         #endif
-                        subject.send(completion: .finished)
+                        subject?.send(completion: .finished)
                     }
-                }
+                })
                 
-                promise(.success(subject))
-            }.flatMap(maxPublishers: .max(1)) {$0 }
-            .handleEvents(receiveCompletion: { (_) in cleanup() }, receiveCancel: cleanup)
+                dispatchPrecondition(condition: .notOnQueue(self.queue))
+                self.queue.sync {
+                    state = subscription
+                    self.subscriptions[subscription] = sink
+                    subscription.status.dropFirst().subscribe(sink)
+                    self.client.subscribe(subscription.lowlevel)
+                }
+            }.handleEvents(receiveCompletion: { (_) in cleanUp() }, receiveCancel: cleanUp)
             .eraseToAnyPublisher()
     }
     
-    @nonobjc func unsubscribeAll() -> [IG.Streamer.Subscription] {
+    /// Unsubscribe to all ongoing subscriptions.
+    /// - returns: All subscriptions that were active at the time of the call.
+    @nonobjc @discardableResult func unsubscribeAll() -> [IG.Streamer.Subscription] {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
         
-        return queue.sync {
+        let subscriptions = queue.sync { () -> [IG.Streamer.Subscription:SubscriptionSink] in
             let subscriptions = self.subscriptions
             self.subscriptions.removeAll()
-            
-            return subscriptions.filter {
-                guard $0.lowlevel.isActive else { return false }
-                self.client.unsubscribe($0.lowlevel)
-                return true
+            return subscriptions
+        }.map { (subscription, sink) -> IG.Streamer.Subscription in
+            sink.receive(completion: .finished)
+            if subscription.lowlevel.isActive {
+                self.client.unsubscribe(subscription.lowlevel)
             }
+            return subscription
         }
+        
+        return subscriptions
     }
 }
 
@@ -178,8 +203,9 @@ extension IG.Streamer.Channel: LSClientDelegate {
             fatalError("Lightstreamer client status \"\(status)\" was not recognized")
         }
         
-        self.queue.async { [subject = self.mutableStatus] in
-            subject.value = result
+        self.queue.async {
+            guard self.mutableStatus.value != result else { return }
+            self.mutableStatus.send(result)
         }
     }
     //@objc func client(_ client: LSLightstreamerClient, didChangeProperty property: String) { <#code#> }
@@ -188,3 +214,13 @@ extension IG.Streamer.Channel: LSClientDelegate {
     //@objc func didAddDelegate(to: LSLightstreamerClient) { <#code#> }
     //@objc func didRemoveDelegate(to: LSLightstreamerClient) { <#code#> }
 }
+
+// MARK: - Combine Extensions
+
+/// Returns the receiving's publisher current value.
+public protocol CurrentStatusPublisher: Publisher where Output==IG.Streamer.Session.Status, Failure==Never {
+    /// The value wrapped by this subject, published as a new element whenever it changes.
+    var value: Output { get }
+}
+
+extension CurrentValueSubject: CurrentStatusPublisher where Output==IG.Streamer.Session.Status, Failure==Never {}

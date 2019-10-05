@@ -4,22 +4,21 @@ import Foundation
 public final class Streamer {
     /// URL root address.
     public let rootURL: URL
-    /// The queue managing all Streamer requests and responses.
-    private let queue: DispatchQueue
+    /// The queue managing all Streamer responses.
+    internal let queue: DispatchQueue
     /// The underlying instance (whether real or mocked) managing the streaming connections.
-    internal let channel: IG.StreamerMockableChannel
+    internal let channel: IG.Streamer.Channel
     
     /// Holds functionality related to the current streamer session.
     public var session: IG.Streamer.Request.Session { return .init(streamer: self) }
     /// Holds functionality related to markets.
     public var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
-    #warning("Streamer: Uncomment")
-//    /// Holds functionality related to charts.
-//    public var charts: IG.Streamer.Request.Charts { return .init(streamer: self) }
-//    /// Hold functionality related to accounts.
-//    public var accounts: IG.Streamer.Request.Accounts { return .init(streamer: self) }
-//    /// Hold functionality related to deals (positions, working orders, and confirmations).
-//    public var confirmations: IG.Streamer.Request.Confirmations { return .init(streamer: self) }
+    /// Holds functionality related to charts.
+    public var charts: IG.Streamer.Request.Charts { return .init(streamer: self) }
+    /// Hold functionality related to accounts.
+    public var accounts: IG.Streamer.Request.Accounts { return .init(streamer: self) }
+    /// Hold functionality related to deals (positions, working orders, and confirmations).
+    public var confirmations: IG.Streamer.Request.Confirmations { return .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
@@ -29,24 +28,25 @@ public final class Streamer {
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
     public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?) {
-        let queue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        let channel = Self.Channel(rootURL: rootURL, credentials: credentials, queue: queue)
-        self.init(rootURL: rootURL, channel: channel, queue: queue)
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".channel", qos: .default, autoreleaseFrequency: .never, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".values", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let channel = Self.Channel(rootURL: rootURL, credentials: credentials, queue: priviledgeQueue)
+        self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }
     
     /// Initializer for a Streamer instance.
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter channel: The low-level streaming connection manager.
     /// - parameter queue: The queue on which to process the `Streamer` requests and responses.
-    internal init<Session:IG.StreamerMockableChannel>(rootURL: URL, channel: Session, queue: DispatchQueue) {
+    internal init(rootURL: URL, channel: IG.Streamer.Channel, queue: DispatchQueue) {
         self.rootURL = rootURL
         self.queue = queue
         self.channel = channel
     }
-
-    deinit {
-        _ = self.channel.unsubscribeAll()
-        _ = self.channel.disconnect()
+    
+    /// Returns the current streamer status (e.g. whether connecting, connected, disconnected, etc.).
+    public var status: IG.Streamer.Session.Status {
+        return self.channel.status.value
     }
 }
 
@@ -65,10 +65,10 @@ extension IG.Streamer: IG.DebugDescriptable {
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("root URL", self.rootURL.absoluteString)
-        result.append("queue", self.queue.label)
-        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("processing queue", self.queue.label)
+        result.append("processing queue QoS", String(describing: self.queue.qos.qosClass))
         result.append("lightstreamer", IG.Streamer.Channel.lightstreamerVersion)
-        result.append("connection status", self.channel.status)
+        result.append("connection status", self.channel.status.value)
         return result.generate()
     }
 }
