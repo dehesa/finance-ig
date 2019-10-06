@@ -23,6 +23,12 @@ extension IG.API {
         static var dateDenormalBroad: DateFormatter {
             return IG.Formatter.dateDenormalBroad
         }
+        
+        /// Debuggable-friendly *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Example: `2019-09-09 11:43:09`
+        static var timestamp: DateFormatter {
+            return IG.Formatter.timestamp
+        }
 
         /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
         /// - Format: `yyyy-MM-dd'T'HH:mm:ss`

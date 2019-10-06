@@ -108,6 +108,14 @@
 		8DE1B2B9214A639E00C1FF13 /* API in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFD2149AB1200344CBF /* API */; };
 		8DE1B2BA214A639F00C1FF13 /* Environment in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFE2149AB1200344CBF /* Environment */; };
 		8DE1B2BB214A639F00C1FF13 /* Streamer in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFF2149AB1200344CBF /* Streamer */; };
+		8DE8A19E2349DCE000031B1E /* DBFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51C23266CBD00F029B3 /* DBFormatters.swift */; };
+		8DE8A19F2349DE7E00031B1E /* DB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA952316575500AFBA1E /* DB.swift */; };
+		8DE8A1A02349DE8200031B1E /* DBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9723165DB500AFBA1E /* DBError.swift */; };
+		8DE8A1A12349DF8D00031B1E /* DBChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1C8D572322E53900841CA0 /* DBChannel.swift */; };
+		8DE8A1A22349DF9100031B1E /* DBInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A80231E79BE004204B8 /* DBInternals.swift */; };
+		8DE8A1A32349DF9600031B1E /* DBMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */; };
+		8DE8A1A62349E33200031B1E /* DBMigration+v1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */; };
+		8DE8A1A72349E4E300031B1E /* DBApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */; };
 		8DFEC5F1234078F7005906B3 /* APITransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA772149A6CE00344CBF /* APITransaction.swift */; };
 		8DFEC5F2234080B7005906B3 /* APIPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA762149A6CE00344CBF /* APIPrice.swift */; };
 		8DFEC5F323408459005906B3 /* APIMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA722149A6CE00344CBF /* APIMarket.swift */; };
@@ -307,6 +315,7 @@
 		8DE2C3E122FC789B00BB6261 /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
 		8DE4A67022FB40890036CF5E /* APIMarketStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketStatus.swift; sourceTree = "<group>"; };
 		8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINodeMarket.swift; sourceTree = "<group>"; };
+		8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBMigration+v1.swift"; sourceTree = "<group>"; };
 		8DF1233D2330D9C900312A30 /* DBForexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForexTests.swift; sourceTree = "<group>"; };
 		8DF75CDB2322A85100130229 /* PlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundTests.swift; sourceTree = "<group>"; };
 		8DF85B1B22F046FA00F1C525 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
@@ -491,6 +500,7 @@
 				8D1C8D572322E53900841CA0 /* DBChannel.swift */,
 				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
+				8DE8A1A42349E31900031B1E /* Migrations */,
 			);
 			path = Entities;
 			sourceTree = "<group>";
@@ -890,6 +900,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		8DE8A1A42349E31900031B1E /* Migrations */ = {
+			isa = PBXGroup;
+			children = (
+				8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */,
+			);
+			path = Migrations;
+			sourceTree = "<group>";
+		};
 		8DF63C0D233362CE0012F122 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -1157,6 +1175,14 @@
 				8D490AD0234892A50008ED18 /* StreamerDeal.swift in Sources */,
 				8D452657233A3D270034D577 /* SQLite.swift in Sources */,
 				8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */,
+				8DE8A19E2349DCE000031B1E /* DBFormatters.swift in Sources */,
+				8DE8A19F2349DE7E00031B1E /* DB.swift in Sources */,
+				8DE8A1A02349DE8200031B1E /* DBError.swift in Sources */,
+				8DE8A1A12349DF8D00031B1E /* DBChannel.swift in Sources */,
+				8DE8A1A22349DF9100031B1E /* DBInternals.swift in Sources */,
+				8DE8A1A32349DF9600031B1E /* DBMigration.swift in Sources */,
+				8DE8A1A62349E33200031B1E /* DBMigration+v1.swift in Sources */,
+				8DE8A1A72349E4E300031B1E /* DBApplication.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -141,9 +141,13 @@ extension IG.Streamer.Chart.Tick {
     }
 }
 
-extension IG.Streamer.Chart.Tick: CustomDebugStringConvertible {
+extension IG.Streamer.Chart.Tick: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("Streamer Chart Tick (\(self.epic))")
+        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic))")
         result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
         result.append("volume", self.volume)
         result.append("price (ask)", self.ask)

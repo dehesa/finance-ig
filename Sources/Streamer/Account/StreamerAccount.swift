@@ -204,9 +204,13 @@ extension IG.Streamer.Account {
     }
 }
 
-extension IG.Streamer.Account: CustomDebugStringConvertible {
+extension IG.Streamer.Account: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.Streamer.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("Streamer Account (\(self.identifier))")
+        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.identifier))")
         result.append("equity", self.equity) {
             $0.append("value", $1.value)
             $0.append("used", $1.used)

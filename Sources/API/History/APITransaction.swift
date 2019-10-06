@@ -305,7 +305,7 @@ extension IG.API.Transaction: IG.DebugDescriptable {
         result.append("period", self.period.debugDescription)
         result.append("size", self.size.map { "\($0.direction) \($0.amount)" })
         
-        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("open date", self.open.date, formatter: formatter)
         result.append("close date", self.close.date, formatter: formatter)
         let nilSym = IG.DebugDescription.Symbol.nil

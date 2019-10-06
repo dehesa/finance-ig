@@ -267,7 +267,7 @@ extension IG.API.Price: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("open", Self.represent(self.open))
         result.append("close", Self.represent(self.close))
         result.append("lowest", Self.represent(self.lowest))
@@ -288,7 +288,7 @@ extension IG.API.Price.Allowance: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("reset date", self.resetDate, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("reset date", self.resetDate, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("data points (remaining)", self.remaining)
         result.append("data points (total)", self.total)
         return result.generate()
