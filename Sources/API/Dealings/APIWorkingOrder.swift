@@ -126,7 +126,7 @@ extension IG.API.WorkingOrder: IG.DebugDescriptable {
     }
     
     public var debugDescription: String {
-        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
         
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.type))")
         result.append("deal ID", self.identifier)

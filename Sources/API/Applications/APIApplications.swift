@@ -205,7 +205,7 @@ extension IG.API.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.subscriptionsLimit)
         }
-        result.append("creation", self.creationDate, formatter: IG.Formatter.date)
+        result.append("creation", self.creationDate, formatter: IG.API.Formatter.date)
         return result.generate()
     }
 }

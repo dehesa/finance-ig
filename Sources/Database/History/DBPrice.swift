@@ -178,7 +178,7 @@ extension IG.DB.Price: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: IG.DB.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("open/close", "\(self.open.mid) -> \(self.close.mid)")
         result.append("lowest/highest", "\(self.lowest.mid) -> \(self.highest.mid)")
         result.append("volume", self.volume)

@@ -180,9 +180,13 @@ extension IG.Streamer.Market {
     }
 }
 
-extension IG.Streamer.Market: CustomDebugStringConvertible {
+extension IG.Streamer.Market: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.Streamer.printableDomain).\(Self.self)"
+    }
+    
     public var debugDescription: String {
-        var result = IG.DebugDescription("Streamer Market (\(self.epic.rawValue))")
+        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic.rawValue))")
         result.append("status", self.status)
         result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
         result.append("are prices delayed?", self.isDelayed)

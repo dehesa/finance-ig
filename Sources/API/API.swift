@@ -7,29 +7,29 @@ import Foundation
 /// - note: You can create as many API instances as you want, but each instance contains its on URL Session; thus you may want to have a single API instance doing all your endpoint calling.
 public final class API {
     /// URL root address.
-    public let rootURL: URL
+    public final let rootURL: URL
     /// The queue processing all API requests and responses.
-    private let queue: DispatchQueue
+    private final let queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
-    internal let channel: URLSession
+    internal final let channel: URLSession
     /// It holds data and functionality related to the user's session.
-    public internal(set) var session: IG.API.Request.Session
+    public internal(set) final var session: IG.API.Request.Session
     /// It holds functionality related to the user's applications.
-    public var applications: IG.API.Request.Applications { return .init(api: self) }
+    public final var applications: IG.API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
-    public var accounts: IG.API.Request.Accounts { return .init(api: self) }
+    public final var accounts: IG.API.Request.Accounts { return .init(api: self) }
     /// It holds functionality related to the user's activity & transactions, and market prices.
-    public var history: IG.API.Request.History { return .init(api: self) }
+    public final var history: IG.API.Request.History { return .init(api: self) }
     /// It holds functionality related to market navigation nodes.
-    public var nodes: IG.API.Request.Nodes { return .init(api: self) }
+    public final var nodes: IG.API.Request.Nodes { return .init(api: self) }
     /// It holds functionality related to platform market.
-    public var markets: IG.API.Request.Markets { return .init(api: self) }
+    public final var markets: IG.API.Request.Markets { return .init(api: self) }
     /// It holds functionality related to watchlists.
-    public var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
+    public final var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
     /// It holds functionality related to positions.
-    public var positions: IG.API.Request.Positions { return .init(api: self) }
+    public final var positions: IG.API.Request.Positions { return .init(api: self) }
     /// It holds functionality related to working orders.
-    public var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
+    public final var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -92,7 +92,7 @@ extension IG.API: IG.DebugDescriptable {
         return "\(IG.Bundle.name).\(Self.self)"
     }
     
-    public var debugDescription: String {
+    public final var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("root URL", self.rootURL.absoluteString)
         result.append("queue", self.queue.label)

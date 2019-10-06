@@ -351,7 +351,7 @@ extension IG.API.Activity: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("date", self.date, formatter: formatter)
         result.append("title", self.title)
         result.append("type", self.type)

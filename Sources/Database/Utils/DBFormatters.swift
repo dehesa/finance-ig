@@ -3,10 +3,10 @@ import Foundation
 extension IG.DB {
     /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `DB` instance context.
     internal enum Formatter {
-        /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
-        /// - Example: `2019-09-09 11:43:09`
-        static var timestamp: DateFormatter {
-            return IG.Formatter.timestamp
+        /// Database *time* formatter (only giving `HH:mm:ss`).
+        /// - Example: `11:43:09`
+        static var time: DateFormatter {
+            return IG.Formatter.time
         }
         
         /// Database *date* formatter (only giving `yyyy-MM-dd`).
@@ -15,10 +15,10 @@ extension IG.DB {
             return IG.Formatter.date
         }
         
-        /// Database *time* formatter (only giving `HH:mm:ss`).
-        /// - Example: `11:43:09`
-        static var time: DateFormatter {
-            return IG.Formatter.time
+        /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
+        /// - Example: `2019-09-09 11:43:09`
+        static var timestamp: DateFormatter {
+            return IG.Formatter.timestamp
         }
     }
 }

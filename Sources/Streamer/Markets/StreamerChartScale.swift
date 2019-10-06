@@ -263,7 +263,11 @@ extension IG.Streamer.Chart.Aggregated {
     }
 }
 
-extension IG.Streamer.Chart.Aggregated: CustomDebugStringConvertible {
+extension IG.Streamer.Chart.Aggregated: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)"
+    }
+    
     public var debugDescription: String {
         let represent: (Self.Candle.Point)->String = {
             switch ($0.bid, $0.ask) {
@@ -274,7 +278,7 @@ extension IG.Streamer.Chart.Aggregated: CustomDebugStringConvertible {
             }
         }
         
-        var result = IG.DebugDescription("Streamer Chart Aggregated \(self.interval) (\(self.epic))")
+        var result = IG.DebugDescription("\(Self.printableDomain) \(self.interval) (\(self.epic))")
         result.append("candle", self.candle) {
             $0.append("date", $1.date, formatter: IG.Streamer.Formatter.time)
             $0.append("ticks", $1.numTicks)

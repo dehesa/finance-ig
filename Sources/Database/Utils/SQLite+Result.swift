@@ -86,6 +86,11 @@ extension Int32 {
         guard self == value.rawValue else { return .init(trusted: self) }
         return nil
     }
+    /// Expects the reeiving integer is equal to `value`; if not, the error in the closure is thrown.
+    func expects(_ value: IG.SQLite.Result, _ error: (_ receivedCode: IG.SQLite.Result) -> IG.DB.Error = { .callFailed(.execCommand, code: $0) }) throws {
+        if self == value.rawValue { return }
+        throw error(.init(trusted: self))
+    }
     
     static func == (lhs: Self, rhs: IG.SQLite.Result) -> Bool {
         return lhs == rhs.rawValue

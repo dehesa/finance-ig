@@ -124,7 +124,7 @@ extension IG.API.Node.Market: IG.DebugDescriptable {
             $0.append("OTC tradeable", $1.isOTCTradeable)
         }
         result.append("snapshot", self.snapshot) {
-            $0.append("date", $1.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+            $0.append("date", $1.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
             $0.append("delay", $1.delay)
             $0.append("status", $1.status)
             $0.append("price", $1.price) {

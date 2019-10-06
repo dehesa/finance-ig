@@ -814,8 +814,8 @@ extension IG.API.Market: IG.DebugDescriptable {
         result.append("chart code", self.instrument.chartCode)
         result.append("news code", self.instrument.newsCode)
         
-        let dayMonthYear = IG.Formatter.date
-        let dateTime = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        let dayMonthYear = IG.API.Formatter.date
+        let dateTime = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("instrument", self.instrument) {
             $0.append("type", $1.type)
             $0.append("unit", $1.unit)
