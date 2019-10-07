@@ -13,7 +13,7 @@ extension IG.API.Request.History {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.Future<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.DiscretePublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)

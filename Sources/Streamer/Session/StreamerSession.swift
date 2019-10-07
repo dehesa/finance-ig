@@ -37,7 +37,7 @@ extension IG.Streamer.Request.Session {
         /// When triggered, it stops the status monitoring and forwarding.
         let cleanUp: ()->Void = { state?.cancel(); state = nil }
         
-        return PassthroughPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
+        return DeferredPassthrough<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
             guard let streamer = weakStreamer else {
                 return subject.send(completion: .failure(.sessionExpired()))
             }
@@ -80,7 +80,7 @@ extension IG.Streamer.Request.Session {
         /// When triggered, it stops the status monitoring and forwarding.
         let cleanUp: ()->Void = { state?.cancel(); state = nil }
         
-        return PassthroughPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
+        return DeferredPassthrough<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
             guard let streamer = weakStreamer else {
                 return subject.send(completion: .failure(.sessionExpired()))
             }

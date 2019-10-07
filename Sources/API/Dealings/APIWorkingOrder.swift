@@ -21,7 +21,7 @@ extension IG.API.Request.WorkingOrders {
     
     /// Returns all open working orders for the active account.
     /// - returns: *Future* forwarding all open working orders.
-    public func getAll() -> IG.API.Future<[IG.API.WorkingOrder]> {
+    public func getAll() -> IG.API.DiscretePublisher<[IG.API.WorkingOrder]> {
         self.api.publisher
             .makeRequest(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)

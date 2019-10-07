@@ -13,101 +13,80 @@ extension IG.DB.Request {
 }
 
 extension IG.DB.Request.Applications {
-//    /// Returns all applications stored in the database.
-//    public func getAll() -> SignalProducer<[IG.DB.Application],IG.DB.Error> {
-//        return self.database.work { (channel, requestPermission) in
-//            var statement: SQLite.Statement? = nil
-//            defer { sqlite3_finalize(statement) }
-//
-//            let query = "SELECT * FROM \(IG.DB.Application.tableName)"
-//            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-//                return .failure(.callFailed(.compilingSQL, code: compileError))
-//            }
-//
-//            var result: [IG.DB.Application] = .init()
-//            repeat {
-//                switch sqlite3_step(statement).result {
-//                case .row:  result.append(.init(statement: statement!))
-//                case .done: return .success(result)
-//                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
-//                }
-//            } while requestPermission().isAllowed
-//
-//            return .interruption
-//        }
-//    }
+    /// Returns all applications stored in the database.
+    public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Application]> {
+        self.database.publisher { _ in
+                "SELECT * FROM \(IG.DB.Application.tableName)"
+            }.read { (sqlite, statement, query) -> [IG.DB.Application] in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                var result: [IG.DB.Application] = .init()
+                while true {
+                    switch sqlite3_step(statement).result {
+                    case .row:  result.append(.init(statement: statement!))
+                    case .done: return result
+                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    }
+                }
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
+    }
 
-//    /// Returns the application specified by its API key.
-//    ///
-//    /// If the application is not found, an `.invalidResponse` is returned.
-//    /// - parameter key: The API key identifying the application.
-//    public func get(key: IG.API.Key) -> SignalProducer<IG.DB.Application,IG.DB.Error> {
-//        return self.database.work { (channel, requestPermission) in
-//            var statement: SQLite.Statement? = nil
-//            defer { sqlite3_finalize(statement) }
-//
-//            let query = "SELECT * FROM Apps where key = ?1"
-//            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-//                return .failure(.callFailed(.compilingSQL, code: compileError))
-//            }
-//
-//            sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient)
-//
-//            switch sqlite3_step(statement).result {
-//            case .row:  return .success(.init(statement: statement!))
-//            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
-//            case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
-//            }
-//        }
-//    }
-//
-//    /// Updates the database with the information received from the server.
-//    /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
-//    /// - parameter applications: Information returned from the server.
-//    public func update(_ applications: [IG.API.Application]) -> SignalProducer<Void,IG.DB.Error> {
-//        return self.database.work { (channel, requestPermission) in
-//            sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
-//            defer { sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil) }
-//
-//            var statement: SQLite.Statement? = nil
-//            defer { sqlite3_finalize(statement) }
-//
-//            let query = """
-//                INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
-//                    ON CONFLICT(key) DO UPDATE SET
-//                        name = excluded.name, status = excluded.status,
-//                        equity = excluded.equity, quote = excluded.quote,
-//                        liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
-//                        created = excluded.created, updated = excluded.updated
-//                """
-//            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-//    #warning("Wrong, the transaction is not being rollbacked since the defer is executing that weird command")
-//                return .failure(.callFailed(.compilingSQL, code: compileError))
-//            }
-//
-//            for app in applications {
-//                guard case .continue = requestPermission() else { return .interruption }
-//
-//                IG.DB.Application(key: app.key, name: app.name, status: .init(app.status),
-//                                  permission: .init(accessToEquityPrices: app.permission.accessToEquityPrices, areQuoteOrdersAllowed: app.permission.areQuoteOrdersAllowed),
-//                                  allowance: .init(overallRequests: app.allowance.overallRequests,
-//                                                   account: .init(overallRequests: app.allowance.account.overallRequests, tradingRequests: app.allowance.account.tradingRequests, historicalDataRequests: app.allowance.account.historicalDataRequests),
-//                                                   concurrentSubscriptions: app.allowance.subscriptionsLimit),
-//                                  created: app.creationDate, updated: Date()
-//                ).bind(to: statement!)
-//
-//
-//                if let updateError = sqlite3_step(statement).enforce(.done) {
-//                    return .failure(.callFailed(.storing(IG.DB.Application.self), code: updateError))
-//                }
-//
-//                sqlite3_clear_bindings(statement)
-//                sqlite3_reset(statement)
-//            }
-//
-//            return .success(())
-//        }
-//    }
+    /// Returns the application specified by its API key.
+    ///
+    /// If the application is not found, an `.invalidResponse` is returned.
+    /// - parameter key: The API key identifying the application.
+    public func get(key: IG.API.Key) -> IG.DB.DiscretePublisher<IG.DB.Application> {
+        self.database.publisher { _ in
+                "SELECT * FROM Apps where key = ?1"
+            }.read { (sqlite, statement, query) -> IG.DB.Application in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient)
+                
+                switch sqlite3_step(statement).result {
+                case .row:  return .init(statement: statement!)
+                case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
+                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                }
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
+    }
+
+    /// Updates the database with the information received from the server.
+    /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
+    /// - parameter applications: Information returned from the server.
+    public func update(_ applications: [IG.API.Application]) -> IG.DB.DiscretePublisher<Void> {
+        self.database.publisher { _ -> String in
+            """
+            INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET
+                    name = excluded.name, status = excluded.status,
+                    equity = excluded.equity, quote = excluded.quote,
+                    liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
+                    created = excluded.created, updated = excluded.updated
+            """
+        }.write { (sqlite, statement, query) in
+            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+            
+            for app in applications {
+                IG.DB.Application(key: app.key, name: app.name, status: .init(app.status),
+                                  permission: .init(accessToEquityPrices: app.permission.accessToEquityPrices,
+                                                    areQuoteOrdersAllowed: app.permission.areQuoteOrdersAllowed),
+                                  allowance: .init(overallRequests: app.allowance.overallRequests,
+                                                   account: .init(overallRequests: app.allowance.account.overallRequests,
+                                                                  tradingRequests: app.allowance.account.tradingRequests,
+                                                                  historicalDataRequests: app.allowance.account.historicalDataRequests),
+                                                   concurrentSubscriptions: app.allowance.subscriptionsLimit),
+                                  created: app.creationDate,
+                                  updated: Date())
+                    .bind(to: statement!)
+
+                try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Application.self), code: $0) }
+                sqlite3_clear_bindings(statement)
+                sqlite3_reset(statement)
+            }
+        }.eraseToAnyPublisher()
+    }
 }
 
 // MARK: - Entities

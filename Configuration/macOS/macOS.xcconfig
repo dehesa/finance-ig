@@ -9,3 +9,8 @@ CODE_SIGN_IDENTITY = -
 
 // Apple Clang - Preprocessing
 GCC_PREPROCESSOR_DEFINITIONS = IG_BUNDLE_NAME=u8\"$(PRODUCT_NAME)\" IG_BUNDLE_ID=u8\"$(PRODUCT_BUNDLE_IDENTIFIER)\" IG_BUNDLE_VERSION=u8\"$(DYLIB_CURRENT_VERSION)\" IG_BUNDLE_BUILD=$(CURRENT_PROJECT_VERSION)
+
+// Deployment
+INSTALL_PATH = $(LOCAL_LIBRARY_DIR)/Frameworks
+// Linking (for the linker)
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/Frameworks

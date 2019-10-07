@@ -42,41 +42,6 @@ public final class DB {
         self.queue = queue
         try self.migrateToLatestVersion()
     }
-    
-//    /// Performs a work item on the database priviledge queue.
-//    /// - precondition: The caller must not be on the priviledge database dispatch queue or this function will crash.
-//    /// - parameter interaction: Closure giving the priviledge database connection and a way to check whether the operation should be finished (since database operations may extend for a long time). Its result will be forwarded to the Signal.
-//    /// - parameter channel: The priviledge SQLite database actually performing the work.
-//    /// - parameter permission: A closure to ask for *continuation* permission to the database manager.
-//    internal final func work<R>(_ interaction: @escaping (_ channel: SQLite.Database, _ permission: IG.DB.Request.Permission) -> IG.DB.Response.Step<R>) -> SignalProducer<R,IG.DB.Error> {
-//        dispatchPrecondition(condition: .notOnQueue(self.queue))
-//
-//        return SignalProducer<R,IG.DB.Error> { [weak self] (generator, lifetime) in
-//            var result: IG.DB.Response.Step<R> = .expired
-//            var permission: IG.DB.Request.Step = .continue
-//            var detacher = lifetime.observeEnded { permission = .stop }
-//
-//            self?.queue.sync { [shallContinue = { permission }] in
-//                guard let self = self else { return }
-//                result = interaction(self.channel, shallContinue)
-//            }
-//
-//            detacher?.dispose()
-//            detacher = nil
-//
-//            switch result {
-//            case .success(value: let value):
-//                generator.send(value: value)
-//                generator.sendCompleted()
-//            case .failure(error: let error):
-//                generator.send(error: error)
-//            case .expired:
-//                generator.send(error: .sessionExpired())
-//            case .interruption:
-//                generator.sendInterrupted()
-//            }
-//        }
-//    }
 }
 
 extension IG.DB {

@@ -8,3 +8,6 @@ INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS_tests.plist
 
 // Signing
 CODE_SIGN_IDENTITY = -
+
+// Linking (for the linker)
+LD_RUNPATH_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer

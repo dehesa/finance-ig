@@ -25,6 +25,28 @@ extension Publisher {
         cancellable?.cancel()
     }
     
+    /// Expects the receiving publisher to complete with a failure within the timeout on the `XCTestCase` given in the `wait` closure.
+    ///
+    /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
+    /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
+    /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
+    func expectsFailure(_ description: String = "The publisher shall fail", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) {
+        let e = XCTestExpectation(description: description)
+        
+        var cancellable: AnyCancellable?
+        cancellable = self.sink(receiveCompletion: {
+            cancellable = nil
+            switch $0 {
+            case .finished: XCTFail("The publisher completed successfully when a failure was expected", file: file, line: line)
+            case .failure(_): e.fulfill()
+            }
+        }, receiveValue: { (_) in return })
+        
+        wait(e)
+        cancellable?.cancel()
+    }
+    
     /// Expects the receiving publisher to produce a single value and then complete within the timeout on the `XCTestCase` given in the `wait` closure.
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.

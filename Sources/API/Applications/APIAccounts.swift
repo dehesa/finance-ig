@@ -21,7 +21,7 @@ extension IG.API.Request.Accounts {
     
     /// Returns a list of accounts belonging to the logged-in client.
     /// - returns: *Future* forwarding a list of user's accounts.
-    public func getAll() -> IG.API.Future<[IG.API.Account]> {
+    public func getAll() -> IG.API.DiscretePublisher<[IG.API.Account]> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -35,7 +35,7 @@ extension IG.API.Request.Accounts {
     
     /// Returns the targeted account preferences.
     /// - returns: *Future* forwarding the current account's pereferences.
-    public func preferences() -> IG.API.Future<IG.API.Account.Preferences> {
+    public func preferences() -> IG.API.DiscretePublisher<IG.API.Account.Preferences> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -49,7 +49,7 @@ extension IG.API.Request.Accounts {
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: *Future* indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> IG.API.Future<Never> {
+    public func updatePreferences(trailingStops: Bool) -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (_) -> Self.PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
             }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in

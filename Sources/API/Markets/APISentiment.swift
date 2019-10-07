@@ -8,7 +8,7 @@ extension IG.API.Request.Markets {
     /// Returns the client sentiment for the gven markets.
     /// - parameter marketIdentifiers: The platform's markets being targeted (don't confuse it with `epic` identifiers).
     /// - returns: *Future* forwarding  a list of all targeted markets along with their short/long sentiments.
-    public func getSentiment(from marketIdentifiers: [String]) -> IG.API.Future<[IG.API.Market.Sentiment]> {
+    public func getSentiment(from marketIdentifiers: [String]) -> IG.API.DiscretePublisher<[IG.API.Market.Sentiment]> {
         api.publisher { (_) -> [String] in
                 let filteredIds = marketIdentifiers.filter { !$0.isEmpty }
                 guard !filteredIds.isEmpty else {
@@ -30,7 +30,7 @@ extension IG.API.Request.Markets {
     /// Returns the client sentiment for the gven market.
     /// - parameter marketIdentifier: The platform's market being targeted (don't confuse it with `epic` identifiers).
     /// - returns: *Future* forwarding  a market's short/long sentiments.
-    public func getSentiment(from marketIdentifier: String) -> IG.API.Future<IG.API.Market.Sentiment> {
+    public func getSentiment(from marketIdentifier: String) -> IG.API.DiscretePublisher<IG.API.Market.Sentiment> {
         api.publisher { (_) in
                 guard !marketIdentifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(.noCharacters, suggestion: .validMarketID)
@@ -47,7 +47,7 @@ extension IG.API.Request.Markets {
     /// Returns a list of markets (and its sentiments) that are being traded the most and are related to the gven market.
     /// - parameter marketIdentifier: The platform's market being targeted (don't confuse it with `epic` identifiers).
     /// - returns: *Future* forwarding a list of markets related to the given market along with their short/long sentiments.
-    public func getSentiment(relatedTo marketIdentifier: String) -> IG.API.Future<[IG.API.Market.Sentiment]> {
+    public func getSentiment(relatedTo marketIdentifier: String) -> IG.API.DiscretePublisher<[IG.API.Market.Sentiment]> {
         api.publisher { (_) in
                 guard !marketIdentifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(.noCharacters, suggestion: .validMarketID)

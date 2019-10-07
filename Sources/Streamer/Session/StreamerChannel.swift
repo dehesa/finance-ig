@@ -132,7 +132,7 @@ extension IG.Streamer.Channel {
             }
         }
         
-        return PassthroughPublisher<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error> { [weak self] (subject) in
+        return DeferredPassthrough<[String:IG.Streamer.Subscription.Update],IG.Streamer.Error> { [weak self] (subject) in
                 guard let self = self else {
                     return subject.send(completion: .failure(.sessionExpired()))
                 }
