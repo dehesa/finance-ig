@@ -149,7 +149,7 @@ extension IG.Streamer.Session {
             case Key.connectedSensing.rawValue: self = .connected(.sensing)
             case Key.connectedWebSocketStream.rawValue: self = .connected(.websocket(isPolling: false))
             case Key.connectedWebSocketPoll.rawValue: self = .connected(.websocket(isPolling: true))
-            case Key.connectedHTTPStream.rawValue: self = .connected(.http(isPolling: true))
+            case Key.connectedHTTPStream.rawValue: self = .connected(.http(isPolling: false))
             case Key.connectedHTTPPoll.rawValue: self = .connected(.http(isPolling: true))
             case Key.stalled.rawValue: self = .stalled
             case Key.disconnectedRetrying.rawValue: self = .disconnected(isRetrying: true)

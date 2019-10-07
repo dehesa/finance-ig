@@ -1,6 +1,6 @@
 import XCTest
+import IG
 import Combine
-@testable import IG
 
 final class StreamerAccountTests: XCTestCase {
     /// Test Lightstreamer subscription to account changes.
@@ -9,7 +9,7 @@ final class StreamerAccountTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect().expectsAll { self.wait(for: [$0], timeout: 2) }
+        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
         XCTAssertTrue(streamer.status.isReady)
         
         streamer.accounts.subscribe(to: acc.identifier, fields: .all)
@@ -29,11 +29,7 @@ final class StreamerAccountTests: XCTestCase {
                 XCTAssertNotNil(account.profitLoss.nonLimitedRisk)
             }) { self.wait(for: [$0], timeout: 2) }
         
-        streamer.session.unsubscribeAll()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
-        
-        streamer.session.disconnect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
 }

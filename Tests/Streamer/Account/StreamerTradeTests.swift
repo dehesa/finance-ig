@@ -1,90 +1,89 @@
 import XCTest
-import ReactiveSwift
-@testable import IG
+import IG
+import Combine
 
 final class StreamerTradeTests: XCTestCase {
     /// Tests for the stream confirmation subscription.
-//    func testAccountTrade() {
-//        let scheduler = QueueScheduler(suffix: ".streamer.market.test")
-//        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
-//        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, autoconnect: .yes(timeout: 1.5, queue: scheduler))
-//
-//        let account = Test.account.identifier
-//        self.test( streamer.deals.subscribe(to: account, updates: .all, snapshot: true), value: { (update) in
-//            print(update)
-//        }, take: 1, timeout: 2, on: scheduler)
-//
-//        self.test( streamer.session.unsubscribeAll(), take: 1, timeout: 2, on: scheduler) {
-//            XCTAssertEqual($0.count, 1)
-//        }
-//
-//        self.test( streamer.session.disconnect(), timeout: 2, on: scheduler) {
-//            XCTAssertNotNil($0.last)
-//            XCTAssertEqual($0.last!, .disconnected(isRetrying: false))
-//        }
-//    }
-    
-    func testChain() {
-        let scheduler = QueueScheduler(suffix: ".streamer.market.test")
+    func testAccountTrade() {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let (rootURL, creds) = self.streamerCredentials(from: acc)
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        let api = Test.makeAPI(rootURL: Test.account.api.rootURL, credentials: Test.credentials.api, targetQueue: nil)
-        let rootURL = Test.account.streamer?.rootURL ?? Test.credentials.api.streamerURL
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: Test.credentials.streamer, targetQueue: nil, autoconnect: .yes(timeout: 1.5, queue: scheduler))
-        
-        var dealId: IG.Deal.Identifier! = nil
-        _ = streamer.confirmations.subscribe(to: Test.account.identifier, snapshot: false).startWithResult {
-            switch $0 {
-            case .success(let update):
+        let cancellable = streamer.confirmations.subscribe(to: acc.identifier)
+            .sink(receiveCompletion: {
+                if case .failure(let error) = $0 {
+                    XCTFail("The publisher failed unexpectedly with \(error)")
+                }
+            }, receiveValue: { (update) in
                 print(update)
+            })
+        #warning("Test: Values are not being received")
+        self.wait(for: 5)
+        
+        cancellable.cancel()
+        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+    }
+
+    func testChain() {
+        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        
+        let (rootURL, creds) = self.streamerCredentials(from: acc)
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+        
+        // 1. Subscribe to confirmations
+        var dealId: IG.Deal.Identifier? = nil
+        let cancellable = streamer.confirmations.subscribe(to: acc.identifier, snapshot: false)
+            .sink(receiveCompletion: {
+                if case .failure(let error) = $0 {
+                    XCTFail("The publisher failed unexpectedly with \(error)")
+                }
+            }, receiveValue: { (update) in
+                print(update)
+                guard case .none = dealId else { return }
                 dealId = update.confirmation.dealIdentifier
-            case .failure(let error):
-                print(error)
-            }
-        }
+            })
+        XCTAssertEqual(streamer.subscriptionsCount, 1)
+        self.wait(for: 0.8)
         
-        try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
-        print("\n------- 1. Subscription to confirmations established. -------\n")
-        
+        // 2. Gather information
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
-        let market = try! api.markets.get(epic: epic).single()!.get()
+        let market = api.markets.get(epic: epic).expectsOne { self.wait(for: [$0], timeout: 2) }
         let level = market.snapshot.price!.lowest - (0.0001 * 30)
         print("\n\nMarket level: \(market.snapshot.price!.mid!)\nWorking order level: \(level)\n\n")
         
-        _ = try! api.workingOrders.create(epic: epic, currency: .usd, direction: .buy, type: .limit, size: 1, level: level, limit: .distance(50), stop: (.distance(50), .exposed), expiration: .tillDate(Date().addingTimeInterval(60*60*5))).single()!.get()
-        print("\n------- 2. Working order created. -------\n")
-        
-        try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
-        print("\n------- 3. Waited one second. -------\n")
-        
-        guard let orderIdentifier = dealId else {
-            print("Failed to get the dealId")
-            fatalError("No deal identifier obtained")
+        // 3. Create the working order
+        api.workingOrders.create(epic: epic, currency: .usd, direction: .buy, type: .limit, size: 1, level: level, limit: .distance(50), stop: (.distance(50), .exposed), expiration: .tillDate(Date().addingTimeInterval(60*60*5)))
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
+        self.wait(max: 1.2, interval: 0.2) { (expectation) in
+            guard case .some = dealId else { return }
+            expectation.fulfill()
         }
         
+        // 4. Modify the working order
         let newLevel = level + 0.0005
-        try! api.workingOrders.update(identifier: orderIdentifier, type: .limit, level: newLevel, limit: nil, stop: nil, expiration: .tillCancelled).wait().get()
-        print("\n------- 4. Working order modified. -------\n")
+        api.workingOrders.update(identifier: dealId!, type: .limit, level: newLevel, limit: nil, stop: nil, expiration: .tillCancelled)
+            .expectsOne { self.wait(for: [$0], timeout: 2) }
+        self.wait(for: 1)
         
-        try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
-        print("\n------- 5. Waited one second. -------\n")
+        // 5. Delete working order
+        api.workingOrders.delete(identifier: dealId!).expectsOne { self.wait(for: [$0], timeout: 2) }
+        self.wait(for: 1)
         
-        try! api.workingOrders.delete(identifier: dealId).wait().get()
-        print("\n------- 6. Working order deleted. -------\n")
+        // 6. Unsubscribe & disconnect
+        cancellable.cancel()
+        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+    }
+}
+
+extension StreamerTradeTests {
+    /// Waits a maximum amount of seconds, executing the closure every amount of `interval` seconds.
+    private func wait(max maxWait: TimeInterval, interval: TimeInterval, checking: @escaping (XCTestExpectation)->Void) {
+        precondition(interval < maxWait)
         
-        try! SignalProducer.empty(after: 1, on: scheduler).wait().get()
-        print("\n------- 7. Waited one second. -------\n")
-        
-        self.test( streamer.session.unsubscribeAll(), take: 1, timeout: 2, on: scheduler) {
-            XCTAssertEqual($0.count, 1)
-        }
-        
-        print("\n------- 8. Unsubscribed to everything. -------\n")
-        
-        self.test( streamer.session.disconnect(), timeout: 2, on: scheduler) {
-            XCTAssertNotNil($0.last)
-            XCTAssertEqual($0.last!, .disconnected(isRetrying: false))
-        }
-        
-        print("\n------- 9. Disconnected -------\n")
+        let e = self.expectation(description: "Waiting a max of \(maxWait) seconds. Checking every \(interval) seconds.")
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { (_) in checking(e) }
+        self.wait(for: [e], timeout: maxWait)
+        timer.invalidate()
     }
 }

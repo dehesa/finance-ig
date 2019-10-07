@@ -45,11 +45,11 @@ extension IG.Streamer {
             super.init()
             
             // The client stores the delegate weakly, therefore there is no reference cycle.
-            self.client.addDelegate(self)
+            self.client.add(delegate: self)
         }
         
         deinit {
-            self.client.removeDelegate(self)
+            self.client.remove(delegate: self)
             self.unsubscribeAll()
             self.disconnect()
         }
@@ -57,6 +57,12 @@ extension IG.Streamer {
         /// The Lightstreamer library version.
         static var lightstreamerVersion: String {
             return LSLightstreamerClient.lib_VERSION
+        }
+        
+        /// Returns the number of subscriptions currently established (and working) at the moment.
+        public final var ongoingSubscriptions: Int {
+            dispatchPrecondition(condition: .notOnQueue(self.queue))
+            return self.queue.sync { self.subscriptions.count }
         }
     }
 }
@@ -76,7 +82,6 @@ extension IG.Streamer.Channel {
     /// - returns: The client status at the time of the call.
     @nonobjc @discardableResult func connect() throws -> IG.Streamer.Session.Status {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        
         return try queue.sync {
             let currentValue = self.mutableStatus.value
             switch currentValue {
@@ -92,7 +97,6 @@ extension IG.Streamer.Channel {
     /// - returns: The client status at the time of the call.
     @nonobjc @discardableResult func disconnect() -> IG.Streamer.Session.Status {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        
         return queue.sync {
             let currentStatus = self.mutableStatus.value
             if currentStatus != .disconnected(isRetrying: false) {
@@ -178,7 +182,6 @@ extension IG.Streamer.Channel {
     /// - returns: All subscriptions that were active at the time of the call.
     @nonobjc @discardableResult func unsubscribeAll() -> [IG.Streamer.Subscription] {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        
         let subscriptions = queue.sync { () -> [IG.Streamer.Subscription:SubscriptionSink] in
             let subscriptions = self.subscriptions
             self.subscriptions.removeAll()
@@ -190,7 +193,6 @@ extension IG.Streamer.Channel {
             }
             return subscription
         }
-        
         return subscriptions
     }
 }

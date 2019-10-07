@@ -4,11 +4,4 @@
    <FileRef
       location = "group:IG.xcodeproj">
    </FileRef>
-   <Group
-      location = "group:Dependencies"
-      name = "Dependencies">
-      <FileRef
-         location = "group:Lightstreamer">
-      </FileRef>
-   </Group>
 </Workspace>

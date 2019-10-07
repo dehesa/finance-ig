@@ -6,7 +6,6 @@ import Lightstreamer_iOS_Client
 #error("OS currently not supported")
 #endif
 import Combine
-import Foundation
 
 extension IG.Streamer {
     /// Holds information about an ongoing subscription.

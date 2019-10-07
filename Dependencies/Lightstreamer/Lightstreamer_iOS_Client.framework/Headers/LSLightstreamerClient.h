@@ -84,7 +84,7 @@
  @param delegate An object that will receive the events as documented in the LSClientDelegate interface.
  <br/> Note: delegates are stored with weak references: make sure you keep a strong reference to your delegates or they may be released prematurely.
  */
-- (void) addDelegate:(nonnull id <LSClientDelegate>)delegate;
+- (void) addDelegate:(nonnull id <LSClientDelegate>)delegate NS_SWIFT_NAME(add(delegate:));
 
 /**
  @brief Operation method that requests to open a Session against the configured Lightstreamer Server.
@@ -146,7 +146,7 @@
  <br/> A delegate can be removed at any time.
  @param delegate The delegate to be removed.
  */
-- (void) removeDelegate:(nonnull id <LSClientDelegate>)delegate;
+- (void) removeDelegate:(nonnull id <LSClientDelegate>)delegate NS_SWIFT_NAME(remove(delegate:));
 
 /**
  @brief A simplified version of the #sendMessage:withSequence:timeout:delegate:enqueWhileDisconnected:. 

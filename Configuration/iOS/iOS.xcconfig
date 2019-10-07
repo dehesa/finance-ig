@@ -3,10 +3,14 @@ SDKROOT = iphoneos
 
 // Deployment
 TARGETED_DEVICE_FAMILY = 1,2
-IPHONEOS_DEPLOYMENT_TARGET = 13.0
 
 // Packaging
 INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/iOS/iOS.plist
 
 // Apple Clang - Preprocessing
 GCC_PREPROCESSOR_DEFINITIONS = IG_BUNDLE_NAME=u8\"$(PRODUCT_NAME)\" IG_BUNDLE_ID=u8\"$(PRODUCT_BUNDLE_IDENTIFIER)\" IG_BUNDLE_VERSION=u8\"$(DYLIB_CURRENT_VERSION)\" IG_BUNDLE_BUILD=$(CURRENT_PROJECT_VERSION)
+
+// Search Paths (for the compiler)
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer
+// Linking (for the linker)
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @loader_path/Frameworks
