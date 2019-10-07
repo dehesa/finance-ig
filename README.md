@@ -107,3 +107,4 @@ services.streamer.confirmations.subscribe(to: "ABC12").startWithValues {
 -   [x] Add SQLite database.
 -   [ ] Migrate from ReactiveSwift to Combine.
 -   [ ] Interconnect services.
+-   [ ] Support SPM

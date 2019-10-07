@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8D193F4F2339513D00036C54 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8D193F4D2339513D00036C54 /* Lightstreamer_macOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8D286D272344C8D000D582AE /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
 		8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
 		8D2EA92B233B4E030004A4C2 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
@@ -81,6 +80,7 @@
 		8D80CFD12341E93200E63411 /* TestFabric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEF08122F9994F005AB34C /* TestFabric.swift */; };
 		8D80CFD52341FDC300E63411 /* TestAccountDecodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D80CFD42341FDC300E63411 /* TestAccountDecodable.swift */; };
 		8D80CFD623421B2D00E63411 /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
+		8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */; platformFilter = ios; };
 		8D84AB1C233A029600DFAFFF /* PlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF75CDB2322A85100130229 /* PlaygroundTests.swift */; };
 		8D89C78B2343120C00FD0F3D /* APISentimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF93B9922E75C11001B9412 /* APISentimentTests.swift */; };
 		8D89C78C234314A800FD0F3D /* APIPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */; };
@@ -96,13 +96,17 @@
 		8D89C7972343219500FD0F3D /* StreamerFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */; };
 		8D89C7982343A41700FD0F3D /* StreamerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */; };
 		8DA398C02338E3EA007B918F /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DA398B72338E3EA007B918F /* IG.framework */; platformFilter = ios; };
-		8DA398D32338ED1A007B918F /* Lightstreamer_iOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DA398D12338ED1A007B918F /* Lightstreamer_iOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8DAC346D233D15A90082DB1C /* APIApplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7A2149A6CE00344CBF /* APIApplications.swift */; };
 		8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7B2149A6CE00344CBF /* APIAccounts.swift */; };
+		8DB266B7234B279300F168CE /* StreamerChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */; };
+		8DB266B8234B279F00F168CE /* StreamerTradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */; };
+		8DB266BA234B41B400F168CE /* StreamerLowlevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */; };
 		8DBE9EE92338EE2700AA6DE4 /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DBE9F602338F25400AA6DE4 /* Environment in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFE2149AB1200344CBF /* Environment */; };
 		8DBE9F612338F25700AA6DE4 /* API in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFD2149AB1200344CBF /* API */; };
 		8DBE9F622338F25900AA6DE4 /* Streamer in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFF2149AB1200344CBF /* Streamer */; };
+		8DC1A4A0234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8DC1A4A5234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8DE1B2B9214A639E00C1FF13 /* API in Resources */ = {isa = PBXBuildFile; fileRef = 8DC4CBFD2149AB1200344CBF /* API */; };
@@ -147,24 +151,24 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		8DA398D42338ED1A007B918F /* Embed Frameworks */ = {
+		8DC1A49A234B5A0B00AD75C5 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
+			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				8DA398D32338ED1A007B918F /* Lightstreamer_iOS_Client.framework in Embed Frameworks */,
+				8DC1A4A0234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		8DA398D72338ED23007B918F /* Embed Frameworks */ = {
+		8DC1A4A1234B5BA300AD75C5 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				8D193F4F2339513D00036C54 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */,
+				8DC1A4A5234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -174,7 +178,6 @@
 /* Begin PBXFileReference section */
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
-		8D193F4D2339513D00036C54 /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
 		8D19C51A2326459000F029B3 /* ErrorHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHelper.swift; sourceTree = "<group>"; };
 		8D19C51C23266CBD00F029B3 /* DBFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBFormatters.swift; sourceTree = "<group>"; };
 		8D19C51E232694DC00F029B3 /* SQLite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLite.swift; sourceTree = "<group>"; };
@@ -228,14 +231,16 @@
 		8DA398C62338E3EA007B918F /* iOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = iOS_tests.plist; sourceTree = "<group>"; };
 		8DA398CF2338E42A007B918F /* iOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = iOS.xcconfig; sourceTree = "<group>"; };
 		8DA398D02338E4EA007B918F /* iOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = iOS_tests.xcconfig; sourceTree = "<group>"; };
-		8DA398D12338ED1A007B918F /* Lightstreamer_iOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_iOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_iOS_Client.framework; sourceTree = "<group>"; };
 		8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplication.swift; sourceTree = "<group>"; };
 		8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMigration.swift; sourceTree = "<group>"; };
 		8DA8F89623181E7200F1A2C0 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
 		8DAEF08122F9994F005AB34C /* TestFabric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFabric.swift; sourceTree = "<group>"; };
 		8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplicationTests.swift; sourceTree = "<group>"; };
+		8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerLowlevelTests.swift; sourceTree = "<group>"; };
 		8DB90A7E231E729F004204B8 /* DBMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarketTests.swift; sourceTree = "<group>"; };
 		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
+		8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_iOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_iOS_Client.framework; sourceTree = "<group>"; };
+		8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
 		8DC20A6F231AF3B000760FA4 /* DBNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNode.swift; sourceTree = "<group>"; };
 		8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodeTests.swift; sourceTree = "<group>"; };
 		8DC20A74231B08BC00760FA4 /* DBNode+Market.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBNode+Market.swift"; sourceTree = "<group>"; };
@@ -330,6 +335,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DA398C02338E3EA007B918F /* IG.framework in Frameworks */,
+				8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -525,6 +531,15 @@
 			path = Applications;
 			sourceTree = "<group>";
 		};
+		8DC1A497234B596D00AD75C5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */,
+				8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8DC20A71231AF76600760FA4 /* Markets */ = {
 			isa = PBXGroup;
 			children = (
@@ -543,8 +558,8 @@
 				8D61671A22FEC26200B042C5 /* Documentation */,
 				8DC4CA422149A6CE00344CBF /* Sources */,
 				8DC4CA822149A6CE00344CBF /* Tests */,
+				8DC1A497234B596D00AD75C5 /* Frameworks */,
 				8DC4CBE22149A78700344CBF /* Products */,
-				8DC4CBFB2149A9D900344CBF /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -776,6 +791,7 @@
 		8DC4CA892149A6CE00344CBF /* Streamer */ = {
 			isa = PBXGroup;
 			children = (
+				8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */,
 				8D819E1322F2BAB40031A9D5 /* Session */,
 				8DC4CA8C2149A6CE00344CBF /* Markets */,
 				8DC4CA8F2149A6CE00344CBF /* Account */,
@@ -891,15 +907,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8DC4CBFB2149A9D900344CBF /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				8D193F4D2339513D00036C54 /* Lightstreamer_macOS_Client.framework */,
-				8DA398D12338ED1A007B918F /* Lightstreamer_iOS_Client.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		8DE8A1A42349E31900031B1E /* Migrations */ = {
 			isa = PBXGroup;
 			children = (
@@ -945,8 +952,8 @@
 			buildConfigurationList = 8DA398CC2338E3EA007B918F /* Build configuration list for PBXNativeTarget "IG [iOS]" */;
 			buildPhases = (
 				8DA398B22338E3EA007B918F /* Headers */,
-				8DA398D42338ED1A007B918F /* Embed Frameworks */,
 				8DA398B32338E3EA007B918F /* Sources */,
+				8DC1A49A234B5A0B00AD75C5 /* Embed Frameworks */,
 				8DA398B52338E3EA007B918F /* Resources */,
 			);
 			buildRules = (
@@ -983,8 +990,8 @@
 			buildConfigurationList = 8DC4CBF32149A78700344CBF /* Build configuration list for PBXNativeTarget "IG [macOS]" */;
 			buildPhases = (
 				8DC4CBDC2149A78700344CBF /* Headers */,
-				8DA398D72338ED23007B918F /* Embed Frameworks */,
 				8DC4CBDD2149A78700344CBF /* Sources */,
+				8DC1A4A1234B5BA300AD75C5 /* Embed Frameworks */,
 				8DC4CBDF2149A78700344CBF /* Resources */,
 			);
 			buildRules = (
@@ -1212,9 +1219,12 @@
 				8D89C78B2343120C00FD0F3D /* APISentimentTests.swift in Sources */,
 				8D89C78C234314A800FD0F3D /* APIPositionTests.swift in Sources */,
 				8D89C78D234317BD00FD0F3D /* APIWorkingOrderTests.swift in Sources */,
+				8DB266BA234B41B400F168CE /* StreamerLowlevelTests.swift in Sources */,
 				8D89C7982343A41700FD0F3D /* StreamerSessionTests.swift in Sources */,
 				8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */,
+				8DB266B7234B279300F168CE /* StreamerChartTests.swift in Sources */,
 				8D490ACF23488E920008ED18 /* StreamerAccountTests.swift in Sources */,
+				8DB266B8234B279F00F168CE /* StreamerTradeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1274,10 +1284,6 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
-				);
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -1286,19 +1292,12 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -1326,26 +1325,15 @@
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_NS_ASSERTIONS = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
-				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SKIP_INSTALL = YES;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -1374,11 +1362,6 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = V4LZL56CA7;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
-				);
-				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1387,11 +1370,6 @@
 				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1422,18 +1400,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = V4LZL56CA7;
 				ENABLE_NS_ASSERTIONS = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies/Lightstreamer",
-				);
-				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;

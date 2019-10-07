@@ -1,5 +1,3 @@
-import Foundation
-
 extension Streamer {
     /// Data needed to access the Streaming service.
     public struct Credentials {

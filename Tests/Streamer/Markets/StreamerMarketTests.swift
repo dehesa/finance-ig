@@ -3,14 +3,12 @@ import IG
 import Combine
 
 final class StreamerMarketTests: XCTestCase {
-    #warning("Tests: Complete all Streamer tests")
     /// Tests the market info subscription.
     func testMarketSubscriptions() {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
         XCTAssertTrue(streamer.status.isReady)
 
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
@@ -29,11 +27,7 @@ final class StreamerMarketTests: XCTestCase {
                 XCTAssertNotNil(market.day.changePercentage)
             }) { self.wait(for: [$0], timeout: 6) }
         
-        streamer.session.unsubscribeAll()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
-        
-        streamer.session.disconnect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
 }

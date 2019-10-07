@@ -48,6 +48,11 @@ public final class Streamer {
     public final var status: IG.Streamer.Session.Status {
         return self.channel.status.value
     }
+    
+    /// Returns the number of subscriptions currently established (and working) at the moment.
+    public final var subscriptionsCount: Int {
+        return self.channel.ongoingSubscriptions
+    }
 }
 
 extension IG.Streamer {
