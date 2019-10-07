@@ -61,18 +61,17 @@ extension Test {
     }
 }
 
-#warning("Test: Uncomment")
-//extension Test {
-//    /// Creates a database from the
-//    /// - precondition: The `rootURL` is expected to be a valid URL or `nil`. In any other case, the test will crash.
-//    /// - parameter rootURL: The file location or nil for “in memory” storage.
-//    /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
-//    /// - returns: A fully ready database.
-//    static func makeDatabase(rootURL: URL?, targetQueue: DispatchQueue?) -> IG.DB {
-//        do {
-//            return try .init(rootURL: rootURL, targetQueue: targetQueue)
-//        } catch let error {
-//            fatalError(String(describing: error))
-//        }
-//    }
-//}
+extension Test {
+    /// Creates a database from the
+    /// - precondition: The `rootURL` is expected to be a valid URL or `nil`. In any other case, the test will crash.
+    /// - parameter rootURL: The file location or nil for “in memory” storage.
+    /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
+    /// - returns: A fully ready database.
+    static func makeDatabase(rootURL: URL?, targetQueue: DispatchQueue?) -> IG.DB {
+        do {
+            return try .init(rootURL: rootURL, targetQueue: targetQueue)
+        } catch let error {
+            fatalError(String(describing: error))
+        }
+    }
+}

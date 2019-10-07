@@ -17,13 +17,7 @@ SWIFT_VERSION = 5.1
 // User-Generated
 BUNDLE_SIGNATURE = MSDC
 
-// FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer
-// LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @loader_path/Frameworks $(PROJECT_DIR)/Dependencies/Lightstreamer
+// Search Paths (for the compiler)
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer
 
-//FRAMEWORK_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/../Frameworks
-//LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/../Frameworks
-
-// LD_RUNPATH_SEARCH_PATHS
-// $(inherited)
-// @executable_path/Frameworks
-// @loader_path/Frameworks
+// Swift Compiler - Code Generation

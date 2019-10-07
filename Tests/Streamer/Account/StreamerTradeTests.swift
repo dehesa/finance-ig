@@ -9,19 +9,15 @@ final class StreamerTradeTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        let cancellable = streamer.confirmations.subscribe(to: acc.identifier)
-            .sink(receiveCompletion: {
-                if case .failure(let error) = $0 {
-                    XCTFail("The publisher failed unexpectedly with \(error)")
-                }
-            }, receiveValue: { (update) in
-                print(update)
-            })
-        #warning("Test: Values are not being received")
-        self.wait(for: 5)
+        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        XCTAssertTrue(streamer.status.isReady)
         
-        cancellable.cancel()
+        streamer.confirmations.subscribe(to: acc.identifier).expectsAtLeast(1, each: { (confirmation) in
+            print(confirmation)
+        }) { self.wait(for: [$0], timeout: 2) }
+        
         streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
 
     func testChain() {
@@ -30,6 +26,9 @@ final class StreamerTradeTests: XCTestCase {
         
         let (rootURL, creds) = self.streamerCredentials(from: acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+        
+        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        XCTAssertTrue(streamer.status.isReady)
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
@@ -59,6 +58,8 @@ final class StreamerTradeTests: XCTestCase {
             guard case .some = dealId else { return }
             expectation.fulfill()
         }
+        
+        self.wait(for: 1.5)
         
         // 4. Modify the working order
         let newLevel = level + 0.0005

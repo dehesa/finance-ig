@@ -45,7 +45,7 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
-    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.Future<(IG.API.Session,IG.API.Credentials.Token)> {
+    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.DiscretePublisher<(IG.API.Session,IG.API.Credentials.Token)> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
                 var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
@@ -77,7 +77,7 @@ extension IG.API.Request.Session {
     /// - parameter key: The API key which the encryption key will be associated to.
     /// - returns: *Future* forwarding the session's encryption key with the key's timestamp.
     /// - todo: Use this to encrypt the password.
-    fileprivate func generateEncryptionKey(key: IG.API.Key) -> IG.API.Future<IG.API.Session.EncryptionKey> {
+    fileprivate func generateEncryptionKey(key: IG.API.Key) -> IG.API.DiscretePublisher<IG.API.Session.EncryptionKey> {
         self.api.publisher
             .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.rawValue] })
             .send(expecting: .json, statusCode: 200)

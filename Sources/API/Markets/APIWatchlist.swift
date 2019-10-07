@@ -23,7 +23,7 @@ extension IG.API.Request.Watchlists {
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: *Future* forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
-    public func create(name: String, epics: [IG.Market.Epic]) -> IG.API.Future<(identifier: String, areAllInstrumentsAdded: Bool)> {
+    public func create(name: String, epics: [IG.Market.Epic]) -> IG.API.DiscretePublisher<(identifier: String, areAllInstrumentsAdded: Bool)> {
         self.api.publisher { (_) -> Self.PayloadCreation in
                 guard !name.isEmpty else {
                     throw IG.API.Error.invalidRequest("The watchlist name cannot be empty", suggestion: "The watchlist name must contain at least one character")
@@ -42,7 +42,7 @@ extension IG.API.Request.Watchlists {
     
     /// Returns all watchlists belonging to the active account.
     /// - returns: *Future* forwarding an array of watchlists.
-    public func getAll() -> IG.API.Future<[IG.API.Watchlist]> {
+    public func getAll() -> IG.API.DiscretePublisher<[IG.API.Watchlist]> {
         self.api.publisher
             .makeRequest(.get, "watchlists", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -56,7 +56,7 @@ extension IG.API.Request.Watchlists {
     /// Returns the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: *Future* forwarding all markets under the targeted watchlist.
-    public func getMarkets(from identifier: String) -> IG.API.Future<[IG.API.Node.Market]> {
+    public func getMarkets(from identifier: String) -> IG.API.DiscretePublisher<[IG.API.Node.Market]> {
         self.api.publisher { (_) -> Void in
                 guard !identifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
@@ -74,7 +74,7 @@ extension IG.API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: *Future* indicating the success of the operation.
-    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> IG.API.Future<Never> {
+    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (_) in
                 guard !identifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
@@ -95,7 +95,7 @@ extension IG.API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: *Future* indicating the success of the operation.
-    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> IG.API.Future<Never> {
+    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (_) in
                 guard !identifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
@@ -113,7 +113,7 @@ extension IG.API.Request.Watchlists {
     /// Deletes the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: *Future* indicating the success of the operation.
-    public func delete(identifier: String) -> IG.API.Future<Never> {
+    public func delete(identifier: String) -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (_) in
                 guard !identifier.isEmpty else {
                     throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)

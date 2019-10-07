@@ -4,12 +4,12 @@ import Foundation
 extension IG.API {
     /// Publisher sending downstream the receiving `API` instance. If the instance has been deallocated when the chain is activated, a failure is sent downstream.
     /// - returns: A Combine `Future` sending an `API` instance and completing immediately once it is activated.
-    internal var publisher: Combine.Future<IG.API.Output.Instance<Void>,IG.API.Error> {
-        Combine.Future { [weak self] (promise) in
+    internal var publisher: DeferredResult<IG.API.Output.Instance<Void>,IG.API.Error> {
+        .init { [weak self] in
             if let self = self {
-                promise(.success( (self,()) ))
+                return .success( (self,()) )
             } else {
-                promise(.failure( IG.API.Error.sessionExpired() ))
+                return .failure(.sessionExpired())
             }
         }
     }
@@ -17,17 +17,17 @@ extension IG.API {
     /// Publisher sending downstream the receiving `API` instance and some computed values. If the instance has been deallocated or the values cannot be generated, the publisher fails.
     /// - parameter valuesGenerator: Closure generating the values to be send downstream along with the `API` instance.
     /// - returns: A Combine `Future` sending an `API` instance along with some computed values and completing immediately once it is activated.
-    internal func publisher<T>(_ valuesGenerator: @escaping (_ api: IG.API) throws -> T) -> Combine.Future<IG.API.Output.Instance<T>,IG.API.Error> {
-        Combine.Future { [weak self] (promise) in
-            guard let self = self else { return promise(.failure( IG.API.Error.sessionExpired() )) }
+    internal func publisher<T>(_ valuesGenerator: @escaping (_ api: IG.API) throws -> T) -> DeferredResult<IG.API.Output.Instance<T>,IG.API.Error> {
+        .init { [weak self] in
+            guard let self = self else { return .failure(.sessionExpired()) }
             do {
                 let values = try valuesGenerator(self)
-                promise(.success((self, values)))
+                return .success((self, values))
             } catch let error as IG.API.Error {
-                promise(.failure(error))
+                return .failure(error)
             } catch let underlyingError {
                 let error = IG.API.Error.invalidRequest("The precomputed values couldn't be generated", underlying: underlyingError, suggestion: .readDocs)
-                promise(.failure(error))
+                return .failure(error)
             }
         }
     }
@@ -143,7 +143,8 @@ extension Publisher {
     internal func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: IG.API, _ initial: (request: URLRequest, values: T), _ previous: IG.API.Output.PreviousPage<M>?) throws -> URLRequest?,
                                           call pageCall: @escaping (_ pageRequest: Result<IG.API.Output.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
                                          ) -> Publishers.FlatMap<PassthroughSubject<R,Swift.Error>,Self> where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
-        self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> PassthroughSubject<R,Swift.Error> in
+        #warning("API: The subject has started before a demand arrived. This must be changed!")
+        return self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> PassthroughSubject<R,Swift.Error> in
             /// The subject forwarding events downstream.
             let subject = PassthroughSubject<R,Swift.Error>()
             
@@ -232,7 +233,7 @@ extension Publisher {
                 })
             }
             
-            iterator?(nil)
+            defer { iterator?(nil) }
             return subject
         }
     }

@@ -9,7 +9,5 @@ PRODUCT_NAME = $(PRODUCT_NAME)Tests
 PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER).tests
 INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/iOS/iOS_tests.plist
 
-// Search Paths (for the compiler)
-FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer
 // Linking (for the linker)
 LD_RUNPATH_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer

@@ -22,7 +22,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> IG.API.Future<IG.API.Market> {
+    public func get(epic: IG.Market.Epic) -> IG.API.DiscretePublisher<IG.API.Market> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
@@ -40,7 +40,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> IG.API.Future<[IG.API.Market]> {
+    public func get(epics: Set<IG.Market.Epic>) -> IG.API.DiscretePublisher<[IG.API.Market]> {
         return Self.get(api: self.api, epics: epics)
     }
     
@@ -96,7 +96,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
-    private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.Future<[IG.API.Market]> {
+    private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.DiscretePublisher<[IG.API.Market]> {
         api.publisher { (api) -> DateFormatter in
                 let epicRange = 1...50
                 guard epicRange.contains(epics.count) else {

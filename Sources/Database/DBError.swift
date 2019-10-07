@@ -24,6 +24,15 @@ extension IG.DB {
             self.code = code
             self.underlyingError = error
         }
+        
+        /// Wrap the argument error in a `Streamer` error.
+        /// - parameter error: Swift error to be wrapped.
+        static func transform(_ error: Swift.Error) -> Self {
+            switch error {
+            case let e as Self: return e
+            case let e: return .unknown(message: "An unknown error has occurred", underlyingError: e, suggestion: .reviewError)
+            }
+        }
     }
 }
 
@@ -38,6 +47,8 @@ extension IG.DB.Error {
         case callFailed
         /// The fetched response from the database is invalid.
         case invalidResponse
+        /// Unknown (not recognized) error.
+        case unknown
     }
     
     /// A factory function for `.sessionExpired` API errors.
@@ -70,6 +81,14 @@ extension IG.DB.Error {
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
     internal static func invalidResponse(_ message: Self.Message, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
         self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
+    }
+    
+    /// A factory function for `.unknown` DB errors.
+    /// - parameter message: A brief explanation on what happened.
+    /// - parameter error: The underlying error that happened right before this error was created.
+    /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+    internal static func unknown(message: Self.Message, underlyingError error: Swift.Error, suggestion: Self.Suggestion) -> Self {
+        self.init(.unknown, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
 }
 
@@ -109,6 +128,7 @@ extension IG.DB.Error: IG.ErrorPrintable {
         case .invalidRequest:  return "Invalid request"
         case .callFailed:      return "Database call failed"
         case .invalidResponse: return "Invalid response"
+        case .unknown:         return "Unknown"
         }
     }
     

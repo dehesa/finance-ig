@@ -11,7 +11,7 @@ extension IG.API.Request.History {
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.Future<[IG.API.Transaction]> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.DiscretePublisher<[IG.API.Transaction]> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.session.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)

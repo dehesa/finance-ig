@@ -6,7 +6,7 @@ extension IG.Streamer {
     
     /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
     /// This behavior is guaranteed when you see this type.
-    public typealias Future<T> = AnyPublisher<T,IG.Streamer.Error>
+    public typealias DiscretePublisher<T> = AnyPublisher<T,IG.Streamer.Error>
     /// Publisher that can send zero, one, or many values followed by a successful completion.
     public typealias ContinuousPublisher<T> = AnyPublisher<T,IG.Streamer.Error>
 }

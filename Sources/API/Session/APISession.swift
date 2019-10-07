@@ -50,7 +50,7 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: *Future* indicating a login success with a successful complete event. If the login is of `.certificate` type, extra information on the session settings is forwarded as a value. The `.oauth` login type will simply complete successfully for successful operations (without forwarding any value).
-    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> IG.API.Future<IG.API.Session.Settings> {
+    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> IG.API.DiscretePublisher<IG.API.Session.Settings> {
         switch type {
         case .certificate:
             return self.loginCertificate(key: key, user: user, encryptPassword: false)
@@ -77,7 +77,7 @@ extension IG.API.Request.Session {
     /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials).
     /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while certificate refresh should happen infrequently (every 3 to 4 hours).
     /// - returns: *Future* indicating a successful token refresh with a successful complete.
-    public func refresh() -> IG.API.Future<Never> {
+    public func refresh() -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (api) -> IG.API.Credentials in
                 try api.session.credentials ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
             }.mapError{
@@ -104,7 +104,7 @@ extension IG.API.Request.Session {
 
     /// Returns the user's session details.
     /// - returns: *Future* forwarding the user's session details.
-    public func get() -> IG.API.Future<IG.API.Session> {
+    public func get() -> IG.API.DiscretePublisher<IG.API.Session> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -118,7 +118,7 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding information about the current user's session.
-    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.Future<IG.API.Session> {
+    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.DiscretePublisher<IG.API.Session> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, headers: {
                 var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
@@ -145,7 +145,7 @@ extension IG.API.Request.Session {
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: *Future* indicating a successful account switch with a successful complete.
-    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> IG.API.Future<IG.API.Session.Settings> {
+    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> IG.API.DiscretePublisher<IG.API.Session.Settings> {
         self.api.publisher
             .makeRequest(.put, "session", version: 1, credentials: true, body: {
                 let payload = Self.PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
@@ -169,7 +169,7 @@ extension IG.API.Request.Session {
     /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
     /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
     /// - returns: *Future* indicating a succesful logout operation with a sucessful complete.
-    public func logout() -> IG.API.Future<Never> {
+    public func logout() -> IG.API.DiscretePublisher<Never> {
         self.api.publisher
             .makeRequest(.delete, "session", version: 1, credentials: true)
             .send(statusCode: 204)
