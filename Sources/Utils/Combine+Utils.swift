@@ -6,7 +6,7 @@ import Foundation
 /// A publisher that completes or fails depending on whether an error was provided in the initializer.
 ///
 /// This publisher is used at the origin of the publisher chain and it only provides the completion/failure when it receives a request with a deman greater than zero.
-internal struct DeferredCompletion<Output,Failure:Error>: Publisher {
+internal struct JustComplete<Output,Failure:Error>: Publisher {
     /// The error to send as a failure; otherwise the publisher completes successfully.
     private let error: Failure?
     
@@ -135,6 +135,58 @@ internal struct DeferredResult<Output,Failure:Error>: Publisher {
             case .failure(let error):
                 downstream.receive(completion: .failure(error))
             }
+        }
+        
+        func cancel() {
+            self._state.remove()
+        }
+    }
+}
+
+// MARK: - Publisher: Deferred Result
+
+/// A publisher returning the result of a given closure only executed on the first positive deman.
+///
+/// This publisher is used at the origin of a publisher chain and it only provides the value when it receives a request with a demand greater than zero.
+internal struct DeferredCompletion: Publisher {
+    typealias Output = Void
+    typealias Failure = Swift.Error
+    /// The closure type being store for delated execution.
+    typealias Closure = () throws -> Void
+    /// Deferred closure.
+    /// - note: The closure is kept in the publisher, thus if you keep the publisher around any reference in the closure will be kept too.
+    private let closure: Closure
+    
+    /// Creates a publisher that send a value and completes successfully or just fails depending on the result of the given closure.
+    internal init(closure: @escaping Closure) {
+        self.closure = closure
+    }
+    
+    func receive<S>(subscriber: S) where S: Subscriber, Output==S.Input, Failure==S.Failure {
+        let subscription = ChainOrigin(downstream: subscriber, closure: self.closure)
+        subscriber.receive(subscription: subscription)
+    }
+    
+    /// The shadow subscription chain's origin.
+    private final class ChainOrigin<Downstream>: Subscription where Downstream: Subscriber, Failure==Downstream.Failure {
+        @SubscriptionState
+        private var state: (downstream: Downstream, closure: Closure)
+        
+        init(downstream: Downstream, closure: @escaping Closure) {
+            self._state = .init(wrappedValue: (downstream, closure))
+        }
+        
+        func request(_ demand: Subscribers.Demand) {
+            guard demand > 0,
+                  let (downstream, closure) = self._state.remove() else { return }
+            
+            do {
+                try closure()
+            } catch let error {
+                return downstream.receive(completion: .failure(error))
+            }
+            
+            downstream.receive(completion: .finished)
         }
         
         func cancel() {
