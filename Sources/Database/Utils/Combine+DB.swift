@@ -33,37 +33,45 @@ extension IG.DB {
     }
 }
 
-#warning("DB: Complete documentation")
 extension Publisher {
-    ///
-    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Publishers.TryMap<Self,R> where Self.Output==IG.DB.Output.Instance<T> {
-        self.tryMap { (database, values) -> R in
-            try database.channel.read { (sqlite) -> R in
-                var statement: SQLite.Statement? = nil
-                defer { sqlite3_finalize(statement) }
-                
-                return try interaction(sqlite, &statement, values)
+//    ///
+//    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
+//
+//    }
+
+    /// Reads from the database received as an the receiving publisher `Output`.
+    /// - parameter interaction: Closure having access to the priviledge database connection.
+    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Publishers.FlatMap<Future<R,IG.DB.Error>,Self> where Self.Output==IG.DB.Output.Instance<T>, Self.Failure==IG.DB.Error {
+        self.flatMap { (database, values) in
+            .init { (promise) in
+                database.channel.readAsync(promise: promise, on: database.queue) { (sqlite) in
+                    var statement: SQLite.Statement? = nil
+                    defer { sqlite3_finalize(statement) }
+                    return try interaction(sqlite, &statement, values)
+                }
             }
         }
     }
     
-    ///
-    internal func write<T>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> Void) -> Publishers.FlatMap<DeferredCompletion<Void,IG.DB.Error>,Self> where Self.Output==IG.DB.Output.Instance<T> {
-        self.flatMap { (database, values) -> DeferredCompletion<Void,IG.DB.Error> in
-            let error: IG.DB.Error?
-            do {
-                try database.channel.write { (sqlite) in
+//    internal func readContinuously<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ sender: (R)->Void) throws -> Void) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
+//
+//    }
+    
+    /// Reads/Writes from the database received as an the receiving publisher `Output`.
+    /// - parameter interaction: Closure having access to the priviledge database connection.
+    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Publishers.FlatMap<Future<R,IG.DB.Error>,Self> where Self.Output==IG.DB.Output.Instance<T>, Self.Failure==IG.DB.Error {
+        self.flatMap { (database, values) in
+            .init { (promise) in
+                database.channel.writeAsync(promise: promise, on: database.queue) { (sqlite) in
                     var statement: SQLite.Statement? = nil
                     defer { sqlite3_finalize(statement) }
-                    try interaction(sqlite, &statement, values)
+                    return try interaction(sqlite, &statement, values)
                 }
-                error = nil
-            } catch let e as IG.DB.Error {
-                error = e
-            } catch let e {
-                error = IG.DB.Error.transform(e)
             }
-            return .init(error: error)
         }
     }
+    
+//    internal func writeContinuously<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ sender: (R)->Void) throws -> Void) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
+//
+//    }
 }

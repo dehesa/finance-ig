@@ -31,32 +31,26 @@ extension IG.DB.Channel {
         }
     }
     
-    /// Reads from the database in in a transaction.
+    /// Reads from the database in a transaction.
     ///
     /// This is a parallel access, meaning that other read access may be performed in parallel.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
     /// - parameter interaction: Closure giving the priviledge database connection.
-    /// - todo: Make parallel reads.
+    /// - todo: Make parallel reads (currently they are serial).
     internal func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.queue.sync {
-            try sqlite3_exec(database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
-            
-            let result: T
-            do {
-                result = try interaction(self.database)
-            } catch let error {
-                if let errorCode = sqlite3_exec(database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
-                    fatalError("An error occurred (code: \(errorCode) trying to rollback an operation")
-                }
-                throw error
-            }
-            
-            if let errorCode = sqlite3_exec(database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
-                fatalError("An error occurred (code: \(errorCode) trying to end a transaction")
-            }
-            return result
-        }
+        try self.write(interaction)
+    }
+    
+    /// Reads from the database in a transaction that is executed asynchronously.
+    ///
+    /// This is a parallel access, meaning that other read access may be performed in parallel.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter receptionQueue: The queue where the `promise` will be executed.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - todo: Make parallel reads (currently they are serial).
+    internal func readAsync<T>(promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+        self.writeAsync(promise: promise, on: receptionQueue, interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -67,22 +61,61 @@ extension IG.DB.Channel {
     internal func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
         return try self.queue.sync {
-            try sqlite3_exec(database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
+            try sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
             
-            let result: T
+            let output: T
             do {
-                result = try interaction(self.database)
+                output = try interaction(self.database)
             } catch let error {
-                if let errorCode = sqlite3_exec(database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+                if let errorCode = sqlite3_exec(self.database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
                     fatalError("An error occurred (code: \(errorCode) trying to rollback an operation")
                 }
                 throw error
             }
             
-            if let errorCode = sqlite3_exec(database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+            if let errorCode = sqlite3_exec(self.database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
                 fatalError("An error occurred (code: \(errorCode) trying to end a transaction")
             }
-            return result
+            return output
+        }
+    }
+    
+    /// Reads and/or writes from the database in a transaction.
+    ///
+    /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter receptionQueue: The queue where the `promise` will be executed.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    internal func writeAsync<T>(promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+        dispatchPrecondition(condition: .notOnQueue(self.queue))
+        self.queue.async {
+            if let errorCode = sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
+                return receptionQueue.async {
+                    promise(.failure( .callFailed(.execCommand, code: errorCode) ))
+                }
+            }
+            
+            let output: T
+            do {
+                output = try interaction(self.database)
+            } catch let error {
+                if let errorCode = sqlite3_exec(self.database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+                    fatalError("An error occurred (code: \(errorCode) trying to rollback an operation")
+                }
+                
+                return receptionQueue.async {
+                    promise(.failure( .transform(error) ))
+                }
+            }
+            
+            if let errorCode = sqlite3_exec(self.database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
+                fatalError("An error occurred (code: \(errorCode) trying to end a transaction")
+            }
+            
+            return receptionQueue.async {
+                promise(.success(output))
+            }
         }
     }
 }
