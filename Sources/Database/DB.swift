@@ -14,19 +14,18 @@ public final class DB {
     
     /// It holds data and functionality related to the user's applications.
     public final var applications: IG.DB.Request.Applications { return .init(database: self) }
-//    /// It holds data and functionality related to the user's activity & transactions, and market prices.
-//    public final var history: IG.DB.Request.History { return .init(database: self) }
-//    /// It holds data and functionality related to the platform's market.
-//    public final var markets: IG.DB.Request.Markets { return .init(database: self) }
-    #warning("DB: Uncomment")
+    /// It holds data and functionality related to the user's activity & transactions, and market prices.
+    public final var history: IG.DB.Request.History { return .init(database: self) }
+    /// It holds data and functionality related to the platform's market.
+    public final var markets: IG.DB.Request.Markets { return .init(database: self) }
     
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
     /// - throws: `IG.DB.Error` exclusively.
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".channel", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".values",  qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing",  qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
         let channel = try Self.Channel(rootURL: rootURL, queue: priviledgeQueue)
         try self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }

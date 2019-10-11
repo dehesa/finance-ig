@@ -28,10 +28,10 @@ final class APICertificateTests: XCTestCase {
         XCTAssertEqual(headers[.clientSessionToken], access)
         XCTAssertEqual(headers[.securityToken], security)
         
-        api.session.credentials = credentials
+        api.channel.credentials = credentials
         api.session.logout()
             .expectsCompletion { self.wait(for: [$0], timeout: 1) }
-        XCTAssertNil(api.session.credentials)
+        XCTAssertNil(api.channel.credentials)
     }
     
     /// Tests the refresh functionality.
@@ -49,7 +49,7 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
         }
         XCTAssertFalse(credentials.token.isExpired)
-        api.session.credentials = credentials
+        api.channel.credentials = credentials
 
         let token = api.session.refreshCertificate()
             .expectsOne { self.wait(for: [$0], timeout: 2) }

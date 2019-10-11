@@ -4,37 +4,26 @@ import Foundation
 extension IG.API.Request {
     /// Contains all functionality and variables related to the running API session.
     public struct Session {
-        /// Pointer to the API instance in charge of calling the session endpoints.
-        private var pointer: Unmanaged<IG.API>?
-        /// The credentials used to call API endpoints.
-        internal var credentials: IG.API.Credentials?
-        
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        /// - important: Before using the getter, be sure to have set this property or the application will crash.
-        internal var api: IG.API {
-            get { return pointer!.takeUnretainedValue() }
-            set { self.pointer = Unmanaged<IG.API>.passUnretained(newValue) }
-        }
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the session endpoints.
-        /// - parameter credentials: The credentials to be stored within this API session.
-        internal init(credentials: IG.API.Credentials?) {
-            self.pointer = nil
-            self.credentials = credentials
+        /// - parameter api: The instance calling the actual endpoints.
+        init(api: IG.API) {
+            self.api = api
         }
         
         /// Returns the API application key of the session being used (or logged in).
         public var key: IG.API.Key? {
-            return self.credentials?.key
+            return self.api.channel.credentials?.key
         }
         /// Returns the client identifier of the session being used (or logged in).
         public var client: IG.Client.Identifier? {
-            return self.credentials?.client
+            return self.api.channel.credentials?.client
         }
         /// Returns the account identifier of the session being used (or logged in).
         public var account: IG.Account.Identifier? {
-            return self.credentials?.account
+            return self.api.channel.credentials?.account
         }
     }
 }
@@ -56,7 +45,7 @@ extension IG.API.Request.Session {
             return self.loginCertificate(key: key, user: user, encryptPassword: false)
                 .tryMap { [weak weakAPI = self.api] (credentials, settings) in
                     guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                    api.session.credentials = credentials
+                    api.channel.credentials = credentials
                     return settings
                 }.mapError(IG.API.Error.transform)
                 .eraseToAnyPublisher()
@@ -64,7 +53,7 @@ extension IG.API.Request.Session {
             return self.loginOAuth(key: key, user: user)
                 .tryMap { [weak weakAPI = self.api] (credentials) in
                     guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                    api.session.credentials = credentials
+                    api.channel.credentials = credentials
                 }.flatMap(maxPublishers: .max(1), { (_) in
                     Empty(completeImmediately: true)
                 }).mapError(IG.API.Error.transform)
@@ -79,7 +68,7 @@ extension IG.API.Request.Session {
     /// - returns: *Future* indicating a successful token refresh with a successful complete.
     public func refresh() -> IG.API.DiscretePublisher<Never> {
         self.api.publisher { (api) -> IG.API.Credentials in
-                try api.session.credentials ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                try api.channel.credentials ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
             }.mapError{
                 $0 as Swift.Error
             }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> in
@@ -89,12 +78,14 @@ extension IG.API.Request.Session {
                 }
             }.tryMap { [weak weakAPI = self.api] (token) -> Void in
                 guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                guard var credentials = api.session.credentials else {
-                    let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
-                    throw IG.API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
+                try api.channel.tweakCredentials { (oldCredentials) in
+                    guard var newCredentials = oldCredentials else {
+                        let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
+                        throw IG.API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
+                    }
+                    newCredentials.token = token
+                    return newCredentials
                 }
-                credentials.token = token
-                api.session.credentials = credentials
             }.ignoreOutput()
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
@@ -153,10 +144,13 @@ extension IG.API.Request.Session {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings, call) throws in
                 guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                guard var credentials = api.session.credentials else { throw IG.API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession) }
-                
-                credentials.account = accountId
-                api.session.credentials = credentials
+                try api.channel.tweakCredentials { (oldCredentials) in
+                    guard var newCredentials = oldCredentials else {
+                        throw IG.API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession)
+                    }
+                    newCredentials.account = accountId
+                    return newCredentials
+                }
                 return sessionSwitch
             }.mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
@@ -173,7 +167,7 @@ extension IG.API.Request.Session {
         self.api.publisher
             .makeRequest(.delete, "session", version: 1, credentials: true)
             .send(statusCode: 204)
-            .map { [weak weakAPI = self.api] (_) in weakAPI?.session.credentials = nil }
+            .map { [weak weakAPI = self.api] (_) in weakAPI?.channel.credentials = nil }
             .ignoreOutput()
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()

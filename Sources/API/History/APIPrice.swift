@@ -6,8 +6,7 @@ extension IG.API.Request.History {
     // MARK: GET /prices/{epic}
     
     /// Returns historical prices for a particular instrument.
-    ///
-    /// The *constinuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may fail.
+    /// - warning: The *constinuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may FAIL.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
@@ -15,7 +14,7 @@ extension IG.API.Request.History {
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
     public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.DiscretePublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
+            guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
@@ -45,7 +44,7 @@ extension IG.API.Request.History {
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
     public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.ContinuousPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {

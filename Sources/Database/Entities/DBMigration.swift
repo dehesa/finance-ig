@@ -1,5 +1,5 @@
-import SQLite3
 import Foundation
+import SQLite3
 
 extension IG.DB {
     /// Migrates the hosted database from its version to a targeted version.

@@ -99,6 +99,7 @@ extension IG.DB.Error {
         
         static var  sessionExpired: Self { .init("The \(IG.DB.printableDomain) instance wasn't found") }
         static var  compilingSQL:   Self { .init("An error occurred trying to compile a SQL statement") }
+        static var  bindingAttributes: Self { .init("An error occurred binding attributes to a SQL statement") }
         static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for \"\(type.printableDomain)\"") }
         static func storing(_ type: IG.DebugDescriptable.Type) -> Self  { .init("An error occurred storing values on \"\(type.printableDomain)\" table") }
         static var  valueNotFound:  Self { .init("The requested value couldn't be found") }

@@ -34,13 +34,12 @@ extension IG.DB {
 }
 
 extension Publisher {
-//    ///
-//    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
-//
-//    }
-
     /// Reads from the database received as an the receiving publisher `Output`.
     /// - parameter interaction: Closure having access to the priviledge database connection.
+    /// - parameter database: The SQLite low-level connection.
+    /// - parameter statement: Opaque SQLite statement pointer to be filled by the `interaction` closure.
+    /// - parameter values: Any value arriving as an output from upstream.
+    /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
     internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Publishers.FlatMap<Future<R,IG.DB.Error>,Self> where Self.Output==IG.DB.Output.Instance<T>, Self.Failure==IG.DB.Error {
         self.flatMap { (database, values) in
             .init { (promise) in
@@ -59,6 +58,10 @@ extension Publisher {
     
     /// Reads/Writes from the database received as an the receiving publisher `Output`.
     /// - parameter interaction: Closure having access to the priviledge database connection.
+    /// - parameter database: The SQLite low-level connection.
+    /// - parameter statement: Opaque SQLite statement pointer to be filled by the `interaction` closure.
+    /// - parameter values: Any value arriving as an output from upstream.
+    /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing. 
     internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Publishers.FlatMap<Future<R,IG.DB.Error>,Self> where Self.Output==IG.DB.Output.Instance<T>, Self.Failure==IG.DB.Error {
         self.flatMap { (database, values) in
             .init { (promise) in

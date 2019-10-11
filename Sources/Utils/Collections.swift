@@ -10,6 +10,24 @@ extension Array where Element: Equatable {
     }
 }
 
+extension Array {
+    /// Checks whether the receiving array is sorted following the given predicate.
+    /// - parameter areInIncreasingOrder: A predicate that returns `true` if its first argument should be ordered before its second argument; otherwise, `false`.
+    internal func isSorted(_ areInIncreasingOrder: (Element,Element) throws ->Bool) rethrows -> Bool {
+        var indeces: (previous: Index, current: Index) = (self.startIndex, self.startIndex.advanced(by: 1))
+
+        while indeces.current != self.endIndex {
+            guard try areInIncreasingOrder(self[indeces.previous], self[indeces.current]) else {
+                return false
+            }
+            
+            indeces = (indeces.current, indeces.current.advanced(by: 1))
+        }
+
+        return true
+    }
+}
+
 extension RangeReplaceableCollection where Index==Int {
     /// Split an array into chunks.
     /// ```swift

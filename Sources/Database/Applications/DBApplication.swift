@@ -1,6 +1,6 @@
 import Combine
-import SQLite3
 import Foundation
+import SQLite3
 
 extension IG.DB.Request {
     /// Contains all functionality related to DB applications.
@@ -17,7 +17,7 @@ extension IG.DB.Request.Applications {
     public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Application]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Application.tableName)"
-            }.read { (sqlite, statement, query) -> [IG.DB.Application] in
+            }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 var result: [IG.DB.Application] = .init()
@@ -28,8 +28,7 @@ extension IG.DB.Request.Applications {
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                     }
                 }
-            }.mapError(IG.DB.Error.transform)
-            .eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
     }
 
     /// Returns the application specified by its API key.
@@ -39,24 +38,23 @@ extension IG.DB.Request.Applications {
     public func get(key: IG.API.Key) -> IG.DB.DiscretePublisher<IG.DB.Application> {
         self.database.publisher { _ in
                 "SELECT * FROM Apps where key = ?1"
-            }.read { (sqlite, statement, query) -> IG.DB.Application in
+            }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-                sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient)
+                try sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
                 
                 switch sqlite3_step(statement).result {
                 case .row:  return .init(statement: statement!)
                 case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
                 case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                 }
-            }.mapError(IG.DB.Error.transform)
-            .eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
     }
 
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter applications: Information returned from the server.
-    public func update(_ applications: [IG.API.Application]) -> IG.DB.DiscretePublisher<Void> {
-        self.database.publisher { _ -> String in
+    public func update(_ applications: [IG.API.Application]) -> IG.DB.DiscretePublisher<Never> {
+        self.database.publisher { _ in
             """
             INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
                 ON CONFLICT(key) DO UPDATE SET
@@ -85,7 +83,8 @@ extension IG.DB.Request.Applications {
                 sqlite3_clear_bindings(statement)
                 sqlite3_reset(statement)
             }
-        }.eraseToAnyPublisher()
+        }.ignoreOutput()
+        .eraseToAnyPublisher()
     }
 }
 

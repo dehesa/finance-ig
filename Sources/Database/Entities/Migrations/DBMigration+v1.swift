@@ -1,5 +1,5 @@
-import SQLite3
 import Foundation
+import SQLite3
 
 extension IG.DB.Migration {
     /// Where the actual migration happens.
@@ -10,8 +10,7 @@ extension IG.DB.Migration {
             // Set the application identifier for the database
             try Self.setApplicationID(Self.applicationID, database: database)
             
-            #warning("DB: Uncomment")
-            let types: [(IG.DBTable & IG.DebugDescriptable).Type] = [IG.DB.Application.self/*, IG.DB.Market.self, IG.DB.Market.Forex.self*/]
+            let types: [(IG.DBTable & IG.DebugDescriptable).Type] = [IG.DB.Application.self, IG.DB.Market.self, IG.DB.Market.Forex.self]
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {

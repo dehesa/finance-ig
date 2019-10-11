@@ -146,10 +146,10 @@ extension XCTestCase {
         
         let api: API = .init(rootURL: data.rootURL, credentials: data.cached, targetQueue: nil)
         let result: API.Credentials
-        if case .some = api.session.credentials {
+        if case .some = api.channel.credentials {
             api.session.refresh()
                 .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
-            result = api.session.credentials!
+            result = api.channel.credentials!
         } else if let cer = data.certificate {
             let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
             let s = api.session.get(key: data.key, token: token)
@@ -163,7 +163,7 @@ extension XCTestCase {
         } else if let user = data.user {
             api.session.login(type: .certificate, key: data.key, user: user)
                 .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
-            result = api.session.credentials!
+            result = api.channel.credentials!
         } else {
             fatalError("Some type of information must be provided to retrieve the API credentials")
         }

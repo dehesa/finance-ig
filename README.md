@@ -105,6 +105,6 @@ services.streamer.confirmations.subscribe(to: "ABC12").startWithValues {
 -   [x] Test all streamer events.
 -   [x] Support iOS.
 -   [x] Add SQLite database.
--   [ ] Migrate from ReactiveSwift to Combine.
--   [ ] Interconnect services.
+-   [x] Migrate from ReactiveSwift to Combine.
 -   [ ] Support SPM
+-   [ ] Interconnect services.
