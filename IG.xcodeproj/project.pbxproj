@@ -307,9 +307,6 @@
 		8D19C51E232694DC00F029B3 /* SQLite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLite.swift; sourceTree = "<group>"; };
 		8D1C8D552322D9E500841CA0 /* OperationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationQueue.swift; sourceTree = "<group>"; };
 		8D1C8D572322E53900841CA0 /* DBChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBChannel.swift; sourceTree = "<group>"; };
-		8D1CC9732299EE6C009AB4D3 /* AnyDecodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyDecodable.swift; sourceTree = "<group>"; };
-		8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
-		8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyEncodable.swift; sourceTree = "<group>"; };
 		8D24D0D1230EF496003D25EA /* Confirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Confirmation.swift; sourceTree = "<group>"; };
 		8D2C214723313BFF006F8C41 /* Combine+DB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Combine+DB.swift"; sourceTree = "<group>"; };
 		8D2EA939233B605C0004A4C2 /* APIAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIAccount.swift; sourceTree = "<group>"; };
@@ -474,16 +471,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8D1CC9722299EE6C009AB4D3 /* AnyCodable */ = {
-			isa = PBXGroup;
-			children = (
-				8D1CC9742299EE6C009AB4D3 /* AnyCodable.swift */,
-				8D1CC9732299EE6C009AB4D3 /* AnyDecodable.swift */,
-				8D1CC9752299EE6C009AB4D3 /* AnyEncodable.swift */,
-			);
-			path = AnyCodable;
-			sourceTree = "<group>";
-		};
 		8D47509623262EC60051E425 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
@@ -909,7 +896,6 @@
 			children = (
 				8D6DB85A2342474D0042F330 /* Combine+Tests.swift */,
 				8DC4CA872149A6CE00344CBF /* String.swift */,
-				8D1CC9722299EE6C009AB4D3 /* AnyCodable */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
