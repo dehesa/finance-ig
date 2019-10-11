@@ -57,7 +57,7 @@ extension Publisher {
                     try request.addQueries(queries)
                 }
 
-                let credentials = (!usingCredentials) ? nil : try api.session.credentials ?! IG.API.Error.invalidRequest(.noCredentials, request: request, suggestion: .logIn)
+                let credentials = (!usingCredentials) ? nil : try api.channel.credentials ?! IG.API.Error.invalidRequest(.noCredentials, request: request, suggestion: .logIn)
                 request.addHeaders(version: version, credentials: credentials, try headGenerator?(values))
 
                 if let body = try bodyGenerator?(values) {
@@ -90,7 +90,7 @@ extension Publisher {
                                     >, Self
                                  > where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap(maxPublishers: .max(4)) { (api, request, values) in
-            api.channel.dataTaskPublisher(for: request).tryMap { (data, response) in
+            api.channel.session.dataTaskPublisher(for: request).tryMap { (data, response) in
                 guard let httpResponse = response as? HTTPURLResponse else {
                     let message = #"The response was not of HTTPURLResponse type"#
                     throw IG.API.Error.callFailed(message: .init(message), request: request, response: nil, data: data, underlying: nil, suggestion: .fileBug)
@@ -142,99 +142,95 @@ extension Publisher {
     /// - returns: A continuous publisher returning the values from `pageCall` as soon as they arrive. Only when `nil` is returned on the `pageRequestGenerator` closure, will the returned publisher complete.
     internal func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: IG.API, _ initial: (request: URLRequest, values: T), _ previous: IG.API.Output.PreviousPage<M>?) throws -> URLRequest?,
                                           call pageCall: @escaping (_ pageRequest: Result<IG.API.Output.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
-                                         ) -> Publishers.FlatMap<PassthroughSubject<R,Swift.Error>,Self> where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
-        #warning("API: The subject has started before a demand arrived. This must be changed!")
-        return self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> PassthroughSubject<R,Swift.Error> in
-            /// The subject forwarding events downstream.
-            let subject = PassthroughSubject<R,Swift.Error>()
-            
-            typealias Iterator = (_ previous: IG.API.Output.PreviousPage<M>?) -> Void
-            /// Recursive closure fed with the last successfully retrieved page (or `nil` at the very beginning).
-            var iterator: Iterator? = nil
-            
-            /// Cancellable used to detached the current page download task.
-            var pageCancellable: AnyCancellable? = nil
-            /// Closure that must be called once the pagination process finishes, so the state can be cleaned.
-            let sendCompletion: (_ subject: PassthroughSubject<R,Swift.Error>,
-                                 _ completion: Subscribers.Completion<IG.API.Error>,
-                                 _ previous: IG.API.Output.PreviousPage<M>?,
-                                 _ pageCancellable: inout AnyCancellable?,
-                                 _ iterator: inout Iterator?) -> Void = { (subject, completion, previous, pageCancellable, iterator) in
-                iterator = nil
-                if let cancellation = pageCancellable {
-                    pageCancellable = nil
-                    cancellation.cancel()
+                                         ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
+        self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
+            .init { (subject) in
+                typealias Iterator = (_ previous: IG.API.Output.PreviousPage<M>?) -> Void
+                /// Recursive closure fed with the last successfully retrieved page (or `nil` at the very beginning).
+                var iterator: Iterator? = nil
+                /// Cancellable used to detached the current page download task.
+                var pageCancellable: AnyCancellable? = nil
+                /// Closure that must be called once the pagination process finishes, so the state can be cleaned.
+                let sendCompletion: (_ subject: PassthroughSubject<R,Swift.Error>,
+                                     _ completion: Subscribers.Completion<IG.API.Error>,
+                                     _ previous: IG.API.Output.PreviousPage<M>?,
+                                     _ pageCancellable: inout AnyCancellable?,
+                                     _ iterator: inout Iterator?) -> Void = { (subject, completion, previous, pageCancellable, iterator) in
+                    iterator = nil
+                    if let cancellation = pageCancellable {
+                        pageCancellable = nil
+                        cancellation.cancel()
+                    }
+                    
+                    switch completion {
+                    case .finished:
+                        subject.send(completion: .finished)
+                    case .failure(let e):
+                        var error = e
+                        if let previous = previous {
+                            error.context.append(("Last successful page request", previous.request))
+                            error.context.append(("Last successful page metadata", previous.metadata))
+                        }
+                        subject.send(completion: .failure(error))
+                    }
                 }
                 
-                switch completion {
-                case .finished:
-                    return subject.send(completion: .finished)
-                case .failure(let e):
-                    var error = e
-                    if let previous = previous {
-                        error.context.append(("Last successful page request", previous.request))
-                        error.context.append(("Last successful page metadata", previous.metadata))
-                    }
-                    return subject.send(completion: .failure(error))
-                }
-            }
-            
-            iterator = { [weak weakAPI = api] (previous) in
-                // 1. Check whether the API instance is still available
-                guard let api = weakAPI else {
-                    return sendCompletion(subject, .failure(.sessionExpired()), previous, &pageCancellable, &iterator)
-                }
-                // 2. Fetch the next page request
-                let nextRequest: URLRequest?
-                do {
-                    nextRequest = try pageRequestGenerator(api, (initialRequest, values), previous)
-                } catch let error as IG.API.Error {
-                    return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
-                } catch let e {
-                    let error = IG.API.Error.invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: e, suggestion: .fileBug)
-                    return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
-                }
-                // 3. If there isn't a new request, it means we have successfully retrieved all pages
-                guard let pageRequest = nextRequest else {
-                    return sendCompletion(subject, .finished, previous, &pageCancellable, &iterator)
-                }
-                // 4. If there is a new request, execute it as a network call in order to retrieve the page (only one value shall be returned)
-                var pageResult: (metadata: M, output: R)? = nil
-                pageCancellable = pageCall(.init((api, pageRequest, values)), values).sink(receiveCompletion: {
-                    if case .failure = $0 {
-                        return sendCompletion(subject, $0, previous, &pageCancellable, &iterator)
-                    }
-                    
-                    guard let result = pageResult else {
-                        let error = IG.API.Error.callFailed(message: "A page call returned empty", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .reviewError)
-                        return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
-                    }
-                    
-                    subject.send(result.output)
-                    
-                    guard let next = iterator else {
+                iterator = { [weak weakAPI = api] (previous) in
+                    // 1. Check whether the API instance is still available
+                    guard let api = weakAPI else {
                         return sendCompletion(subject, .failure(.sessionExpired()), previous, &pageCancellable, &iterator)
                     }
-                    
-                    pageCancellable = nil
-                    defer { pageResult = nil }
-                    return next((pageRequest, result.metadata))
-                }, receiveValue: { (metadata, output) in
-                    if let previouslyStored = pageResult {
-                        var error = IG.API.Error.callFailed(message: "A single page received two results", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .fileBug)
-                        error.context.append(("Previous result metadata", previouslyStored.metadata))
-                        error.context.append(("Previous result output", previouslyStored.output))
-                        error.context.append(("Conflicting result metadata", metadata))
-                        error.context.append(("Conflicting result metadata", output))
-                        pageResult = nil
+                    // 2. Fetch the next page request
+                    let nextRequest: URLRequest?
+                    do {
+                        nextRequest = try pageRequestGenerator(api, (initialRequest, values), previous)
+                    } catch let error as IG.API.Error {
+                        return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
+                    } catch let e {
+                        let error = IG.API.Error.invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: e, suggestion: .fileBug)
                         return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                     }
-                    pageResult = (metadata, output)
-                })
+                    // 3. If there isn't a new request, it means we have successfully retrieved all pages
+                    guard let pageRequest = nextRequest else {
+                        return sendCompletion(subject, .finished, previous, &pageCancellable, &iterator)
+                    }
+                    // 4. If there is a new request, execute it as a network call in order to retrieve the page (only one value shall be returned)
+                    var pageResult: (metadata: M, output: R)? = nil
+                    pageCancellable = pageCall(.init((api, pageRequest, values)), values).sink(receiveCompletion: {
+                        if case .failure = $0 {
+                            return sendCompletion(subject, $0, previous, &pageCancellable, &iterator)
+                        }
+                        
+                        guard let result = pageResult else {
+                            let error = IG.API.Error.callFailed(message: "A page call returned empty", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .reviewError)
+                            return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
+                        }
+                        
+                        subject.send(result.output)
+                        
+                        guard let next = iterator else {
+                            return sendCompletion(subject, .failure(.sessionExpired()), previous, &pageCancellable, &iterator)
+                        }
+                        
+                        pageCancellable = nil
+                        defer { pageResult = nil }
+                        return next((pageRequest, result.metadata))
+                    }, receiveValue: { (metadata, output) in
+                        if let previouslyStored = pageResult {
+                            var error = IG.API.Error.callFailed(message: "A single page received two results", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .fileBug)
+                            error.context.append(("Previous result metadata", previouslyStored.metadata))
+                            error.context.append(("Previous result output", previouslyStored.output))
+                            error.context.append(("Conflicting result metadata", metadata))
+                            error.context.append(("Conflicting result metadata", output))
+                            pageResult = nil
+                            return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
+                        }
+                        pageResult = (metadata, output)
+                    })
+                }
+                
+                iterator?(nil)
             }
-            
-            defer { iterator?(nil) }
-            return subject
         }
     }
     

@@ -54,7 +54,7 @@ final class StreamerLowlevelTests: XCTestCase {
         subscription.requestedSnapshot = "yes"
         subscription.add(delegate: self)
         client.subscribe(subscription)
-        self.wait(for: 3)
+        self.wait(for: 1)
         
         // 3. Unsubscribe
         client.unsubscribe(subscription)

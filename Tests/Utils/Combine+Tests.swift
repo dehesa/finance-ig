@@ -7,6 +7,8 @@ extension Publisher {
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+    /// - parameter line: The line number on which failure occurred. Defaults to the line number on which this function was called.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     func expectsCompletion(_ description: String = "The publisher shall complete", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) {
@@ -29,6 +31,8 @@ extension Publisher {
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+    /// - parameter line: The line number on which failure occurred. Defaults to the line number on which this function was called.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     func expectsFailure(_ description: String = "The publisher shall fail", file: StaticString = #file, line: UInt = #line, wait: (_ expectation: XCTestExpectation)->Void) {
@@ -51,6 +55,8 @@ extension Publisher {
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+    /// - parameter line: The line number on which failure occurred. Defaults to the line number on which this function was called.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     /// - returns: The value forwarded by the publisher.
@@ -89,6 +95,8 @@ extension Publisher {
     ///
     /// The `wait` closure is given so it will trigger Xcode to print *red* the appropriate line.
     /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+    /// - parameter line: The line number on which failure occurred. Defaults to the line number on which this function was called.
     /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - parameter expectation: The expectation created to be fulfilled in the `wait` closure.
     /// - returns: The forwarded values by the publisher (it can be empty).
@@ -101,8 +109,11 @@ extension Publisher {
         cancellable = self.sink(receiveCompletion: {
             cancellable = nil
             switch $0 {
-            case .finished: e.fulfill()
-            case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
+            case .finished:
+                e.fulfill()
+            case .failure(let e):
+                XCTFail("The publisher completed with failure when successfull completion was expected\n\(e)\n", file: file, line: line)
+                fatalError()
             }
         }, receiveValue: { result.append($0) })
         
@@ -116,11 +127,13 @@ extension Publisher {
     /// Once the publisher has produced the given amount of values, it will get cancel by this function.
     /// - precondition: `values` must be greater than zero.
     /// - parameter values: The number of values that will be checked and that the expectation is waiting for.
-    /// - parameter timeout: The maximum number of seconds waiting (must be greater than zero).
-    /// - parameter test: The `XCTestCase` where this expectation waiting is performed.
+    /// - parameter description: The expectation description. Try to express what it is expected.
+    /// - parameter file: The file in which failure occurred. Defaults to the file name of the test case in which this function was called.
+    /// - parameter line: The line number on which failure occurred. Defaults to the line number on which this function was called.
     /// - parameter check: The closure to be executed per value received.
+    /// - parameter wait: Closure to call `wait` on a `XCTestCase`. It usually looks like: `{ self.wait(for: [$0], timeout: 2) }`
     /// - returns: An array of all the values forwarded by the publisher. 
-    @discardableResult func expectsAtLeast(_ values: Int, _ description: String = "The publisher shall produce a givan amount of values", each check: ((Output)->Void)? = nil, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
+    @discardableResult func expectsAtLeast(_ values: Int, _ description: String = "The publisher shall produce a givan amount of values", file: StaticString = #file, line: UInt = #line, each check: ((Output)->Void)? = nil, wait: (_ expectation: XCTestExpectation)->Void) -> [Self.Output] {
         precondition(values > 0)
         
         let e = XCTestExpectation(description: "Waiting for \(values) values")
@@ -131,7 +144,7 @@ extension Publisher {
             cancellable = nil
             switch $0 {
             case .finished: if result.count == values { return e.fulfill() }
-            case .failure(let e): XCTFail(String(describing: e))
+            case .failure(let e): XCTFail(String(describing: e), file: file, line: line)
             }
         }, receiveValue: { (output) in
             result.append(output)

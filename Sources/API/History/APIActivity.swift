@@ -32,7 +32,7 @@ extension IG.API.Request.History {
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
     public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> IG.API.ContinuousPublisher<[IG.API.Activity]> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 

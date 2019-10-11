@@ -6,7 +6,7 @@ import Foundation
 /// A publisher that completes or fails depending on whether an error was provided in the initializer.
 ///
 /// This publisher is used at the origin of the publisher chain and it only provides the completion/failure when it receives a request with a deman greater than zero.
-internal struct JustComplete<Output,Failure:Error>: Publisher {
+internal struct JustComplete<Output,Failure:Swift.Error>: Publisher {
     /// The error to send as a failure; otherwise the publisher completes successfully.
     private let error: Failure?
     
@@ -98,7 +98,7 @@ internal struct DeferredValue<Output>: Publisher {
 /// A publisher returning the result of a given closure only executed on the first positive deman.
 ///
 /// This publisher is used at the origin of a publisher chain and it only provides the value when it receives a request with a demand greater than zero.
-internal struct DeferredResult<Output,Failure:Error>: Publisher {
+internal struct DeferredResult<Output,Failure:Swift.Error>: Publisher {
     /// The closure type being store for delated execution.
     typealias Closure = () -> Result<Output,Failure>
     /// Deferred closure.
@@ -204,7 +204,7 @@ internal struct DeferredCompletion: Publisher {
 /// - Each subscription to the publisher will get its own `Passthrough` subject.
 /// - The given closure will receive the `Passthrough` at the origin of the chain so it can be used to send information downstream.
 /// - The closure will get deleted as soon as it returns.
-internal struct DeferredPassthrough<Output,Failure:Error>: Publisher {
+internal struct DeferredPassthrough<Output,Failure:Swift.Error>: Publisher {
     /// The closure type being store for delated execution.
     typealias Closure = (PassthroughSubject<Output,Failure>) -> Void
     /// Publisher's closure storage.

@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 import SQLite3
 
@@ -19,84 +19,73 @@ extension IG.DB.Request.Markets {
     /// Returns all markets stored in the database.
     ///
     /// Only the epic and the type of markets are returned.
-    public func getAll() -> SignalProducer<[IG.DB.Market],IG.DB.Error> {
-        return self.database.work { (channel, requestPermission) in
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            
-            let query = "SELECT * FROM \(IG.DB.Market.tableName)"
-            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            var result: [IG.DB.Market] = .init()
-            repeat {
-                switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(result)
-                case let e: return .failure(.callFailed(.querying(IG.DB.Market.self), code: e))
+    public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Market]> {
+        self.database.publisher { _ in
+                "SELECT * FROM \(IG.DB.Market.tableName)"
+            }.read { (sqlite, statement, query) -> [IG.DB.Market] in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                var result: [IG.DB.Market] = .init()
+                while true {
+                    switch sqlite3_step(statement).result {
+                    case .row:  result.append(.init(statement: statement!))
+                    case .done: return result
+                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
+                    }
                 }
-            } while requestPermission().isAllowed
-            
-            return .interruption
-        }
+            }.eraseToAnyPublisher()
     }
     
     /// Returns the type of Market identified by the given epic.
     /// - parameter epic: Market instrument identifier.
     /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.DB.Error.invalidResponse`.
-    public func get(epic: IG.Market.Epic) -> SignalProducer<IG.DB.Market.Kind?,IG.DB.Error> {
-        return self.database.work { (channel, _) in
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            
-            let query = "SELECT type FROM \(IG.DB.Market.tableName)"
-            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            switch sqlite3_step(statement).result {
-            case .row:  return .success(IG.DB.Market.Kind(rawValue: sqlite3_column_int(statement, 0)))
-            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
-            case let e: return .failure(.callFailed(.querying(IG.DB.Market.self), code: e))
-            }
-        }
+    public func type(epic: IG.Market.Epic) -> IG.DB.DiscretePublisher<IG.DB.Market.Kind?> {
+        self.database.publisher { _ in
+                "SELECT type FROM \(IG.DB.Market.tableName) WHERE epic=?1"
+            }.read { (sqlite, statement, query) -> IG.DB.Market.Kind? in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
+                
+                switch sqlite3_step(statement).result {
+                case .row:  return IG.DB.Market.Kind(rawValue: sqlite3_column_int(statement, 0))
+                case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
+                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
+                }
+            }.eraseToAnyPublisher()
+    }
+    
+    /// Updates the database with the information received from the server.
+    /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
+    /// - parameter market: Information returned from the server.
+    public func update(_ market: IG.API.Market...) -> IG.DB.DiscretePublisher<Never> {
+        self.update(market)
     }
     
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter markets: Information returned from the server.
-    public func update(_ markets: [IG.API.Market]) -> SignalProducer<Void,IG.DB.Error> {
-        return self.database.work { (channel, requestPermission) in
-            sqlite3_exec(channel, "BEGIN TRANSACTION", nil, nil, nil)
-            defer { sqlite3_exec(channel, "END TRANSACTION", nil, nil, nil) }
-            
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            let query = """
-                INSERT INTO \(IG.DB.Market.tableName) VALUES(?1, ?2, ?3)
+    public func update(_ markets: [IG.API.Market]) -> IG.DB.DiscretePublisher<Never> {
+        self.database.publisher { _ in
+                """
+                INSERT INTO \(IG.DB.Market.tableName) VALUES(?1, ?2)
                     ON CONFLICT(epic) DO UPDATE SET type=excluded.type
                 """
-            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            for apiMarket in markets {
-                guard case .continue = requestPermission() else { return .interruption }
+            }.write { (sqlite, statement, query) -> Void in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
-                let dbMarket = IG.DB.Market(epic: apiMarket.instrument.epic, type: IG.DB.Market.Kind(market: apiMarket))
-                dbMarket.bind(to: statement!)
-                
-                if let updateError = sqlite3_step(statement).enforce(.done) {
-                    return .failure(.callFailed(.storing(IG.DB.Market.self), code: updateError))
+                for apiMarket in markets {
+                    let dbMarket = IG.DB.Market(epic: apiMarket.instrument.epic, type: IG.DB.Market.Kind(market: apiMarket))
+                    dbMarket.bind(to: statement!)
+
+                    try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Market.self), code: $0) }
+                    sqlite3_clear_bindings(statement)
+                    sqlite3_reset(statement)
                 }
                 
-                sqlite3_clear_bindings(statement)
-                sqlite3_reset(statement)
-            }
-            
-            return Self.Forex.update(forexMarkets: markets, continueOnError: true, channel: channel, permission: requestPermission)
-        }
+                sqlite3_finalize(statement); statement = nil
+                try Self.Forex.update(markets: markets, sqlite: sqlite)
+            }.ignoreOutput()
+            .eraseToAnyPublisher()
     }
 }
 
@@ -161,7 +150,7 @@ fileprivate extension IG.DB.Market {
 
 // MARK: API
 
-extension IG.DB.Market.Kind {
+extension IG.DB.Market.Kind: Equatable {
     public init?(rawValue: Int32) {
         typealias V = Self.Value
         switch rawValue {
@@ -194,7 +183,7 @@ extension IG.DB.Market.Kind {
     
     private enum Value {
         static let currencies:       Int32 = 1
-        static let currenciesForex:  Int32 = Self.currencies & (1 << 16)
+        static let currenciesForex:  Int32 = Self.currencies | (1 << 16)
         static let indices:          Int32 = 2
     }
 }

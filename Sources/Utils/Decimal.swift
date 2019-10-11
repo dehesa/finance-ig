@@ -63,41 +63,39 @@ extension Double {
 }
 
 extension Decimal {
+    /// Convenience initializer to transformed the given value to a `Decimal` and then dividing it by the given power of 10.
+    ///
+    /// The operation is: `Decimal(value) / (10^power)`
+    /// - precondition: `power` must be zero or a positive number.
     internal init<I>(_ value: I, divingByPowerOf10 power: Int) where I:BinaryInteger {
-        var tenthPower = power
-        tenthPower.negate()
-        
+        precondition(power > 0)
         let lhs: Decimal = Decimal(exactly: value)!
-        let rhs: Decimal = pow(10 as Decimal, tenthPower)
-        self = lhs * rhs
+        let rhs: Decimal = pow(10 as Decimal, power)
+        self = lhs / rhs
     }
     
-    /// Convenience initializer to transformed the given value to a `Decimal` and then multiply it by the given power of 10.
+    /// Convenience initializer to transformed the given value to a `Decimal` and then dividing it by the given power of 10.
     ///
-    /// The operation is: `Decimal(value) * (10^power)`
+    /// The operation is: `Decimal(value) / (10^power)`
+    /// - precondition: `power` must be zero or a positive number.
     /// - parameter value: The integer value being transformed to a `Decimal`.
     /// - parameter power: The power which ten is being raised to (i.e. `10^power`).
     internal init(_ value: Int32, divingByPowerOf10 power: Int) {
-        var tenthPower = power
-        tenthPower.negate()
-        
         let lhs: Decimal = .init(value)
-        let rhs: Decimal = pow(10 as Decimal, tenthPower)
-        self = lhs * rhs
+        let rhs: Decimal = pow(10 as Decimal, power)
+        self = lhs / rhs
     }
     
-    /// Convenience initializer to transformed the given value to a `Decimal` and then multiply it by the given power of 10.
+    /// Convenience initializer to transformed the given value to a `Decimal` and then dividing it by the given power of 10.
     ///
-    /// The operation is: `Decimal(value) * (10^power)`
+    /// The operation is: `Decimal(value) / (10^power)`
+    /// - precondition: `power` must be zero or a positive number.
     /// - parameter value: The integer value being transformed to a `Decimal`.
     /// - parameter power: The power which ten is being raised to (i.e. `10^power`).
     internal init(_ value: Int64, divingByPowerOf10 power: Int) {
-        var tenthPower = power
-        tenthPower.negate()
-        
         let lhs: Decimal = .init(value)
-        let rhs: Decimal = pow(10 as Decimal, tenthPower)
-        self = lhs * rhs
+        let rhs: Decimal = pow(10 as Decimal, power)
+        self = lhs / rhs
     }
     
     /// Boolean indicating whether the number has no decimals (is whole).

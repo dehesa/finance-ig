@@ -13,7 +13,7 @@ final class DBApplicationTests: XCTestCase {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         db.applications.update(apiResponse).expectsCompletion { self.wait(for: [$0], timeout: 2) }
         
-        let dbResponse = db.applications.getAll().expectsOne { self.wait(for: [$0], timeout: 2) }
+        let dbResponse = db.applications.getAll().expectsOne { self.wait(for: [$0], timeout: 0.5) }
         XCTAssertEqual(apiResponse.count, dbResponse.count)
         for (apiApp, dbApp) in zip(apiResponse, dbResponse) {
             XCTAssertEqual(apiApp.key, dbApp.key)
@@ -30,7 +30,7 @@ final class DBApplicationTests: XCTestCase {
         }
 
         for apiApp in apiResponse {
-            let dbApp = db.applications.get(key: apiApp.key).expectsOne { self.wait(for: [$0], timeout: 2) }
+            let dbApp = db.applications.get(key: apiApp.key).expectsOne { self.wait(for: [$0], timeout: 0.5) }
             XCTAssertEqual(apiApp.key, dbApp.key)
         }
     }
@@ -38,6 +38,6 @@ final class DBApplicationTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testApplicationsEmpty() {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
-        db.applications.get(key: "a12345bc67890d12345e6789fg0hi123j4567890").expectsFailure { self.wait(for: [$0], timeout: 2) }
+        db.applications.get(key: "a12345bc67890d12345e6789fg0hi123j4567890").expectsFailure { self.wait(for: [$0], timeout: 0.5) }
     }
 }

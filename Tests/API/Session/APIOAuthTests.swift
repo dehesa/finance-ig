@@ -43,10 +43,10 @@ final class APIOAuthTests: XCTestCase {
 
         var newCredentials = credentials
         newCredentials.token = token
-        api.session.credentials = newCredentials
+        api.channel.credentials = newCredentials
         
         api.session.logout()
             .expectsCompletion { self.wait(for: [$0], timeout: 1) }
-        XCTAssertNil(api.session.credentials)
+        XCTAssertNil(api.channel.credentials)
     }
 }

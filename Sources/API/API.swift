@@ -8,12 +8,13 @@ import Foundation
 public final class API {
     /// URL root address.
     public final let rootURL: URL
-    /// The queue processing all API requests and responses.
+    /// The queue processing and delivering server values.
     private final let queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
-    internal final let channel: URLSession
+    internal final let channel: IG.API.Channel
+    
     /// It holds data and functionality related to the user's session.
-    public internal(set) final var session: IG.API.Request.Session
+    public final var session: IG.API.Request.Session { return .init(api: self) }
     /// It holds functionality related to the user's applications.
     public final var applications: IG.API.Request.Applications { return .init(api: self) }
     /// It holds functionality related to the user's accounts.
@@ -38,26 +39,24 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter queue: The target queue on which to process the `API` requests and responses.
     public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
-        let dispatchQueue = DispatchQueue(label: Self.reverseDNS, qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
-        let operationQueue = OperationQueue(name: dispatchQueue.label + ".operationQueue", underlyingQueue: dispatchQueue)
-        let channel = URLSession(configuration: IG.API.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
-        self.init(rootURL: rootURL, credentials: credentials, channel: channel, queue: dispatchQueue)
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing", qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
+        
+        let operationQueue = OperationQueue.init(name: processingQueue.label + ".operationQueue", underlyingQueue: processingQueue)
+        let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
+        let channel = IG.API.Channel(session: session, queue: priviledgeQueue, credentials: credentials)
+        
+        self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }
     
     /// Designated initializer for an API instance, giving you the default options.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter channel: The low-level API endpoint handler.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
-    internal init(rootURL: URL, credentials: IG.API.Credentials?, channel: URLSession, queue: DispatchQueue) {
+    internal init(rootURL: URL, channel: IG.API.Channel, queue: DispatchQueue) {
         self.rootURL = rootURL
         self.queue = queue
         self.channel = channel
-        self.session = .init(credentials: credentials)
-        self.session.api = self
-    }
-    #warning("API: Check proper DispatchQueue reception and processing (like in Streamer). Probably is best to send all answers in a specific queue and handle logins, etc in a priviledge queue.")
-    deinit {
-        self.channel.invalidateAndCancel()
     }
 }
 
@@ -68,22 +67,6 @@ extension IG.API {
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
         return IG.Bundle.identifier + ".api"
-    }
-    
-    /// Default configuration for the underlying URLSession
-    internal static var defaultSessionConfigurations: URLSessionConfiguration {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.networkServiceType = .default
-        configuration.allowsCellularAccess = true
-        configuration.httpCookieAcceptPolicy = .never
-        configuration.httpCookieStorage = nil
-        configuration.httpShouldSetCookies = false
-        configuration.httpShouldUsePipelining = true
-        configuration.urlCache = nil
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.waitsForConnectivity = false
-        configuration.tlsMinimumSupportedProtocolVersion = .TLSv12
-        return configuration
     }
 }
 

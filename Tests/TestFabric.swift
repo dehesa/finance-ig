@@ -1,8 +1,6 @@
 @testable import IG
 import XCTest
 
-#warning("Test: Support API & Streamer File tests")
-
 extension Test {
     /// Creates an API instance with the given data.
     /// - precondition: This function expect the root URL to be valid or the test will crash.
@@ -10,6 +8,7 @@ extension Test {
     /// - parameter credentials: The starting credentials for the API instance.
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
     /// - returns: A fully initialized `API` instance.
+    /// - todo: Support API & Streamer File tests
     static func makeAPI(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> IG.API {
         switch Test.Account.SupportedScheme(url: rootURL) {
         case .https:

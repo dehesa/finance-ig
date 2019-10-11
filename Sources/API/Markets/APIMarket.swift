@@ -24,7 +24,7 @@ extension IG.API.Request.Markets {
     /// - returns: Information about the targeted market.
     public func get(epic: IG.Market.Epic) -> IG.API.DiscretePublisher<IG.API.Market> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
@@ -105,7 +105,7 @@ extension IG.API.Request.Markets {
                     throw IG.API.Error.invalidRequest(.init(message), suggestion: .init(suggestion))
                 }
                 
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)

@@ -13,7 +13,7 @@ extension IG.API.Request.History {
     /// - parameter type: Filter for the transaction types being returned.
     public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.DiscretePublisher<[IG.API.Transaction]> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
@@ -50,7 +50,7 @@ extension IG.API.Request.History {
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of transactions.
     public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.ContinuousPublisher<[IG.API.Transaction]> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.session.credentials?.timezone else {
+                guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {

@@ -1,4 +1,4 @@
-import ReactiveSwift
+import Combine
 import Foundation
 import SQLite3
 
@@ -16,86 +16,74 @@ extension IG.DB.Request.Markets.Forex {
     /// Returns all forex markets.
     ///
     /// If there are no forex markets in the database yet, an empty array will be returned.
-    public func getAll() -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
-        return self.database.work { (channel, requestPermission) in
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            
-            let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
-            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            var result: [IG.DB.Market.Forex] = .init()
-            repeat {
-                switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(result)
-                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
+    public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+        self.database.publisher { _ in
+                "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
+            }.read { (sqlite, statement, query) in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                var result: [IG.DB.Market.Forex] = .init()
+                while true {
+                    switch sqlite3_step(statement).result {
+                    case .row:  result.append(.init(statement: statement!))
+                    case .done: return result
+                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    }
                 }
-            } while requestPermission().isAllowed
-            
-            return .interruption
-        }
+            }.eraseToAnyPublisher()
     }
     
     /// Returns the market stored in the database matching the given epic.
     ///
     /// If the market is not in the database, a `.invalidResponse` error will be returned.
     /// - parameter epic: The forex market epic identifyier.
-    public func get(epic: IG.Market.Epic) -> SignalProducer<IG.DB.Market.Forex,IG.DB.Error> {
-        return self.database.work { (channel, _) in
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            
-            let query = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
-            if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient)
-            
-            switch sqlite3_step(statement).result {
-            case .row: return .success(.init(statement: statement!))
-            case .done: return .failure(.invalidResponse(.valueNotFound, suggestion: .valueNotFound))
-            case let e: return .failure(.callFailed(.querying(IG.DB.Market.Forex.self), code: e))
-            }
-        }
+    public func get(epic: IG.Market.Epic) -> IG.DB.DiscretePublisher<IG.DB.Market.Forex> {
+        self.database.publisher { _ in
+                "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
+            }.read { (sqlite, statement, query) in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+
+                try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
+
+                switch sqlite3_step(statement).result {
+                case .row: return .init(statement: statement!)
+                case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
+                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.Forex.self), code: e)
+                }
+            }.eraseToAnyPublisher()
     }
     
     /// Returns the forex markets matching the given currency.
     /// - parameter currency: A currency used as base or counter in the result markets.
     /// - parameter otherCurrency: A currency matching the first argument. It is optional.
-    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
-        return self.database.work { (channel, requestPermission) in
-            var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
-            var binds: [(index: Int32, text: IG.Currency.Code)] = [(1, currency)]
-            switch otherCurrency {
-            case .none:  sql.append("base=?1 OR counter=?1")
-            case let c?: sql.append("(base=?1 AND counter=?2) OR (base=?2 AND counter=?1)"); binds.append((2, c))
-            }
+    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+        self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
+                var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
             
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
-            }
-            
-            for (index, currency) in binds {
-                sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
-            }
-            
-            var result: [IG.DB.Market.Forex] = .init()
-            repeat {
-                switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(result)
-                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
+                var binds: [(index: Int32, text: IG.Currency.Code)] = [(1, currency)]
+                switch otherCurrency {
+                case .none:  sql.append("base=?1 OR counter=?1")
+                case let c?: sql.append("(base=?1 AND counter=?2) OR (base=?2 AND counter=?1)")
+                    binds.append((2, c))
                 }
-            } while requestPermission().isAllowed
             
-            return .interruption
-        }
+                return (sql, binds)
+            }.read { (sqlite, statement, input) in
+                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                for (index, currency) in input.binds {
+                    sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
+                }
+                
+                var result: [IG.DB.Market.Forex] = .init()
+                while true {
+                    switch sqlite3_step(statement).result {
+                    case .row:  result.append(.init(statement: statement!))
+                    case .done: return result
+                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    }
+                }
+            }.eraseToAnyPublisher()
     }
     
     /// Returns the forex markets in the database matching the given currencies.
@@ -103,98 +91,80 @@ extension IG.DB.Request.Markets.Forex {
     /// If there are no forex markets matching the given requirements, an empty array will be returned.
     /// - parameter base: The base currency code (or `nil` if this requirement is not needed).
     /// - parameter counter: The counter currency code (or `nil` if this requirement is not needed).
-    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> SignalProducer<[IG.DB.Market.Forex],IG.DB.Error> {
-        var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
-        let binds: [(index: Int32, text: IG.Currency.Code)]
+    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+        guard base != nil || counter != nil else { return self.getAll() }
         
-        switch (base, counter) {
-        case (.none,  .none):  return self.getAll()
-        case (let b?, .none):  sql.append("base=?1");    binds = [(1, b)]
-        case (.none,  let c?): sql.append("counter=?2"); binds = [(2, c)]
-        case (let b?, let c?): sql.append("base=?1 AND counter=?2"); binds = [(1, b), (2, c)]
-        }
-        
-        return self.database.work { (channel, requestPermission) in
-            var statement: SQLite.Statement? = nil
-            defer { sqlite3_finalize(statement) }
-            if let compileError = sqlite3_prepare_v2(channel, sql, -1, &statement, nil).enforce(.ok) {
-                return .failure(.callFailed(.compilingSQL, code: compileError))
+        return self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
+            var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
+            
+            let binds: [(index: Int32, text: IG.Currency.Code)]
+            switch (base, counter) {
+            case (let b?, .none):  sql.append("base=?1");    binds = [(1, b)]
+            case (.none,  let c?): sql.append("counter=?2"); binds = [(2, c)]
+            case (let b?, let c?): sql.append("base=?1 AND counter=?2"); binds = [(1, b), (2, c)]
+            case (.none,  .none):  fatalError()
             }
             
-            for (index, currency) in binds {
+            return (sql, binds)
+        }.read { (sql, statement, input) in
+            for (index, currency) in input.binds {
                 sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
             }
             
             var result: [IG.DB.Market.Forex] = .init()
-            repeat {
+            while true {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
-                case .done: return .success(result)
-                case let e: return .failure(.callFailed(.querying(IG.DB.Application.self), code: e))
+                case .done: return result
+                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                 }
-            } while requestPermission().isAllowed
-            
-            return .interruption
-        }
+            }
+        }.eraseToAnyPublisher()
     }
-    
+}
+
+extension IG.DB.Request.Markets.Forex {
     /// Updates the database with the information received from the server.
-    ///
-    /// This method is intended to be called from the generic update markets. That is why, no transaction is performed here, since the parent method will wrap everything in its own transaction.
+    /// - note: This method is intended to be called from the update of generic markets. That is why, no transaction is performed here, since the parent method will wrap everything in its own transaction.
     /// - precondition: The market must be of currency type or an error will be returned.
     /// - parameter markets: The currency markets to be updated.
-    /// - parameter continueOnError: The parameter `markets` may contain other markets that are not forex markets (e.g. crypto currencies, commodities, etc.). Setting this argument to `true` won't throw an error when one of those markets are encountered and it will continue updating the rest.
-    internal static func update(forexMarkets markets: [IG.API.Market], continueOnError: Bool, channel: SQLite.Database, permission: IG.DB.Request.Permission) -> IG.DB.Response.Step<Void> {
+    /// - parameter sqlite: SQLite pointer priviledge access.
+    internal static func update(markets: [IG.API.Market], sqlite: SQLite.Database) throws {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         
         let query = """
             INSERT INTO \(IG.DB.Market.Forex.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
-                ON CONFLICT(epic) DO UPDATE SET
-                    base=excluded.base, counter=excluded.counter,
+                ON CONFLICT(epic) DO UPDATE SET base=excluded.base, counter=excluded.counter,
                     name=excluded.name, marketId=excluded.marketId, chartId=excluded.chartId, reutersId=excluded.reutersId,
                     contSize=excluded.contSize, pipVal=excluded.pipVal, placePip=excluded.placePip, placeLevel=excluded.placeLevel, slippage=excluded.slippage, premium=excluded.premium, extra=excluded.extra, margin=excluded.margin, bands=excluded.bands,
                     minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep
             """
-        if let compileError = sqlite3_prepare_v2(channel, query, -1, &statement, nil).enforce(.ok) {
-            return .failure(.callFailed(.compilingSQL, code: compileError))
-        }
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
         
         for m in markets {
-            guard case .continue = permission() else { return .interruption }
- 
-            switch IG.DB.Market.Forex.inferred(from: m) {
-            case .failure(let error):
-                if continueOnError { continue }
-                else { return .failure(error) }
-            case .success(let inferred):
-                // The pip value can also be inferred from: `instrument.pip.value`
-                let forex = IG.DB.Market.Forex(epic: m.instrument.epic, currencies: .init(base: inferred.base, counter: inferred.counter),
-                                               identifiers: .init(name: m.instrument.name, market: inferred.marketId, chart: m.instrument.chartCode, reuters: m.instrument.newsCode),
-                                               information: .init(contractSize: Int(clamping: inferred.contractSize),
-                                                                  pip: .init(value: Int(clamping: m.instrument.lotSize), decimalPlaces: Int(log10(Double(m.snapshot.scalingFactor)))),
-                                                                  levelDecimalPlaces: m.snapshot.decimalPlacesFactor,
-                                                                  slippageFactor: m.instrument.slippageFactor.value,
-                                                                  guaranteedStop: .init(premium: m.instrument.limitedRiskPremium.value, extraSpread: m.snapshot.extraSpreadForControlledRisk),
-                                                                  margin: .init(factor: m.instrument.margin.factor, depositBands: inferred.bands)),
-                                               restrictions: .init(minimumDealSize: m.rules.minimumDealSize.value,
-                                                                   regularDistance: .init(minimum: m.rules.limit.mininumDistance.value, maximumAsPercentage: m.rules.limit.maximumDistance.value),
-                                                                   guarantedStopDistance: .init(minimumValue: m.rules.stop.minimumLimitedRiskDistance.value,
-                                                                                                minimumUnit: inferred.guaranteedStopUnit,
-                                                                                                maximumAsPercentage: m.rules.limit.maximumDistance.value),
-                                                                   trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
-                forex.bind(to: statement!)
-            }
-            
-            if let updateError = sqlite3_step(statement).enforce(.done) {
-                return .failure(.callFailed(.storing(IG.DB.Application.self), code: updateError))
-            }
-            
+            guard case .success(let inferred) = IG.DB.Market.Forex.inferred(from: m) else { continue }
+            // The pip value can also be inferred from: `instrument.pip.value`
+            let forex = IG.DB.Market.Forex(epic: m.instrument.epic,
+                                           currencies:  .init(base: inferred.base, counter: inferred.counter),
+                                           identifiers: .init(name: m.instrument.name, market: inferred.marketId, chart: m.instrument.chartCode, reuters: m.instrument.newsCode),
+                                           information: .init(contractSize: Int(clamping: inferred.contractSize),
+                                                              pip: .init(value: Int(clamping: m.instrument.lotSize), decimalPlaces: Int(log10(Double(m.snapshot.scalingFactor)))),
+                                                              levelDecimalPlaces: m.snapshot.decimalPlacesFactor,
+                                                              slippageFactor: m.instrument.slippageFactor.value,
+                                                              guaranteedStop: .init(premium: m.instrument.limitedRiskPremium.value, extraSpread: m.snapshot.extraSpreadForControlledRisk),
+                                                              margin: .init(factor: m.instrument.margin.factor, depositBands: inferred.bands)),
+                                           restrictions: .init(minimumDealSize: m.rules.minimumDealSize.value,
+                                                               regularDistance: .init(minimum: m.rules.limit.mininumDistance.value, maximumAsPercentage: m.rules.limit.maximumDistance.value),
+                                                               guarantedStopDistance: .init(minimumValue: m.rules.stop.minimumLimitedRiskDistance.value,
+                                                                                            minimumUnit: inferred.guaranteedStopUnit,
+                                                                                            maximumAsPercentage: m.rules.limit.maximumDistance.value),
+                                                               trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
+            forex.bind(to: statement!)
+            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Application.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
         }
-        
-        return .success(())
     }
 }
 
@@ -746,7 +716,7 @@ extension IG.DB.Market.Forex: IG.DebugDescriptable {
         result.append("information", self.information) {
             $0.append("contract size", $1.contractSize)
             $0.append("pip value", $1.pip.value)
-            $0.append("decimal places", "(level: \($1.levelDecimalPlaces), pip: \($1.pip.decimalPlaces)")
+            $0.append("decimal places", "(level: \($1.levelDecimalPlaces), pip: \($1.pip.decimalPlaces))")
             $0.append("slippage factor", $1.slippageFactor)
             $0.append("guaranteed stop", "(premium: \($1.guaranteedStop.premium), extra spread: \($1.guaranteedStop.extraSpread)")
             $0.append("margin", $1.margin) {
@@ -755,7 +725,6 @@ extension IG.DB.Market.Forex: IG.DebugDescriptable {
                     for (range, depositFactor) in $1 {
                         $0.append(String(describing: range), depositFactor)
                     }
-                    $0.append("paco", $1.startIndex)
                 }
             }
         }
