@@ -1,0 +1,10 @@
+// Architecture
+SDKROOT = macosx
+
+// Signing
+CODE_SIGN_IDENTITY = -
+
+// Deployment
+//INSTALL_PATH = $(LOCAL_LIBRARY_DIR)/Frameworks
+// Linking (for the linker)
+//LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/Frameworks
