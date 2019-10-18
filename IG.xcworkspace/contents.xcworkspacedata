@@ -2,6 +2,12 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:IG.xcodeproj">
+      location = "group:README.md">
+   </FileRef>
+   <FileRef
+      location = "group:IG/IG.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:CMD/CMD.xcodeproj">
    </FileRef>
 </Workspace>

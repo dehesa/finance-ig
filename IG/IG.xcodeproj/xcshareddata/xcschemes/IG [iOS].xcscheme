@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1100"
+   LastUpgradeVersion = "1110"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
+               BlueprintIdentifier = "8DA398B62338E3EA007B918F"
                BuildableName = "IG.framework"
-               BlueprintName = "IG [macOS]"
+               BlueprintName = "IG [iOS]"
                ReferencedContainer = "container:IG.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -26,18 +26,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "NO"
-      codeCoverageEnabled = "YES"
-      onlyGenerateCoverageForSpecifiedTargets = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG.framework"
-            BlueprintName = "IG [macOS]"
-            ReferencedContainer = "container:IG.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
+      shouldUseLaunchSchemeArgsEnv = "NO">
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "io.dehesa.money.ig.tests.account"
@@ -50,24 +39,15 @@
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
-      <CodeCoverageTargets>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG.framework"
-            BlueprintName = "IG [macOS]"
-            ReferencedContainer = "container:IG.xcodeproj">
-         </BuildableReference>
-      </CodeCoverageTargets>
       <Testables>
          <TestableReference
             skipped = "NO"
             testExecutionOrdering = "random">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8DC4CBE92149A78700344CBF"
+               BlueprintIdentifier = "8DA398BE2338E3EA007B918F"
                BuildableName = "IGTests.xctest"
-               BlueprintName = "IG Tests [macOS]"
+               BlueprintName = "IG Tests [iOS]"
                ReferencedContainer = "container:IG.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -83,15 +63,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
-            BuildableName = "IG.framework"
-            BlueprintName = "IG [macOS]"
-            ReferencedContainer = "container:IG.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -102,9 +73,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8DC4CBE02149A78700344CBF"
+            BlueprintIdentifier = "8DA398B62338E3EA007B918F"
             BuildableName = "IG.framework"
-            BlueprintName = "IG [macOS]"
+            BlueprintName = "IG [iOS]"
             ReferencedContainer = "container:IG.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
