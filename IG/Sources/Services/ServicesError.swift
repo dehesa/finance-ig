@@ -16,6 +16,17 @@ extension IG.Services {
             }
         }
         
+        /// Transform the given `IG.Error` conforming type into a `IG.Services.Error`.
+        /// - warning: This function will crash if the error type is not one of the supported by `IG.Services.Error`
+        public init<E>(error: E) where E:IG.Error {
+            switch error {
+            case let e as IG.API.Error: self = .api(error: e)
+            case let e as IG.Streamer.Error: self = .streamer(error: e)
+            case let e as IG.DB.Error: self = .database(error: e)
+            default: fatalError()
+            }
+        }
+        
         /// A message accompaigning the error explaining what happened.
         var message: String {
             switch self {

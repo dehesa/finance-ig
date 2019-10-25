@@ -38,7 +38,8 @@ extension IG.API.Request.Markets {
     // MARK: GET /markets
     
     /// Returns the details of the given markets.
-    /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
+    /// - attention: The array argument `epics` can't be bigger than 50.
+    /// - parameter epics: The market epics to target onto.
     /// - returns: Extended information of all the requested markets.
     public func get(epics: Set<IG.Market.Epic>) -> IG.API.DiscretePublisher<[IG.API.Market]> {
         return Self.get(api: self.api, epics: epics)

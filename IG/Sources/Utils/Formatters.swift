@@ -92,3 +92,8 @@ extension DateFormatter {
         return self.deepCopy.set { $0.timeZone = timeZone }
     }
 }
+
+extension Locale {
+    /// The locale used by default.
+    static let ig: Locale = .init(identifier: "en_GB")
+}

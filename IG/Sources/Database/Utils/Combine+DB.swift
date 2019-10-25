@@ -52,10 +52,6 @@ extension Publisher {
         }
     }
     
-//    internal func readContinuously<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ sender: (R)->Void) throws -> Void) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
-//
-//    }
-    
     /// Reads/Writes from the database received as an the receiving publisher `Output`.
     /// - parameter interaction: Closure having access to the priviledge database connection.
     /// - parameter database: The SQLite low-level connection.
@@ -73,8 +69,4 @@ extension Publisher {
             }
         }
     }
-    
-//    internal func writeContinuously<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ sender: (R)->Void) throws -> Void) -> AnyPublisher<R,IG.DB.Error> where Self.Output==IG.DB.Output.Instance<T> {
-//
-//    }
 }

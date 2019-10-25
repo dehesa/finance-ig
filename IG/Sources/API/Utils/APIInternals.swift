@@ -121,6 +121,12 @@ extension IG.API {
                 case version = "Version"
                 /// Specifically used in the platform to change the type of HTTP method.
                 case _method = "_method"
+                
+                /// Implementation-specific field.
+                case pragma = "Pragma"
+                /// Used to specify directives that must be obeyed by all caching mechanisms along the request-response chain.
+                case cacheControl = "Cache-Control"
+                
             }
             
             /// HTTP header values used throughout IG endpoints.
