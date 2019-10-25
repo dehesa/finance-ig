@@ -162,9 +162,8 @@ extension Publisher {
 }
 
 extension XCTestCase {
-    /// Locks the current queue for `interval` seconds.
-    /// - parameter timeout: The maximum number of seconds waiting (must be greater than zero).
-    /// - parameter test: The `XCTestCase` where this expectation waiting is performed.
+    /// Locks the receiving test for `interval` seconds.
+    /// - parameter interval: The number of seconds waiting (must be greater than zero).
     func wait(for interval: TimeInterval) {
         precondition(interval > 0)
         

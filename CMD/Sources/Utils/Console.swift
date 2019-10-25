@@ -31,8 +31,10 @@ extension Console {
     }
     
     /// Prints the given error in the console.
-    static func print(error: Swift.Error) {
-        let string = "\(error)\n"
+    static func print(error: Swift.Error, prefix: String? = nil) {
+        var string = prefix ?? ""
+        string.append(String(describing: error))
+        string.append("\n")
         fputs(string, stderr)
     }
     

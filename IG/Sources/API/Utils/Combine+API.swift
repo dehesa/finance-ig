@@ -75,6 +75,50 @@ extension Publisher {
         }
     }
     
+    /// Transforms the upstream `API` instance and computed values into a URL request with the properties specified as arguments.
+    /// - parameter method: The HTTP method of the endpoint.
+    /// - parameter url: The absolute URL that the endpoint is calling.
+    /// - parameter queryGenerator: Optional array of queries to be attached to the request.
+    /// - parameter headGenerator: Headers to be included in the request.
+    /// - parameter bodyGenerator: Optional body generator to include in the request.
+    /// - returns: Each value event is transformed into a valid `URLRequest` and is passed along an `API` instance and some computed values.
+    internal func makeScrappedRequest<T>(_ method: IG.API.HTTP.Method,
+                                         url urlGenerator: @escaping (_ rootURL: URL, _ values: T) throws -> URL,
+                                         queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
+                                         headers headGenerator: @escaping (_ credentials: IG.API.Credentials?, _ values: T) throws -> [IG.API.HTTP.Header.Key:String],
+                                         body    bodyGenerator:  ((_ values: T) throws -> (contentType: IG.API.HTTP.Header.Value.ContentType, data: Data))? = nil
+                                        ) -> Publishers.TryMap<Self,IG.API.Output.Request<T>> where Self.Output==IG.API.Output.Instance<T> {
+        self.tryMap { (api, values) in
+            var request: URLRequest
+            
+            do {
+                let url = try! urlGenerator(api.rootURL, values)
+                request = URLRequest(url: url)
+                request.httpMethod = method.rawValue
+                
+                if let queries = try queryGenerator?(values) {
+                    try request.addQueries(queries)
+                }
+
+                for (key, value) in try headGenerator(api.channel.credentials, values) {
+                    request.addValue(value, forHTTPHeaderField: key.rawValue)
+                }
+
+                if let body = try bodyGenerator?(values) {
+                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: IG.API.HTTP.Header.Key.requestType.rawValue)
+                    request.httpBody = body.data
+                }
+            } catch var error as IG.API.Error {
+                if case .none = error.request { error.request = request }
+                throw error
+            } catch let error {
+                throw IG.API.Error.invalidRequest("The URL request couldn't be created", request: request, underlying: error, suggestion: .readDocs)
+            }
+
+            return (api, request, values)
+        }
+    }
+    
     /// Perform the request specified as upstream value on the `API`'s session passed along with it.
     ///
     /// The operator will also check that the network package received has the appropriate `HTTPURLResponse` header, is of the expected type (e.g. JSON) and it has the expected response status code (if any has been indicated).

@@ -31,6 +31,8 @@ public final class API {
     public final var positions: IG.API.Request.Positions { return .init(api: self) }
     /// It holds functionality related to working orders.
     public final var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
+    /// It holds functionality related to scrapped endpoints.
+    public final var scrapped: IG.API.Request.Scrapped { return .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -61,8 +63,10 @@ public final class API {
 }
 
 extension IG.API {
-    /// The root address for the IG endpoints.
+    /// The root address for the publicly accessible endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
+    /// The root URL for the hidden endpoints.
+    public static let scrappedRootURL = URL(string: "https://deal.ig.com")!
     
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {

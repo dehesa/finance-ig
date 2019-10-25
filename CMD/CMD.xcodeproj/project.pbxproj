@@ -12,6 +12,7 @@
 		8D239B1723588B990047266E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D239B1623588B990047266E /* main.swift */; };
 		8D239B1D23588F130047266E /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D239B1923588CED0047266E /* IG.framework */; };
 		8D239B1E23588F130047266E /* IG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8D239B1923588CED0047266E /* IG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8D581F54235F29CC00877221 /* App+MarketCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D581F53235F29CC00877221 /* App+MarketCache.swift */; };
 		8D59B7642359DF9600A9B440 /* Arguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D59B7632359DF9600A9B440 /* Arguments.swift */; };
 		8D59B7662359ED6900A9B440 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D59B7652359ED6900A9B440 /* Configuration.swift */; };
 		8D59B769235A04A500A9B440 /* Console.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D59B768235A04A500A9B440 /* Console.swift */; };
@@ -41,6 +42,7 @@
 		8D239B1323588B360047266E /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		8D239B1623588B990047266E /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		8D239B1923588CED0047266E /* IG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = IG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D581F53235F29CC00877221 /* App+MarketCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App+MarketCache.swift"; sourceTree = "<group>"; };
 		8D59B7632359DF9600A9B440 /* Arguments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Arguments.swift; sourceTree = "<group>"; };
 		8D59B7652359ED6900A9B440 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		8D59B768235A04A500A9B440 /* Console.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Console.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				8D0407BD235A37FB003A5B0C /* App.swift */,
+				8D581F53235F29CC00877221 /* App+MarketCache.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -212,6 +215,7 @@
 				8DCAE6E0235A263C007F3D1F /* FileManager.swift in Sources */,
 				8D0407BC235A2A99003A5B0C /* Combine.swift in Sources */,
 				8D59B7662359ED6900A9B440 /* Configuration.swift in Sources */,
+				8D581F54235F29CC00877221 /* App+MarketCache.swift in Sources */,
 				8D59B7642359DF9600A9B440 /* Arguments.swift in Sources */,
 				8D0407BE235A37FB003A5B0C /* App.swift in Sources */,
 				8D239B1723588B990047266E /* main.swift in Sources */,

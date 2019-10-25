@@ -30,7 +30,7 @@ The IG framework can be used to interface with IG's APIs, Lightstreamer's "real-
 - Establish "real-time" connections through the `Streamer` instance.
   <br>You can subscribe to any of the [exposed endpoints](https://labs.ig.com/streaming-api-reference). As with the HTTP service, this framework offer compile-time interfaces for Swift and use Standard and/or Foundation types.
   ```swift
-  let streamer = Streamer(rootURL: "", credentials: .init(identifier: "ABC12", password: "..."), targetQueue: nil)
+  let streamer = Streamer(rootURL: "...", credentials: .init(identifier: "ABC12", password: "..."), targetQueue: nil)
   streamer.session.connect().expectsCompletion()
   streamer.charts.subscribe(to: "CS.D.EURUSD.MINI.IP", interval: .second, fields: [.date, . volume, .openBid, .closeBid]).sink {
     print($0)

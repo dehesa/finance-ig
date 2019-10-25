@@ -16,6 +16,37 @@ extension IG.DB.Request {
 }
 
 extension IG.DB.Request.Markets {
+    /// Check the database and returns an array containing the epic and a Boolean indicating whether the market is currently stored on the database or not.
+    public func contains(epics: [IG.Market.Epic]) -> IG.DB.DiscretePublisher<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
+        guard !epics.isEmpty else {
+            return Just([]).setFailureType(to: IG.DB.Error.self).eraseToAnyPublisher()
+        }
+        
+        return self.database.publisher { _ -> (query: String, epics: [IG.Market.Epic]) in
+                let uniqueEpics = epics.uniqueElements
+                let clause = uniqueEpics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
+                let query = "SELECT * FROM \(IG.DB.Market.tableName) WHERE \(clause)"
+                return (query, uniqueEpics)
+            }.read { (sqlite, statement, input) in
+                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                for (index, epic) in input.epics.enumerated() {
+                    try sqlite3_bind_text(statement, .init(index) + 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
+                }
+                
+                var result: Set<IG.Market.Epic> = .init()
+                rowIterator: while true {
+                    switch sqlite3_step(statement).result {
+                    case .row: result.insert(IG.DB.Market(statement: statement!).epic)
+                    case .done: break rowIterator
+                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
+                    }
+                }
+                
+                return epics.map { ($0, result.contains($0)) }
+            }.eraseToAnyPublisher()
+    }
+    
     /// Returns all markets stored in the database.
     ///
     /// Only the epic and the type of markets are returned.
