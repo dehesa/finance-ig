@@ -83,7 +83,7 @@ extension StreamerTradeTests {
         precondition(interval < maxWait)
         
         let e = self.expectation(description: "Waiting a max of \(maxWait) seconds. Checking every \(interval) seconds.")
-        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { (_) in checking(e) }
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in checking(e) }
         self.wait(for: [e], timeout: maxWait)
         timer.invalidate()
     }

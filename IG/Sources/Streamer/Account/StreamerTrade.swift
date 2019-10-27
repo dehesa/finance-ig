@@ -26,7 +26,7 @@ extension IG.Streamer.Request.Confirmations {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to account: IG.Account.Identifier, snapshot: Bool = true) -> IG.Streamer.ContinuousPublisher<IG.Streamer.Deal> {
+    public func subscribe(to account: IG.Account.Identifier, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Deal> {
         let item = "TRADE:".appending(account.rawValue)
         let properties = [IG.Streamer.Deal.Field.confirmations.rawValue]
         

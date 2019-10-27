@@ -20,7 +20,7 @@ final class APICalendarTests: XCTestCase {
         let cst: String = "<#Fill me#>"
         let security: String = "<#Fill me#>"
         
-        let events = api.scrapped.events(epic: "CS.D.EURUSD.MINI.IP", from: from, to: to, scrappedCredentials: (cst, security)).expectsOne { self.wait(for: [$0], timeout: 2) }
+        let events = api.scrapped.getEvents(epic: "CS.D.EURUSD.MINI.IP", from: from, to: to, scrappedCredentials: (cst, security)).expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(events.isEmpty)
         XCTAssertLessThan(events[0].date, events.last!.date)
     }

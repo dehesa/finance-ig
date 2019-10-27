@@ -500,11 +500,11 @@
 		8D47509623262EC60051E425 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
+				8D2C214723313BFF006F8C41 /* Combine+DB.swift */,
+				8D19C51C23266CBD00F029B3 /* DBFormatters.swift */,
 				8D19C51E232694DC00F029B3 /* SQLite.swift */,
 				8D30D08023240B0C00D83E0A /* SQLite+Result.swift */,
-				8DB90A80231E79BE004204B8 /* DBInternals.swift */,
-				8D19C51C23266CBD00F029B3 /* DBFormatters.swift */,
-				8D2C214723313BFF006F8C41 /* Combine+DB.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -864,10 +864,10 @@
 			isa = PBXGroup;
 			children = (
 				8D3C262222E9F66E0080D3C1 /* APIInternals.swift */,
-				8D1C8D552322D9E500841CA0 /* OperationQueue.swift */,
-				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
-				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
 				8D2EA93B233B6C0C0004A4C2 /* Combine+API.swift */,
+				8DC4CA6D2149A6CE00344CBF /* APIFormatters.swift */,
+				8D1C8D552322D9E500841CA0 /* OperationQueue.swift */,
+				8DC4CA6C2149A6CE00344CBF /* URLRequest.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";

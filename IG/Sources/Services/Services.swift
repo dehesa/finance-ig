@@ -54,7 +54,7 @@ public final class Services {
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Credentials.Token) -> Publishers.FlatMap<IG.Services.DiscretePublisher<Services>,Publishers.MapError<IG.API.DiscretePublisher<IG.API.Session>,IG.Services.Error>> = { (token) in
+        let signal: (_ token: IG.API.Credentials.Token) -> Combine.Publishers.FlatMap<IG.Services.DiscretePublisher<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
             return api.session.get(key: key, token: token)
                 .mapError(Self.Error.api)
                 .flatMap { (session) -> IG.Services.DiscretePublisher<IG.Services> in

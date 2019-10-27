@@ -17,7 +17,7 @@ extension IG.DB.Request {
 
 extension IG.DB.Request.Markets {
     /// Check the database and returns an array containing the epic and a Boolean indicating whether the market is currently stored on the database or not.
-    public func contains(epics: [IG.Market.Epic]) -> IG.DB.DiscretePublisher<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
+    public func contains(epics: [IG.Market.Epic]) -> IG.DB.Publishers.Discrete<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
         guard !epics.isEmpty else {
             return Just([]).setFailureType(to: IG.DB.Error.self).eraseToAnyPublisher()
         }
@@ -50,7 +50,7 @@ extension IG.DB.Request.Markets {
     /// Returns all markets stored in the database.
     ///
     /// Only the epic and the type of markets are returned.
-    public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Market]> {
+    public func getAll() -> IG.DB.Publishers.Discrete<[IG.DB.Market]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Market.tableName)"
             }.read { (sqlite, statement, query) -> [IG.DB.Market] in
@@ -70,7 +70,7 @@ extension IG.DB.Request.Markets {
     /// Returns the type of Market identified by the given epic.
     /// - parameter epic: Market instrument identifier.
     /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.DB.Error.invalidResponse`.
-    public func type(epic: IG.Market.Epic) -> IG.DB.DiscretePublisher<IG.DB.Market.Kind?> {
+    public func type(epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<IG.DB.Market.Kind?> {
         self.database.publisher { _ in
                 "SELECT type FROM \(IG.DB.Market.tableName) WHERE epic=?1"
             }.read { (sqlite, statement, query) -> IG.DB.Market.Kind? in
@@ -88,14 +88,14 @@ extension IG.DB.Request.Markets {
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter market: Information returned from the server.
-    public func update(_ market: IG.API.Market...) -> IG.DB.DiscretePublisher<Never> {
+    public func update(_ market: IG.API.Market...) -> IG.DB.Publishers.Discrete<Never> {
         self.update(market)
     }
     
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter markets: Information returned from the server.
-    public func update(_ markets: [IG.API.Market]) -> IG.DB.DiscretePublisher<Never> {
+    public func update(_ markets: [IG.API.Market]) -> IG.DB.Publishers.Discrete<Never> {
         self.database.publisher { _ in
                 """
                 INSERT INTO \(IG.DB.Market.tableName) VALUES(?1, ?2)

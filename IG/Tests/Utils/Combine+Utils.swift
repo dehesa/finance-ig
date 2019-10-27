@@ -21,7 +21,7 @@ extension Publisher {
             case .finished: e.fulfill()
             case .failure(let e): XCTFail("The publisher completed with failure when successfull completion was expected.\n\(e)\n", file: file, line: line)
             }
-        }, receiveValue: { (_) in return })
+        }, receiveValue: { _ in return })
         
         wait(e)
         cancellable?.cancel()
@@ -45,7 +45,7 @@ extension Publisher {
             case .finished: XCTFail("The publisher completed successfully when a failure was expected", file: file, line: line)
             case .failure(_): e.fulfill()
             }
-        }, receiveValue: { (_) in return })
+        }, receiveValue: { _ in return })
         
         wait(e)
         cancellable?.cancel()

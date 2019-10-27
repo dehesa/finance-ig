@@ -18,7 +18,7 @@ extension IG.DB.Request.History {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.DiscretePublisher<[IG.DB.Price]> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.Publishers.Discrete<[IG.DB.Price]> {
         self.database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
             let query = ("SELECT * FROM '\(tableName)' WHERE date BETWEEN ?1 AND ?2")
@@ -52,7 +52,7 @@ extension IG.DB.Request.History {
     /// - parameter prices: The array of price points that have arrived from the server.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
-    public func update(prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.DB.DiscretePublisher<Never> {
+    public func update(prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<Never> {
         self.database.publisher { _ in Self.priceInsertionQuery(epic: epic) }
             .write { (sqlite, statement, input) -> Void in
                 // 1. Check the epic is on the Markets table.
@@ -92,7 +92,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
     ///
     /// This operator doesn't check the market is currently stored in the database, check that that is the case before calling this operator.
     public func updatePrices(database: IG.DB) -> AnyPublisher<IG.DB.Price,IG.DB.Error> {
-        return self.tryMap { [weak database] (price) -> IG.DB.Output.Instance<(epic: IG.Market.Epic, interval: Output.Interval, price: IG.DB.Price)> in
+        return self.tryMap { [weak database] (price) -> IG.DB.Publishers.Output.Instance<(epic: IG.Market.Epic, interval: Output.Interval, price: IG.DB.Price)> in
             guard let db = database else { throw IG.DB.Error.sessionExpired() }
             guard let date = price.candle.date,
                   let openBid = price.candle.open.bid,

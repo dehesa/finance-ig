@@ -21,7 +21,7 @@ extension IG.API.Request.Applications {
 
     /// Returns a list of client-owned applications.
     /// - returns: *Future* forwarding all user's applications.
-    public func getAll() -> IG.API.DiscretePublisher<[IG.API.Application]> {
+    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Application]> {
         self.api.publisher
             .makeRequest(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -37,7 +37,7 @@ extension IG.API.Request.Applications {
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
     /// - returns: *Future* forwarding the newly set targeted application values.
-    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.DiscretePublisher<IG.API.Application> {
+    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Publishers.Discrete<IG.API.Application> {
         self.api.publisher { (api) throws -> Self.PayloadUpdate in
                 let apiKey = try (key ?? api.session.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
