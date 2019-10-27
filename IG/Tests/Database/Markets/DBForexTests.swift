@@ -9,7 +9,7 @@ final class DBForexTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        let epics = ((1...5).map { (_) in Test.Epic.forex.randomElement()! })
+        let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
             .sorted { $0 < $1 }
             .uniqueElements
         let apiForex = api.markets.get(epics: .init(epics)).expectsOne { self.wait(for: [$0], timeout: 2) }
@@ -32,7 +32,7 @@ final class DBForexTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
 
-        let epics = ((1...5).map { (_) in Test.Epic.forex.randomElement()! })
+        let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
             .sorted { $0 < $1 }
             .uniqueElements
         let apiForex = api.markets.get(epics: .init(epics)).expectsOne { self.wait(for: [$0], timeout: 2) }

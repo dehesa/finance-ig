@@ -2,9 +2,34 @@ import Combine
 import Foundation
 
 extension IG.API {
+    /// List of custom publishers.
+    public enum Publishers {
+        /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
+        /// This behavior is guaranteed when you see this type.
+        public typealias Discrete<T> = Combine.AnyPublisher<T,IG.API.Error>
+        /// Publisher that can send zero, one, or many values followed by a successful completion.
+        ///
+        /// This type is typically semantically used for paginated requests.
+        public typealias Continuous<T> = Combine.AnyPublisher<T,IG.API.Error>
+        
+        /// Publisher's output types.
+        internal enum Output {
+            /// API pipeline's first stage variables: the API instance to use and some computed values (or `Void`).
+            internal typealias Instance<T> = (api: IG.API, values: T)
+            /// API pipeline's second stage variables: the API instance to use, the URL request to perform, and some computed values (or `Void`).
+            internal typealias Request<T> = (api: IG.API, request:URLRequest, values: T)
+            /// API pipeline's third stage variables: the request that has been performed, the response and payload received, and some computed values (or `Void`).
+            internal typealias Call<T> = (request: URLRequest, response: HTTPURLResponse, data: Data, values: T)
+            /// Previous paginated page values: the previous successful request and its metadata.
+            internal typealias PreviousPage<M> = (request: URLRequest, metadata: M)
+        }
+    }
+}
+
+extension IG.API {
     /// Publisher sending downstream the receiving `API` instance. If the instance has been deallocated when the chain is activated, a failure is sent downstream.
     /// - returns: A Combine `Future` sending an `API` instance and completing immediately once it is activated.
-    internal var publisher: DeferredResult<IG.API.Output.Instance<Void>,IG.API.Error> {
+    internal var publisher: DeferredResult<IG.API.Publishers.Output.Instance<Void>,IG.API.Error> {
         .init { [weak self] in
             if let self = self {
                 return .success( (self,()) )
@@ -17,7 +42,7 @@ extension IG.API {
     /// Publisher sending downstream the receiving `API` instance and some computed values. If the instance has been deallocated or the values cannot be generated, the publisher fails.
     /// - parameter valuesGenerator: Closure generating the values to be send downstream along with the `API` instance.
     /// - returns: A Combine `Future` sending an `API` instance along with some computed values and completing immediately once it is activated.
-    internal func publisher<T>(_ valuesGenerator: @escaping (_ api: IG.API) throws -> T) -> DeferredResult<IG.API.Output.Instance<T>,IG.API.Error> {
+    internal func publisher<T>(_ valuesGenerator: @escaping (_ api: IG.API) throws -> T) -> DeferredResult<IG.API.Publishers.Output.Instance<T>,IG.API.Error> {
         .init { [weak self] in
             guard let self = self else { return .failure(.sessionExpired()) }
             do {
@@ -47,7 +72,7 @@ extension Publisher {
                                  queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
                                  headers headGenerator:  ((_ values: T) throws -> [IG.API.HTTP.Header.Key:String])? = nil,
                                  body    bodyGenerator:  ((_ values: T) throws -> (contentType: IG.API.HTTP.Header.Value.ContentType, data: Data))? = nil
-                                ) -> Publishers.TryMap<Self,IG.API.Output.Request<T>> where Self.Output==IG.API.Output.Instance<T> {
+                                ) -> Combine.Publishers.TryMap<Self,IG.API.Publishers.Output.Request<T>> where Self.Output==IG.API.Publishers.Output.Instance<T> {
         self.tryMap { (api, values) in
             var request = URLRequest(url: api.rootURL.appendingPathComponent(relativeURL))
             request.httpMethod = method.rawValue
@@ -87,7 +112,7 @@ extension Publisher {
                                          queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
                                          headers headGenerator: @escaping (_ credentials: IG.API.Credentials?, _ values: T) throws -> [IG.API.HTTP.Header.Key:String],
                                          body    bodyGenerator:  ((_ values: T) throws -> (contentType: IG.API.HTTP.Header.Value.ContentType, data: Data))? = nil
-                                        ) -> Publishers.TryMap<Self,IG.API.Output.Request<T>> where Self.Output==IG.API.Output.Instance<T> {
+                                        ) -> Combine.Publishers.TryMap<Self,IG.API.Publishers.Output.Request<T>> where Self.Output==IG.API.Publishers.Output.Instance<T> {
         self.tryMap { (api, values) in
             var request: URLRequest
             
@@ -127,12 +152,12 @@ extension Publisher {
     /// - returns: A `Future` related type forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
     internal func send<S,T>(expecting type: IG.API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil
-                            ) -> Publishers.FlatMap<
-                                    Publishers.MapError<
-                                        Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Output.Call<T> >,
+                            ) -> Combine.Publishers.FlatMap<
+                                    Combine.Publishers.MapError<
+                                        Combine.Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Publishers.Output.Call<T> >,
                                         Swift.Error
                                     >, Self
-                                 > where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
+                                 > where Self.Output==IG.API.Publishers.Output.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap(maxPublishers: .max(4)) { (api, request, values) in
             api.channel.session.dataTaskPublisher(for: request).tryMap { (data, response) in
                 guard let httpResponse = response as? HTTPURLResponse else {
@@ -169,12 +194,12 @@ extension Publisher {
     /// - parameter codes: List of HTTP status codes expected (i.e. the endpoint call is considered successful).
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
     internal func send<T>(expecting type: IG.API.HTTP.Header.Value.ContentType? = nil, statusCode codes: Int...
-                          ) ->  Publishers.FlatMap<
-                                    Publishers.MapError<
-                                        Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Output.Call<T> >,
+                          ) ->  Combine.Publishers.FlatMap<
+                                    Combine.Publishers.MapError<
+                                        Combine.Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Publishers.Output.Call<T> >,
                                         Swift.Error
                                     >, Self
-                                > where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error {
+                                > where Self.Output==IG.API.Publishers.Output.Request<T>, Self.Failure==Swift.Error {
         return self.send(expecting: type, statusCodes: codes)
     }
     
@@ -184,12 +209,12 @@ extension Publisher {
     /// - parameter pageRequestGenerator: All data needed to compile a request for the next page. If `nil` is returned, the request won't be performed and the publisher will complete. On the other hand, if an error is thrown, it will be forwarded as a failure event.
     /// - parameter pageCall: The actual combine pipeline sending the request and decoding the result. The values/errors will be forwarded to the returned publisher.
     /// - returns: A continuous publisher returning the values from `pageCall` as soon as they arrive. Only when `nil` is returned on the `pageRequestGenerator` closure, will the returned publisher complete.
-    internal func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: IG.API, _ initial: (request: URLRequest, values: T), _ previous: IG.API.Output.PreviousPage<M>?) throws -> URLRequest?,
-                                          call pageCall: @escaping (_ pageRequest: Result<IG.API.Output.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
-                                         ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==IG.API.Output.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
+    internal func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: IG.API, _ initial: (request: URLRequest, values: T), _ previous: IG.API.Publishers.Output.PreviousPage<M>?) throws -> URLRequest?,
+                                          call pageCall: @escaping (_ pageRequest: Result<IG.API.Publishers.Output.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
+                                         ) -> Combine.Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==IG.API.Publishers.Output.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
         self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
             .init { (subject) in
-                typealias Iterator = (_ previous: IG.API.Output.PreviousPage<M>?) -> Void
+                typealias Iterator = (_ previous: IG.API.Publishers.Output.PreviousPage<M>?) -> Void
                 /// Recursive closure fed with the last successfully retrieved page (or `nil` at the very beginning).
                 var iterator: Iterator? = nil
                 /// Cancellable used to detached the current page download task.
@@ -197,7 +222,7 @@ extension Publisher {
                 /// Closure that must be called once the pagination process finishes, so the state can be cleaned.
                 let sendCompletion: (_ subject: PassthroughSubject<R,Swift.Error>,
                                      _ completion: Subscribers.Completion<IG.API.Error>,
-                                     _ previous: IG.API.Output.PreviousPage<M>?,
+                                     _ previous: IG.API.Publishers.Output.PreviousPage<M>?,
                                      _ pageCancellable: inout AnyCancellable?,
                                      _ iterator: inout Iterator?) -> Void = { (subject, completion, previous, pageCancellable, iterator) in
                     iterator = nil
@@ -281,7 +306,7 @@ extension Publisher {
     /// Decodes the JSON payload with a given `JSONDecoder`.
     /// - parameter decoder: Enum indicating how the `JSONDecoder` is created/obtained.
     /// - returns: Each value event triggers a JSON decoding process. This publisher forwards the response of that process.
-    internal func decodeJSON<T,R>(decoder: IG.API.JSON.Decoder<T>, result: R.Type = R.self) -> Publishers.TryMap<Self,R> where Self.Output==IG.API.Output.Call<T>, R: Decodable {
+    internal func decodeJSON<T,R>(decoder: IG.API.JSON.Decoder<T>, result: R.Type = R.self) -> Combine.Publishers.TryMap<Self,R> where Self.Output==IG.API.Publishers.Output.Call<T>, R: Decodable {
         self.tryMap { (request, response, data, values) -> R in
             var decodingStage = true
             do {
@@ -309,7 +334,7 @@ extension Publisher {
     /// - returns: Each value event triggers a JSON decoding process. This publisher forwards the response of that process after being transformed by the closure.
     internal func decodeJSON<T,R,W>(decoder: IG.API.JSON.Decoder<T>,
                                     transform: @escaping (_ decoded: R, _ call: (request: URLRequest, response: HTTPURLResponse)) throws -> W
-                                   ) -> Publishers.TryMap<Self,W> where Self.Output==IG.API.Output.Call<T>, R:Decodable {
+                                   ) -> Combine.Publishers.TryMap<Self,W> where Self.Output==IG.API.Publishers.Output.Call<T>, R:Decodable {
         self.tryMap { (request, response, data, values) -> W in
             var stage: Int = 0
             do {

@@ -1,17 +1,17 @@
 import Combine
 import Foundation
 
-extension Publisher {
+extension Combine.Publisher {
     /// Ignores all value events and on successful completion it transform that into a give `Downstream` publisher.
     ///
     /// The `downstream` closure will only be executed once the successful completion event arrives. If it doesn't arrive, it is never executed.
     /// - parameter transform: Closure generating the stream to be switched to once a completion event is received from upstream.
-    public func then<Child>(_ transform: @escaping ()->Child) -> Publishers.Then<Child,Self> where Child:Publisher, Self.Failure==Child.Failure {
+    public func then<Child>(_ transform: @escaping ()->Child) -> Combine.Publishers.Then<Child,Self> where Child:Publisher, Self.Failure==Child.Failure {
         .init(upstream: self, transform: transform)
     }
 }
 
-extension Publishers {
+extension Combine.Publishers {
     /// Transform the upstream successful completion event into a new or existing publisher.
     public struct Then<Child,Upstream>: Publisher where Upstream:Publisher, Child:Publisher, Upstream.Failure==Child.Failure {
         public typealias Output = Child.Output
@@ -34,7 +34,7 @@ extension Publishers {
     }
 }
 
-extension Publishers.Then {
+extension Combine.Publishers.Then {
     /// Represents an active `Then` publisher taking both the role of `Subscriber` (for upstream publishers) and `Subscription` (for downstream subscribers).
     ///
     /// This subscriber takes as inputs any value provided from upstream, but ignores them. Only when a successful completion has been received, a `Child` publisher will get generated.
@@ -163,16 +163,16 @@ extension Publishers.Then {
     }
 }
 
-extension Publishers.Then.Conduit {
+extension Combine.Publishers.Then.Conduit {
     /// Helper that acts as a `Subscriber` for the upstream, but just forward events to the given `Conduit` instance.
     fileprivate struct UpstreamSubscriber: Subscriber {
         typealias Input = Upstream.Output
         typealias Failure = Upstream.Failure
         /// Strong bond to the `Conduit` instance, so it is kept alive between upstream subscription and the subscription acknowledgement.
-        let conduit: Publishers.Then<Child,Upstream>.Conduit<Downstream>
+        let conduit: Combine.Publishers.Then<Child,Upstream>.Conduit<Downstream>
         
         /// Designated initializer for this helper establishing the strong bond between the `Conduit` and the created helper.
-        init(conduit: Publishers.Then<Child,Upstream>.Conduit<Downstream>) {
+        init(conduit: Combine.Publishers.Then<Child,Upstream>.Conduit<Downstream>) {
             self.conduit = conduit
         }
         
@@ -194,7 +194,7 @@ extension Publishers.Then.Conduit {
     }
 }
 
-extension Publishers.Then.Conduit {
+extension Combine.Publishers.Then.Conduit {
     /// The states the `Then`'s `Conduit` cycles through.
     fileprivate enum State {
         /// The `Conduit` has been initialized, but it is not yet connected to the upstream.

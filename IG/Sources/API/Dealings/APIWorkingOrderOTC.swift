@@ -30,8 +30,8 @@ extension IG.API.Request.WorkingOrders {
                        stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?,
                        forceOpen: Bool = true,
                        expiration: IG.API.WorkingOrder.Expiration,
-                       reference: IG.Deal.Reference? = nil) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
-        self.api.publisher { (_) in
+                       reference: IG.Deal.Reference? = nil) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+        self.api.publisher { _ in
                 try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
@@ -51,8 +51,8 @@ extension IG.API.Request.WorkingOrders {
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
-        self.api.publisher { (_) in
+    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+        self.api.publisher { _ in
                 try Self.PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.makeRequest(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
@@ -67,7 +67,7 @@ extension IG.API.Request.WorkingOrders {
     /// Deletes an OTC working order.
     /// - parameter identifier: A permanent deal reference for a confirmed working order.
     /// - returns: *Future* forwarding the deal reference.
-    public func delete(identifier: IG.Deal.Identifier) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
+    public func delete(identifier: IG.Deal.Identifier) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
         self.api.publisher
             .makeRequest(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)

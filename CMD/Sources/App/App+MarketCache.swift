@@ -62,7 +62,7 @@ extension App.MarketCache {
             case .failure(let error): Console.print(error: error, prefix: "Publisher \"\(identifier)\" encountered an error.\n")
             }
             cleanUp?()
-        }, receiveValue: { (_) in return })
+        }, receiveValue: { _ in return })
         
         let cancellable = AnyCancellable(subscriber)
         self.cancellables.insert(cancellable)

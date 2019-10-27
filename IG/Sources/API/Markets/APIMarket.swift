@@ -22,7 +22,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> IG.API.DiscretePublisher<IG.API.Market> {
+    public func get(epic: IG.Market.Epic) -> IG.API.Publishers.Discrete<IG.API.Market> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
@@ -41,7 +41,7 @@ extension IG.API.Request.Markets {
     /// - attention: The array argument `epics` can't be bigger than 50.
     /// - parameter epics: The market epics to target onto.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> IG.API.DiscretePublisher<[IG.API.Market]> {
+    public func get(epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Discrete<[IG.API.Market]> {
         return Self.get(api: self.api, epics: epics)
     }
     
@@ -50,11 +50,11 @@ extension IG.API.Request.Markets {
     /// This endpoint circumvents `get(epics:)` limitation of quering for 50 markets and publish the results as several values.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
-    public func getContinuously(epics: Set<IG.Market.Epic>) -> IG.API.ContinuousPublisher<[IG.API.Market]> {
+    public func getContinuously(epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Continuous<[IG.API.Market]> {
         let maxEpicsPerChunk = 50
         guard epics.count > maxEpicsPerChunk else { return Self.get(api: api, epics: epics) }
         
-        return self.api.publisher({ (_) in epics.chunked(into: maxEpicsPerChunk) })
+        return self.api.publisher({ _ in epics.chunked(into: maxEpicsPerChunk) })
             .flatMap { (api, chunks) -> PassthroughSubject<[IG.API.Market],IG.API.Error> in
                 let subject = PassthroughSubject<[IG.API.Market],IG.API.Error>()
                 
@@ -97,7 +97,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
-    private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.DiscretePublisher<[IG.API.Market]> {
+    private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Discrete<[IG.API.Market]> {
         api.publisher { (api) -> DateFormatter in
                 let epicRange = 1...50
                 guard epicRange.contains(epics.count) else {
@@ -110,7 +110,7 @@ extension IG.API.Request.Markets {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
                 return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
-            }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { (_) in
+            }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
                 [.init(name: "filter", value: "ALL"),
                  .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
             }).send(expecting: .json, statusCode: 200)

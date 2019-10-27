@@ -11,7 +11,7 @@ extension IG.API.Request.History {
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.DiscretePublisher<[IG.API.Transaction]> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.Publishers.Discrete<[IG.API.Transaction]> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -48,7 +48,7 @@ extension IG.API.Request.History {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received. `page.size` references the amount of transactions forward per value.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of transactions.
-    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.ContinuousPublisher<[IG.API.Transaction]> {
+    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<[IG.API.Transaction]> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)

@@ -36,8 +36,8 @@ extension IG.API.Request.Positions {
                        size: Decimal, limit: IG.Deal.Limit?,
                        stop: IG.Deal.Stop?,
                        forceOpen: Bool = true,
-                       reference: IG.Deal.Reference? = nil) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
-        self.api.publisher { (_) in
+                       reference: IG.Deal.Reference? = nil) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+        self.api.publisher { _ in
                 try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
             }.makeRequest(.post, "positions/otc", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
@@ -59,8 +59,8 @@ extension IG.API.Request.Positions {
     /// - note: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
     public func update(identifier: IG.Deal.Identifier,
                        limitLevel: Decimal?,
-                       stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
-        self.api.publisher { (_) in
+                       stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+        self.api.publisher { _ in
                 try Self.PayloadUpdate(limit: limitLevel, stop: stop)
             }.makeRequest(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
@@ -80,10 +80,10 @@ extension IG.API.Request.Positions {
                        direction: IG.Deal.Direction,
                        order: IG.API.Position.Order,
                        strategy: IG.API.Position.Order.Strategy,
-                       size: Decimal) -> IG.API.DiscretePublisher<IG.Deal.Reference> {
-        self.api.publisher { (_) in
+                       size: Decimal) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+        self.api.publisher { _ in
                 try Self.PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
-            }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { (_) in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
+            }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }

@@ -12,7 +12,7 @@ extension IG.API.Request.History {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.DiscretePublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -42,7 +42,7 @@ extension IG.API.Request.History {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.ContinuousPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -162,7 +162,7 @@ extension IG.API.Request.History {
 
 extension IG.API {
     /// Historical market price snapshot.
-    public struct Price: Decodable {
+    public struct Price: Decodable, Equatable {
         /// Snapshot date.
         public let date: Date
         /// Open session price.
@@ -188,6 +188,23 @@ extension IG.API {
             self.volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
         }
         
+        /// Designated initalizer.
+        internal init(date: Date, open: Self.Point, close: Self.Point, lowest: Self.Point, highest: Self.Point, volume: UInt?) {
+            self.date = date
+            self.open = open
+            self.close = close
+            self.lowest = lowest
+            self.highest = highest
+            self.volume = volume
+        }
+        
+        public static func == (lhs: API.Price, rhs: API.Price) -> Bool {
+            return (lhs.date == rhs.date) &&
+                   (lhs.open == rhs.open) && (lhs.close == rhs.close) &&
+                   (lhs.lowest == rhs.lowest) && (lhs.highest == rhs.highest) &&
+                   (lhs.volume == rhs.volume)
+        }
+        
         private enum CodingKeys: String, CodingKey {
             case date = "snapshotTimeUTC"
             case open = "openPrice"
@@ -201,7 +218,7 @@ extension IG.API {
 
 extension IG.API.Price {
     /// Price Snap.
-    public struct Point: Decodable {
+    public struct Point: Decodable, Equatable {
         /// Bid price (i.e. the price being offered  to buy an asset).
         public let bid: Decimal
         /// Ask price (i.e. the price being asked to sell an asset).
@@ -210,6 +227,13 @@ extension IG.API.Price {
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
         public let lastTraded: Decimal?
+        
+        /// Designated initalizer.
+        internal init(bid: Decimal, ask: Decimal, lastTraded: Decimal? = nil) {
+            self.bid = bid
+            self.ask = ask
+            self.lastTraded = lastTraded
+        }
         
         /// The middle price between the *bid* and the *ask* price.
         public var mid: Decimal {

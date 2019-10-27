@@ -16,7 +16,7 @@ extension IG.DB.Request.Markets.Forex {
     /// Returns all forex markets.
     ///
     /// If there are no forex markets in the database yet, an empty array will be returned.
-    public func getAll() -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+    public func getAll() -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
             }.read { (sqlite, statement, query) in
@@ -37,7 +37,7 @@ extension IG.DB.Request.Markets.Forex {
     ///
     /// If the market is not in the database, a `.invalidResponse` error will be returned.
     /// - parameter epic: The forex market epic identifyier.
-    public func get(epic: IG.Market.Epic) -> IG.DB.DiscretePublisher<IG.DB.Market.Forex> {
+    public func get(epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<IG.DB.Market.Forex> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
             }.read { (sqlite, statement, query) in
@@ -56,7 +56,7 @@ extension IG.DB.Request.Markets.Forex {
     /// Returns the forex markets matching the given currency.
     /// - parameter currency: A currency used as base or counter in the result markets.
     /// - parameter otherCurrency: A currency matching the first argument. It is optional.
-    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
         self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
                 var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
             
@@ -91,7 +91,7 @@ extension IG.DB.Request.Markets.Forex {
     /// If there are no forex markets matching the given requirements, an empty array will be returned.
     /// - parameter base: The base currency code (or `nil` if this requirement is not needed).
     /// - parameter counter: The counter currency code (or `nil` if this requirement is not needed).
-    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.DB.DiscretePublisher<[IG.DB.Market.Forex]> {
+    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
         guard base != nil || counter != nil else { return self.getAll() }
         
         return self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in

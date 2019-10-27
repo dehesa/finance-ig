@@ -113,7 +113,7 @@ extension IG.Streamer.Channel {
     /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
     /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
     /// - returns: A publisher forwarding updates as values. This publisher will only stop by not holding a reference to the signal, by interrupting it with a cancellable, or by calling `unsubscribeAll()`
-    @nonobjc func subscribe(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> IG.Streamer.ContinuousPublisher<[String:IG.Streamer.Subscription.Update]> {
+    @nonobjc func subscribe(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> IG.Streamer.Publishers.Continuous<[String:IG.Streamer.Subscription.Update]> {
         /// Keeps the necessary state to clean up the *slate* once the subscription finishes or cancels.
         var state: IG.Streamer.Subscription? = nil
         /// When triggered, it unsubscribe and clean any possible state where the subscription has been.
@@ -139,7 +139,7 @@ extension IG.Streamer.Channel {
                 
                 let subscription = IG.Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot)
                 // The `sink` will only complete if `unsubscribeAll()` is called. In any other case, it is cancelled silently.
-                let sink = SubscriptionSink.init(receiveCompletion: { [weak subject] (_) in
+                let sink = SubscriptionSink.init(receiveCompletion: { [weak subject] _ in
                     subject?.send(completion: .finished)
                 }, receiveValue: { [weak subject] (event) in
                     switch event {
@@ -174,7 +174,7 @@ extension IG.Streamer.Channel {
                     subscription.status.dropFirst().subscribe(sink)
                     self.client.subscribe(subscription.lowlevel)
                 }
-            }.handleEvents(receiveCompletion: { (_) in cleanUp() }, receiveCancel: cleanUp)
+            }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)
             .eraseToAnyPublisher()
     }
     

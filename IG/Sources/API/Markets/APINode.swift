@@ -22,7 +22,7 @@ extension IG.API.Request.Nodes {
     /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: *Future* forwarding the node identified by the parameters recursively filled with the subnodes and submarkets till the given `depth`.
-    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> IG.API.DiscretePublisher<IG.API.Node> {
+    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> IG.API.Publishers.Discrete<IG.API.Node> {
         let layers = depth.value
         guard layers > 0 else {
             return Self.get(api: self.api, node: .init(identifier: identifier, name: name))
@@ -38,7 +38,7 @@ extension IG.API.Request.Nodes {
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
     /// - returns: *Future* forwarding all markets matching the search term.
-    public func getMarkets(matching searchTerm: String) -> IG.API.DiscretePublisher<[IG.API.Node.Market]> {
+    public func getMarkets(matching searchTerm: String) -> IG.API.Publishers.Discrete<[IG.API.Node.Market]> {
         self.api.publisher { (api) -> String in
                 guard !searchTerm.isEmpty else {
                     let message = "Search for markets failed! The search term cannot be empty"
@@ -59,7 +59,7 @@ extension IG.API.Request.Nodes {
     /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint..
     /// - parameter node: The entity targeting a specific node. Only the identifier is used.
     /// - returns: *Future* forwarding a *full* node.
-    private static func get(api: API, node: IG.API.Node) -> IG.API.DiscretePublisher<IG.API.Node> {
+    private static func get(api: API, node: IG.API.Node) -> IG.API.Publishers.Discrete<IG.API.Node> {
         api.publisher
             .makeRequest(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -89,7 +89,7 @@ extension IG.API.Request.Nodes {
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: *Future* forwarding the node given as an argument with complete subnodes and submarkets information.
-    private static func iterate(api: API, node: IG.API.Node, depth: Int) -> IG.API.DiscretePublisher<IG.API.Node> {
+    private static func iterate(api: API, node: IG.API.Node, depth: Int) -> IG.API.Publishers.Discrete<IG.API.Node> {
         // 1. Retrieve the targeted node.
         return Self.get(api: api, node: node).flatMap { [weak weakAPI = api] (node) -> AnyPublisher<IG.API.Node,IG.API.Error> in
             let countdown = depth - 1

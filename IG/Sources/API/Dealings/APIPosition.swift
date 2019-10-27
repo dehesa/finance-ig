@@ -23,7 +23,7 @@ extension IG.API.Request.Positions {
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
     /// - returns: *Future* forwarding a list of open positions.
-    public func getAll() -> IG.API.DiscretePublisher<[IG.API.Position]> {
+    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Position]> {
         self.api.publisher
             .makeRequest(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -37,7 +37,7 @@ extension IG.API.Request.Positions {
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
     /// - returns: *Future* forwarding the targeted position.
-    public func get(identifier: IG.Deal.Identifier) -> IG.API.DiscretePublisher<IG.API.Position> {
+    public func get(identifier: IG.Deal.Identifier) -> IG.API.Publishers.Discrete<IG.API.Position> {
         self.api.publisher
             .makeRequest(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)

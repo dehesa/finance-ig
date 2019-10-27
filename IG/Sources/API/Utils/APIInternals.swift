@@ -4,33 +4,7 @@ import Foundation
 extension IG.API {
     /// Domain namespace retaining anything related to API requests.
     public enum Request {}
-    
-    /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
-    /// This behavior is guaranteed when you see this type.
-    public typealias DiscretePublisher<T> = Combine.AnyPublisher<T,IG.API.Error>
-    /// Publisher that can send zero, one, or many values followed by a successful completion.
-    ///
-    /// This type is typically semantically used for paginated requests.
-    public typealias ContinuousPublisher<T> = Combine.AnyPublisher<T,IG.API.Error>
-}
 
-extension IG.API {
-    /// Publisher's output types.
-    internal enum Output {
-        /// API pipeline's first stage variables: the API instance to use and some computed values (or `Void`).
-        internal typealias Instance<T> = (api: IG.API, values: T)
-        /// API pipeline's second stage variables: the API instance to use, the URL request to perform, and some computed values (or `Void`).
-        internal typealias Request<T> = (api: IG.API, request:URLRequest, values: T)
-        /// API pipeline's third stage variables: the request that has been performed, the response and payload received, and some computed values (or `Void`).
-        internal typealias Call<T> = (request: URLRequest, response: HTTPURLResponse, data: Data, values: T)
-        /// Previous paginated page values: the previous successful request and its metadata.
-        internal typealias PreviousPage<M> = (request: URLRequest, metadata: M)
-    }
-}
-
-// MARK: - Constant
-
-extension IG.API {
     /// Namespace for all JSON related constants (pertaining the API).
     internal enum JSON {
         /// Namesapce for JSON decoding keys.
