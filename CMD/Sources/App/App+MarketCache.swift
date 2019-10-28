@@ -1,4 +1,5 @@
 import IG
+import Conbini
 import Combine
 import Foundation
 
@@ -6,7 +7,7 @@ extension App {
     ///
     final class MarketCache: Program {
         /// The main app queue.
-        private unowned let queue: DispatchQueue
+        private unowned let mainQueue: DispatchQueue
         /// All IG services.
         private unowned let services: IG.Services
         /// The epics being currently monitored/subscribed.
@@ -16,7 +17,7 @@ extension App {
         
         /// Designated initializer giving the queue where result will be output and the services used to connect to the IG platform.
         init(queue: DispatchQueue, services: IG.Services) {
-            self.queue = queue
+            self.mainQueue = queue
             self.services = services
             self.epics = .init()
             self.cancellables = .init()
@@ -54,6 +55,8 @@ extension App.MarketCache {
     /// Starts the given publishers and hold a strong reference to the subscription within the `cancellables` property.
     ///
     /// If the publisher finishes, the `cancellables` property is properly cleanup.
+    /// - parameter publisher: Combine publisher that will be running during the lifecycle of this instance.
+    /// - parameter identifier: The publisher identifier used for debugging purposes.
     private func run<P:Publisher>(publisher: P, identifier: String) {
         var cleanUp: (()->Void)? = nil
         let subscriber = Subscribers.Sink<P.Output,P.Failure>(receiveCompletion: {
@@ -103,10 +106,11 @@ extension App.MarketCache {
     }
     
     /// Returns a publisher that subscribe to all markets (given as epics) for the given interval.
-    ///
     /// - parameter epics: The markets that will be monitored.
     /// - parameter interval: The time interval to aggregate data as.
     private func subscribePublisher(epics: Set<IG.Market.Epic>, interval: IG.Streamer.Chart.Aggregated.Interval) -> AnyPublisher<IG.Streamer.Chart.Aggregated,Never> {
+//        guard !epics.isEmpty else { return Complete }
+        
         let fields: Set<IG.Streamer.Chart.Aggregated.Field> = [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk]
         
         return epics.publisher.map { [weak self, streamer = self.services.streamer] (epic) in

@@ -6,6 +6,7 @@ import Lightstreamer_iOS_Client
 #else
 #error("OS currently not supported")
 #endif
+import ConbiniForTesting
 import Foundation
 
 final class StreamerLowlevelTests: XCTestCase {
@@ -19,18 +20,18 @@ final class StreamerLowlevelTests: XCTestCase {
         client.connectionDetails.setPassword(creds.password)
         client.add(delegate: self)
         client.connect()
-        self.wait(for: 1)
+        self.wait(seconds: 1)
         
         // 2. Establish a subscription
         let subscription = LSSubscription(mode: "MERGE", item: "MARKET:CS.D.EURGBP.MINI.IP", fields: ["BID","OFFER","HIGH","LOW","MID_OPEN","CHANGE","CHANGE_PCT","MARKET_DELAY","MARKET_STATE","UPDATE_TIME"])
         subscription.requestedSnapshot = "no"
         subscription.add(delegate: self)
         client.subscribe(subscription)
-        self.wait(for: 3)
+        self.wait(seconds: 3)
         
         // 3. Unsubscribe
         client.unsubscribe(subscription)
-        self.wait(for: 0.5)
+        self.wait(seconds: 0.5)
         
         // Disconnect the Lightstreamer client
         client.remove(delegate: self)
@@ -47,18 +48,18 @@ final class StreamerLowlevelTests: XCTestCase {
         client.connectionDetails.setPassword(creds.password)
         client.add(delegate: self)
         client.connect()
-        self.wait(for: 1)
+        self.wait(seconds: 1)
         
         // 2. Establish a subscription
         let subscription = LSSubscription(mode: "DISTINCT", item: "TRADE:\(creds.identifier)", fields: ["CONFIRMS"])
         subscription.requestedSnapshot = "yes"
         subscription.add(delegate: self)
         client.subscribe(subscription)
-        self.wait(for: 1)
+        self.wait(seconds: 1)
         
         // 3. Unsubscribe
         client.unsubscribe(subscription)
-        self.wait(for: 0.5)
+        self.wait(seconds: 0.5)
         
         // Disconnect the Lightstreamer client
         client.remove(delegate: self)

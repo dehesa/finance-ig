@@ -3,12 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8D0407BC235A2A99003A5B0C /* Combine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0407BB235A2A99003A5B0C /* Combine.swift */; };
 		8D0407BE235A37FB003A5B0C /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0407BD235A37FB003A5B0C /* App.swift */; };
+		8D16078D2366E50D0041259B /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8D16078C2366E50D0041259B /* Conbini */; };
 		8D239B1723588B990047266E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D239B1623588B990047266E /* main.swift */; };
 		8D239B1D23588F130047266E /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8D239B1923588CED0047266E /* IG.framework */; };
 		8D239B1E23588F130047266E /* IG.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8D239B1923588CED0047266E /* IG.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -20,6 +20,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8D16078E2366E5450041259B /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D239B1F23588F130047266E /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,7 +43,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8D0407BB235A2A99003A5B0C /* Combine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Combine.swift; sourceTree = "<group>"; };
 		8D0407BD235A37FB003A5B0C /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		8D0407C3235ADB4C003A5B0C /* Environment */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Environment; sourceTree = "<group>"; };
 		8D2221DD23588A3E009C67EF /* broker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = broker; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -55,6 +63,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D239B1D23588F130047266E /* IG.framework in Frameworks */,
+				8D16078D2366E50D0041259B /* Conbini in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,7 +156,6 @@
 			children = (
 				8D59B768235A04A500A9B440 /* Console.swift */,
 				8DCAE6DF235A263C007F3D1F /* FileManager.swift */,
-				8D0407BB235A2A99003A5B0C /* Combine.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -162,12 +170,17 @@
 				8D239B1F23588F130047266E /* Embed Frameworks */,
 				8D2221D923588A3E009C67EF /* Sources */,
 				8D2221DA23588A3E009C67EF /* Frameworks */,
+				8D16078E2366E5450041259B /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8D1607902366E5620041259B /* PBXTargetDependency */,
 			);
 			name = CMD;
+			packageProductDependencies = (
+				8D16078C2366E50D0041259B /* Conbini */,
+			);
 			productName = CMD;
 			productReference = 8D2221DD23588A3E009C67EF /* broker */;
 			productType = "com.apple.product-type.tool";
@@ -197,6 +210,9 @@
 				Base,
 			);
 			mainGroup = 8D2221D423588A3D009C67EF;
+			packageReferences = (
+				8D16078B2366E50D0041259B /* XCRemoteSwiftPackageReference "Conbini" */,
+			);
 			productRefGroup = 8D2221DE23588A3E009C67EF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -213,7 +229,6 @@
 			files = (
 				8D59B769235A04A500A9B440 /* Console.swift in Sources */,
 				8DCAE6E0235A263C007F3D1F /* FileManager.swift in Sources */,
-				8D0407BC235A2A99003A5B0C /* Combine.swift in Sources */,
 				8D59B7662359ED6900A9B440 /* Configuration.swift in Sources */,
 				8D581F54235F29CC00877221 /* App+MarketCache.swift in Sources */,
 				8D59B7642359DF9600A9B440 /* Arguments.swift in Sources */,
@@ -223,6 +238,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8D1607902366E5620041259B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 8D16078F2366E5620041259B /* Conbini */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8D2221E223588A3E009C67EF /* Debug */ = {
@@ -396,6 +418,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8D16078B2366E50D0041259B /* XCRemoteSwiftPackageReference "Conbini" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/dehesa/Conbini";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8D16078C2366E50D0041259B /* Conbini */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D16078B2366E50D0041259B /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+		8D16078F2366E5620041259B /* Conbini */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D16078B2366E50D0041259B /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8D2221D523588A3D009C67EF /* Project object */;
 }

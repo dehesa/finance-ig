@@ -5,6 +5,7 @@ import Lightstreamer_iOS_Client
 #else
 #error("OS currently not supported")
 #endif
+import Conbini
 import Combine
 import Foundation
 

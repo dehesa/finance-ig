@@ -34,8 +34,6 @@ Services.make(serverURL: config.serverURL, databaseURL: config.databaseURL, key:
         return app!.runMarketCache(epics: epics)
     case .failure(let error):
         Console.print(error: error)
-    case nil:
-        Console.print(error: "An unknown error occurred while initializing the platform services")
     }
     exit(EXIT_FAILURE)
 }
