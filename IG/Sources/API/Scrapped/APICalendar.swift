@@ -100,6 +100,25 @@ extension IG.API {
     }
 }
 
+// MARK: - Functionality
+
+extension IG.API.Calendar.Event: IG.DebugDescriptable {
+    internal static var printableDomain: String {
+        return "\(IG.API.printableDomain).\(Self.self)"
+    }
+    
+    public var debugDescription: String {
+        var result = IG.DebugDescription(Self.printableDomain)
+        result.append("date", self.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("country", self.country.name)
+        result.append("headline", self.headline)
+        result.append("previous", self.previous?.debugDescription)
+        result.append("expected", self.expected?.debugDescription)
+        result.append("actual", self.actual?.debugDescription)
+        return result.generate()
+    }
+}
+
 extension IG.API.Calendar.Event {
     /// A calendar event value (usually representing a previous, expected, and actual value).
     public enum Value: Decodable, CustomDebugStringConvertible {

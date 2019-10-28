@@ -2,38 +2,6 @@ import Combine
 import Foundation
 
 extension IG.API.Request.Scrapped {
-
-    // MARK: GET /chart/snapshot
-    
-    /// Returns a market snapshot for the given epic.
-    ///
-    /// The information retrieved is used to form charts on the IG platform.
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter numDataPoints: The number of data points to receive on the prices array result.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    private func getSnapshot(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.Market.ScrappedSnapshot> {
-        self.api.publisher
-            .makeScrappedRequest(.get, url: { (_, _) in
-                let interval = resolution.components
-                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/combined-cached/\(numDataPoints)"
-                return rootURL.appendingPathComponent(subpath)
-            }, queries: { _ in
-                [.init(name: "format", value: "json"),
-                .init(name: "locale", value: Locale.ig.identifier),
-                .init(name: "delay", value: "0")]
-            }, headers: { (_, _) in
-                [.clientSessionToken: scrappedCredentials.cst,
-                .securityToken: scrappedCredentials.security,
-                .pragma: "no-cache",
-                .cacheControl: "no-cache"]
-            }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
-            .eraseToAnyPublisher()
-    }
-
     /// Returns the last `numDataPoints` data points for the given market epic in the given resolution.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter resolution: It defines the resolution of requested prices.
@@ -45,66 +13,6 @@ extension IG.API.Request.Scrapped {
         self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: numDataPoints, rootURL: rootURL, scrappedCredentials: scrappedCredentials)
             .map { (snapshot) in
                 snapshot.prices
-            }.eraseToAnyPublisher()
-    }
-    
-    // MARK: GET /chart/snapshot
-    
-    /// - warning: Be mindful of the amount of data being requested. There is a maximum for each interval that can be requested.
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter from: The date from which to start the query.
-    /// - parameter to: The date from which to end the query.
-    /// - parameter scalingFactor: The factor to be applied to every single data point returned.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    private func getBatchPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
-                guard from <= to else { throw IG.API.Error.invalidRequest(#"The "from" date must occur before the "to" date"#, suggestion: .readDocs) }
-                let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
-                let toComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
-                return (fromComponents, toComponents)
-            }.makeScrappedRequest(.get, url: { (_, values) in
-                let interval = resolution.components
-                let (f, t) = values
-                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(f.nanosecond!)/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)"
-                return rootURL.appendingPathComponent(subpath)
-            }, queries: { _ in
-                [.init(name: "format", value: "json"),
-                 .init(name: "locale", value: Locale.ig.identifier)]
-            }, headers: { (_, _) in
-                [.clientSessionToken: scrappedCredentials.cst,
-                 .securityToken: scrappedCredentials.security,
-                 .pragma: "no-cache",
-                 .cacheControl: "no-cache"]
-            }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .custom({ (_, _, _) in JSONDecoder().set { $0.userInfo[.scalingFactor] = scalingFactor } })) { (response: IG.API.Market.ScrappedBatch, _) in
-                response.prices
-            }.mapError(IG.API.Error.transform)
-            .eraseToAnyPublisher()
-    }
-    
-    /// Returns all possible data points for the given market epic and resolution..
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getAllPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), rootURL: rootURL, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
-                guard let api = weakAPI else {
-                    return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
-                }
-                
-                return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: snapshot.availableBatchPrices.lowerBound, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, rootURL: rootURL, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
-                    guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
-                    guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
-                    
-                    var result = batchPrices
-                    result.append(contentsOf: snapshot.prices[startIndex...])
-                    return result
-                }.eraseToAnyPublisher()
             }.eraseToAnyPublisher()
     }
     
@@ -137,6 +45,97 @@ extension IG.API.Request.Scrapped {
                 return result
             }.eraseToAnyPublisher()
         }.eraseToAnyPublisher()
+    }
+    
+    /// Returns all possible data points for the given market epic and resolution..
+    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
+    /// - parameter resolution: It defines the resolution of requested prices.
+    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
+    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
+    /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
+    public func getAllPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), rootURL: rootURL, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
+                guard let api = weakAPI else {
+                    return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
+                }
+                
+                return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: snapshot.availableBatchPrices.lowerBound, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, rootURL: rootURL, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
+                    guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
+                    guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
+                    
+                    var result = batchPrices
+                    result.append(contentsOf: snapshot.prices[startIndex...])
+                    return result
+                }.eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
+    }
+
+    // MARK: GET /chart/snapshot
+    
+    /// Returns a market snapshot for the given epic.
+    ///
+    /// The information retrieved is used to form charts on the IG platform.
+    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
+    /// - parameter resolution: It defines the resolution of requested prices.
+    /// - parameter numDataPoints: The number of data points to receive on the prices array result.
+    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
+    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
+    private func getSnapshot(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.Market.ScrappedSnapshot> {
+        self.api.publisher
+            .makeScrappedRequest(.get, url: { (_, _) in
+                let interval = resolution.components
+                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/combined-cached/\(numDataPoints)"
+                return rootURL.appendingPathComponent(subpath)
+            }, queries: { _ in
+                [.init(name: "format", value: "json"),
+                .init(name: "locale", value: Locale.ig.identifier),
+                .init(name: "delay", value: "0")]
+            }, headers: { (_, _) in
+                [.clientSessionToken: scrappedCredentials.cst,
+                .securityToken: scrappedCredentials.security,
+                .pragma: "no-cache",
+                .cacheControl: "no-cache"]
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .default())
+            .mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: GET /chart/snapshot
+    
+    /// - warning: Be mindful of the amount of data being requested. There is a maximum for each interval that can be requested.
+    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
+    /// - parameter resolution: It defines the resolution of requested prices.
+    /// - parameter from: The date from which to start the query.
+    /// - parameter to: The date from which to end the query.
+    /// - parameter scalingFactor: The factor to be applied to every single data point returned.
+    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
+    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
+    /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
+    private func getBatchPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+        self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
+                guard from <= to else { throw IG.API.Error.invalidRequest(#"The "from" date must occur before the "to" date"#, suggestion: .readDocs) }
+                let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
+                let toComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: to)
+                return (fromComponents, toComponents)
+            }.makeScrappedRequest(.get, url: { (_, values) in
+                let interval = resolution.components
+                let (f, t) = values
+                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(f.nanosecond!)/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)/\(t.nanosecond!)"
+                return rootURL.appendingPathComponent(subpath)
+            }, queries: { _ in
+                [.init(name: "format", value: "json"),
+                 .init(name: "locale", value: Locale.ig.identifier)]
+            }, headers: { (_, _) in
+                [.clientSessionToken: scrappedCredentials.cst,
+                 .securityToken: scrappedCredentials.security,
+                 .pragma: "no-cache",
+                 .cacheControl: "no-cache"]
+            }).send(expecting: .json, statusCode: 200)
+            .decodeJSON(decoder: .custom({ (_, _, _) in JSONDecoder().set { $0.userInfo[.scalingFactor] = scalingFactor } })) { (response: IG.API.Market.ScrappedBatch, _) in
+                response.prices
+            }.mapError(IG.API.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 

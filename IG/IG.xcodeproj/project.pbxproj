@@ -226,6 +226,8 @@
 		8DC1A4A5234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8DCD2CE42366C4D50099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
+		8DCD2CE52366C4DC0099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
 		8DD1BA18235F65B200DFA3F0 /* CombineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD1BA17235F659E00DFA3F0 /* CombineTests.swift */; };
 		8DD1BA19235F65BA00DFA3F0 /* CombineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD1BA17235F659E00DFA3F0 /* CombineTests.swift */; };
 		8DDBE9FA23506F1E001773D2 /* DBPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */; };
@@ -447,6 +449,7 @@
 		8DC4CBE12149A78700344CBF /* IG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = IG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DC4CBEA2149A78700344CBF /* IGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DC4CBFE2149AB1200344CBF /* Environment */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Environment; sourceTree = "<group>"; };
+		8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPriceBatchTests.swift; sourceTree = "<group>"; };
 		8DD1BA17235F659E00DFA3F0 /* CombineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CombineTests.swift; sourceTree = "<group>"; };
 		8DD468D322F1C70100134B67 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
 		8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBPriceTests.swift; sourceTree = "<group>"; };
@@ -555,6 +558,7 @@
 			isa = PBXGroup;
 			children = (
 				8D7D2DF1236318CF00C0BEB5 /* APICalendarTests.swift */,
+				8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */,
 			);
 			path = Scrapped;
 			sourceTree = "<group>";
@@ -1384,6 +1388,7 @@
 				8D89C78C234314A800FD0F3D /* APIPositionTests.swift in Sources */,
 				8D89C78D234317BD00FD0F3D /* APIWorkingOrderTests.swift in Sources */,
 				8D7D2DF32363191000C0BEB5 /* APICalendarTests.swift in Sources */,
+				8DCD2CE52366C4DC0099259B /* APIPriceBatchTests.swift in Sources */,
 				8DB266BA234B41B400F168CE /* StreamerLowlevelTests.swift in Sources */,
 				8D89C7982343A41700FD0F3D /* StreamerSessionTests.swift in Sources */,
 				8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */,
@@ -1522,6 +1527,7 @@
 				8D376DB9234C63A4007D4A48 /* APIPositionTests.swift in Sources */,
 				8D376DBA234C63A4007D4A48 /* APIWorkingOrderTests.swift in Sources */,
 				8D7D2DF22363190C00C0BEB5 /* APICalendarTests.swift in Sources */,
+				8DCD2CE42366C4D50099259B /* APIPriceBatchTests.swift in Sources */,
 				8D376DBB234C63AF007D4A48 /* StreamerLowlevelTests.swift in Sources */,
 				8D376DBC234C63BE007D4A48 /* StreamerSessionTests.swift in Sources */,
 				8D376DBD234C63BE007D4A48 /* StreamerMarketTests.swift in Sources */,

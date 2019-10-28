@@ -6,7 +6,7 @@ final class APICalendarTests: XCTestCase {
     /// Test the economic calendar event extraction.
     func testEventsExtraction() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
         
         let calendar = Calendar(identifier: .gregorian)
         let components = DateComponents().set {
@@ -17,11 +17,15 @@ final class APICalendarTests: XCTestCase {
         let from = calendar.date(from: components)!
         let to = calendar.date(from: components.set { $0.month = 11 })!
         
-        let cst: String = "<#Fill me#>"
-        let security: String = "<#Fill me#>"
+        let cst: String = "<#CST#>"
+        let security: String = "<#X-SECURTY-TOKEN#>"
         
         let events = api.scrapped.getEvents(epic: "CS.D.EURUSD.MINI.IP", from: from, to: to, scrappedCredentials: (cst, security)).expectsOne { self.wait(for: [$0], timeout: 2) }
         XCTAssertFalse(events.isEmpty)
         XCTAssertLessThan(events[0].date, events.last!.date)
+        
+        for event in events {
+            print(event)
+        }
     }
 }
