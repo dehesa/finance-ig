@@ -8,7 +8,7 @@ final class APINavigationNodeTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertNil(rootNode.identifier)
         XCTAssertEqual(rootNode.name, "Root")
         
@@ -25,7 +25,7 @@ final class APINavigationNodeTests: XCTestCase {
         
         let target: (identifier: String, name: String) = ("264134", "Major FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(node.identifier, target.identifier)
         XCTAssertEqual(node.name, target.name)
         XCTAssertNotNil(node.subnodes)
@@ -41,7 +41,7 @@ final class APINavigationNodeTests: XCTestCase {
         
         let target: (identifier: String, name: String) = ("195235", "FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all)
-            .expectsOne { self.wait(for: [$0], timeout: 8) }
+            .expectsOne(timeout: 8, on: self)
         XCTAssertEqual(node.identifier, target.identifier)
         XCTAssertEqual(node.name, target.name)
         XCTAssertNotNil(node.subnodes)
@@ -55,7 +55,7 @@ final class APINavigationNodeTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let markets = api.nodes.getMarkets(matching: "NZD")
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)
         
         let now = Date()

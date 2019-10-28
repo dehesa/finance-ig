@@ -12,16 +12,16 @@ final class DBForexTests: XCTestCase {
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
             .sorted { $0 < $1 }
             .uniqueElements
-        let apiForex = api.markets.get(epics: .init(epics)).expectsOne { self.wait(for: [$0], timeout: 2) }
-        db.markets.update(apiForex).expectsCompletion { self.wait(for: [$0], timeout: 0.5) }
+        let apiForex = api.markets.get(epics: .init(epics)).expectsOne(timeout: 2, on: self)
+        db.markets.update(apiForex).expectsCompletion(timeout: 0.5, on: self)
         
         let dbForex = db.markets.forex.getAll()
-            .expectsOne { self.wait(for: [$0], timeout: 0.5) }
+            .expectsOne(timeout: 0.5, on: self)
             .sorted { $0.epic < $1.epic }
         XCTAssertEqual(epics, dbForex.map { $0.epic })
         
         for epic in epics {
-            let market = db.markets.forex.get(epic: epic).expectsOne { self.wait(for: [$0], timeout: 0.5) }
+            let market = db.markets.forex.get(epic: epic).expectsOne(timeout: 0.5, on: self)
             XCTAssertEqual(market.epic, epic)
         }
     }
@@ -35,11 +35,11 @@ final class DBForexTests: XCTestCase {
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
             .sorted { $0 < $1 }
             .uniqueElements
-        let apiForex = api.markets.get(epics: .init(epics)).expectsOne { self.wait(for: [$0], timeout: 2) }
-        db.markets.update(apiForex).expectsCompletion { self.wait(for: [$0], timeout: 0.5) }
+        let apiForex = api.markets.get(epics: .init(epics)).expectsOne(timeout: 2, on: self)
+        db.markets.update(apiForex).expectsCompletion(timeout: 0.5, on: self)
 
         let notIncludedEpic = Test.Epic.forex.first { !epics.contains($0) }!
-        db.markets.forex.get(epic: notIncludedEpic).expectsFailure  { self.wait(for: [$0], timeout: 0.5) }
+        db.markets.forex.get(epic: notIncludedEpic).expectsFailure(timeout: 0.5, on: self)
     }
 
     /// Test the currency retrieval functions.
@@ -49,11 +49,11 @@ final class DBForexTests: XCTestCase {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         // Retrieve 50 forex markets from the server and store them in the database.
         let epics = Test.Epic.forex.prefix(50)
-        let apiForex = api.markets.get(epics: .init(epics)).expectsOne { self.wait(for: [$0], timeout: 2) }
-        db.markets.update(apiForex).expectsCompletion { self.wait(for: [$0], timeout: 0.5) }
+        let apiForex = api.markets.get(epics: .init(epics)).expectsOne(timeout: 2, on: self)
+        db.markets.update(apiForex).expectsCompletion(timeout: 0.5, on: self)
         // Retrieve all forex markets from the database and find out the one that has the most matches.
         let dbForex = db.markets.forex.getAll()
-            .expectsOne { self.wait(for: [$0], timeout: 0.5) }
+            .expectsOne(timeout: 0.5, on: self)
             .sorted { $0.epic < $1.epic }
         
         var dict: [IG.Currency.Code:Int] = .init()
@@ -65,7 +65,7 @@ final class DBForexTests: XCTestCase {
         let popularMarket = dict.sorted { $0.value > $1.value }.first!
 
 
-        let results = db.markets.forex.get(currency: popularMarket.key).expectsOne { self.wait(for: [$0], timeout: 0.5) }
+        let results = db.markets.forex.get(currency: popularMarket.key).expectsOne(timeout: 0.5, on: self)
         XCTAssertEqual(popularMarket.value, results.count)
     }
 }

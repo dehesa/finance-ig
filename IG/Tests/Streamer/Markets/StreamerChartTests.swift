@@ -8,12 +8,12 @@ final class StreamerChartTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.charts.subscribe(to: epic, interval: .second, fields: .all)
-            .expectsAtLeast(4, each: { (second) in
+            .expectsAtLeast(values: 4, timeout: 8, on: self) { (second) in
                 XCTAssertEqual(second.epic, epic)
                 XCTAssertEqual(second.interval, .second)
                 XCTAssertNotNil(second.candle.date)
@@ -28,9 +28,9 @@ final class StreamerChartTests: XCTestCase {
                 XCTAssertNotNil(second.day.highest)
                 XCTAssertNotNil(second.day.changeNet)
                 XCTAssertNotNil(second.day.changePercentage)
-            }) { self.wait(for: [$0], timeout: 8) }
+            }
         
-        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
     
@@ -39,18 +39,18 @@ final class StreamerChartTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.charts.subscribe(to: epic, fields: .all)
-            .expectsAtLeast(4, each: { (tick) in
+            .expectsAtLeast(values: 4, timeout: 8, on: self) { (tick) in
                 XCTAssertEqual(tick.epic, epic)
                 XCTAssertEqual(tick.volume, 1)
                 XCTAssertLessThanOrEqual(tick.date!, Date())
-            }) { self.wait(for: [$0], timeout: 8) }
+            }
 
-        streamer.session.disconnect().expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
 }

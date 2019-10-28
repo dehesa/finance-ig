@@ -7,13 +7,13 @@ final class DBApplicationTests: XCTestCase {
     func testApplicationsInMemory() {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
-        let apiResponse = api.applications.getAll().expectsOne { self.wait(for: [$0], timeout: 2) }
+        let apiResponse = api.applications.getAll().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(apiResponse.isEmpty)
         
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
-        db.applications.update(apiResponse).expectsCompletion { self.wait(for: [$0], timeout: 2) }
+        db.applications.update(apiResponse).expectsCompletion(timeout: 2, on: self)
         
-        let dbResponse = db.applications.getAll().expectsOne { self.wait(for: [$0], timeout: 0.5) }
+        let dbResponse = db.applications.getAll().expectsOne(timeout: 0.5, on: self)
         XCTAssertEqual(apiResponse.count, dbResponse.count)
         for (apiApp, dbApp) in zip(apiResponse, dbResponse) {
             XCTAssertEqual(apiApp.key, dbApp.key)
@@ -30,7 +30,7 @@ final class DBApplicationTests: XCTestCase {
         }
 
         for apiApp in apiResponse {
-            let dbApp = db.applications.get(key: apiApp.key).expectsOne { self.wait(for: [$0], timeout: 0.5) }
+            let dbApp = db.applications.get(key: apiApp.key).expectsOne(timeout: 0.5, on: self)
             XCTAssertEqual(apiApp.key, dbApp.key)
         }
     }
@@ -38,6 +38,6 @@ final class DBApplicationTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testApplicationsEmpty() {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
-        db.applications.get(key: "a12345bc67890d12345e6789fg0hi123j4567890").expectsFailure { self.wait(for: [$0], timeout: 0.5) }
+        db.applications.get(key: "a12345bc67890d12345e6789fg0hi123j4567890").expectsFailure(timeout: 0.5, on: self)
     }
 }

@@ -15,7 +15,7 @@ final class APIActivityTests: XCTestCase {
         })!
         
         let activities = api.history.getActivityContinuously(from: date, detailed: true)
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(activities.isEmpty)
         

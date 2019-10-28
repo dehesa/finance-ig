@@ -13,7 +13,7 @@ final class APISessionTests: XCTestCase {
         }
 
         api.session.login(type: .oauth, key: acc.api.key, user: user)
-            .expectsCompletion { self.wait(for: [$0], timeout: 1.2) }
+            .expectsCompletion(timeout: 1.2, on: self)
         XCTAssertNotNil(api.channel.credentials)
         
         let credentials = api.channel.credentials!
@@ -21,18 +21,18 @@ final class APISessionTests: XCTestCase {
         XCTAssertEqual(acc.api.rootURL, api.rootURL)
         
         let session = api.session.get()
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(session.account, credentials.account)
         XCTAssertEqual(session.client, credentials.client)
         XCTAssertEqual(session.streamerURL, credentials.streamerURL)
         XCTAssertEqual(session.timezone, credentials.timezone)
         
         api.session.refresh()
-            .expectsCompletion { self.wait(for: [$0], timeout: 1.2) }
+            .expectsCompletion(timeout: 1.2, on: self)
         XCTAssertNotNil(api.channel.credentials)
         XCTAssertGreaterThanOrEqual(api.channel.credentials!.token.expirationDate, credentials.token.expirationDate)
         
         api.session.logout()
-            .expectsCompletion { self.wait(for: [$0], timeout: 1) }
+            .expectsCompletion(timeout: 1, on: self)
     }
 }
