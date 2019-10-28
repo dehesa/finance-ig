@@ -19,7 +19,7 @@ final class APIPriceTests: XCTestCase {
         let toDate = calendar.date(from: components.set { $0.minute = 59 })!
         
         let events = api.history.getPrices(epic: "CS.D.EURUSD.MINI.IP", from: fromDate, to: toDate, resolution: .minute10)
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertFalse(events.isEmpty)
         
         let prices = events.flatMap { $0.prices }

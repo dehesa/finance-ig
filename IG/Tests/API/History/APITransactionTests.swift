@@ -15,7 +15,7 @@ final class APITransactionTests: XCTestCase {
         })!
         
         let transactions = api.history.getTransactionsContinuously(from: date)
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
         

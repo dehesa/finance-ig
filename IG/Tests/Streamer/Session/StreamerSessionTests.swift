@@ -9,7 +9,7 @@ final class StreamerSessionTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         let connectionStatuses = streamer.session.connect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertNotNil(connectionStatuses.last)
         XCTAssertTrue(connectionStatuses.last!.isReady)
         XCTAssertTrue(streamer.status.isReady)
@@ -17,7 +17,7 @@ final class StreamerSessionTests: XCTestCase {
         self.wait(for: 0.3)
         
         let disconnectionStatuses = streamer.session.disconnect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertNotNil(disconnectionStatuses.last)
         XCTAssertEqual(disconnectionStatuses.last!, .disconnected(isRetrying: false))
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
@@ -28,17 +28,17 @@ final class StreamerSessionTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
         self.wait(for: 0.3)
         
         let items = streamer.session.unsubscribeAll()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertTrue(items.isEmpty)
         
         streamer.session.disconnect()
-            .expectsAll { self.wait(for: [$0], timeout: 2) }
+            .expectsAll(timeout: 2, on: self)
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
 }

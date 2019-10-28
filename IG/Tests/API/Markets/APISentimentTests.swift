@@ -9,7 +9,7 @@ final class APISentimentTests: XCTestCase {
         
         let ids = ["EURGBP", "GC", "VOD-UK"].sorted { $0 > $1 }
         let markets = api.markets.getSentiment(from: ids)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(markets.map { $0.marketIdentifier }.sorted { $0 > $1 }, ids)
         
         let market = markets.first!
@@ -25,7 +25,7 @@ final class APISentimentTests: XCTestCase {
 
         let id = "EURGBP"
         let market = api.markets.getSentiment(from: id)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertGreaterThan(market.longs, 0)
         XCTAssertGreaterThan(market.shorts, 0)
         XCTAssertEqual(market.longs + market.shorts, 100)
@@ -37,7 +37,7 @@ final class APISentimentTests: XCTestCase {
         
         let id = "EURGBP"
         let markets = api.markets.getSentiment(relatedTo: id)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)
         
         let market = markets.first!

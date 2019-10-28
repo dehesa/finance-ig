@@ -13,7 +13,7 @@ final class APIOAuthTests: XCTestCase {
         }
         
         let credentials = api.session.loginOAuth(key: acc.api.key, user: user)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, acc.api.key)
         XCTAssertEqual(credentials.account, acc.identifier)
@@ -31,7 +31,7 @@ final class APIOAuthTests: XCTestCase {
         XCTAssertEqual(headers[.account], acc.identifier.rawValue)
 
         let token = api.session.refreshOAuth(token: refresh, key: acc.api.key)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(token.isExpired)
         guard case .oauth(let newAccess, let newRefresh, let newScope, let newType) = token.value else {
             fatalError()
@@ -46,7 +46,7 @@ final class APIOAuthTests: XCTestCase {
         api.channel.credentials = newCredentials
         
         api.session.logout()
-            .expectsCompletion { self.wait(for: [$0], timeout: 1) }
+            .expectsCompletion(timeout: 1, on: self)
         XCTAssertNil(api.channel.credentials)
     }
 }

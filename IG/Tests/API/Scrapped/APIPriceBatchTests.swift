@@ -12,7 +12,7 @@ final class APIPriceBatchTests: XCTestCase {
         let security: String = "<#X-SECURTY-TOKEN#>"
         
         let num = 300
-        let prices = api.scrapped.getLastPrices(epic: "CS.D.EURUSD.MINI.IP", resolution: .minute, numDataPoints: num, scrappedCredentials: (cst, security)).expectsOne { self.wait(for: [$0], timeout: 2) }
+        let prices = api.scrapped.getLastPrices(epic: "CS.D.EURUSD.MINI.IP", resolution: .minute, numDataPoints: num, scrappedCredentials: (cst, security)).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(prices.isEmpty)
         XCTAssertEqual(num, prices.count)
     }
@@ -33,7 +33,7 @@ final class APIPriceBatchTests: XCTestCase {
         let cst: String = "<#CST#>"
         let security: String = "<#X-SECURTY-TOKEN#>"
         
-        let prices = api.scrapped.getLastPrices(epic: "CS.D.EURUSD.MINI.IP", resolution: .minute, from: from, scrappedCredentials: (cst, security)).expectsOne { self.wait(for: [$0], timeout: 2) }
+        let prices = api.scrapped.getLastPrices(epic: "CS.D.EURUSD.MINI.IP", resolution: .minute, from: from, scrappedCredentials: (cst, security)).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(prices.isEmpty)
     }
 }

@@ -83,7 +83,7 @@ The framework is developed so you can drop it in in your projects and start codi
 - SQLite.
 - Lightstreamer binaries (prepackage within the framework under `/Frameworks`).
 
-I would love to support SPM, but SPM doesn't currently support prebuilt binaries; they are, however, on the "pitch" phase.
+I would love to provide the framework through SPM, but SPM doesn't currently support prebuilt binaries; they are, however, on the "pitch" phase.
 - [SPM pitch for binary dependencies](https://forums.swift.org/t/pitch-support-for-binary-dependencies/27620).
 - [Importing Lightstreamer with SPM](https://forums.lightstreamer.com/showthread.php?8440-Importing-Lightstreamer-with-Swift-Package-Manager).
 

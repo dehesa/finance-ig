@@ -8,7 +8,7 @@ final class APIWatchlistTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let watchlists = api.watchlists.getAll()
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(watchlists.isEmpty)
         for watchlist in watchlists {
             XCTAssertFalse(watchlist.identifier.isEmpty)
@@ -17,7 +17,7 @@ final class APIWatchlistTests: XCTestCase {
         
         let target = watchlists.last!
         let markets = api.watchlists.getMarkets(from: target.identifier)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)
     }
 
@@ -32,29 +32,29 @@ final class APIWatchlistTests: XCTestCase {
 
         // 1. Creates a watchlist.
         let w = api.watchlists.create(name: "Test Watchlist", epics: startEpics)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertFalse(w.identifier.isEmpty)
         XCTAssertTrue(w.areAllInstrumentsAdded)
         // 2. Check the data of the created watchlist.
         let startingMarkets = api.watchlists.getMarkets(from: w.identifier)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(startEpics, startingMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 3. Add a new epic to the watchlist.
         api.watchlists.update(identifier: w.identifier, addingEpic: addedEpic)
-            .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+            .expectsCompletion(timeout: 1.5, on: self)
         // 4. Retrieve data from the watchlist.
         let midMarkets = api.watchlists.getMarkets(from: w.identifier)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(endEpics, midMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 5. Removes the epic just added.
         api.watchlists.update(identifier: w.identifier, removingEpic: addedEpic)
-            .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+            .expectsCompletion(timeout: 1.5, on: self)
         // 6. Retrieve data from the watchlist.
         let endMarkets = api.watchlists.getMarkets(from: w.identifier)
-            .expectsOne { self.wait(for: [$0], timeout: 2) }
+            .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(startEpics, endMarkets.map { $0.instrument.epic }.sorted { $0.rawValue > $1.rawValue })
         // 7. Deletes the whole test wachtlist.
         api.watchlists.delete(identifier: w.identifier)
-            .expectsCompletion { self.wait(for: [$0], timeout: 1.5) }
+            .expectsCompletion(timeout: 1.5, on: self)
     }
 }
