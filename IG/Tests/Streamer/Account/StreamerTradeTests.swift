@@ -1,5 +1,6 @@
 import XCTest
 import IG
+import ConbiniForTesting
 import Combine
 
 final class StreamerTradeTests: XCTestCase {
@@ -43,7 +44,7 @@ final class StreamerTradeTests: XCTestCase {
                 dealId = update.confirmation.dealIdentifier
             })
         XCTAssertEqual(streamer.subscriptionsCount, 1)
-        self.wait(for: 0.8)
+        self.wait(seconds: 0.8)
         
         // 2. Gather information
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
@@ -59,17 +60,17 @@ final class StreamerTradeTests: XCTestCase {
             expectation.fulfill()
         }
         
-        self.wait(for: 1.5)
+        self.wait(seconds: 1.5)
         
         // 4. Modify the working order
         let newLevel = level + 0.0005
         api.workingOrders.update(identifier: dealId!, type: .limit, level: newLevel, limit: nil, stop: nil, expiration: .tillCancelled)
             .expectsOne(timeout: 2, on: self)
-        self.wait(for: 1)
+        self.wait(seconds: 1)
         
         // 5. Delete working order
         api.workingOrders.delete(identifier: dealId!).expectsOne(timeout: 2, on: self)
-        self.wait(for: 1)
+        self.wait(seconds: 1)
         
         // 6. Unsubscribe & disconnect
         cancellable.cancel()

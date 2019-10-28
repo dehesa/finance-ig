@@ -1,5 +1,6 @@
 import XCTest
 import IG
+import ConbiniForTesting
 import Combine
 
 final class StreamerSessionTests: XCTestCase {
@@ -14,7 +15,7 @@ final class StreamerSessionTests: XCTestCase {
         XCTAssertTrue(connectionStatuses.last!.isReady)
         XCTAssertTrue(streamer.status.isReady)
         
-        self.wait(for: 0.3)
+        self.wait(seconds: 0.3)
         
         let disconnectionStatuses = streamer.session.disconnect()
             .expectsAll(timeout: 2, on: self)
@@ -31,7 +32,7 @@ final class StreamerSessionTests: XCTestCase {
             .expectsAll(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
-        self.wait(for: 0.3)
+        self.wait(seconds: 0.3)
         
         let items = streamer.session.unsubscribeAll()
             .expectsAll(timeout: 2, on: self)

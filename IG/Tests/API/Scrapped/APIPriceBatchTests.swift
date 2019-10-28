@@ -1,4 +1,5 @@
 @testable import IG
+import ConbiniForTesting
 import XCTest
 
 /// Tests API Application related endpoints.
