@@ -23,13 +23,7 @@ final class APIPriceBatchTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
         
-        let calendar = Calendar(identifier: .gregorian)
-        let components = DateComponents().set {
-            $0.timeZone = .current
-            ($0.year, $0.month, $0.day) = (2019, 10, 23)
-            ($0.hour, $0.minute) = (18, 0)
-        }
-        let from = calendar.date(from: components)!
+        let from = Date().lastTuesday
         
         let cst: String = "<#CST#>"
         let security: String = "<#X-SECURTY-TOKEN#>"

@@ -8,12 +8,7 @@ final class APIActivityTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let date = Calendar(identifier: .gregorian).date(from: DateComponents().set {
-            $0.timeZone = .current
-            ($0.year, $0.month, $0.day) = (2019, 7, 1)
-            ($0.hour, $0.minute) = (0, 0)
-        })!
-        
+        let date = Date().lastTuesday
         let activities = api.history.getActivityContinuously(from: date, detailed: true)
             .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }

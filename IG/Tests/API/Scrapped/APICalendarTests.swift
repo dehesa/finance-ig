@@ -8,14 +8,8 @@ final class APICalendarTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
         
-        let calendar = Calendar(identifier: .gregorian)
-        let components = DateComponents().set {
-            $0.timeZone = .current
-            ($0.year, $0.month, $0.day) = (2019, 7, 1)
-            ($0.hour, $0.minute) = (0, 0)
-        }
-        let from = calendar.date(from: components)!
-        let to = calendar.date(from: components.set { $0.month = 11 })!
+        let to = Date()
+        let from = to.lastTuesday
         
         let cst: String = "<#CST#>"
         let security: String = "<#X-SECURTY-TOKEN#>"

@@ -8,15 +8,8 @@ final class APIPriceTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let components = DateComponents().set {
-            $0.timeZone = .current
-            ($0.year, $0.month, $0.day) = (2019, 7, 1)
-            ($0.hour, $0.minute) = (0, 0)
-        }
-        
-        let calendar = Calendar(identifier: .gregorian)
-        let fromDate = calendar.date(from: components)!
-        let toDate = calendar.date(from: components.set { $0.minute = 59 })!
+        let fromDate = Date().lastTuesday
+        let toDate = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: fromDate)!
         
         let events = api.history.getPrices(epic: "CS.D.EURUSD.MINI.IP", from: fromDate, to: toDate, resolution: .minute10)
             .expectsAll(timeout: 2, on: self)
@@ -30,5 +23,9 @@ final class APIPriceTests: XCTestCase {
         let element = prices[Int.random(in: 0..<prices.count)]
         XCTAssertGreaterThanOrEqual(element.date, fromDate)
         XCTAssertLessThanOrEqual(element.date, toDate)
+    }
+    
+    func testingThings() {
+        
     }
 }
