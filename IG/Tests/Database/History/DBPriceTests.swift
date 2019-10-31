@@ -6,7 +6,10 @@ final class DBPriceTests: XCTestCase {
     /// Test the retrieval of price data from a table that it is not there.
     func testNonExistentPriceTable() {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
-        let prices = db.history.getPrices(epic: Test.Epic.forex.randomElement()!, from: twoHoursAgo).expectsOne(timeout: 0.5, on: self)
+        
+        let from = Date().lastTuesday
+        let to = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: from)!
+        let prices = db.history.getPrices(epic: Test.Epic.forex.randomElement()!, from: from, to: to).expectsOne(timeout: 0.5, on: self)
         XCTAssertTrue(prices.isEmpty)
     }
 
@@ -16,19 +19,22 @@ final class DBPriceTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        let epic: IG.Market.Epic = "CS.D.EURUSD.CFD.IP"
-        let apiMarket = api.markets.get(epic: epic).expectsOne(timeout: 0.5, on: self)
-        db.markets.update(apiMarket).expectsCompletion(timeout: 0.5, on: self)
-        XCTAssertTrue(db.history.getPrices(epic: epic, from: twoHoursAgo).expectsOne(timeout: 0.5, on: self).isEmpty)
+        let from = Date().lastTuesday
+        let to = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: from)!
         
-        let apiPrices = api.history.getPricesContinuously(epic: epic, from: twoHoursAgo)
+        let epic: IG.Market.Epic = "CS.D.EURUSD.CFD.IP"
+        let apiMarket = api.markets.get(epic: epic).expectsOne(timeout: 2, on: self)
+        db.markets.update(apiMarket).expectsCompletion(timeout: 0.5, on: self)
+        XCTAssertTrue(db.history.getPrices(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self).isEmpty)
+        
+        let apiPrices = api.history.getPricesContinuously(epic: epic, from: from, to: to)
             .map { (prices, _) -> [IG.API.Price] in prices }
             .expectsAll(timeout: 4, on: self)
             .flatMap { $0 }
         XCTAssertTrue(apiPrices.isSorted { $0.date < $1.date })
-        
         db.history.update(prices: apiPrices, epic: epic).expectsCompletion(timeout: 0.5, on: self)
-        let dbPrices = db.history.getPrices(epic: epic, from: twoHoursAgo).expectsOne(timeout: 0.5, on: self)
+        
+        let dbPrices = db.history.getPrices(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self)
         XCTAssertTrue(dbPrices.isSorted { $0.date < $1.date })
         XCTAssertEqual(apiPrices.count, dbPrices.count)
         
@@ -44,11 +50,5 @@ final class DBPriceTests: XCTestCase {
             XCTAssertEqual(apiPrice.highest.ask, dbPrice.highest.ask)
             XCTAssertEqual(Int(apiPrice.volume!), dbPrice.volume)
         }
-    }
-}
-
-extension DBPriceTests {
-    var twoHoursAgo: Date {
-        Calendar.current.date(byAdding: .hour, value: -1, to: Date())!
     }
 }

@@ -18,10 +18,61 @@ extension IG.DB.Request.History {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.Publishers.Discrete<[IG.DB.Price]> {
+    public func getPriceDates(epic: IG.Market.Epic, from: Date?, to: Date = Date()) -> IG.DB.Publishers.Discrete<[Date]> {
         self.database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
-            let query = ("SELECT * FROM '\(tableName)' WHERE date BETWEEN ?1 AND ?2")
+            var query = "SELECT date FROM '\(tableName)'"
+            if let from = from {
+                guard from <= to else {
+                    throw IG.DB.Error.invalidRequest("The \"from\" date must indicate a date before the \"to\" date", suggestion: .readDocs)
+                }
+                query.append(" WHERE date BETWEEN ?1 AND ?2")
+            } else {
+                query.append(" WHERE date <= ?2")
+            }
+            query.append(" ORDER BY date ASC")
+            return (tableName, query)
+        }.read { (sqlite, statement, input) in
+            var result: [Date] = .init()
+            
+            // 1. Check the price table is there.
+            guard try Self.existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
+            
+            // 2. Retrieve the requested data
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+            
+            let formatter = IG.DB.Formatter.timestamp
+            if let from = from {
+                sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
+            }
+            sqlite3_bind_text(statement, 2, formatter.string(from: to), -1, SQLite.Destructor.transient)
+            while true {
+                switch sqlite3_step(statement).result {
+                case .row:
+                    let date = IG.DB.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
+                    result.append(date)
+                case .done: return result
+                case let c: throw IG.DB.Error.callFailed(.querying(IG.DB.Price.self), code: c)
+                }
+            }
+            
+            return result
+        }.eraseToAnyPublisher()
+    }
+    
+    /// Returns historical prices for a particular instrument.
+    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// - parameter from: The date from which to start the query.
+    /// - parameter to: The date from which to end the query.
+    /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.Publishers.Discrete<[IG.DB.Price]> {
+        self.database.publisher { _ -> (tableName: String, query: String) in
+            guard from <= to else {
+                throw IG.DB.Error.invalidRequest("The \"from\" date must indicate a date before the \"to\" date", suggestion: .readDocs)
+            }
+            
+            let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
+            let query = "SELECT * FROM '\(tableName)' WHERE date BETWEEN ?1 AND ?2"
             return (tableName, query)
         }.read { (sqlite, statement, input) in
             var result: [IG.DB.Price] = .init()

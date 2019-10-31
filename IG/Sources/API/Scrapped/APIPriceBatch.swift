@@ -6,11 +6,10 @@ extension IG.API.Request.Scrapped {
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter numDataPoints: The number of data points to receive on the prices array result.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: numDataPoints, rootURL: rootURL, scrappedCredentials: scrappedCredentials)
+    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: numDataPoints, scrappedCredentials: scrappedCredentials)
             .map { (snapshot) in
                 snapshot.prices
             }.eraseToAnyPublisher()
@@ -21,22 +20,21 @@ extension IG.API.Request.Scrapped {
     /// If the `from` date is further in the past from the platform permitted date, that date is taken instead.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, from: Date, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
         let (maxDataPoints, numDataPoints) = (300, resolution.numDataPoints(minutes: -1 * Int(from.timeIntervalSinceNow)))
         guard numDataPoints > maxDataPoints else {
-            return self.getLastPrices(epic: epic, resolution: resolution, numDataPoints: numDataPoints, rootURL: rootURL, scrappedCredentials: scrappedCredentials)
+            return self.getLastPrices(epic: epic, resolution: resolution, numDataPoints: numDataPoints, scrappedCredentials: scrappedCredentials)
         }
 
-        return self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: maxDataPoints, rootURL: rootURL, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
+        return self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: maxDataPoints, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
             guard let api = weakAPI else {
                 return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
             }
             
             let date = (from > snapshot.availableBatchPrices.lowerBound) ? from : snapshot.availableBatchPrices.lowerBound
-            return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: date, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, rootURL: rootURL, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
+            return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: date, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
                 guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
                 guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
                 
@@ -50,16 +48,15 @@ extension IG.API.Request.Scrapped {
     /// Returns all available data points for the given market epic and resolution..
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getLastAvailablePrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), rootURL: rootURL, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
+    public func getLastAvailablePrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
                 guard let api = weakAPI else {
                     return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
                 }
                 
-                return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: snapshot.availableBatchPrices.lowerBound, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, rootURL: rootURL, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
+                return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: snapshot.availableBatchPrices.lowerBound, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
                     guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
                     guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
                     
@@ -69,7 +66,10 @@ extension IG.API.Request.Scrapped {
                 }.eraseToAnyPublisher()
             }.eraseToAnyPublisher()
     }
+}
 
+extension IG.API.Request.Scrapped {
+    
     // MARK: GET /chart/snapshot
     
     /// Returns a market snapshot for the given epic.
@@ -80,7 +80,7 @@ extension IG.API.Request.Scrapped {
     /// - parameter numDataPoints: The number of data points to receive on the prices array result.
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    private func getSnapshot(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.Market.ScrappedSnapshot> {
+    private func getSnapshot(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.Market.ScrappedSnapshot> {
         self.api.publisher
             .makeScrappedRequest(.get, url: { (_, _) in
                 let interval = resolution.components
@@ -112,7 +112,7 @@ extension IG.API.Request.Scrapped {
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    private func getBatchPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+    private func getBatchPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
         self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
                 guard from <= to else { throw IG.API.Error.invalidRequest(#"The "from" date must occur before the "to" date"#, suggestion: .readDocs) }
                 let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
@@ -218,7 +218,7 @@ extension IG.API.Market {
 extension IG.API.Market {
     /// A batch of data prices.
     fileprivate struct ScrappedBatch: Decodable {
-        ///
+        /// ???
         let isConsolidated: Bool
         /// The identifier for the given transaction.
         let transactionIdentifier: String
@@ -302,7 +302,7 @@ extension CodingUserInfoKey {
     fileprivate static var scalingFactor: CodingUserInfoKey { CodingUserInfoKey(rawValue: "IG_APIScrappedScaling")! }
 }
 
-extension IG.API.Request.History.Resolution {
+extension IG.API.Price.Resolution {
     /// The components identifying the receiving resolution.
     fileprivate var components: (number: Int, identifier: String) {
         switch self {

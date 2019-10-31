@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8D0906A2236B4533005E7501 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0906A1236B4522005E7501 /* Date.swift */; };
+		8D0906A3236B4537005E7501 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0906A1236B4522005E7501 /* Date.swift */; };
 		8D286D272344C8D000D582AE /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
 		8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
 		8D2EA92B233B4E030004A4C2 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
@@ -310,6 +312,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8D0906A1236B4522005E7501 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
 		8D19C51A2326459000F029B3 /* ErrorHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHelper.swift; sourceTree = "<group>"; };
@@ -943,6 +946,7 @@
 			isa = PBXGroup;
 			children = (
 				8DC4CA872149A6CE00344CBF /* String.swift */,
+				8D0906A1236B4522005E7501 /* Date.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -1363,6 +1367,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DF489DD234BA27A00DB85AA /* String.swift in Sources */,
+				8D0906A3236B4537005E7501 /* Date.swift in Sources */,
 				8D84AB1C233A029600DFAFFF /* PlaygroundTests.swift in Sources */,
 				8D80CFD02341E93000E63411 /* Test.swift in Sources */,
 				8D80CFD12341E93200E63411 /* TestFabric.swift in Sources */,
@@ -1498,6 +1503,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D376DC4234C63D6007D4A48 /* String.swift in Sources */,
+				8D0906A2236B4533005E7501 /* Date.swift in Sources */,
 				8D376DA6234C6376007D4A48 /* PlaygroundTests.swift in Sources */,
 				8D376DA7234C6379007D4A48 /* Test.swift in Sources */,
 				8D376DA8234C637B007D4A48 /* TestFabric.swift in Sources */,

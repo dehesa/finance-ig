@@ -18,6 +18,7 @@
 		8D59B769235A04A500A9B440 /* Console.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D59B768235A04A500A9B440 /* Console.swift */; };
 		8D67675823674A2000AAC312 /* App+BatchUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D67675723674A2000AAC312 /* App+BatchUpdate.swift */; };
 		8DCAE6E0235A263C007F3D1F /* FileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCAE6DF235A263C007F3D1F /* FileManager.swift */; };
+		8DFFFF8B236B71A900D1AABC /* DateRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFFFF8A236B71A900D1AABC /* DateRange.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -57,6 +58,7 @@
 		8D59B768235A04A500A9B440 /* Console.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Console.swift; sourceTree = "<group>"; };
 		8D67675723674A2000AAC312 /* App+BatchUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App+BatchUpdate.swift"; sourceTree = "<group>"; };
 		8DCAE6DF235A263C007F3D1F /* FileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileManager.swift; sourceTree = "<group>"; };
+		8DFFFF8A236B71A900D1AABC /* DateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRange.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +161,7 @@
 			children = (
 				8D59B768235A04A500A9B440 /* Console.swift */,
 				8DCAE6DF235A263C007F3D1F /* FileManager.swift */,
+				8DFFFF8A236B71A900D1AABC /* DateRange.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -231,12 +234,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D59B769235A04A500A9B440 /* Console.swift in Sources */,
-				8D67675823674A2000AAC312 /* App+BatchUpdate.swift in Sources */,
 				8DCAE6E0235A263C007F3D1F /* FileManager.swift in Sources */,
-				8D59B7662359ED6900A9B440 /* Configuration.swift in Sources */,
+				8DFFFF8B236B71A900D1AABC /* DateRange.swift in Sources */,
+				8D67675823674A2000AAC312 /* App+BatchUpdate.swift in Sources */,
 				8D581F54235F29CC00877221 /* App+Subscription.swift in Sources */,
-				8D59B7642359DF9600A9B440 /* Arguments.swift in Sources */,
 				8D0407BE235A37FB003A5B0C /* App.swift in Sources */,
+				8D59B7662359ED6900A9B440 /* Configuration.swift in Sources */,
+				8D59B7642359DF9600A9B440 /* Arguments.swift in Sources */,
 				8D239B1723588B990047266E /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

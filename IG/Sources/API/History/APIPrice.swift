@@ -12,7 +12,7 @@ extension IG.API.Request.History {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -42,7 +42,7 @@ extension IG.API.Request.History {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: Self.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -78,7 +78,7 @@ extension IG.API.Request.History {
 
 // MARK: - Entities
 
-extension IG.API.Request.History {
+extension IG.API.Price {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
         case second = "SECOND"
