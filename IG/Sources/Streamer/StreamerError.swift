@@ -55,14 +55,14 @@ extension IG.Streamer.Error {
         case unknown
     }
     
-    /// A factory function for `.sessionExpired` API errors.
+    /// A factory function for `.sessionExpired` Streamer errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
     internal static func sessionExpired(message: Self.Message = .sessionExpired, suggestion: Self.Suggestion = .keepSession) -> Self {
         self.init(.sessionExpired, message.rawValue, suggestion: suggestion.rawValue)
     }
     
-    /// A factory function for `.invalidRequest` API errors.
+    /// A factory function for `.invalidRequest` Streamer errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
@@ -70,7 +70,7 @@ extension IG.Streamer.Error {
         self.init(.invalidRequest, message.rawValue, suggestion: suggestion.rawValue, underlying: error)
     }
     
-    /// A factory function for `.subscriptionFailed` API errors.
+    /// A factory function for `.subscriptionFailed` Streamer errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
@@ -78,7 +78,7 @@ extension IG.Streamer.Error {
         self.init(.subscriptionFailed, message.rawValue, suggestion: suggestion.rawValue, item: item, fields: fields, underlying: error)
     }
     
-    /// A factory function for `.invalidResponse` API errors.
+    /// A factory function for `.invalidResponse` Streamer errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
@@ -89,7 +89,7 @@ extension IG.Streamer.Error {
         return error
     }
     
-    /// A factory function for `.unknown` API errors.
+    /// A factory function for `.unknown` Streamer errors.
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that happened right before this error was created.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.

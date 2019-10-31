@@ -32,7 +32,7 @@ public final class Services {
     /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, user: IG.API.User) -> IG.Services.DiscretePublisher<IG.Services> {
+    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, user: IG.API.User) -> IG.Services.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
         return api.session.login(type: .certificate, key: key, user: user)
@@ -49,16 +49,16 @@ public final class Services {
     /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.Services.DiscretePublisher<IG.Services> {
+    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.Services.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Credentials.Token) -> Combine.Publishers.FlatMap<IG.Services.DiscretePublisher<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
+        let signal: (_ token: IG.API.Credentials.Token) -> Combine.Publishers.FlatMap<IG.Services.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
             return api.session.get(key: key, token: token)
                 .mapError(Self.Error.api)
-                .flatMap { (session) -> IG.Services.DiscretePublisher<IG.Services> in
+                .flatMap { (session) -> IG.Services.Publishers.Discrete<IG.Services> in
                     api.channel.credentials = .init(client: session.client, account: session.account, key: key, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
                     return Self.make(with: api, queue: queue, databaseURL: databaseURL)
                 }
@@ -91,7 +91,7 @@ public final class Services {
     /// - parameter api: The API instance with valid credentials.
     /// - parameter databaseURL: The file URL indicating the location of the caching database.
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
-    private static func make(with api: IG.API, queue: DispatchQueue, databaseURL: URL?) -> IG.Services.DiscretePublisher<IG.Services> {
+    private static func make(with api: IG.API, queue: DispatchQueue, databaseURL: URL?) -> IG.Services.Publishers.Discrete<IG.Services> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
             return Fail(error: .api(error: .invalidRequest(.noCredentials, suggestion: .logIn)))
@@ -137,14 +137,17 @@ public final class Services {
     }
 }
 
-extension Services {
-    /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
-    /// This behavior is guaranteed when you see this type.
-    public typealias DiscretePublisher<T> = Combine.AnyPublisher<T,IG.Services.Error>
-    /// Publisher that can send zero, one, or many values followed by a successful completion.
-    ///
-    /// This type is typically semantically used for paginated requests.
-    public typealias ContinuousPublisher<T> = Combine.AnyPublisher<T,IG.Services.Error>
+extension IG.Services {
+    /// List of custom publishers.
+    public enum Publishers {
+        /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
+        /// This behavior is guaranteed when you see this type.
+        public typealias Discrete<T> = Combine.AnyPublisher<T,IG.Services.Error>
+        /// Publisher that can send zero, one, or many values followed by a successful completion.
+        ///
+        /// This type is typically semantically used for paginated requests.
+        public typealias Continuous<T> = Combine.AnyPublisher<T,IG.Services.Error>
+    }
     
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
@@ -152,7 +155,7 @@ extension Services {
     }
 }
 
-extension Services: IG.DebugDescriptable {
+extension IG.Services: IG.DebugDescriptable {
     internal static var printableDomain: String {
         return "\(IG.Bundle.name).\(Self.self)"
     }

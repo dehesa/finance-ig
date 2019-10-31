@@ -9,14 +9,14 @@ extension IG.API.Request.Scrapped {
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, numDataPoints: Int, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
         self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: numDataPoints, rootURL: rootURL, scrappedCredentials: scrappedCredentials)
             .map { (snapshot) in
                 snapshot.prices
             }.eraseToAnyPublisher()
     }
     
-    /// Returns all data points for the given market epic and resolution starting by the given data till the present.
+    /// Returns all data points for the given market epic and resolution starting by the given date till the present.
     ///
     /// If the `from` date is further in the past from the platform permitted date, that date is taken instead.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
@@ -47,13 +47,13 @@ extension IG.API.Request.Scrapped {
         }.eraseToAnyPublisher()
     }
     
-    /// Returns all possible data points for the given market epic and resolution..
+    /// Returns all available data points for the given market epic and resolution..
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getAllPrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+    public func getLastAvailablePrices(epic: IG.Market.Epic, resolution: IG.API.Request.History.Resolution, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
         self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), rootURL: rootURL, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
                 guard let api = weakAPI else {
                     return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
