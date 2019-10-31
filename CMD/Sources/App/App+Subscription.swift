@@ -4,11 +4,14 @@ import Combine
 import Foundation
 
 extension App {
-    ///
-    final class MarketCache: Program {
+    /// A subprogram monitoring the real-time price protocol.
+    final class Subscription: Program {
+        /// The priviledge queue doing synchronization operations.
+        private let queue: DispatchQueue
         /// The main app queue.
         private unowned let mainQueue: DispatchQueue
-        /// All IG services.
+        
+        /// The supported IG services.
         private unowned let services: IG.Services
         /// The epics being currently monitored/subscribed.
         private(set) var epics: Set<IG.Market.Epic>
@@ -17,6 +20,7 @@ extension App {
         
         /// Designated initializer giving the queue where result will be output and the services used to connect to the IG platform.
         init(queue: DispatchQueue, services: IG.Services) {
+            self.queue = DispatchQueue(label: queue.label + ".subscription")
             self.mainQueue = queue
             self.services = services
             self.epics = .init()
@@ -28,8 +32,11 @@ extension App {
         }
         
         /// Start monitoring the given epics and caching their price data in the database.
-        func monitor(epics: [IG.Market.Epic]) {
-            let targetEpics = Set(epics).subtracting(self.epics)
+        /// - parameter epics: The markets to subscribe to.
+        func monitor(epics: Set<IG.Market.Epic>) {
+            dispatchPrecondition(condition: .notOnQueue(self.queue))
+            
+            let targetEpics = epics.subtracting(self.epics)
             guard !targetEpics.isEmpty else { return }
             
             let publisher = Self.fetchPublisher(epics: targetEpics, api: services.api, database: services.database)
@@ -40,18 +47,26 @@ extension App {
                         .setFailureType(to: IG.Services.Error.self)
                 }.filter { $0.candle.isFinished ?? false }
                 .updatePrices(database: self.services.database)
-            self.run(publisher: publisher, identifier: "market.cache.epics.\(targetEpics.count)")
+            
+            self.run(publisher: publisher, identifier: "subscription.epics.\(targetEpics.count)")
+        }
+        
+        func reset() {
+            dispatchPrecondition(condition: .notOnQueue(self.queue))
+            
+            let cancellables = self.queue.sync { () -> Set<AnyCancellable> in
+                let result = self.cancellables
+                self.cancellables.removeAll()
+                self.epics.removeAll()
+                return result
+            }
+            
+            cancellables.forEach { $0.cancel() }
         }
     }
 }
 
-extension App.MarketCache {
-    func shutdown() {
-        
-    }
-}
-
-extension App.MarketCache {
+extension App.Subscription {
     /// Starts the given publishers and hold a strong reference to the subscription within the `cancellables` property.
     ///
     /// If the publisher finishes, the `cancellables` property is properly cleanup.
@@ -65,21 +80,24 @@ extension App.MarketCache {
             case .failure(let error): Console.print(error: error, prefix: "Publisher \"\(identifier)\" encountered an error.\n")
             }
             cleanUp?()
-        }, receiveValue: { _ in return })
+        }, receiveValue: { _ in })
         
         let cancellable = AnyCancellable(subscriber)
         self.cancellables.insert(cancellable)
         
         cleanUp = { [weak self, weak cancellable] in
             guard let self = self, let target = cancellable else { return }
-            self.cancellables.remove(target)
+            self.queue.sync { _ = self.cancellables.remove(target) }
         }
         publisher.subscribe(subscriber)
     }
     
     /// Returns a publisher used to filter the epics that are not in the database and retrieve them from the server.
+    /// - precondition: `epics` is expected to have one or more markets. It cannot be empty.
     /// - parameter epics: The markets that will be monitored.
-    private static func fetchPublisher(epics: Set<IG.Market.Epic>, api: IG.API, database: IG.DB) -> IG.Services.DiscretePublisher<Never> {
+    private static func fetchPublisher(epics: Set<IG.Market.Epic>, api: IG.API, database: IG.DB) -> IG.Services.Publishers.Discrete<Never> {
+        precondition(!epics.isEmpty)
+        
         return database.markets.contains(epics: .init(epics))
             .map { $0.filter { !$0.isInDatabase }.map { $0.epic } }
             .mapError(IG.Services.Error.init)
@@ -106,10 +124,11 @@ extension App.MarketCache {
     }
     
     /// Returns a publisher that subscribe to all markets (given as epics) for the given interval.
+    /// - precondition: `epics` is expected to have one or more markets. It cannot be empty.
     /// - parameter epics: The markets that will be monitored.
     /// - parameter interval: The time interval to aggregate data as.
     private func subscribePublisher(epics: Set<IG.Market.Epic>, interval: IG.Streamer.Chart.Aggregated.Interval) -> AnyPublisher<IG.Streamer.Chart.Aggregated,Never> {
-//        guard !epics.isEmpty else { return Complete }
+        precondition(!epics.isEmpty)
         
         let fields: Set<IG.Streamer.Chart.Aggregated.Field> = [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk]
         
@@ -117,7 +136,7 @@ extension App.MarketCache {
                 streamer.charts.subscribe(to: epic, interval: interval, fields: fields)
                     .retry(2)
                     .catch { (error) -> Empty<Streamer.Chart.Aggregated,Never> in
-                        self?.epics.remove(epic)
+                        self?.queue.async { self!.epics.remove(epic) }
                         return .init(completeImmediately: true)
                     }
             }.collect()
