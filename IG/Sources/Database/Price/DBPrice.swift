@@ -13,12 +13,12 @@ extension IG.DB.Request {
 }
 
 extension IG.DB.Request.Price {
-    /// Returns historical prices for a particular instrument.
+    /// Returns all dates for which there are prices stored in the database.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
-    /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
-    public func getPriceDates(epic: IG.Market.Epic, from: Date?, to: Date = Date()) -> IG.DB.Publishers.Discrete<[Date]> {
+    /// - returns: The dates under which there are prices or an empty array if no data has been previously stored for that timeframe.
+    public func getAvailableDates(epic: IG.Market.Epic, from: Date?, to: Date = Date()) -> IG.DB.Publishers.Discrete<[Date]> {
         self.database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
             var query = "SELECT date FROM '\(tableName)'"
@@ -66,7 +66,7 @@ extension IG.DB.Request.Price {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.Publishers.Discrete<[IG.DB.Price]> {
+    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date()) -> IG.DB.Publishers.Discrete<[IG.DB.Price]> {
         self.database.publisher { _ -> (tableName: String, query: String) in
             guard from <= to else {
                 throw IG.DB.Error.invalidRequest("The \"from\" date must indicate a date before the \"to\" date", suggestion: .readDocs)
@@ -105,7 +105,7 @@ extension IG.DB.Request.Price {
     /// - parameter prices: The array of price points that have arrived from the server.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
-    public func update(prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<Never> {
+    public func update(_ prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<Never> {
         self.database.publisher { _ in
                 Self.priceInsertionQuery(epic: epic)
             }.write { (sqlite, statement, input) -> Void in
@@ -147,7 +147,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
     ///
     /// - warning: This operator doesn't check the market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
     /// - parameter database: Database where the price data will be stored.
-    public func updatePrices(database: IG.DB) -> AnyPublisher<IG.DB.PriceStreamed,Swift.Error> {
+    public func updatePrice(database: IG.DB) -> AnyPublisher<IG.DB.PriceStreamed,Swift.Error> {
         self.tryMap { [weak database] (apiPrice) -> IG.DB.Publishers.Output.Instance<(query: String, data: IG.DB.PriceStreamed)> in
             guard let db = database else { throw IG.DB.Error.sessionExpired() }
             guard let date = apiPrice.candle.date,

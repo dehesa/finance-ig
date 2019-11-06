@@ -1,4 +1,5 @@
 import IG
+import Combine
 import Foundation
 
 /// Holds the configurations for this terminal run.
@@ -11,7 +12,7 @@ do {
 }
 
 Console.print("""
-Establishing connection...
+Configuration:
 \tdatabase: \(config.databaseURL?.path ?? "in-memory")
 \tserver: \(config.serverURL)
 \tapi key: \(config.apiKey)
@@ -23,12 +24,14 @@ Establishing connection...
 let runloop = RunLoop.current
 var app: App! = nil
 
-Services.make(serverURL: config.serverURL, databaseURL: config.databaseURL, key: config.apiKey, user: config.user).result {
+var cancellable: AnyCancellable? = nil
+cancellable = Services.make(serverURL: config.serverURL, databaseURL: config.databaseURL, key: config.apiKey, user: config.user).result {
     guard case .success(let services) = $0 else {
-        Console.print(error: "There was an error initializing the IG services.")
+        Console.print(error: "There was an error initializing the IG services")
         exit(EXIT_FAILURE)
     }
-
+    
+    cancellable = nil
     app = App(loop: runloop, queue: .main, services: services)
     app.run(monitorEpics: App.defaultEpics)
 }

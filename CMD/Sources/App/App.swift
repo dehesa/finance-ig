@@ -28,11 +28,13 @@ final class App {
     /// Convenience function running a targeted set of programs.
     /// - epics: The market identifiers to be monitored.
     func run(monitorEpics epics: Set<IG.Market.Epic>) {
-        self.updatePrices(epics: epics) { [unowned self] (result) in
-            guard case .success = result else { return }
-            Console.print("Success updating prices")
-            self.subscribe(epics: epics)
-        }
+//        self.updatePrices(epics: epics) { [unowned self] (result) in
+//            guard case .success = result else { return }
+//            Console.print("Success updating prices")
+//            self.subscribe(epics: epics)
+//        }
+        Console.print("Running the live monitoring program\n")
+        self.subscribe(epics: epics)
     }
 }
 
@@ -49,7 +51,7 @@ extension App {
     ]
     
     /// Refreshes the price information of the the given markets.
-    func updatePrices(epics: Set<IG.Market.Epic>, handler: @escaping (Result<Void,Swift.Error>)->Void) {
+    private func updatePrices(epics: Set<IG.Market.Epic>, handler: @escaping (Result<Void,Swift.Error>)->Void) {
         guard !epics.isEmpty else { return }
         
         Console.print("Updating \(epics.count) markets. Input scrapped credentials:\n")
@@ -83,7 +85,7 @@ extension App {
     }
     
     /// Runs a program which subscribe (via the lightstreamer protocol) to the given markets.
-    func subscribe(epics: Set<IG.Market.Epic>) {
+    private func subscribe(epics: Set<IG.Market.Epic>) {
         guard !epics.isEmpty else { return }
         
         let program: App.Subscription
