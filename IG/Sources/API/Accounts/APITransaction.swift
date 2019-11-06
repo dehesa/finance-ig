@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.API.Request.History {
+extension IG.API.Request.Accounts {
     
     // MARK: GET /history/transactions
     
@@ -95,7 +95,7 @@ extension IG.API.Request.History {
 
 // MARK: - Entities
 
-extension IG.API.Request.History {
+extension IG.API.Request.Accounts {
     /// Transaction type.
     public enum Transaction: String {
         case all = "ALL"
@@ -113,7 +113,7 @@ extension IG.API.Request.History {
     }
 }
 
-extension IG.API.Request.History {
+extension IG.API.Request.Accounts {
     /// A single Page of transactions request.
     private struct PagedTransactions: Decodable {
         let transactions: [IG.API.Transaction]

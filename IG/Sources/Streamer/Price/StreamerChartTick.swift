@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.Streamer.Request.Charts {
+extension IG.Streamer.Request.Price {
     
     // MARK: CHART:EPIC:TICK
     
@@ -10,7 +10,7 @@ extension IG.Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Tick> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Tick> {
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         

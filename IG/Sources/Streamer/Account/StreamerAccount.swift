@@ -5,7 +5,7 @@ extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer accounts.
     public struct Accounts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let streamer: IG.Streamer
+        internal unowned let streamer: IG.Streamer
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
@@ -26,7 +26,7 @@ extension IG.Streamer.Request.Accounts {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Account> {
+    public func subscribe(account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Account> {
         let item = "ACCOUNT:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         

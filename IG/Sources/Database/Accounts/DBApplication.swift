@@ -4,7 +4,7 @@ import SQLite3
 
 extension IG.DB.Request {
     /// Contains all functionality related to DB applications.
-    public struct Applications {
+    public struct Accounts {
         /// Pointer to the actual database instance in charge of the low-level objects..
         fileprivate unowned let database: IG.DB
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
@@ -12,9 +12,9 @@ extension IG.DB.Request {
     }
 }
 
-extension IG.DB.Request.Applications {
+extension IG.DB.Request.Accounts {
     /// Returns all applications stored in the database.
-    public func getAll() -> IG.DB.Publishers.Discrete<[IG.DB.Application]> {
+    public func getApplications() -> IG.DB.Publishers.Discrete<[IG.DB.Application]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Application.tableName)"
             }.read { (sqlite, statement, query) in
@@ -36,7 +36,7 @@ extension IG.DB.Request.Applications {
     ///
     /// If the application is not found, an `.invalidResponse` is returned.
     /// - parameter key: The API key identifying the application.
-    public func get(key: IG.API.Key) -> IG.DB.Publishers.Discrete<IG.DB.Application> {
+    public func getApplication(key: IG.API.Key) -> IG.DB.Publishers.Discrete<IG.DB.Application> {
         self.database.publisher { _ in
                 "SELECT * FROM Apps where key = ?1"
             }.read { (sqlite, statement, query) in
@@ -55,7 +55,7 @@ extension IG.DB.Request.Applications {
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter applications: Information returned from the server.
-    public func update(_ applications: [IG.API.Application]) -> IG.DB.Publishers.Discrete<Never> {
+    public func update(applications: [IG.API.Application]) -> IG.DB.Publishers.Discrete<Never> {
         self.database.publisher { _ in
             """
             INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)

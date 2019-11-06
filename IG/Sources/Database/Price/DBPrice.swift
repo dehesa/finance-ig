@@ -4,7 +4,7 @@ import SQLite3
 
 extension IG.DB.Request {
     /// Contains all functionality related to DB user's activity, transaction, and history of prices.
-    public struct History {
+    public struct Price {
         /// Pointer to the actual database instance in charge of the low-level objects.
         fileprivate unowned let database: IG.DB
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
@@ -12,7 +12,7 @@ extension IG.DB.Request {
     }
 }
 
-extension IG.DB.Request.History {
+extension IG.DB.Request.Price {
     /// Returns historical prices for a particular instrument.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
@@ -161,7 +161,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
                   let highestAsk = apiPrice.candle.highest.ask,
                   let volume = apiPrice.candle.numTicks else { throw IG.DB.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection") }
             
-            let query = IG.DB.Request.History.priceInsertionQuery(epic: apiPrice.epic).query
+            let query = IG.DB.Request.Price.priceInsertionQuery(epic: apiPrice.epic).query
             let streamPrice = IG.DB.PriceStreamed(epic: apiPrice.epic,
                                                   interval: apiPrice.interval,
                                                   price: .init(date: date,
@@ -290,7 +290,7 @@ fileprivate extension IG.DB.Price.Point {
 
 // MARK: Requests
 
-extension IG.DB.Request.History {
+extension IG.DB.Request.Price {
     /// SQLite query to insert a `IG.DB.Price` in the database.
     /// - parameter epic: The market epic being targeted.
     fileprivate static func priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {

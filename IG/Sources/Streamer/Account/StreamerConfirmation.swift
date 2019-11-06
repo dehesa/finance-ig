@@ -1,21 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.Streamer.Request {
-    /// Contains all functionality related to Streamer deals.
-    public struct Confirmations {
-        /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let streamer: IG.Streamer
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) {
-            self.streamer = streamer
-        }
-    }
-}
-
-extension IG.Streamer.Request.Confirmations {
+extension IG.Streamer.Request.Accounts {
     
     // MARK: TRADE:ACCID
     
@@ -26,7 +12,7 @@ extension IG.Streamer.Request.Confirmations {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to account: IG.Account.Identifier, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Deal> {
+    public func subscribeToConfirmations(account: IG.Account.Identifier, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Deal> {
         let item = "TRADE:".appending(account.rawValue)
         let properties = [IG.Streamer.Deal.Field.confirmations.rawValue]
         

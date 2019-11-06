@@ -19,25 +19,27 @@ This framework provides:
 The IG framework can be used to interface with IG's APIs, Lightstreamer's "real-time" events, and cache temporary data.
 
 -   Access all IG's endpoints through the `API` instance.
-    <br>All endpoints listed in [labs.ig.com/rest-trading-api-reference](https://labs.ig.com/rest-trading-api-reference) are supported. These endpoints offer compile-time interfaces for Swift and use Standard or Foundation types (e.g. `Date`s).
+    <br>All endpoints listed in IG's [API reference](https://labs.ig.com/rest-trading-api-reference) are supported (browse `API.swift` file to check them out).
+    <br>These endpoints offer compile-time interfaces for Swift and use Standard or Foundation types (e.g. `Date`).
 
     ```swift
     let api = API(credentials: nil, targetQueue: nil)
     api.login(type: .certificate, key: "a12345bc67890d12345e6789fg0hi123j4567890", user: .init("username", "password")).expectsCompletion()
 
     let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
-    api.history.getPrices(epic: "CS.D.EURUSD.MINI.IP", from: yesterday, resolution: .minute).sink { (prices, allowance) in
+    api.price.get(epic: "CS.D.EURUSD.MINI.IP", from: yesterday, resolution: .minute).sink { (prices, allowance) in
         print(prices)
     }
     ```
 
 -   Establish "real-time" connections through the `Streamer` instance.
-    <br>You can subscribe to any of the [exposed endpoints](https://labs.ig.com/streaming-api-reference). As with the HTTP service, this framework offer compile-time interfaces for Swift and use Standard and/or Foundation types.
+    <br>All subscriptions listed in IG's [Streaming API reference](https://labs.ig.com/streaming-api-reference) are supported (browse `Streamer.swift` file to check them out).
+    <br>As with the HTTP service, this framework offer compile-time interfaces for Swift and use Standard and/or Foundation types.
 
     ```swift
     let streamer = Streamer(rootURL: "...", credentials: .init(identifier: "ABC12", password: "..."), targetQueue: nil)
     streamer.session.connect().expectsCompletion()
-    streamer.charts.subscribe(to: "CS.D.EURUSD.MINI.IP", interval: .second, fields: [.date, . volume, .openBid, .closeBid]).sink {
+    streamer.price.subscribe(epic: "CS.D.EURUSD.MINI.IP", interval: .second, fields: [.date, . volume, .openBid, .closeBid]).sink {
       print($0)
     }
     ```
@@ -45,6 +47,7 @@ The IG framework can be used to interface with IG's APIs, Lightstreamer's "real-
     > Please be mindful of the [limits enforced by IG](https://labs.ig.com/faq#limits).
 
 -   Create an in-memory or file database with the `DB` instance.
+    <br>The database is _work in progress_; currently only supporting price resolutions of one minute.
 
 Although you can cherry pick which service to use, it might be simpler to let the convenience `Services` to initialize all subservices for you. To log in you need:
 

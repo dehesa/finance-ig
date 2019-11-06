@@ -12,7 +12,7 @@ final class StreamerMarketTests: XCTestCase {
         XCTAssertTrue(streamer.status.isReady)
 
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        streamer.markets.subscribe(to: epic, fields: .all)
+        streamer.markets.subscribe(epic: epic, fields: .all)
             .expectsAtLeast(values: 3, timeout: 6, on: self) { (market) in
                 XCTAssertEqual(market.epic, epic)
                 XCTAssertNotNil(market.status)

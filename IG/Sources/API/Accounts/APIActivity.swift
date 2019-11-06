@@ -1,21 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.API.Request {
-    /// List of endpoints related to a user's activity.
-    public struct History {
-        /// Pointer to the actual API instance in charge of calling the endpoints.
-        internal unowned let api: IG.API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) {
-            self.api = api
-        }
-    }
-}
-
-extension IG.API.Request.History {
+extension IG.API.Request.Accounts {
     
     // MARK: GET /history/activity
     
@@ -97,7 +83,7 @@ extension IG.API.Request.History {
 
 // MARK: - Entities
 
-extension IG.API.Request.History {
+extension IG.API.Request.Accounts {
     /// A single page of activity requests.
     private struct PagedActivities: Decodable {
         let activities: [IG.API.Activity]

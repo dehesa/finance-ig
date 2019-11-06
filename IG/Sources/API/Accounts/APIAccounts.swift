@@ -5,7 +5,7 @@ extension IG.API.Request {
     /// List of endpoints related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: IG.API
+        internal unowned let api: IG.API
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.

@@ -8,7 +8,7 @@ final class APITransactionTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let transactions = api.history.getTransactionsContinuously(from: Date().lastTuesday)
+        let transactions = api.accounts.getTransactionsContinuously(from: Date().lastTuesday)
             .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
