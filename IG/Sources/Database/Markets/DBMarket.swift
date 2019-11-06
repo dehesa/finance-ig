@@ -16,7 +16,8 @@ extension IG.DB.Request {
 }
 
 extension IG.DB.Request.Markets {
-    /// Check the database and returns an array containing the epic and a Boolean indicating whether the market is currently stored on the database or not.
+    /// Returns an array for which each element has the epic and a Boolean indicating whether the market is currently stored on the database or not.
+    /// - parameter epics: Array of market identifiers to be checked against the database.
     public func contains(epics: Set<IG.Market.Epic>) -> IG.DB.Publishers.Discrete<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
         guard !epics.isEmpty else {
             return Just([]).setFailureType(to: IG.DB.Error.self).eraseToAnyPublisher()

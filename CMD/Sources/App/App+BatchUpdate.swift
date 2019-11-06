@@ -40,12 +40,12 @@ extension App {
             let publisher = epics.publisher.map { (epic) in
                 self.services.api.scrapped.getLastAvailablePrices(epic: epic, resolution: .minute, scrappedCredentials: scrappedCredentials)
                     .mapError(IG.Services.Error.init)
-                    .flatMap { [weak self] (price) -> AnyPublisher<Never,IG.Services.Error> in
+                    .flatMap { [weak self] (prices) -> AnyPublisher<Never,IG.Services.Error> in
                         guard let self = self else {
                             return Fail(error: IG.Services.Error.user("Session expired", suggestion: "Keep a strong bond to services")).eraseToAnyPublisher()
                         }
 
-                        return self.services.database.history.update(prices: price, epic: epic)
+                        return self.services.database.price.update(prices, epic: epic)
                             .mapError(IG.Services.Error.init)
                             .eraseToAnyPublisher()
                     }
