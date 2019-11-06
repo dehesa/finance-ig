@@ -9,10 +9,10 @@ extension App {
         /// The priviledge queue doing synchronization operations.
         private let queue: DispatchQueue
         /// The main app queue.
-        private unowned let mainQueue: DispatchQueue
+        unowned let mainQueue: DispatchQueue
         
         /// The supported IG services.
-        private unowned let services: IG.Services
+        unowned let services: IG.Services
         /// The epics being currently monitored/subscribed.
         private(set) var epics: Set<IG.Market.Epic>
         /// Instances to cancel any ongoing asynchronous operation.
@@ -31,24 +31,84 @@ extension App {
             self.cancellables.forEach { $0.cancel() }
         }
         
-        /// Start monitoring the given epics and caching their price data in the database.
+        /// Start monitoring the given epics and storing their price data in the database.
         /// - parameter epics: The markets to subscribe to.
         func monitor(epics: Set<IG.Market.Epic>) {
-            dispatchPrecondition(condition: .notOnQueue(self.queue))
+            guard !epics.isEmpty else { return }
+
+            let prefix = "\t"
+            var targetedEpics = Set<Market.Epic>()
             
-            let targetEpics = epics.subtracting(self.epics)
-            guard !targetEpics.isEmpty else { return }
+//            let subscriber = Subscribers.Sink<DB.Price,IG.Services.Error>(receiveCompletion: { (completion) in
+//                <#code#>
+//            }, receiveValue: { (<#DB.Price#>) in
+//                <#code#>
+//            })
             
-            let publisher = Self.fetchPublisher(epics: targetEpics, api: services.api, database: services.database)
-                .then { [streamer = self.services.streamer] in
-                    streamer.session.connect().mapError(IG.Services.Error.init)
-                }.then {
-                    self.subscribePublisher(epics: targetEpics, interval: .minute)
-                        .setFailureType(to: IG.Services.Error.self)
-                }.filter { $0.candle.isFinished ?? false }
-                .updatePrices(database: self.services.database)
+            let publisher = DeferredResult<Set<IG.Market.Epic>,IG.Services.Error> {
+                    // 1. Filter all epics that are currently being managed by this program.
+                    targetedEpics = self.queue.sync { () -> Set<IG.Market.Epic> in
+                        let result = epics.subtracting(self.epics)
+                        self.epics.formUnion(result)
+                        return result
+                    }
+                    return .success(targetedEpics)
+                }.flatMap { [services = self.services] (epics) in
+                    // 2. Identify the epics whose markets are not in the database.
+                    services.database.markets.contains(epics: epics)
+                        .map { (result) -> Set<IG.Market.Epic> in
+                            .init(result.filter { (epic, isInDatabase) -> Bool in
+                                if !isInDatabase { Console.print("\(prefix)A subscription to \"\(epic)\" won't be established, since the market is not initialized in the database.") }
+                                return isInDatabase
+                            }.map { $0.epic })
+                        }.mapError(IG.Services.Error.init)
+                        // 3. Fetch the market information from the server for the epics that are not tracked in the database.
+                        .flatMap { (epics) in
+                            services.api.markets.getContinuously(epics: epics)
+                                .mapError(IG.Services.Error.init)
+                                .collect().map { $0.flatMap { $0 } }
+                                .flatMap { (markets) in
+                                    services.database.markets.update(markets).mapError(IG.Services.Error.init)
+                                }
+                        }.then { Just(epics).setFailureType(to: IG.Services.Error.self) }
+                }.flatMap { [services = self.services] (epics) in
+                    // 4. Connect to the streamer
+                    services.streamer.session.connect()
+                        .mapError(IG.Services.Error.init)
+                        .then { epics.publisher.setFailureType(to: IG.Services.Error.self) }
+                        // 5. Subscribe to all targeted epics.
+                        .map { (epic) in
+                            (epic, services.streamer.charts.subscribe(to: epic, interval: .minute, fields: [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk], snapshot: false))
+                        }
+                // 6. Handle the eventually of a completion failure or a cancel (cleaning the program of the epics trying to be subscribed).
+                }.handleEvents(receiveCompletion: { [weak self] (completion) in
+                    guard case .failure = completion else { return }
+                    Swift.print("## Failure received (setup) ##")
+                    self?.queue.sync { self!.epics.subtract(targetedEpics) }
+                }, receiveCancel: { [weak self] in
+                    Swift.print("## Cancel received (setup) ##")
+                    self?.queue.sync { self!.epics.subtract(targetedEpics) }
+                }) // 7. Execute all subscriptions.
+                .flatMap { [services = self.services, weak self] (epic, publisher) in
+                    publisher
+                        .retry(2)
+                        // 8. Filter the candles that are not done for the minute interval.
+                        .filter { $0.candle.isFinished ?? false }
+                        // 9. Update those prices in the database.
+                        .updatePrices(database: services.database)
+                        .catch { _ in Empty<IG.DB.Price,IG.Services.Error>(completeImmediately: true) }
+                        .handleEvents(receiveCompletion: { [weak self] _ in
+                            Console.print(error: "\(prefix)The subscription to \"\(epic)\" failed and was closed.")
+                            self?.queue.async { self!.epics.remove(epic) }
+                        }, receiveCancel: {
+                            Swift.print("## Cancel received (single subscriber) ##")
+                            self?.queue.async { self!.epics.remove(epic) }
+                        })
+                }
+                
+//                .subscribe(subscriber)
             
-            self.run(publisher: publisher, identifier: "subscription.epics.\(targetEpics.count)")
+            self.run(publisher: publisher, identifier: "subscription.epics.\(epics.count)")
         }
         
         func reset() {
@@ -90,58 +150,5 @@ extension App.Subscription {
             self.queue.sync { _ = self.cancellables.remove(target) }
         }
         publisher.subscribe(subscriber)
-    }
-    
-    /// Returns a publisher used to filter the epics that are not in the database and retrieve them from the server.
-    /// - precondition: `epics` is expected to have one or more markets. It cannot be empty.
-    /// - parameter epics: The markets that will be monitored.
-    private static func fetchPublisher(epics: Set<IG.Market.Epic>, api: IG.API, database: IG.DB) -> IG.Services.Publishers.Discrete<Never> {
-        precondition(!epics.isEmpty)
-        
-        return database.markets.contains(epics: .init(epics))
-            .map { $0.filter { !$0.isInDatabase }.map { $0.epic } }
-            .mapError(IG.Services.Error.init)
-            .flatMap { (epics) -> AnyPublisher<[IG.API.Market],IG.Services.Error> in
-                if epics.isEmpty {
-                    return Just([])
-                        .setFailureType(to: IG.Services.Error.self)
-                        .eraseToAnyPublisher()
-                } else if epics.count <= 50 {
-                    return api.markets.get(epics: .init(epics))
-                        .mapError(IG.Services.Error.init)
-                        .eraseToAnyPublisher()
-                } else {
-                    return api.markets.getContinuously(epics: .init(epics))
-                    .collect()
-                    .mapError(IG.Services.Error.init)
-                    .map { $0.flatMap { $0 } }
-                    .eraseToAnyPublisher()
-                }
-            }.flatMap {
-                database.markets.update($0)
-                    .mapError(IG.Services.Error.init)
-            }.eraseToAnyPublisher()
-    }
-    
-    /// Returns a publisher that subscribe to all markets (given as epics) for the given interval.
-    /// - precondition: `epics` is expected to have one or more markets. It cannot be empty.
-    /// - parameter epics: The markets that will be monitored.
-    /// - parameter interval: The time interval to aggregate data as.
-    private func subscribePublisher(epics: Set<IG.Market.Epic>, interval: IG.Streamer.Chart.Aggregated.Interval) -> AnyPublisher<IG.Streamer.Chart.Aggregated,Never> {
-        precondition(!epics.isEmpty)
-        
-        let fields: Set<IG.Streamer.Chart.Aggregated.Field> = [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk]
-        
-        return epics.publisher.map { [weak self, streamer = self.services.streamer] (epic) in
-                streamer.charts.subscribe(to: epic, interval: interval, fields: fields)
-                    .retry(2)
-                    .catch { (error) -> Empty<Streamer.Chart.Aggregated,Never> in
-                        self?.queue.async { self!.epics.remove(epic) }
-                        return .init(completeImmediately: true)
-                    }
-            }.collect()
-            .flatMap { (streamSubscriptions) in
-                Publishers.MergeMany(streamSubscriptions)
-            }.eraseToAnyPublisher()
     }
 }

@@ -28,7 +28,8 @@ extension IG.DB.Request.Applications {
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                     }
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
 
     /// Returns the application specified by its API key.
@@ -47,7 +48,8 @@ extension IG.DB.Request.Applications {
                 case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
                 case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
 
     /// Updates the database with the information received from the server.
@@ -84,6 +86,7 @@ extension IG.DB.Request.Applications {
                 sqlite3_reset(statement)
             }
         }.ignoreOutput()
+        .mapError(IG.DB.Error.transform)
         .eraseToAnyPublisher()
     }
 }

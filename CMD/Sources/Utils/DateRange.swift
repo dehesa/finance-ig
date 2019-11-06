@@ -14,18 +14,22 @@ struct DateRange: CustomDebugStringConvertible {
     let to: Date?
     
     /// Creates an open ended range starting (and including) the given date.
+    /// - parameter from: The `Date` from which the range starts (including).
     init(from: Date) {
         self.from = from
         self.to = nil
     }
     
     /// Creates an open ended range ending (and including) the given date.
+    /// - parameter to: The `Date` on which the range ends (including).
     init(to: Date) {
         self.from = nil
         self.to = to
     }
     
     /// The close ended range.
+    /// - parameter from: The `Date` from which the range starts (including).
+    /// - parameter to: The `Date` on which the range ends (including). 
     init(from: Date, to: Date) {
         self.from = from
         self.to = to

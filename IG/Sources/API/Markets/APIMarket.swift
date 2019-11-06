@@ -98,7 +98,11 @@ extension IG.API.Request.Markets {
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
     private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Discrete<[IG.API.Market]> {
-        api.publisher { (api) -> DateFormatter in
+        guard !epics.isEmpty else {
+            return Just([]).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
+        }
+        
+        return api.publisher { (api) -> DateFormatter in
                 let epicRange = 1...50
                 guard epicRange.contains(epics.count) else {
                     let message = "Only between 1 to 50 markets can be queried at the same time"

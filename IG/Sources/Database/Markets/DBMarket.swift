@@ -17,34 +17,33 @@ extension IG.DB.Request {
 
 extension IG.DB.Request.Markets {
     /// Check the database and returns an array containing the epic and a Boolean indicating whether the market is currently stored on the database or not.
-    public func contains(epics: [IG.Market.Epic]) -> IG.DB.Publishers.Discrete<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
+    public func contains(epics: Set<IG.Market.Epic>) -> IG.DB.Publishers.Discrete<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
         guard !epics.isEmpty else {
             return Just([]).setFailureType(to: IG.DB.Error.self).eraseToAnyPublisher()
         }
         
-        return self.database.publisher { _ -> (query: String, epics: [IG.Market.Epic]) in
-                let uniqueEpics = epics.uniqueElements
-                let clause = uniqueEpics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
-                let query = "SELECT * FROM \(IG.DB.Market.tableName) WHERE \(clause)"
-                return (query, uniqueEpics)
-            }.read { (sqlite, statement, input) in
-                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+        return self.database.publisher { _ -> String in
+                let clause = epics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
+                return "SELECT epic FROM \(IG.DB.Market.tableName) WHERE \(clause)"
+            }.read { (sqlite, statement, query) in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
-                for (index, epic) in input.epics.enumerated() {
+                for (index, epic) in epics.enumerated() {
                     try sqlite3_bind_text(statement, .init(index) + 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
                 }
                 
                 var result: Set<IG.Market.Epic> = .init()
                 rowIterator: while true {
                     switch sqlite3_step(statement).result {
-                    case .row: result.insert(IG.DB.Market(statement: statement!).epic)
+                    case .row: result.insert( IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(statement!, 0)))! )
                     case .done: break rowIterator
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
                     }
                 }
                 
                 return epics.map { ($0, result.contains($0)) }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns all markets stored in the database.
@@ -64,7 +63,8 @@ extension IG.DB.Request.Markets {
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
                     }
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns the type of Market identified by the given epic.
@@ -82,7 +82,8 @@ extension IG.DB.Request.Markets {
                 case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
                 case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.self), code: e)
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Updates the database with the information received from the server.
@@ -116,6 +117,7 @@ extension IG.DB.Request.Markets {
                 sqlite3_finalize(statement); statement = nil
                 try Self.Forex.update(markets: markets, sqlite: sqlite)
             }.ignoreOutput()
+            .mapError(IG.DB.Error.transform)
             .eraseToAnyPublisher()
     }
 }

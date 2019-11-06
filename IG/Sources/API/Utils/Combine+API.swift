@@ -3,14 +3,19 @@ import Combine
 import Foundation
 
 extension IG.API {
-    /// List of custom publishers.
+    /// List of custom publishers and types used with the `Combine` framework.
     public enum Publishers {
-        /// Type erased `Combine.Future` where a single value and a completion or a failure will be sent.
-        /// This behavior is guaranteed when you see this type.
+        /// Publisher emitting a single value followed by a successful completion
+        ///
+        /// The following behavior is guaranteed when you see this type:
+        /// - the publisher will emit a single value followed by a succesful completion, or
+        /// - the publisher will emit a `API.Error` failure.
+        ///
+        /// If a failure is emitted, no value was sent previously.
         public typealias Discrete<T> = Combine.AnyPublisher<T,IG.API.Error>
         /// Publisher that can send zero, one, or many values followed by a successful completion.
         ///
-        /// This type is typically semantically used for paginated requests.
+        /// A failure may be forwarded when processing a value.
         public typealias Continuous<T> = Combine.AnyPublisher<T,IG.API.Error>
         
         /// Publisher's output types.

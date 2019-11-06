@@ -57,7 +57,8 @@ extension IG.DB.Request.History {
             }
             
             return result
-        }.eraseToAnyPublisher()
+        }.mapError(IG.DB.Error.transform)
+        .eraseToAnyPublisher()
     }
     
     /// Returns historical prices for a particular instrument.
@@ -95,7 +96,8 @@ extension IG.DB.Request.History {
             }
             
             return result
-        }.eraseToAnyPublisher()
+        }.mapError(IG.DB.Error.transform)
+        .eraseToAnyPublisher()
     }
 
     /// Updates the database with the information received from the server.
@@ -104,8 +106,9 @@ extension IG.DB.Request.History {
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
     public func update(prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<Never> {
-        self.database.publisher { _ in Self.priceInsertionQuery(epic: epic) }
-            .write { (sqlite, statement, input) -> Void in
+        self.database.publisher { _ in
+                Self.priceInsertionQuery(epic: epic)
+            }.write { (sqlite, statement, input) -> Void in
                 // 1. Check the epic is on the Markets table.
                 guard try Self.existsMarket(epic: epic, sqlite: sqlite) else {
                     throw IG.DB.Error.invalidRequest(.init(#"The market with epic "\#(epic)" must be in the database before storing its price points"#), suggestion: .init("Store explicitly the market and the call this function again."))
@@ -134,6 +137,7 @@ extension IG.DB.Request.History {
                     sqlite3_reset(statement)
                 }
             }.ignoreOutput()
+            .mapError(IG.DB.Error.transform)
             .eraseToAnyPublisher()
     }
 }
@@ -141,98 +145,40 @@ extension IG.DB.Request.History {
 extension Publisher where Output==IG.Streamer.Chart.Aggregated {
     /// Updates the database with the price values provided on the stream.
     ///
-    /// This operator doesn't check the market is currently stored in the database, check that that is the case before calling this operator.
-    public func updatePrices(database: IG.DB) -> AnyPublisher<IG.DB.Price,IG.DB.Error> {
-        return self.tryMap { [weak database] (price) -> IG.DB.Publishers.Output.Instance<(epic: IG.Market.Epic, interval: Output.Interval, price: IG.DB.Price)> in
+    /// - warning: This operator doesn't check the market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
+    /// - parameter database: Database where the price data will be stored.
+    public func updatePrices(database: IG.DB) -> AnyPublisher<IG.DB.PriceStreamed,Swift.Error> {
+        self.tryMap { [weak database] (apiPrice) -> IG.DB.Publishers.Output.Instance<(query: String, data: IG.DB.PriceStreamed)> in
             guard let db = database else { throw IG.DB.Error.sessionExpired() }
-            guard let date = price.candle.date,
-                  let openBid = price.candle.open.bid,
-                  let openAsk = price.candle.open.ask,
-                  let closeBid = price.candle.close.bid,
-                  let closeAsk = price.candle.close.ask,
-                  let lowestBid = price.candle.lowest.bid,
-                  let lowestAsk = price.candle.lowest.ask,
-                  let highestBid = price.candle.highest.bid,
-                  let highestAsk = price.candle.highest.ask,
-                  let volume = price.candle.numTicks else { throw IG.DB.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection") }
-            let result = IG.DB.Price(date: date, open: .init(bid: openBid, ask: openAsk), close: .init(bid: closeBid, ask: closeAsk), lowest: .init(bid: lowestBid, ask: lowestAsk), highest: .init(bid: highestBid, ask: highestAsk), volume: volume)
-            return (db, (price.epic, price.interval, result))
-        }.mapError(IG.DB.Error.transform)
-        .write { (sqlite, statement, input) -> IG.DB.Price in
-            let (tableName, query) = IG.DB.Request.History.priceInsertionQuery(epic: input.epic)
+            guard let date = apiPrice.candle.date,
+                  let openBid = apiPrice.candle.open.bid,
+                  let openAsk = apiPrice.candle.open.ask,
+                  let closeBid = apiPrice.candle.close.bid,
+                  let closeAsk = apiPrice.candle.close.ask,
+                  let lowestBid = apiPrice.candle.lowest.bid,
+                  let lowestAsk = apiPrice.candle.lowest.ask,
+                  let highestBid = apiPrice.candle.highest.bid,
+                  let highestAsk = apiPrice.candle.highest.ask,
+                  let volume = apiPrice.candle.numTicks else { throw IG.DB.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection") }
             
-            // 1. Check the existance of the price table or create it if it is not there.
-            if try !IG.DB.Request.History.existsPriceTable(epic: input.epic, sqlite: sqlite) {
-                try sqlite3_exec(sqlite, IG.DB.Price.tableDefinition(name: tableName), nil, nil, nil).expects(.ok) {
-                    .callFailed(.init(#"The SQL statement to create a table for "\#(tableName)" failed to execute"#), code: $0)
-                }
-            }
-            // 2. Add the data to the database.
-            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-
-            input.price.bind(to: statement!)
+            let query = IG.DB.Request.History.priceInsertionQuery(epic: apiPrice.epic).query
+            let streamPrice = IG.DB.PriceStreamed(epic: apiPrice.epic,
+                                                  interval: apiPrice.interval,
+                                                  price: .init(date: date,
+                                                               open: .init(bid: openBid, ask: openAsk),
+                                                               close: .init(bid: closeBid, ask: closeAsk),
+                                                               lowest: .init(bid: lowestBid, ask: lowestAsk),
+                                                               highest: .init(bid: highestBid, ask: highestAsk),
+                                                               volume: volume))
+            return ( db, (query, streamPrice) )
+        }.write { (sqlite, statement, input) -> IG.DB.PriceStreamed in
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+            input.data.price.bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Application.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
-            
-            return input.price
+            return input.data
         }.eraseToAnyPublisher()
-    }
-}
-
-extension IG.DB.Request.History {
-    /// SQLite query to insert a `IG.DB.Price` in the database.
-    /// - parameter epic: The market epic being targeted.
-    fileprivate static func priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {
-        let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
-        let query = """
-            INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
-                ON CONFLICT(date) DO UPDATE SET
-                openBid=excluded.openBid, openAsk=excluded.openAsk,
-                closeBid=excluded.closeBid, closeAsk=excluded.closeAsk,
-                lowBid=excluded.lowBid, lowAsk=excluded.lowAsk,
-                highBid=excluded.highBid, highAsk=excluded.highAsk,
-                volume=excluded.volume
-            """
-        return (tableName, query)
-    }
-    
-    /// Returns a Boolean indicating whether the market is currently stored in the database.
-    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - parameter sqlite: SQLite pointer priviledge access.
-    private static func existsMarket(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
-        var statement: SQLite.Statement? = nil
-        defer { sqlite3_finalize(statement) }
-        
-        let query = "SELECT 1 FROM \(IG.DB.Market.tableName) WHERE epic=?1"
-        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-        try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
-        
-        switch sqlite3_step(statement).result {
-        case .row:  return true
-        case .done: return false
-        case let c: throw IG.DB.Error.callFailed(.init("SQLite couldn't verify the existance of the market with epic \"\(epic)\""), code: c)
-        }
-    }
-    
-    /// Returns a Boolean indicating whether the price table exists in the database.
-    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - parameter sqlite: SQLite pointer priviledge access.
-    fileprivate static func existsPriceTable(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
-        var statement: SQLite.Statement? = nil
-        defer { sqlite3_finalize(statement) }
-        
-        let query = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?1"
-        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-        
-        let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
-        sqlite3_bind_text(statement, 1, tableName, -1, SQLite.Destructor.transient)
-        
-        switch sqlite3_step(statement).result {
-        case .row:  return true
-        case .done: return false
-        case let c: throw IG.DB.Error.callFailed(.init("SQLite couldn't verify the existance of the \"\(epic)\"'s price table"), code: c)
-        }
     }
 }
 
@@ -253,6 +199,16 @@ extension IG.DB {
         public let highest: Self.Point
         /// Last traded volume.
         public let volume: Int
+    }
+    
+    /// Price proceeding from a `Streamer` session that has been processed by the database.
+    public struct PriceStreamed {
+        /// The identifier for the sourcing market.
+        public let epic: IG.Market.Epic
+        /// The price resolution (e.g. one second, five minutes, etc.).
+        public let interval: IG.Streamer.Chart.Aggregated.Interval
+        /// The actual price.
+        public let price: IG.DB.Price
     }
 }
 
@@ -329,6 +285,64 @@ fileprivate extension IG.DB.Price.Point {
     func bind(to statement: SQLite.Statement, indices: Self.Indices) {
         sqlite3_bind_int(statement, indices.bid, .init(clamping: self.bid, multiplyingByPowerOf10: 5))
         sqlite3_bind_int(statement, indices.ask, .init(clamping: self.ask, multiplyingByPowerOf10: 5))
+    }
+}
+
+// MARK: Requests
+
+extension IG.DB.Request.History {
+    /// SQLite query to insert a `IG.DB.Price` in the database.
+    /// - parameter epic: The market epic being targeted.
+    fileprivate static func priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {
+        let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
+        let query = """
+            INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                ON CONFLICT(date) DO UPDATE SET
+                openBid=excluded.openBid, openAsk=excluded.openAsk,
+                closeBid=excluded.closeBid, closeAsk=excluded.closeAsk,
+                lowBid=excluded.lowBid, lowAsk=excluded.lowAsk,
+                highBid=excluded.highBid, highAsk=excluded.highAsk,
+                volume=excluded.volume
+            """
+        return (tableName, query)
+    }
+    
+    /// Returns a Boolean indicating whether the market is currently stored in the database.
+    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// - parameter sqlite: SQLite pointer priviledge access.
+    private static func existsMarket(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
+        var statement: SQLite.Statement? = nil
+        defer { sqlite3_finalize(statement) }
+        
+        let query = "SELECT 1 FROM \(IG.DB.Market.tableName) WHERE epic=?1"
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+        try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
+        
+        switch sqlite3_step(statement).result {
+        case .row:  return true
+        case .done: return false
+        case let c: throw IG.DB.Error.callFailed(.init("SQLite couldn't verify the existance of the market with epic \"\(epic)\""), code: c)
+        }
+    }
+    
+    /// Returns a Boolean indicating whether the price table exists in the database.
+    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// - parameter sqlite: SQLite pointer priviledge access.
+    fileprivate static func existsPriceTable(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
+        var statement: SQLite.Statement? = nil
+        defer { sqlite3_finalize(statement) }
+        
+        let query = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?1"
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+        
+        let tableName = IG.DB.Price.tableNamePrefix.appending(epic.rawValue)
+        sqlite3_bind_text(statement, 1, tableName, -1, SQLite.Destructor.transient)
+        
+        switch sqlite3_step(statement).result {
+        case .row:  return true
+        case .done: return false
+        case let c: throw IG.DB.Error.callFailed(.init("SQLite couldn't verify the existance of the \"\(epic)\"'s price table"), code: c)
+        }
     }
 }
 
