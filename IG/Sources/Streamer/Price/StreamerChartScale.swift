@@ -3,7 +3,7 @@ import Foundation
 
 extension IG.Streamer.Request {
     /// Contains all functionality related to Streamer charts.
-    public struct Charts {
+    public struct Price {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
         internal unowned let streamer: IG.Streamer
         
@@ -15,7 +15,7 @@ extension IG.Streamer.Request {
     }
 }
 
-extension IG.Streamer.Request.Charts {
+extension IG.Streamer.Request.Price {
     
     // MARK: CHART:EPIC:SCALE
     
@@ -27,7 +27,7 @@ extension IG.Streamer.Request.Charts {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(to epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Aggregated> {
+    public func subscribe(epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Aggregated> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         

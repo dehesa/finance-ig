@@ -1,7 +1,21 @@
 import Combine
 import Foundation
 
-extension IG.API.Request.History {
+extension IG.API.Request {
+    /// List of endpoints related to a user's activity.
+    public struct Price {
+        /// Pointer to the actual API instance in charge of calling the endpoints.
+        fileprivate unowned let api: IG.API
+        
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoints.
+        init(api: IG.API) {
+            self.api = api
+        }
+    }
+}
+
+extension IG.API.Request.Price {
     
     // MARK: GET /prices/{epic}
     
@@ -12,7 +26,7 @@ extension IG.API.Request.History {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPrices(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -42,7 +56,7 @@ extension IG.API.Request.History {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getPricesContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
+    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
         api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -125,7 +139,7 @@ extension IG.API.Price {
     }
 }
 
-extension IG.API.Request.History {
+extension IG.API.Request.Price {
     /// Single page of prices request.
     private struct PagedPrices: Decodable {
         let instrumentType: IG.API.Market.Instrument.Kind

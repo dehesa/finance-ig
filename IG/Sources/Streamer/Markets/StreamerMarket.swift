@@ -25,7 +25,7 @@ extension IG.Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(to epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Market> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Market> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = IG.Streamer.Formatter.time

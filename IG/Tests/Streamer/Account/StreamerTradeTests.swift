@@ -13,7 +13,7 @@ final class StreamerTradeTests: XCTestCase {
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
-        streamer.confirmations.subscribe(to: acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
+        streamer.accounts.subscribeToConfirmations(account: acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
             print(confirmation)
         }
         
@@ -33,7 +33,7 @@ final class StreamerTradeTests: XCTestCase {
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
-        let cancellable = streamer.confirmations.subscribe(to: acc.identifier, snapshot: false)
+        let cancellable = streamer.accounts.subscribeToConfirmations(account: acc.identifier, snapshot: false)
             .sink(receiveCompletion: {
                 if case .failure(let error) = $0 {
                     XCTFail("The publisher failed unexpectedly with \(error)")

@@ -9,16 +9,14 @@ public final class Streamer {
     /// The underlying instance (whether real or mocked) managing the streaming connections.
     internal final let channel: IG.Streamer.Channel
     
-    /// Holds functionality related to the current streamer session.
+    /// Namespace for the functionality related to managing a LightStreamer connection (e.g. open/close, status, reset, etc.).
     public final var session: IG.Streamer.Request.Session { return .init(streamer: self) }
-    /// Holds functionality related to markets.
-    public final var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
-    /// Holds functionality related to charts.
-    public final var charts: IG.Streamer.Request.Charts { return .init(streamer: self) }
-    /// Hold functionality related to accounts.
+    /// Namespace for subscriptions related to a user's account.
     public final var accounts: IG.Streamer.Request.Accounts { return .init(streamer: self) }
-    /// Hold functionality related to deals (positions, working orders, and confirmations).
-    public final var confirmations: IG.Streamer.Request.Confirmations { return .init(streamer: self) }
+    /// Namespace for subscriptions related to market information.
+    public final var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
+    /// Namespace for subscriptions related to 
+    public final var price: IG.Streamer.Request.Price { return .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///

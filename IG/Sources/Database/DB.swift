@@ -12,12 +12,12 @@ public final class DB {
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
     internal final let channel: IG.DB.Channel
     
-    /// It holds data and functionality related to the user's applications.
-    public final var applications: IG.DB.Request.Applications { return .init(database: self) }
-    /// It holds data and functionality related to the user's activity & transactions, and market prices.
-    public final var history: IG.DB.Request.History { return .init(database: self) }
-    /// It holds data and functionality related to the platform's market.
+    /// Namespace for functionality related to user accounts.
+    public final var accounts: IG.DB.Request.Accounts { return .init(database: self) }
+    /// Namespace for functionality related to IG's markets.
     public final var markets: IG.DB.Request.Markets { return .init(database: self) }
+    /// Namespace for functionality related to price data points.
+    public final var price: IG.DB.Request.Price { return .init(database: self) }
     
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.

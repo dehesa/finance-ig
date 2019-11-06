@@ -9,7 +9,7 @@ final class APIActivityTests: XCTestCase {
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let date = Date().lastTuesday
-        let activities = api.history.getActivityContinuously(from: date, detailed: true)
+        let activities = api.accounts.getActivityContinuously(from: date, detailed: true)
             .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(activities.isEmpty)

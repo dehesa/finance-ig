@@ -12,7 +12,7 @@ final class StreamerAccountTests: XCTestCase {
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
-        streamer.accounts.subscribe(to: acc.identifier, fields: .all)
+        streamer.accounts.subscribe(account: acc.identifier, fields: .all)
             .expectsAtLeast(values: 1, timeout: 2, on: self) { (account) in
                 XCTAssertEqual(account.identifier, acc.identifier)
                 XCTAssertNotNil(account.equity.value)

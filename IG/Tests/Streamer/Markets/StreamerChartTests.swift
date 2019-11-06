@@ -12,7 +12,7 @@ final class StreamerChartTests: XCTestCase {
         XCTAssertTrue(streamer.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        streamer.charts.subscribe(to: epic, interval: .second, fields: .all)
+        streamer.price.subscribe(epic: epic, interval: .second, fields: .all)
             .expectsAtLeast(values: 4, timeout: 8, on: self) { (second) in
                 XCTAssertEqual(second.epic, epic)
                 XCTAssertEqual(second.interval, .second)
@@ -43,7 +43,7 @@ final class StreamerChartTests: XCTestCase {
         XCTAssertTrue(streamer.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        streamer.charts.subscribe(to: epic, fields: .all)
+        streamer.price.subscribe(epic: epic, fields: .all)
             .expectsAtLeast(values: 4, timeout: 8, on: self) { (tick) in
                 XCTAssertEqual(tick.epic, epic)
                 XCTAssertEqual(tick.volume, 1)

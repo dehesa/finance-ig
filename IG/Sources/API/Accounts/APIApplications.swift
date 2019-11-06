@@ -1,27 +1,13 @@
 import Combine
 import Foundation
 
-extension IG.API.Request {
-    /// List of endpoints related to API applications.
-    public struct Applications {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: IG.API
-        
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) {
-            self.api = api
-        }
-    }
-}
-
-extension IG.API.Request.Applications {
+extension IG.API.Request.Accounts {
     
     // MARK: GET /operations/application
 
     /// Returns a list of client-owned applications.
     /// - returns: *Future* forwarding all user's applications.
-    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Application]> {
+    public func getApplications() -> IG.API.Publishers.Discrete<[IG.API.Application]> {
         self.api.publisher
             .makeRequest(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -37,7 +23,7 @@ extension IG.API.Request.Applications {
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
     /// - returns: *Future* forwarding the newly set targeted application values.
-    public func update(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Publishers.Discrete<IG.API.Application> {
+    public func updateApplication(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Publishers.Discrete<IG.API.Application> {
         self.api.publisher { (api) throws -> Self.PayloadUpdate in
                 let apiKey = try (key ?? api.session.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
@@ -52,7 +38,7 @@ extension IG.API.Request.Applications {
 
 // MARK: - Entities
 
-extension IG.API.Request.Applications {
+extension IG.API.Request.Accounts {
     /// Let the user updates one parameter of its application.
     private struct PayloadUpdate: Encodable {
         ///.API key to be added to the request.

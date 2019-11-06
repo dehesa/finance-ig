@@ -8,7 +8,7 @@ final class APIApplicationTests: XCTestCase {
         let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let applications = api.applications.getAll()
+        let applications = api.accounts.getApplications()
             .expectsOne(timeout: 2, on: self)
         guard let app = applications.first else { return XCTFail("No applications were found") }
         XCTAssertEqual(app.key, acc.api.key)
@@ -31,7 +31,7 @@ final class APIApplicationTests: XCTestCase {
         let status: API.Application.Status = .enabled
         let allowance: (overall: UInt, trading: UInt) = (60, 100)
 
-        let app = api.applications.update(key: acc.api.key, status: status, accountAllowance: allowance)
+        let app = api.accounts.updateApplication(key: acc.api.key, status: status, accountAllowance: allowance)
             .expectsOne(timeout: 2, on: self)
         XCTAssertEqual(app.key, acc.api.key)
         XCTAssertEqual(app.status, status)
