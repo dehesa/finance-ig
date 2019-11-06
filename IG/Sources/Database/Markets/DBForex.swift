@@ -30,7 +30,8 @@ extension IG.DB.Request.Markets.Forex {
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                     }
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns the market stored in the database matching the given epic.
@@ -50,7 +51,8 @@ extension IG.DB.Request.Markets.Forex {
                 case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
                 case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.Forex.self), code: e)
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns the forex markets matching the given currency.
@@ -83,7 +85,8 @@ extension IG.DB.Request.Markets.Forex {
                     case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                     }
                 }
-            }.eraseToAnyPublisher()
+            }.mapError(IG.DB.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns the forex markets in the database matching the given currencies.
@@ -119,7 +122,8 @@ extension IG.DB.Request.Markets.Forex {
                 case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
                 }
             }
-        }.eraseToAnyPublisher()
+        }.mapError(IG.DB.Error.transform)
+        .eraseToAnyPublisher()
     }
 }
 

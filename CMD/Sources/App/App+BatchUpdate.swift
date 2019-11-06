@@ -9,9 +9,9 @@ extension App {
         /// The priviledge queue doing synchronization operations.
         private let queue: DispatchQueue
         /// The main app queue.
-        private unowned let mainQueue: DispatchQueue
+        unowned let mainQueue: DispatchQueue
         /// The supported IG services.
-        private unowned let services: IG.Services
+        unowned let services: IG.Services
         /// The epics being currently monitored/subscribed.
         private(set) var epics: Set<IG.Market.Epic>
         /// Instances to cancel any ongoing asynchronous operation.
@@ -26,14 +26,16 @@ extension App {
             self.cancellables = .init()
         }
         
+        /// Ask the database for missing price datapoints and query those to the server.
         func update(epics: Set<IG.Market.Epic>, scrappedCredentials: (cst: String, security: String), handler: @escaping (Result<Void,Swift.Error>)->Void) {
             dispatchPrecondition(condition: .notOnQueue(self.queue))
             
             #warning("Add logic to remove this precondition")
-            self.queue.sync {
-                precondition(self.epics.isEmpty)
-                self.epics = epics
-            }
+//            let targetedEpics = self.queue.sync {
+//                let result = epics.subtracting(self.epics)
+//                self.epics.formUnion(result)
+//                return result
+//            }
             
             let publisher = epics.publisher.map { (epic) in
                 self.services.api.scrapped.getLastAvailablePrices(epic: epic, resolution: .minute, scrappedCredentials: scrappedCredentials)
@@ -81,7 +83,6 @@ extension App {
 }
 
 extension App.BatchUpdate {
-    
     /// Starts the given publishers and hold a strong reference to the subscription within the `cancellables` property.
     ///
     /// If the publisher finishes, the `cancellables` property is properly cleanup.
