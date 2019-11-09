@@ -13,17 +13,17 @@ extension IG.API.Request {
             self.api = api
         }
         
-        /// Returns the API application key of the session being used (or logged in).
-        public var key: IG.API.Key? {
-            return self.api.channel.credentials?.key
+        /// The credentials for the current session (at the time of call).
+        public var credentials: IG.API.Credentials? {
+            return self.api.channel.credentials
         }
-        /// Returns the client identifier of the session being used (or logged in).
-        public var client: IG.Client.Identifier? {
-            return self.api.channel.credentials?.client
-        }
-        /// Returns the account identifier of the session being used (or logged in).
-        public var account: IG.Account.Identifier? {
-            return self.api.channel.credentials?.account
+        
+        /// Boolean indicating whether the API can perform priviledge endpoints.
+        ///
+        /// To return `true`, there must be credentials in the session and the token must not be expired.
+        public var isActive: Bool {
+            guard let credentials = self.api.channel.credentials else { return false }
+            return !credentials.token.isExpired
         }
     }
 }
@@ -71,7 +71,7 @@ extension IG.API.Request.Session {
                 try api.channel.credentials ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
             }.mapError{
                 $0 as Swift.Error
-            }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> in
+            }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<IG.API.Token,Swift.Error> in
                 switch credentials.token.value {
                 case .certificate: return api.session.refreshCertificate()
                 case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
@@ -109,7 +109,7 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding information about the current user's session.
-    public func get(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.Publishers.Discrete<IG.API.Session> {
+    public func get(key: IG.API.Key, token: IG.API.Token) -> IG.API.Publishers.Discrete<IG.API.Session> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, headers: {
                 var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]

@@ -45,7 +45,7 @@ extension IG.API {
         
         /// Wrap the argument error in a `API` error.
         /// - parameter error: Swift error to be wrapped.
-        static func transform(_ error: Swift.Error) -> Self {
+        internal static func transform(_ error: Swift.Error) -> Self {
             switch error {
             case let e as Self: return e
             case let e: return .unknown(message: "An unknown error has occurred", underlyingError: e, suggestion: .reviewError)

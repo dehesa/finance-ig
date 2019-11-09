@@ -7,7 +7,4 @@
    <FileRef
       location = "group:IG/IG.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:CMD/CMD.xcodeproj">
-   </FileRef>
 </Workspace>

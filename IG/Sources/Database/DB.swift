@@ -19,13 +19,19 @@ public final class DB {
     /// Namespace for functionality related to price data points.
     public final var price: IG.DB.Request.Price { return .init(database: self) }
     
+    /// The database version.
+    public final var version: Int { return IG.DB.Migration.Version.latest.rawValue }
+    /// The version of SQLite being used.
+    public final var sqliteVersion: String { return SQLITE_VERSION }
+    
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter rootURL: The file location or `nil` for "in memory" storage.
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
     /// - throws: `IG.DB.Error` exclusively.
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing",  qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
+        let qos = targetQueue?.qos ?? .utility
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: qos, /*attributes: .concurrent,*/ autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = targetQueue ?? DispatchQueue(label: Self.reverseDNS + ".processing", qos: qos, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = try Self.Channel(rootURL: rootURL, queue: priviledgeQueue)
         try self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }

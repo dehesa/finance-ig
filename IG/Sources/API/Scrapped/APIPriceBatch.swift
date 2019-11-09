@@ -2,73 +2,6 @@ import Combine
 import Foundation
 
 extension IG.API.Request.Scrapped {
-    /// Returns the last `numDataPoints` data points for the given market epic in the given resolution.
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter numDataPoints: The number of data points to receive on the prices array result.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: numDataPoints, scrappedCredentials: scrappedCredentials)
-            .map { (snapshot) in
-                snapshot.prices
-            }.eraseToAnyPublisher()
-    }
-    
-    /// Returns all data points for the given market epic and resolution starting by the given date till the present.
-    ///
-    /// If the `from` date is further in the past from the platform permitted date, that date is taken instead.
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getLastPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        let (maxDataPoints, numDataPoints) = (300, resolution.numDataPoints(minutes: -1 * Int(from.timeIntervalSinceNow)))
-        guard numDataPoints > maxDataPoints else {
-            return self.getLastPrices(epic: epic, resolution: resolution, numDataPoints: numDataPoints, scrappedCredentials: scrappedCredentials)
-        }
-
-        return self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: maxDataPoints, scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
-            guard let api = weakAPI else {
-                return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
-            }
-            
-            let date = (from > snapshot.availableBatchPrices.lowerBound) ? from : snapshot.availableBatchPrices.lowerBound
-            return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: date, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
-                guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
-                guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
-                
-                var result = batchPrices
-                result.append(contentsOf: snapshot.prices[startIndex...])
-                return result
-            }.eraseToAnyPublisher()
-        }.eraseToAnyPublisher()
-    }
-    
-    /// Returns all available data points for the given market epic and resolution..
-    /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
-    /// - parameter resolution: It defines the resolution of requested prices.
-    /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    /// - returns: Sorted array (from past to present) with all prices for the given market on the given resolution.
-    public func getLastAvailablePrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
-        self.getSnapshot(epic: epic, resolution: resolution, numDataPoints: resolution.numDataPoints(minutes: 3 * 60), scrappedCredentials: scrappedCredentials).flatMap { [weak weakAPI = self.api] (snapshot) -> IG.API.Publishers.Discrete<[IG.API.Price]> in
-                guard let api = weakAPI else {
-                    return Fail(error: IG.API.Error.sessionExpired()).eraseToAnyPublisher()
-                }
-                
-                return api.scrapped.getBatchPrices(epic: epic, resolution: resolution, from: snapshot.availableBatchPrices.lowerBound, to: snapshot.availableBatchPrices.upperBound, scalingFactor: snapshot.scalingFactor, scrappedCredentials: scrappedCredentials).map { (batchPrices) -> [IG.API.Price] in
-                    guard let lastDate = batchPrices.last?.date else { return snapshot.prices }
-                    guard let startIndex = snapshot.prices.firstIndex(where: { $0.date > lastDate }) else { return batchPrices }
-                    
-                    var result = batchPrices
-                    result.append(contentsOf: snapshot.prices[startIndex...])
-                    return result
-                }.eraseToAnyPublisher()
-            }.eraseToAnyPublisher()
-    }
-}
-
-extension IG.API.Request.Scrapped {
     
     // MARK: GET /chart/snapshot
     
@@ -80,7 +13,7 @@ extension IG.API.Request.Scrapped {
     /// - parameter numDataPoints: The number of data points to receive on the prices array result.
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    private func getSnapshot(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int = 300, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.Market.ScrappedSnapshot> {
+    public func getPriceSnapshot(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<IG.API.PriceSnapshot> {
         self.api.publisher
             .makeScrappedRequest(.get, url: { (_, _) in
                 let interval = resolution.components
@@ -112,7 +45,7 @@ extension IG.API.Request.Scrapped {
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    private func getBatchPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
+    public func getPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Price]> {
         self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
                 guard from <= to else { throw IG.API.Error.invalidRequest(#"The "from" date must occur before the "to" date"#, suggestion: .readDocs) }
                 let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
@@ -121,7 +54,7 @@ extension IG.API.Request.Scrapped {
             }.makeScrappedRequest(.get, url: { (_, values) in
                 let interval = resolution.components
                 let (f, t) = values
-                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(f.nanosecond!)/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)/\(t.nanosecond!)"
+                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(min(f.nanosecond!, 999))/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)/\(min(t.nanosecond!,999))"
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "format", value: "json"),
@@ -139,33 +72,33 @@ extension IG.API.Request.Scrapped {
     }
 }
 
-extension IG.API.Market {
+extension IG.API {
     /// Market snapshot retrieved from a scrapped endpoint.
-    fileprivate struct ScrappedSnapshot: Decodable {
+    public struct PriceSnapshot: Decodable {
         /// The epic identifying the market.
-        let epic: IG.Market.Epic
+        public let epic: IG.Market.Epic
         /// The market's name.
-        let name: String
+        public let name: String
         /// The locale used to express numbers.
-        let locale: Locale
+        public let locale: Locale
         /// Number of decimal positions for pip representation.
-        let decimalPlaces: Decimal
+        public let decimalPlaces: Decimal
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-        let scalingFactor: Decimal
+        public let scalingFactor: Decimal
         /// Boolean indicating whether the price data point values has been scaled.
         ///
         /// The prices displayed by this structure are "real" and don't require any further processing; however, this boolean indicates whether other scrapped endpoints returned scaled values.
-        let isScaled: Bool
+        public let isScaled: Bool
         /// Boolean indicating whether the snapshot prices are delayed.
-        let delay: Int
+        public let delay: Int
         /// The time offset from UTC.
-        let offsetToUTC: TimeInterval
+        public let offsetToUTC: TimeInterval
         /// The price data points available throught the batch endpoint.
-        let availableBatchPrices: ClosedRange<Date>
+        public let availableBatchPrices: ClosedRange<Date>
         /// The prices brought with the snapshot (already ordered by the server).
-        let prices: [IG.API.Price]
+        public let prices: [IG.API.Price]
         
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let topContainer = try decoder.container(keyedBy: Self.CodingKeys.self)
             
             let instrumentContainer = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.InstrumentKeys.self, forKey: .instrument)
@@ -232,7 +165,7 @@ extension IG.API.Market {
             
             let unkeyedContainer = try container.nestedUnkeyedContainer(forKey: .prices)
             let scalingFactor = try (decoder.userInfo[.scalingFactor] as? Decimal) ?! DecodingError.valueNotFound(Decimal.self, .init(codingPath: container.codingPath, debugDescription: "The userInfo value under key \"\(CodingUserInfoKey.scalingFactor)\" wasn't found or it was invalid"))
-            self.prices = try IG.API.Market.ScrappedSnapshot.decode(scrappedDataPoints: unkeyedContainer, scalingFactor: scalingFactor)
+            self.prices = try IG.API.PriceSnapshot.decode(scrappedDataPoints: unkeyedContainer, scalingFactor: scalingFactor)
         }
         
         private enum CodingKeys: String, CodingKey {
@@ -243,7 +176,7 @@ extension IG.API.Market {
     }
 }
 
-extension IG.API.Market.ScrappedSnapshot {
+extension IG.API.PriceSnapshot {
     /// Extracted functionality decoding all price data points under a given unkeyed decoding container.
     fileprivate static func decode(scrappedDataPoints: UnkeyedDecodingContainer, scalingFactor: Decimal) throws -> [IG.API.Price] {
         var prices: [IG.API.Price] = []
@@ -261,13 +194,17 @@ extension IG.API.Market.ScrappedSnapshot {
             while !pointsContainer.isAtEnd {
                 let container = try pointsContainer.nestedContainer(keyedBy: Self.ElementKeys.DataPointKeys.self)
                 let timestamp = try container.decode(Int.self, forKey: .date)
-                let date = Date(timeIntervalSince1970: Double(timestamp / 1000))
-                let open = try decodePoint(container, .open)
-                let close = try decodePoint(container, .close)
-                let highest = try decodePoint(container, .highest)
-                let lowest = try decodePoint(container, .lowest)
-                let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
-                prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
+                do {
+                    let date = Date(timeIntervalSince1970: Double(timestamp / 1000))
+                    let open = try decodePoint(container, .open)
+                    let close = try decodePoint(container, .close)
+                    let highest = try decodePoint(container, .highest)
+                    let lowest = try decodePoint(container, .lowest)
+                    let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
+                    prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
+                } catch {
+                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(timestamp)")
+                }
             }
         }
         

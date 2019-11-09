@@ -6,7 +6,7 @@ extension IG.API {
         /// Platform's username.
         public let name: Self.Name
         /// The user's given password.
-        internal let password: Self.Password
+        public let password: Self.Password
         
         /// Initializer providing already with fully formed sub-instances.
         /// - parameter name: The user's platform name.
@@ -81,8 +81,8 @@ extension IG.API.User {
 
 extension IG.API.User {
     /// The user's password within the platform.
-    public struct Password: ExpressibleByStringLiteral, Encodable {
-        fileprivate let rawValue: String
+    public struct Password: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
+        public let rawValue: String
         
         public init(stringLiteral value: String) {
             guard Self.validate(value) else { fatalError("The password is not in a valid format") }
@@ -94,9 +94,31 @@ extension IG.API.User {
             self.rawValue = rawValue
         }
         
+        public init?(_ description: String) {
+            self.init(rawValue: description)
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let password = try container.decode(String.self)
+            guard Self.validate(password) else {
+                let reason = #"The password doesn't conform to the validation function"#
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
+            }
+            self.rawValue = password
+        }
+        
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+        
         public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
+        }
+        
+        public var description: String {
+            return self.rawValue
         }
     }
 }

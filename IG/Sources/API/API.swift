@@ -39,8 +39,8 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter queue: The target queue on which to process the `API` requests and responses.
     public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
-        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .never, target: targetQueue)
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing", qos: .utility, autoreleaseFrequency: .workItem, target: targetQueue)
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing", qos: .utility, autoreleaseFrequency: .inherit, target: targetQueue)
         
         let operationQueue = OperationQueue.init(name: processingQueue.label + ".operationQueue", underlyingQueue: processingQueue)
         let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)

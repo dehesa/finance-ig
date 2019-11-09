@@ -17,7 +17,7 @@ extension IG.API.Request.Session {
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth, _) -> IG.API.Credentials in
-                let token = IG.API.Credentials.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
+                let token = IG.API.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }.eraseToAnyPublisher()
     }
@@ -29,7 +29,7 @@ extension IG.API.Request.Session {
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
-    internal func refreshOAuth(token: String, key: IG.API.Key) -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> {
+    internal func refreshOAuth(token: String, key: IG.API.Key) -> AnyPublisher<IG.API.Token,Swift.Error> {
         self.api.publisher { _ -> Self.TemporaryRefresh in
                 guard !token.isEmpty else { throw IG.API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
                 return Self.TemporaryRefresh(refreshToken: token, apiKey: key)
@@ -87,9 +87,7 @@ extension IG.API.Session {
             self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
             self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
-            
-            /// - bug: The server returns one hour less for the timezone offset. I believe this is due to not accounting for the summer time. Check in winter!
-            let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset)) + 1
+            let timezoneOffset = (try container.decode(Int.self, forKey: .timezoneOffset))
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             
             self.tokens = try container.decode(IG.API.Session.OAuth.Token.self, forKey: .tokens)
