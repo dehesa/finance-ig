@@ -14,10 +14,13 @@ public final class Services {
     public let database: IG.DB
     
     /// Designated initializer specifying every single service.
+    ///
+    /// By calling this initializer you are forfeiting the conveniences provided by the other initializers; that is, validate credentials, logging in the API, set all queues to a concurrent target queue (for performance reasons).
+    /// Please, take note that this initializer do not assures the API is already log in or any credential input is valid
     /// - parameter api: The HTTP API manager.
     /// - parameter streamer: The Lightstreamer event manager.
     /// - parameter database: The Database manager.
-    private init(queue: DispatchQueue, api: IG.API, streamer: IG.Streamer, database: IG.DB) {
+    public init(queue: DispatchQueue, api: IG.API, streamer: IG.Streamer, database: IG.DB) {
         self.queue = queue
         self.api = api
         self.streamer = streamer
@@ -49,13 +52,13 @@ public final class Services {
     /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.Services.Publishers.Discrete<IG.Services> {
+    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Token) -> IG.Services.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Credentials.Token) -> Combine.Publishers.FlatMap<IG.Services.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
+        let signal: (_ token: IG.API.Token) -> Combine.Publishers.FlatMap<IG.Services.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
             return api.session.get(key: key, token: token)
                 .mapError(Self.Error.api)
                 .flatMap { (session) -> IG.Services.Publishers.Discrete<IG.Services> in
@@ -84,11 +87,12 @@ public final class Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
     private static func makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
-        return DispatchQueue(label: Self.reverseDNS, qos: .utility, attributes: .concurrent, autoreleaseFrequency: .never, target: targetQueue)
+        return DispatchQueue(label: Self.reverseDNS, qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
     }
 
     /// Creates a streamer from an API instance and package both in a `Services` structure.
     /// - parameter api: The API instance with valid credentials.
+    /// - parameter queue: Concurrent queue used to synchronize all IG's events.
     /// - parameter databaseURL: The file URL indicating the location of the caching database.
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
     private static func make(with api: IG.API, queue: DispatchQueue, databaseURL: URL?) -> IG.Services.Publishers.Discrete<IG.Services> {

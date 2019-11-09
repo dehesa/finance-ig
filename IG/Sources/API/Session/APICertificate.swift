@@ -21,7 +21,7 @@ extension IG.API.Request.Session {
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.Certificate, _) -> (credentials: IG.API.Credentials, settings: IG.API.Session.Settings) in
-                let token = IG.API.Credentials.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
+                let token = IG.API.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
                 let credentials = IG.API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
                 return (credentials, r.session.settings)
             }.eraseToAnyPublisher()
@@ -31,7 +31,7 @@ extension IG.API.Request.Session {
 
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
     /// - returns: `Future` related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
-    internal func refreshCertificate() -> AnyPublisher<IG.API.Credentials.Token,Swift.Error> {
+    internal func refreshCertificate() -> AnyPublisher<IG.API.Token,Swift.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] })
             .send(expecting: .json, statusCode: 200)
@@ -45,7 +45,7 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
-    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Credentials.Token) -> IG.API.Publishers.Discrete<(IG.API.Session,IG.API.Credentials.Token)> {
+    internal func refreshCertificate(key: IG.API.Key, token: IG.API.Token) -> IG.API.Publishers.Discrete<(IG.API.Session,IG.API.Token)> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
                 var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
@@ -59,7 +59,7 @@ extension IG.API.Request.Session {
                 return result
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.WrapperCertificate, _) in
-                let token = IG.API.Credentials.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
+                let token = IG.API.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
             }.mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()

@@ -1,20 +1,20 @@
 import Foundation
 
-extension IG.DB.Node {
-    /// Associative table listing nodes and their owned markets.
-    /// - A node can have none or many markets.
-    /// - A market is owned by one or many nodes.
-    internal struct AssociativeMarket {
-        /// Let through the hidden `rowId` column
-        private(set) var identifier: Int64?
-        /// A targeted node.
-        let nodeIdentifier: String
-        /// A node's market.
-        let marketEpic: String
-    }
-}
-
-extension IG.DB.Node.AssociativeMarket {
+//extension IG.DB.Node {
+//    /// Associative table listing nodes and their owned markets.
+//    /// - A node can have none or many markets.
+//    /// - A market is owned by one or many nodes.
+//    internal struct AssociativeMarket {
+//        /// Let through the hidden `rowId` column
+//        private(set) var identifier: Int64?
+//        /// A targeted node.
+//        let nodeIdentifier: String
+//        /// A node's market.
+//        let marketEpic: String
+//    }
+//}
+//
+//extension IG.DB.Node.AssociativeMarket {
 //    static func tableCreation(in db: GRDB.Database) throws {
 //        typealias N = IG.DB.Node
 //        typealias M = IG.DB.Market.Forex
@@ -25,7 +25,7 @@ extension IG.DB.Node.AssociativeMarket {
 //            t.column("epic", .text)  .notNull().references(M.databaseTableName, column: M.Columns.epic.rawValue, onDelete: .cascade)
 //        }
 //    }
-}
+//}
 //
 //extension IG.DB.Node.AssociativeMarket: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
 //    public init(row: GRDB.Row) {

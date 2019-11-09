@@ -1219,7 +1219,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1100;
-				LastUpgradeCheck = 1120;
+				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					8DA398B62338E3EA007B918F = {
 						CreatedOnToolsVersion = 11.0;
@@ -2002,7 +2002,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/dehesa/Conbini";
 			requirement = {
-				branch = master;
+				branch = develop;
 				kind = branch;
 			};
 		};

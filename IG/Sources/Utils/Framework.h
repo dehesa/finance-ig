@@ -14,4 +14,4 @@ struct IGFrameworkInfo {
 
 extern struct IGFrameworkInfo IGFramework;
 
-#endif /* Framework_h */
+#endif

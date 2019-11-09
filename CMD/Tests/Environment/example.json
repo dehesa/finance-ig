@@ -1,7 +1,0 @@
-{
-    "server": "https://demo-api.ig.com/gateway/deal",
-    "database": "~/Desktop/IG.sqlite",
-    "apikey": "a12345bc67890d12345e6789fg0hi123j4567890",
-    "username": "fake_user",
-    "password": "fake_password"
-}

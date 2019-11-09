@@ -17,6 +17,11 @@ extension IG.Streamer.Request {
 }
 
 extension IG.Streamer.Request.Session {
+    /// The credentials being currently used on this streamer.
+    public var credentials: IG.Streamer.Credentials {
+        return self.streamer.channel.credentials
+    }
+    
     /// Returns a publisher to subscribe to the streamer's statuses.
     ///
     /// This is a multicast publisher, meaning all subscriber will receive the same status in the same order.
@@ -29,8 +34,8 @@ extension IG.Streamer.Request.Session {
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
     ///
-    /// If the `Streamer` is already connected, then the connected status is forwarded and the publisher completes immediately.
-    /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the publisher completes). If the connection is not possible, there is a timeout, or the session has expired, an error is thrown.
+    /// If the `Streamer` is already connected, then the *connected* status is forwarded and the publisher completes immediately.
+    /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the publisher completes). If the connection is not possible, an error is thrown.
     public func connect() -> IG.Streamer.Publishers.Continuous<IG.Streamer.Session.Status> {
        typealias S = Subscribers.Sink<IG.Streamer.Session.Status,Never>
         /// Keep the necessary state to clean up the *slate* once the publisher finishes or it is cancelled.

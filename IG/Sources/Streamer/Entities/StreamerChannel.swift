@@ -16,7 +16,7 @@ extension IG.Streamer {
         private typealias SubscriptionSink = Subscribers.Sink<IG.Streamer.Subscription.Event,Never>
         
         /// Streamer credentials used to access the trading platform.
-        @nonobjc private let credentials: IG.Streamer.Credentials
+        @nonobjc let credentials: IG.Streamer.Credentials
         /// The central queue handling all events within the Streamer flow.
         @nonobjc private let queue: DispatchQueue
         /// The low-level lightstreamer client actually performing the network calls.

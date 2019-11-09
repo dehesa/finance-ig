@@ -125,9 +125,7 @@ extension IG.DB.Request.Markets.Forex {
         }.mapError(IG.DB.Error.transform)
         .eraseToAnyPublisher()
     }
-}
 
-extension IG.DB.Request.Markets.Forex {
     /// Updates the database with the information received from the server.
     /// - note: This method is intended to be called from the update of generic markets. That is why, no transaction is performed here, since the parent method will wrap everything in its own transaction.
     /// - precondition: The market must be of currency type or an error will be returned.
@@ -176,7 +174,9 @@ extension IG.DB.Request.Markets.Forex {
 
 extension IG.DB.Market {
     /// Database representation of a Foreign Exchange market.
-    public struct Forex {
+    ///
+    /// This structure is `Hashable` and `Equatable` for storage convenience purposes; however, the hash/equatable value is just the epic.
+    public struct Forex: Hashable {
         /// Instrument identifier.
         public let epic: IG.Market.Epic
         /// The two currencies involved in this forex market.
@@ -187,12 +187,20 @@ extension IG.DB.Market {
         public let information: Self.DealingInformation
         /// Restrictions while dealing on this market.
         public let restrictions: Self.Restrictions
+        
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(self.epic)
+        }
+        
+        public static func == (lhs: DB.Market.Forex, rhs: DB.Market.Forex) -> Bool {
+            lhs.epic == rhs.epic
+        }
     }
 }
 
 extension IG.DB.Market.Forex {
     /// The base and counter currencies of a foreign exchange market.
-    public struct Currencies {
+    public struct Currencies: Equatable {
         /// The traditionally "strong" currency.
         public let base: IG.Currency.Code
         /// The traditionally "weak" currency (on which the units are measured).
@@ -371,7 +379,6 @@ fileprivate extension IG.DB.Market.Forex {
         self.restrictions = .init(statement: s, indices: indices.restrictions)
     }
     
-    
     func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5, 6, 7), (8, 9, 10, 11, 12, 13, 14, 15, 16), (17, 18, 19, 20, 21, 22, 23))) {
         sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.base, self.currencies.base.rawValue, -1, SQLite.Destructor.transient)
@@ -462,7 +469,7 @@ extension IG.DB.Market.Forex {
     /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
     /// - parameter dealSize: The size of a given position.
     public func margin(forDealSize dealSize: Decimal, price: Decimal, stop: IG.Deal.Stop?) -> Decimal {
-        let marginFactor = self.information.margin.factor
+        let marginFactor = self.information.margin.depositBands.depositFactor(forDealSize: dealSize)
         let contractSize = Decimal(self.information.contractSize)
         
         guard let stop = stop else {
@@ -722,7 +729,7 @@ extension IG.DB.Market.Forex: IG.DebugDescriptable {
             $0.append("pip value", $1.pip.value)
             $0.append("decimal places", "(level: \($1.levelDecimalPlaces), pip: \($1.pip.decimalPlaces))")
             $0.append("slippage factor", $1.slippageFactor)
-            $0.append("guaranteed stop", "(premium: \($1.guaranteedStop.premium), extra spread: \($1.guaranteedStop.extraSpread)")
+            $0.append("guaranteed stop", "(premium: \($1.guaranteedStop.premium), extra spread: \($1.guaranteedStop.extraSpread))")
             $0.append("margin", $1.margin) {
                 $0.append("factor", $1.factor)
                 $0.append("deposit bands (range: factor)", $1.depositBands) {

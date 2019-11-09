@@ -24,9 +24,17 @@ extension IG.DB {
 }
 
 extension IG.DB.Channel {
+    /// Reads and/or writes from the database directly (without any transaction).
+    ///
+    /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    /// - throws: Any error thrown by the `interaction` closure.
+    /// - returns: The result returned in the `interaction` closure.
     internal func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.queue.sync {
+        return try self.queue.sync(flags: .barrier) {
             try interaction(self.database)
         }
     }
@@ -36,21 +44,13 @@ extension IG.DB.Channel {
     /// This is a parallel access, meaning that other read access may be performed in parallel.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
     /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    /// - throws: Any error thrown by the `interaction` closure.
+    /// - returns: The result returned in the `interaction` closure.
     /// - todo: Make parallel reads (currently they are serial).
     internal func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        try self.write(interaction)
-    }
-    
-    /// Reads from the database in a transaction that is executed asynchronously.
-    ///
-    /// This is a parallel access, meaning that other read access may be performed in parallel.
-    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
-    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
-    /// - parameter receptionQueue: The queue where the `promise` will be executed.
-    /// - parameter interaction: Closure giving the priviledge database connection.
-    /// - todo: Make parallel reads (currently they are serial).
-    internal func readAsync<T>(promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
-        self.writeAsync(promise: promise, on: receptionQueue, interaction)
+        dispatchPrecondition(condition: .notOnQueue(self.queue))
+        return try self.transactionAccess(flags: [], interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -58,9 +58,24 @@ extension IG.DB.Channel {
     /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
     /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    /// - throws: Any error thrown by the `interaction` closure.
+    /// - returns: The result returned in the `interaction` closure.
     internal func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.queue.sync {
+        return try self.transactionAccess(flags: .barrier, interaction)
+    }
+    
+    /// Reads and/or writes from the database in a transaction.
+    ///
+    /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    /// - throws: Any error thrown by the `interaction` closure.
+    /// - returns: The result returned in the `interaction` closure.
+    private func transactionAccess<T>(flags: DispatchWorkItemFlags, _ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+        return try self.queue.sync(flags: flags) {
             try sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
             
             let output: T
@@ -79,6 +94,21 @@ extension IG.DB.Channel {
             return output
         }
     }
+}
+
+extension IG.DB.Channel {
+    /// Reads from the database in a transaction that is executed asynchronously.
+    ///
+    /// This is a parallel access, meaning that other read access may be performed in parallel.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter receptionQueue: The queue where the `promise` will be executed.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    internal func readAsync<T>(promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+        dispatchPrecondition(condition: .notOnQueue(self.queue))
+        self.asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
+    }
     
     /// Reads and/or writes from the database in a transaction.
     ///
@@ -87,9 +117,22 @@ extension IG.DB.Channel {
     /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     internal func writeAsync<T>(promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self.queue))
-        self.queue.async {
+        self.asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
+    }
+    
+    /// Reads and/or writes from the database in a transaction.
+    ///
+    /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
+    /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter receptionQueue: The queue where the `promise` will be executed.
+    /// - parameter interaction: Closure giving the priviledge database connection.
+    /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
+    private func asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,IG.DB.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+        self.queue.async(flags: flags) {
             if let errorCode = sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
                 return receptionQueue.async {
                     promise(.failure( .callFailed(.execCommand, code: errorCode) ))
@@ -156,7 +199,7 @@ extension IG.DB.Channel {
         var error: IG.DB.Error? = nil
         
         queue.sync {
-            let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX
+            let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX  /* SQLITE_OPEN_FULLMUTEX */
             if let errorCode = sqlite3_open_v2(path, &db, openFlags, nil).enforce(.ok) {
                 error = IG.DB.Error.callFailed("The SQLite database couldn't be opened", code: errorCode)
                 if let channel = db {

@@ -25,7 +25,7 @@ extension IG.API.Request.Accounts {
     /// - returns: *Future* forwarding the newly set targeted application values.
     public func updateApplication(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Publishers.Discrete<IG.API.Application> {
         self.api.publisher { (api) throws -> Self.PayloadUpdate in
-                let apiKey = try (key ?? api.session.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                let apiKey = try (key ?? api.channel.credentials?.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { (payload) in
                 return (.json, try JSONEncoder().encode(payload))

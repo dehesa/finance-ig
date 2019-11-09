@@ -14,6 +14,7 @@ extension IG.DB.Request {
 
 extension IG.DB.Request.Accounts {
     /// Returns all applications stored in the database.
+    /// - returns: Discrete publisher producing a single value containing an array of all stored applications and then successfully completes.
     public func getApplications() -> IG.DB.Publishers.Discrete<[IG.DB.Application]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.DB.Application.tableName)"

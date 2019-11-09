@@ -151,12 +151,12 @@ extension XCTestCase {
                 .expectsCompletion(timeout: 1.5, on: self)
             result = api.channel.credentials!
         } else if let cer = data.certificate {
-            let token = API.Credentials.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
+            let token = IG.API.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
             let s = api.session.get(key: data.key, token: token)
                 .expectsOne(timeout: 2, on: self)
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
         } else if let oau = data.oauth {
-            let token: API.Credentials.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
+            let token: IG.API.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
             let s = api.session.get(key: data.key, token: token)
                 .expectsOne(timeout: 2, on: self)
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)

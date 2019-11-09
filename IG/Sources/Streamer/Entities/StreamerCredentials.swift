@@ -1,6 +1,6 @@
 extension Streamer {
     /// Data needed to access the Streaming service.
-    public struct Credentials {
+    public struct Credentials: Equatable {
         /// Active IG account identifier.
         public let identifier: IG.Account.Identifier
         /// Lightstreamer temporal password.
