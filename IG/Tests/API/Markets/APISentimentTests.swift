@@ -1,11 +1,14 @@
 import IG
+import ConbiniForTesting
 import XCTest
 
 final class APISentimentTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests the platform's sentiment list call.
     func testSentiments() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let ids = ["EURGBP", "GC", "VOD-UK"].sorted { $0 > $1 }
         let markets = api.markets.getSentiment(from: ids)
@@ -20,8 +23,7 @@ final class APISentimentTests: XCTestCase {
     
     /// Tests the platform's sentiment call.
     func testSentiment() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let id = "EURGBP"
         let market = api.markets.getSentiment(from: id)
@@ -32,8 +34,7 @@ final class APISentimentTests: XCTestCase {
     }
 
     func testMarketRelations() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let id = "EURGBP"
         let markets = api.markets.getSentiment(relatedTo: id)

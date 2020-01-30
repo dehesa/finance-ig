@@ -4,10 +4,12 @@ import XCTest
 
 /// Tests API Application related endpoints.
 final class APIPriceBatchTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Test price data extraction (by number of data points).
     func testLasPricesExtractionByNumber() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
         
         let cst: String = "<#CST#>"
         let security: String = "<#X-SECURTY-TOKEN#>"
@@ -20,8 +22,7 @@ final class APIPriceBatchTests: XCTestCase {
     
 //    /// Test price data extraction (by date).
 //    func testLasPricesExtractionByDate() {
-//        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-//        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: nil, targetQueue: nil)
+//        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
 //
 //        let from = Date().lastTuesday
 //

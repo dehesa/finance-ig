@@ -3,10 +3,12 @@ import IG
 import Combine
 
 final class DBApplicationTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests the creation of an "in-memory" database.
     func testApplicationsInMemory() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let apiResponse = api.accounts.getApplications().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(apiResponse.isEmpty)
         

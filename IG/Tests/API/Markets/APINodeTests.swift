@@ -1,11 +1,14 @@
 import IG
+import ConbiniForTesting
 import XCTest
 
 final class APINavigationNodeTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests navigation nodes retrieval.
     func testNavigationRootNodes() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none)
             .expectsOne(timeout: 2, on: self)
@@ -20,8 +23,7 @@ final class APINavigationNodeTests: XCTestCase {
     
     // Tests the major forex node.
     func testNavigationMarketsSubtree() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("264134", "Major FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none)
@@ -36,8 +38,7 @@ final class APINavigationNodeTests: XCTestCase {
     
     /// Drill down two levels in the navigation nodes tree.
     func testNavigationSubtree() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("195235", "FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all)
@@ -51,8 +52,7 @@ final class APINavigationNodeTests: XCTestCase {
 
     /// Test the market search capabilities.
     func testMarketTermSearch() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let markets = api.nodes.getMarkets(matching: "NZD")
             .expectsOne(timeout: 2, on: self)

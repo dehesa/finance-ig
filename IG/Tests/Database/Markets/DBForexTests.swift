@@ -3,10 +3,12 @@ import XCTest
 import Combine
 
 final class DBForexTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Test the "successful" retrieval of forex markets from the database.
     func testForexRetrieval() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -28,8 +30,7 @@ final class DBForexTests: XCTestCase {
     
     /// Test a forex retrieval for a market that it is not there.
     func testForexRetrievalFailure() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
 
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -44,8 +45,7 @@ final class DBForexTests: XCTestCase {
 
     /// Test the currency retrieval functions.
     func testForexCurrency() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         // Retrieve 50 forex markets from the server and store them in the database.
         let epics = Test.Epic.forex.prefix(50)

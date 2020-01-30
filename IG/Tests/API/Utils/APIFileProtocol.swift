@@ -1,15 +1,15 @@
 @testable import IG
-
+//
 /// Mocked URL Session that will pick responses from the bundle's file system.
-final class APIFileProtocol: URLProtocol {
-    override class func canInit(with task: URLSessionTask) -> Bool {
-        return true
-    }
-    
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
-        return request
-    }
-    #warning("Implement APIFileProtocol")
+//final class APIFileProtocol: URLProtocol {
+//    override class func canInit(with task: URLSessionTask) -> Bool {
+//        return true
+//    }
+//
+//    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+//        return request
+//    }
+//
 //    override func startLoading() {
 //        <#code#>
 //    }
@@ -17,7 +17,7 @@ final class APIFileProtocol: URLProtocol {
 //    override func stopLoading() {
 //        <#code#>
 //    }
-}
+//}
 
 //final class APIFileChannelDataTask: APIMockableChannelDataTask {
 //    let request: URLRequest

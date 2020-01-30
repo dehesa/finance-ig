@@ -4,16 +4,18 @@ import ConbiniForTesting
 import Combine
 
 final class StreamerTradeTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests for the stream confirmation subscription.
     func testAccountTrade() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
         let (rootURL, creds) = self.streamerCredentials(from: acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
-        streamer.accounts.subscribeToConfirmations(account: acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
+        streamer.accounts.subscribeToConfirmations(account: self.acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
             print(confirmation)
         }
         
@@ -22,10 +24,9 @@ final class StreamerTradeTests: XCTestCase {
     }
 
     func testChain() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
-        let (rootURL, creds) = self.streamerCredentials(from: acc)
+        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
@@ -33,7 +34,7 @@ final class StreamerTradeTests: XCTestCase {
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
-        let cancellable = streamer.accounts.subscribeToConfirmations(account: acc.identifier, snapshot: false)
+        let cancellable = streamer.accounts.subscribeToConfirmations(account: self.acc.identifier, snapshot: false)
             .sink(receiveCompletion: {
                 if case .failure(let error) = $0 {
                     XCTFail("The publisher failed unexpectedly with \(error)")

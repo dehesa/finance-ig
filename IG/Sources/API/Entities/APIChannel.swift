@@ -3,40 +3,52 @@ import Foundation
 extension IG.API {
     /// Contains the low-level functionality related to the `URLSession` and credentials management.
     internal final class Channel {
-        /// The queue handling the accesses to credentials.
-        private let queue: DispatchQueue
         /// The `URLSession` instance performing the HTTPS requests.
         internal let session: URLSession
         /// The credentials used to call API endpoints.
         private var secret: IG.API.Credentials?
+        /// The lock used to restrict access to the credentials.
+        private let lock: UnsafeMutablePointer<os_unfair_lock>
         
-        init(session: URLSession, queue: DispatchQueue, credentials: IG.API.Credentials?) {
+        /// Designated initializer passing the basic requirements for an API channel.
+        /// - parameter session: Real or mock URL session calling the endpoints.
+        /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
+        init(session: URLSession, credentials: IG.API.Credentials?) {
             self.session = session
-            self.queue = queue
             self.secret = credentials
+            self.lock = UnsafeMutablePointer.allocate(capacity: 1)
+            self.lock.initialize(to: os_unfair_lock())
         }
         
         deinit {
             self.session.invalidateAndCancel()
+            self.lock.deallocate()
         }
         
         /// Returns the current credentials.
         internal var credentials: API.Credentials? {
             get {
-                self.queue.sync { self.secret }
+                os_unfair_lock_lock(self.lock)
+                let secret = self.secret
+                os_unfair_lock_unlock(self.lock)
+                return secret
             }
             set(newCredentials) {
-                self.queue.sync { self.secret = newCredentials }
+                os_unfair_lock_lock(self.lock)
+                self.secret = newCredentials
+                os_unfair_lock_unlock(self.lock)
             }
         }
         
         /// Retrieve and modify the channel's credentials synchronously, so it cannot be modified during operation.
+        ///
+        /// This method is supposed to be used asynchronously. Therefore, no other calls to this channel's `credentials` properties or methods shall be called within the given closure or the program will lock.
         /// - parameter synchronizedClosure: Closure executing the priviledge instructions.
-        /// - note: No other channel's `credentials` properties or methods shall be called within the given closure or the program will lock.
+        /// - parameter credentials: The current API credentials (or `nil` if there are none).
         internal func tweakCredentials(_ synchronizedClosure: (_ credentials: IG.API.Credentials?) throws -> IG.API.Credentials?) rethrows {
-            try self.queue.sync {
-                self.secret = try synchronizedClosure(self.secret)
-            }
+            os_unfair_lock_lock(self.lock)
+            defer { os_unfair_lock_unlock(self.lock) }
+            self.secret = try synchronizedClosure(self.secret)
         }
     }
 }

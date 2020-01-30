@@ -6,7 +6,7 @@ import Combine
 final class StreamerSessionTests: XCTestCase {
     /// Tests the connection/disconnection events.
     func testStreamerSession() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         let connectionStatuses = streamer.session.connect()
@@ -25,7 +25,7 @@ final class StreamerSessionTests: XCTestCase {
     }
     
     func testUnsubscribeFromNone() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect()
