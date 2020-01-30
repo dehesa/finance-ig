@@ -12,7 +12,7 @@ import Foundation
 final class StreamerLowlevelTests: XCTestCase {
     /// Test the subscription to the market using the Lightstreamer framework directly.
     func testLowlevelMarketSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
@@ -40,7 +40,7 @@ final class StreamerLowlevelTests: XCTestCase {
     
     /// Tests account confirmation subscription using the Lightstreamer framework directly.
     func testLowlevelConfirmationSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)

@@ -1,11 +1,14 @@
 import IG
+import ConbiniForTesting
 import XCTest
 
 final class APIPositionTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests the position creation, confirmation, retrieval, and deletion.
     func testPositionLifecycle() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let expiry: IG.Market.Expiry = nil

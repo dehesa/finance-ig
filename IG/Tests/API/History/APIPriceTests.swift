@@ -1,12 +1,15 @@
 @testable import IG
+import ConbiniForTesting
 import XCTest
 
 /// Tests API history activity related enpoints
 final class APIPriceTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests paginated activity retrieval.
     func testPrices() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let fromDate = Date().lastTuesday
         let toDate = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: fromDate)!
@@ -23,9 +26,5 @@ final class APIPriceTests: XCTestCase {
         let element = prices[Int.random(in: 0..<prices.count)]
         XCTAssertGreaterThanOrEqual(element.date, fromDate)
         XCTAssertLessThanOrEqual(element.date, toDate)
-    }
-    
-    func testingThings() {
-        
     }
 }

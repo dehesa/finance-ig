@@ -1,11 +1,14 @@
 import IG
+import ConbiniForTesting
 import XCTest
 
 final class APIWorkingOrderTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
 
         let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
             .expectsOne(timeout: 2, on: self)

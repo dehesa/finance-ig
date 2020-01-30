@@ -37,26 +37,23 @@ public final class API {
     /// Each API instance has its own serial `DispatchQueue`. The queue provided in this initializer is the target queue for the created instance's queue.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter queue: The target queue on which to process the `API` requests and responses.
+    /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
     public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
-        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .utility, autoreleaseFrequency: .inherit, target: targetQueue)
         let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing", qos: .utility, autoreleaseFrequency: .inherit, target: targetQueue)
-        
-        let operationQueue = OperationQueue.init(name: processingQueue.label + ".operationQueue", underlyingQueue: processingQueue)
+        let operationQueue = OperationQueue(name: processingQueue.label + ".operationQueue", underlyingQueue: processingQueue)
         let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
-        let channel = IG.API.Channel(session: session, queue: priviledgeQueue, credentials: credentials)
-        
-        self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
+        self.init(rootURL: rootURL, credentials: credentials, session: session, processingQueue: processingQueue)
     }
     
-    /// Designated initializer for an API instance, giving you the default options.
+    /// Designated initializer used for both real and mocked usage.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
-    /// - parameter channel: The low-level API endpoint handler.
+    /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
+    /// - parameter session: The URL session used to call the real (or mocked) endpoints.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
-    internal init(rootURL: URL, channel: IG.API.Channel, queue: DispatchQueue) {
+    internal init(rootURL: URL, credentials: IG.API.Credentials?, session: URLSession, processingQueue: DispatchQueue) {
         self.rootURL = rootURL
-        self.queue = queue
-        self.channel = channel
+        self.queue = processingQueue
+        self.channel = .init(session: session, credentials: credentials)
     }
 }
 

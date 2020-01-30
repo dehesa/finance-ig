@@ -5,7 +5,7 @@ import Combine
 final class StreamerMarketTests: XCTestCase {
     /// Tests the market info subscription.
     func testMarketSubscriptions() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)

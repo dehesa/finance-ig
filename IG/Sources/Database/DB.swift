@@ -29,9 +29,8 @@ public final class DB {
     /// - parameter targetQueue: The target queue on which to process the `DB` requests and responses.
     /// - throws: `IG.DB.Error` exclusively.
     public convenience init(rootURL: URL?, targetQueue: DispatchQueue?) throws {
-        let qos = targetQueue?.qos ?? .utility
-        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: qos, /*attributes: .concurrent,*/ autoreleaseFrequency: .inherit, target: targetQueue)
-        let processingQueue = targetQueue ?? DispatchQueue(label: Self.reverseDNS + ".processing", qos: qos, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let priviledgeQueue = DispatchQueue(label: Self.reverseDNS + ".priviledge", qos: .default, /*attributes: .concurrent,*/ autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = targetQueue ?? DispatchQueue(label: Self.reverseDNS + ".processing", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = try Self.Channel(rootURL: rootURL, queue: priviledgeQueue)
         try self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }

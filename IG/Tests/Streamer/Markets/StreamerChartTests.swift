@@ -5,7 +5,7 @@ import Combine
 final class StreamerChartTests: XCTestCase {
     /// Tests subscription to candle charts.
     func testChartSecond() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
@@ -36,7 +36,7 @@ final class StreamerChartTests: XCTestCase {
     
     /// Tests subscription to tick charts.
     func testChartTick() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: "io.dehesa.money.ig.tests.account"))
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)

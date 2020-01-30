@@ -38,6 +38,41 @@ extension Test.Account: Decodable {
             self.init(identifier: result.identifier, api: result.api, streamer: result.streamer, database: result.database)
         } catch let error { fatalError(Error.accountParsingFailed(url: accountFileURL, underlyingError: error).debugDescription) }
     }
+    
+    /// Parse a URL represented as a string into a proper URL.
+    ///
+    /// If `path` is a relative file path; that path is appended to the test bundle resource URL.
+    ///
+    /// In the following scenarios, this function will throw an error:
+    /// - if `path` is `nil`,
+    /// - if `path` doesn't have a scheme (e.g. `https://`) or the scheme is not supported,
+    /// - if `path` is empty after the scheme,
+    /// - parameter path: A string representing a local or remote URL.
+    /// - throws: `Account.Error` type.
+    fileprivate static func parse(path: String) throws -> URL {
+        // Retrieve the schema (e.g. "file://") and see whether the path type is supported.
+        guard let url = URL(string: path), let schemeString = url.scheme,
+              let scheme = SupportedScheme(rawValue: schemeString) else {
+            throw Self.Error.invalidURL(path)
+        }
+        
+        // Check that the url is bigger than just the scheme.
+        let substring = path.dropFirst("\(scheme.rawValue)://".count)
+        guard let first = substring.first else { throw Self.Error.invalidURL(path) }
+        
+        // If the scheme is a web URL or a local path pointing to the root folder (i.e. "/"), return the URL without further modifications.
+        guard case .file = scheme, first != "/" else { return url }
+        
+        let resourcesURL = try bundleResourceURL()
+        return resourcesURL.appendingPathComponent(String(substring))
+    }
+    
+    /// Returns the URL for the test bundle resource.
+    private static func bundleResourceURL() throws -> URL {
+        let bundle = Bundle(for: Self.self)
+        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound() }
+        return url
+    }
 }
 
 // MARK: -
@@ -145,49 +180,5 @@ extension Test.Account.DatabaseData: Decodable {
 
     private enum CodingKeys: String, CodingKey {
         case rootURL = "url"
-    }
-}
-
-// MARK: - Functionality
-
-extension Test.Account {
-    /// Parse a URL represented as a string into a proper URL.
-    ///
-    /// If `path` is a relative file path; that path is appended to the test bundle resource URL.
-    ///
-    /// In the following scenarios, this function will throw an error:
-    /// - if `path` is `nil`,
-    /// - if `path` doesn't have a scheme (e.g. `https://`) or the scheme is not supported,
-    /// - if `path` is empty after the scheme,
-    /// - parameter path: A string representing a local or remote URL.
-    /// - throws: `Account.Error` type.
-    fileprivate static func parse(path: String) throws -> URL {
-        // Retrieve the schema (e.g. "file://") and see whether the path type is supported.
-        guard let url = URL(string: path),
-              let schemeString = url.scheme,
-              let scheme = SupportedScheme(rawValue: schemeString) else {
-                throw Self.Error.invalidURL(path)
-        }
-        
-        // Check that the url is bigger than just the scheme.
-        let substring = path.dropFirst("\(scheme.rawValue)://".count)
-        guard let first = substring.first else {
-            throw Self.Error.invalidURL(path)
-        }
-        
-        // If the scheme is a web URL or a local path pointing to the root folder (i.e. "/"), return the URL without further modifications.
-        guard case .file = scheme, first != "/" else {
-            return url
-        }
-        
-        let resourcesURL = try bundleResourceURL()
-        return resourcesURL.appendingPathComponent(String(substring))
-    }
-    
-    /// Returns the URL for the test bundle resource.
-    private static func bundleResourceURL() throws -> URL {
-        let bundle = Bundle(for: Self.self)
-        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound() }
-        return url
     }
 }

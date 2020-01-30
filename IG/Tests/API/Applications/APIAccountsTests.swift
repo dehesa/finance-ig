@@ -1,12 +1,15 @@
 @testable import IG
+import ConbiniForTesting
 import XCTest
 
 /// Tests API Account related endpoints.
 final class APIAccountTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests Account information retrieval.
     func testAccounts() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let accounts = api.accounts.getAll()
             .expectsOne(timeout: 2, on: self)
@@ -20,8 +23,7 @@ final class APIAccountTests: XCTestCase {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let initial = api.accounts.preferences()
             .expectsOne(timeout: 2, on: self)

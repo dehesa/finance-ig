@@ -1,11 +1,14 @@
 import IG
+import ConbiniForTesting
 import XCTest
 
 final class APIMarketTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Tests market search through epic strings.
     func testMarkets() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let epics: Set<IG.Market.Epic> = ["CS.D.EURGBP.MINI.IP", "CS.D.EURUSD.MINI.IP", "CO.D.DX.FCS1.IP", "KA.D.VOD.CASH.IP"]
         let markets = api.markets.get(epics: epics)
@@ -16,8 +19,7 @@ final class APIMarketTests: XCTestCase {
     
     /// Tests the market retrieval (for big numbers).
     func testMarketsContinuously() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let epics = Set<IG.Market.Epic>(Test.Epic.forex + Test.Epic.forexMini)
         let markets = api.markets.getContinuously(epics: epics)
@@ -28,8 +30,7 @@ final class APIMarketTests: XCTestCase {
     
     /// Test the market retrieval for a single market.
     func testMarketRetrieval() {
-        let acc = Test.account(environmentKey: "io.dehesa.money.ig.tests.account")
-        let api = Test.makeAPI(rootURL: acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let market = api.markets.get(epic: epic)

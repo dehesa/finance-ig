@@ -30,7 +30,9 @@ extension Test {
 extension Test.Account {
     /// Account test environment API information.
     final class APIData {
+        /// Blob gathering the required token certificate data.
         typealias TokenCertificate = (access: String, security: String)
+        /// Blob gathering the required OAuth token data.
         typealias TokenOAuth = (access: String, refresh: String, scope: String, type: String)
         /// The root URL from where to call the endpoints.
         ///
