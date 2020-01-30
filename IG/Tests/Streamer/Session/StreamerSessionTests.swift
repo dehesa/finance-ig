@@ -24,6 +24,7 @@ final class StreamerSessionTests: XCTestCase {
         XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
     }
     
+    /// Test unsubscription when there is no subscriptions.
     func testUnsubscribeFromNone() {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)

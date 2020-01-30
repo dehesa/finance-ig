@@ -6,12 +6,9 @@ extension IG.API.Request {
     public struct Positions {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API
-        
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: IG.API) {
-            self.api = api
-        }
+        init(api: IG.API) { self.api = api }
     }
 }
 

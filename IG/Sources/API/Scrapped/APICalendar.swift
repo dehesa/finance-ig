@@ -8,12 +8,9 @@ extension IG.API.Request {
     public struct Scrapped {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API
-        
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        internal init(api: IG.API) {
-            self.api = api
-        }
+        internal init(api: IG.API) { self.api = api }
     }
 }
 

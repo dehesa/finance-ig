@@ -6,12 +6,9 @@ extension IG.Streamer.Request {
     public struct Price {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
         internal unowned let streamer: IG.Streamer
-        
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) {
-            self.streamer = streamer
-        }
+        init(streamer: IG.Streamer) { self.streamer = streamer }
     }
 }
 
