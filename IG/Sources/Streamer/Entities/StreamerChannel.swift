@@ -17,8 +17,8 @@ extension IG.Streamer {
         
         /// Streamer credentials used to access the trading platform.
         @nonobjc let credentials: IG.Streamer.Credentials
-        /// The central queue handling all events within the Streamer flow.
-        @nonobjc private let queue: DispatchQueue
+        /// The lock used to restrict access to the credentials.
+        @nonobjc private let lock: UnsafeMutablePointer<os_unfair_lock>
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let client: LSLightstreamerClient
@@ -34,11 +34,11 @@ extension IG.Streamer {
         /// Initializes the session setting up all parameters to be ready to connect.
         /// - parameter rootURL: The URL where the streaming server is located.
         /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
-        /// - parameter queue: The `DispatchQueue` processing all new packages. The higher its QoS, the faster packages will be processed.
         /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
-        @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials, queue: DispatchQueue) {
+        @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials) {
             self.credentials = credentials
-            self.queue = queue
+            self.lock = UnsafeMutablePointer.allocate(capacity: 1)
+            self.lock.initialize(to: os_unfair_lock())
             self.client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
             self.client.connectionDetails.user = credentials.identifier.rawValue
             self.client.connectionDetails.setPassword(credentials.password)
@@ -53,6 +53,7 @@ extension IG.Streamer {
             self.client.remove(delegate: self)
             self.unsubscribeAll()
             self.disconnect()
+            self.lock.deallocate()
         }
         
         /// The Lightstreamer library version.
@@ -62,8 +63,10 @@ extension IG.Streamer {
         
         /// Returns the number of subscriptions currently established (and working) at the moment.
         public final var ongoingSubscriptions: Int {
-            dispatchPrecondition(condition: .notOnQueue(self.queue))
-            return self.queue.sync { self.subscriptions.count }
+            os_unfair_lock_lock(self.lock)
+            let numSubscriptions = self.subscriptions.count
+            os_unfair_lock_unlock(self.lock)
+            return numSubscriptions
         }
     }
 }
@@ -82,29 +85,29 @@ extension IG.Streamer.Channel {
     /// The connection process takes some time; If the returned status is not `.connected`, then you need to subscribe to the client's statuses and wait for the proper status.
     /// - returns: The client status at the time of the call.
     @nonobjc @discardableResult func connect() throws -> IG.Streamer.Session.Status {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try queue.sync {
-            let currentValue = self.mutableStatus.value
-            switch currentValue {
-            case .stalled: throw IG.Streamer.Error.invalidRequest("The Streamer is connected, but silent", suggestion: "Disconnect and connect again")
-            case .disconnected(isRetrying: false): self.client.connect()
-            case .connected, .connecting, .disconnected(isRetrying: true): break
-            }
-            return currentValue
+        os_unfair_lock_lock(self.lock)
+        let currentStatus = self.mutableStatus.value
+        os_unfair_lock_unlock(self.lock)
+        
+        switch currentStatus {
+        case .stalled: throw IG.Streamer.Error.invalidRequest("The Streamer is connected, but silent", suggestion: "Disconnect and connect again")
+        case .disconnected(isRetrying: false): self.client.connect()
+        case .connected, .connecting, .disconnected(isRetrying: true): break
         }
+        return currentStatus
     }
     
     /// Tries to disconnect the low-level client from the server and returns the current client status.
     /// - returns: The client status at the time of the call.
     @nonobjc @discardableResult func disconnect() -> IG.Streamer.Session.Status {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return queue.sync {
-            let currentStatus = self.mutableStatus.value
-            if currentStatus != .disconnected(isRetrying: false) {
-                self.client.disconnect()
-            }
-            return currentStatus
+        os_unfair_lock_lock(self.lock)
+        let currentStatus = self.mutableStatus.value
+        os_unfair_lock_unlock(self.lock)
+        
+        if currentStatus != .disconnected(isRetrying: false) {
+            self.client.disconnect()
         }
+        return currentStatus
     }
     
     /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
@@ -121,15 +124,18 @@ extension IG.Streamer.Channel {
         let cleanUp: ()->Void = { [weak self] in
             guard let self = self else { return }
             
-            dispatchPrecondition(condition: .notOnQueue(self.queue))
-            self.queue.sync {
-                guard let subscription = state else { return }
-                state = nil
-                
-                self.subscriptions.removeValue(forKey: subscription)?.cancel()
-                if subscription.lowlevel.isActive {
-                    self.client.unsubscribe(subscription.lowlevel)
-                }
+            os_unfair_lock_lock(self.lock)
+            guard let subscription = state else {
+                return os_unfair_lock_unlock(self.lock)
+            }
+            
+            state = nil
+            let subscriber = self.subscriptions.removeValue(forKey: subscription)
+            os_unfair_lock_unlock(self.lock)
+            
+            subscriber?.cancel()
+            if subscription.lowlevel.isActive {
+                self.client.unsubscribe(subscription.lowlevel)
             }
         }
         
@@ -167,14 +173,14 @@ extension IG.Streamer.Channel {
                         subject?.send(completion: .finished)
                     }
                 })
+            
+                os_unfair_lock_lock(self.lock)
+                state = subscription
+                self.subscriptions[subscription] = sink
+                os_unfair_lock_unlock(self.lock)
                 
-                dispatchPrecondition(condition: .notOnQueue(self.queue))
-                self.queue.sync {
-                    state = subscription
-                    self.subscriptions[subscription] = sink
-                    subscription.status.dropFirst().subscribe(sink)
-                    self.client.subscribe(subscription.lowlevel)
-                }
+                subscription.status.dropFirst().subscribe(sink)
+                self.client.subscribe(subscription.lowlevel)
             }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)
             .eraseToAnyPublisher()
     }
@@ -182,19 +188,18 @@ extension IG.Streamer.Channel {
     /// Unsubscribe to all ongoing subscriptions.
     /// - returns: All subscriptions that were active at the time of the call.
     @nonobjc @discardableResult func unsubscribeAll() -> [IG.Streamer.Subscription] {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        let subscriptions = queue.sync { () -> [IG.Streamer.Subscription:SubscriptionSink] in
-            let subscriptions = self.subscriptions
-            self.subscriptions.removeAll()
-            return subscriptions
-        }.map { (subscription, sink) -> IG.Streamer.Subscription in
+        os_unfair_lock_lock(self.lock)
+        let subscriptions = self.subscriptions
+        self.subscriptions.removeAll()
+        os_unfair_lock_unlock(self.lock)
+        
+        for (subscription, sink) in subscriptions {
             sink.receive(completion: .finished)
             if subscription.lowlevel.isActive {
                 self.client.unsubscribe(subscription.lowlevel)
             }
-            return subscription
         }
-        return subscriptions
+        return .init(subscriptions.keys)
     }
 }
 
@@ -202,14 +207,16 @@ extension IG.Streamer.Channel {
 
 extension IG.Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
-        guard let result = IG.Streamer.Session.Status(rawValue: status) else {
+        guard let receivedStatus = IG.Streamer.Session.Status(rawValue: status) else {
             fatalError("Lightstreamer client status \"\(status)\" was not recognized")
         }
         
-        self.queue.async {
-            guard self.mutableStatus.value != result else { return }
-            self.mutableStatus.send(result)
-        }
+        os_unfair_lock_lock(self.lock)
+        let storedStatus = self.mutableStatus.value
+        os_unfair_lock_unlock(self.lock)
+        
+        guard storedStatus != receivedStatus else { return }
+        self.mutableStatus.send(receivedStatus)
     }
     //@objc func client(_ client: LSLightstreamerClient, didChangeProperty property: String) { <#code#> }
     //@objc func client(_ client: LSLightstreamerClient, willSendRequestFor challenge: URLAuthenticationChallenge) { <#code#> }
