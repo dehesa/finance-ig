@@ -224,6 +224,12 @@
 		8DC1A4A5234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC4CBE12149A78700344CBF /* IG.framework */; };
 		8DC4CBF92149A81500344CBF /* IG.h in Headers */ = {isa = PBXBuildFile; fileRef = 8DC4CA442149A6CE00344CBF /* IG.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8DC7FBF523E2F5D2002D7F5E /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */; };
+		8DC7FBF723E2F5D2002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF623E2F5D2002D7F5E /* Conbini */; };
+		8DC7FBF923E2F5E1002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF823E2F5E1002D7F5E /* Conbini */; };
+		8DC7FBFB23E2F61B002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBFA23E2F61B002D7F5E /* Conbini */; };
+		8DC7FBFD23E2F650002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = 8DC7FBFC23E2F650002D7F5E /* Conbini */; };
+		8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = 8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */; };
 		8DCD2CE42366C4D50099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
 		8DCD2CE52366C4DC0099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
 		8DDBE9FA23506F1E001773D2 /* DBPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */; };
@@ -242,10 +248,6 @@
 		8DDC808D234F1520004A7138 /* DBPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D520C0123326A4100BDF54D /* DBPrice.swift */; };
 		8DDC808E234F3676004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
 		8DDC808F234F367A004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
-		8DDDD9832367027A002089E8 /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC1F952236701A20060AF6C /* Conbini */; };
-		8DDDD986236702C0002089E8 /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DDDD985236702C0002089E8 /* Conbini */; };
-		8DDDD98823670302002089E8 /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 8DDDD98723670302002089E8 /* ConbiniForTesting */; };
-		8DDDD98A2367030D002089E8 /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 8DDDD9892367030D002089E8 /* ConbiniForTesting */; };
 		8DE8A19E2349DCE000031B1E /* DBFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51C23266CBD00F029B3 /* DBFormatters.swift */; };
 		8DE8A19F2349DE7E00031B1E /* DB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA952316575500AFBA1E /* DB.swift */; };
 		8DE8A1A02349DE8200031B1E /* DBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9723165DB500AFBA1E /* DBError.swift */; };
@@ -472,7 +474,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DDDD98A2367030D002089E8 /* ConbiniForTesting in Frameworks */,
+				8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */,
+				8DC7FBFD23E2F650002D7F5E /* Conbini in Frameworks */,
 				8DA398C02338E3EA007B918F /* IG.framework in Frameworks */,
 				8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */,
 			);
@@ -482,7 +485,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DDDD9832367027A002089E8 /* Conbini in Frameworks */,
+				8DC7FBF723E2F5D2002D7F5E /* Conbini in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -490,7 +493,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DDDD98823670302002089E8 /* ConbiniForTesting in Frameworks */,
+				8DC7FBF523E2F5D2002D7F5E /* ConbiniForTesting in Frameworks */,
+				8DC7FBFB23E2F61B002D7F5E /* Conbini in Frameworks */,
 				8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */,
 				8D376DA5234C634B007D4A48 /* Lightstreamer_macOS_Client.framework in Frameworks */,
 			);
@@ -500,7 +504,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DDDD986236702C0002089E8 /* Conbini in Frameworks */,
+				8DC7FBF923E2F5E1002D7F5E /* Conbini in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1143,7 +1147,7 @@
 			);
 			name = "IG [iOS]";
 			packageProductDependencies = (
-				8DDDD985236702C0002089E8 /* Conbini */,
+				8DC7FBF823E2F5E1002D7F5E /* Conbini */,
 			);
 			productName = "IG iOS";
 			productReference = 8DA398B72338E3EA007B918F /* IG.framework */;
@@ -1164,7 +1168,8 @@
 			);
 			name = "IG Tests [iOS]";
 			packageProductDependencies = (
-				8DDDD9892367030D002089E8 /* ConbiniForTesting */,
+				8DC7FBFC23E2F650002D7F5E /* Conbini */,
+				8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */,
 			);
 			productName = "IG iOSTests";
 			productReference = 8DA398BF2338E3EA007B918F /* IGTests.xctest */;
@@ -1185,7 +1190,7 @@
 			);
 			name = "IG [macOS]";
 			packageProductDependencies = (
-				8DC1F952236701A20060AF6C /* Conbini */,
+				8DC7FBF623E2F5D2002D7F5E /* Conbini */,
 			);
 			productName = IG;
 			productReference = 8DC4CBE12149A78700344CBF /* IG.framework */;
@@ -1206,7 +1211,8 @@
 			);
 			name = "IG Tests [macOS]";
 			packageProductDependencies = (
-				8DDDD98723670302002089E8 /* ConbiniForTesting */,
+				8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */,
+				8DC7FBFA23E2F61B002D7F5E /* Conbini */,
 			);
 			productName = IGTests;
 			productReference = 8DC4CBEA2149A78700344CBF /* IGTests.xctest */;
@@ -1247,7 +1253,7 @@
 			);
 			mainGroup = 8DC4CA332149A60900344CBF;
 			packageReferences = (
-				8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */,
+				8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */,
 			);
 			productRefGroup = 8DC4CBE22149A78700344CBF /* Products */;
 			projectDirPath = "";
@@ -1998,9 +2004,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */ = {
+		8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/dehesa/Conbini";
+			repositoryURL = "git@github.com:dehesa/Conbini.git";
 			requirement = {
 				branch = develop;
 				kind = branch;
@@ -2009,24 +2015,34 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8DC1F952236701A20060AF6C /* Conbini */ = {
+		8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */;
-			productName = Conbini;
-		};
-		8DDDD985236702C0002089E8 /* Conbini */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */;
-			productName = Conbini;
-		};
-		8DDDD98723670302002089E8 /* ConbiniForTesting */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
 			productName = ConbiniForTesting;
 		};
-		8DDDD9892367030D002089E8 /* ConbiniForTesting */ = {
+		8DC7FBF623E2F5D2002D7F5E /* Conbini */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8DC1F951236701A20060AF6C /* XCRemoteSwiftPackageReference "Conbini" */;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+		8DC7FBF823E2F5E1002D7F5E /* Conbini */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+		8DC7FBFA23E2F61B002D7F5E /* Conbini */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+		8DC7FBFC23E2F650002D7F5E /* Conbini */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
+			productName = Conbini;
+		};
+		8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
 			productName = ConbiniForTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
