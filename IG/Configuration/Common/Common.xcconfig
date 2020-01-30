@@ -4,7 +4,7 @@ PRODUCT_BUNDLE_IDENTIFIER = io.dehesa.ig
 
 // Versioning
 CURRENT_PROJECT_VERSION = 1
-DYLIB_CURRENT_VERSION = 0.7.0
+DYLIB_CURRENT_VERSION = 0.8.0
 DYLIB_COMPATIBILITY_VERSION = $(DYLIB_CURRENT_VERSION)
 
 // Deployment
@@ -19,5 +19,3 @@ BUNDLE_SIGNATURE = MSDC
 
 // Search Paths (for the compiler)
 FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Dependencies/Lightstreamer
-
-// Swift Compiler - Code Generation
