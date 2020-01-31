@@ -2,35 +2,35 @@ import Combine
 import Foundation
 import SQLite3
 
-extension IG.DB.Request.Markets {
-    /// Contains all functionality related to DB Forex.
+extension IG.Database.Request.Markets {
+    /// Contains all functionality related to Database Forex.
     public struct Forex {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let database: IG.DB
+        fileprivate unowned let database: IG.Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: IG.DB) { self.database = database }
+        internal init(database: IG.Database) { self.database = database }
     }
 }
 
-extension IG.DB.Request.Markets.Forex {
+extension IG.Database.Request.Markets.Forex {
     /// Returns all forex markets.
     ///
     /// If there are no forex markets in the database yet, an empty array will be returned.
-    public func getAll() -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
+    public func getAll() -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
         self.database.publisher { _ in
-                "SELECT * FROM \(IG.DB.Market.Forex.tableName)"
+                "SELECT * FROM \(IG.Database.Market.Forex.tableName)"
             }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
-                var result: [IG.DB.Market.Forex] = .init()
+                var result: [IG.Database.Market.Forex] = .init()
                 while true {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
                     }
                 }
-            }.mapError(IG.DB.Error.transform)
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -38,9 +38,9 @@ extension IG.DB.Request.Markets.Forex {
     ///
     /// If the market is not in the database, a `.invalidResponse` error will be returned.
     /// - parameter epic: The forex market epic identifyier.
-    public func get(epic: IG.Market.Epic) -> IG.DB.Publishers.Discrete<IG.DB.Market.Forex> {
+    public func get(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Forex> {
         self.database.publisher { _ in
-                "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE epic=?1"
+                "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic=?1"
             }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
 
@@ -48,19 +48,19 @@ extension IG.DB.Request.Markets.Forex {
 
                 switch sqlite3_step(statement).result {
                 case .row: return .init(statement: statement!)
-                case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
-                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Market.Forex.self), code: e)
+                case .done: throw IG.Database.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
+                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
                 }
-            }.mapError(IG.DB.Error.transform)
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
     
     /// Returns the forex markets matching the given currency.
     /// - parameter currency: A currency used as base or counter in the result markets.
     /// - parameter otherCurrency: A currency matching the first argument. It is optional.
-    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
+    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
         self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
-                var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
+                var sql = "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE "
             
                 var binds: [(index: Int32, text: IG.Currency.Code)] = [(1, currency)]
                 switch otherCurrency {
@@ -77,15 +77,15 @@ extension IG.DB.Request.Markets.Forex {
                     sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
                 }
                 
-                var result: [IG.DB.Market.Forex] = .init()
+                var result: [IG.Database.Market.Forex] = .init()
                 while true {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
                     }
                 }
-            }.mapError(IG.DB.Error.transform)
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -94,11 +94,11 @@ extension IG.DB.Request.Markets.Forex {
     /// If there are no forex markets matching the given requirements, an empty array will be returned.
     /// - parameter base: The base currency code (or `nil` if this requirement is not needed).
     /// - parameter counter: The counter currency code (or `nil` if this requirement is not needed).
-    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.DB.Publishers.Discrete<[IG.DB.Market.Forex]> {
+    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
         guard base != nil || counter != nil else { return self.getAll() }
         
         return self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
-            var sql = "SELECT * FROM \(IG.DB.Market.Forex.tableName) WHERE "
+            var sql = "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE "
             
             let binds: [(index: Int32, text: IG.Currency.Code)]
             switch (base, counter) {
@@ -114,15 +114,15 @@ extension IG.DB.Request.Markets.Forex {
                 sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
             }
             
-            var result: [IG.DB.Market.Forex] = .init()
+            var result: [IG.Database.Market.Forex] = .init()
             while true {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
                 case .done: return result
-                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
                 }
             }
-        }.mapError(IG.DB.Error.transform)
+        }.mapError(IG.Database.Error.transform)
         .eraseToAnyPublisher()
     }
 
@@ -136,7 +136,7 @@ extension IG.DB.Request.Markets.Forex {
         defer { sqlite3_finalize(statement) }
         
         let query = """
-            INSERT INTO \(IG.DB.Market.Forex.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
+            INSERT INTO \(IG.Database.Market.Forex.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
                 ON CONFLICT(epic) DO UPDATE SET base=excluded.base, counter=excluded.counter,
                     name=excluded.name, marketId=excluded.marketId, chartId=excluded.chartId, reutersId=excluded.reutersId,
                     contSize=excluded.contSize, pipVal=excluded.pipVal, placePip=excluded.placePip, placeLevel=excluded.placeLevel, slippage=excluded.slippage, premium=excluded.premium, extra=excluded.extra, margin=excluded.margin, bands=excluded.bands,
@@ -145,9 +145,9 @@ extension IG.DB.Request.Markets.Forex {
         try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
         
         for m in markets {
-            guard case .success(let inferred) = IG.DB.Market.Forex.inferred(from: m) else { continue }
+            guard case .success(let inferred) = IG.Database.Market.Forex.inferred(from: m) else { continue }
             // The pip value can also be inferred from: `instrument.pip.value`
-            let forex = IG.DB.Market.Forex(epic: m.instrument.epic,
+            let forex = IG.Database.Market.Forex(epic: m.instrument.epic,
                                            currencies:  .init(base: inferred.base, counter: inferred.counter),
                                            identifiers: .init(name: m.instrument.name, market: inferred.marketId, chart: m.instrument.chartCode, reuters: m.instrument.newsCode),
                                            information: .init(contractSize: Int(clamping: inferred.contractSize),
@@ -163,7 +163,7 @@ extension IG.DB.Request.Markets.Forex {
                                                                                             maximumAsPercentage: m.rules.limit.maximumDistance.value),
                                                                trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
             forex.bind(to: statement!)
-            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Application.self), code: $0) }
+            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
         }
@@ -172,7 +172,7 @@ extension IG.DB.Request.Markets.Forex {
 
 // MARK: - Entities
 
-extension IG.DB.Market {
+extension IG.Database.Market {
     /// Database representation of a Foreign Exchange market.
     ///
     /// This structure is `Hashable` and `Equatable` for storage convenience purposes; however, the hash/equatable value is just the epic.
@@ -192,13 +192,13 @@ extension IG.DB.Market {
             hasher.combine(self.epic)
         }
         
-        public static func == (lhs: DB.Market.Forex, rhs: DB.Market.Forex) -> Bool {
+        public static func == (lhs: Database.Market.Forex, rhs: Database.Market.Forex) -> Bool {
             lhs.epic == rhs.epic
         }
     }
 }
 
-extension IG.DB.Market.Forex {
+extension IG.Database.Market.Forex {
     /// The base and counter currencies of a foreign exchange market.
     public struct Currencies: Equatable {
         /// The traditionally "strong" currency.
@@ -308,7 +308,7 @@ extension IG.DB.Market.Forex {
                 /// The minimum distance (expressed in pips).
                 public let minimumValue: Decimal
                 /// The unit on which the `minimumValue` is expressed as.
-                public let minimumUnit: IG.DB.Unit
+                public let minimumUnit: IG.Database.Unit
                 /// The maximum allowed distance (expressed as percentage)
                 public let maximumAsPercentage: Decimal
             }
@@ -328,8 +328,8 @@ extension IG.DB.Market.Forex {
 
 // MARK: SQLite
 
-extension IG.DB.Market.Forex: DBTable {
-    internal static let tableName: String = IG.DB.Market.tableName.appending("_Forex")
+extension IG.Database.Market.Forex: DBTable {
+    internal static let tableName: String = IG.Database.Market.tableName.appending("_Forex")
     internal static var tableDefinition: String {
         """
         CREATE TABLE \(Self.tableName) (
@@ -367,7 +367,7 @@ extension IG.DB.Market.Forex: DBTable {
     }
 }
 
-fileprivate extension IG.DB.Market.Forex {
+fileprivate extension IG.Database.Market.Forex {
     typealias Indices = (epic: Int32, base: Int32, counter: Int32, identifiers: Self.Identifiers.Indices, information: Self.DealingInformation.Indices, restrictions: Self.Restrictions.Indices)
     
     init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2, (3, 4, 5, 6), (7, 8, 9, 10, 11, 12, 13, 14, 15), (16, 17, 18, 19, 20, 21, 22)) ) {
@@ -389,7 +389,7 @@ fileprivate extension IG.DB.Market.Forex {
     }
 }
 
-fileprivate extension IG.DB.Market.Forex.Identifiers {
+fileprivate extension IG.Database.Market.Forex.Identifiers {
     typealias Indices = (name: Int32, market: Int32, chart: Int32, reuters: Int32)
     
     init(statement: SQLite.Statement, indices: Self.Indices) {
@@ -408,7 +408,7 @@ fileprivate extension IG.DB.Market.Forex.Identifiers {
     }
 }
 
-fileprivate extension IG.DB.Market.Forex.DealingInformation {
+fileprivate extension IG.Database.Market.Forex.DealingInformation {
     typealias Indices = (contractSize: Int32, pipValue: Int32, pipPlaces: Int32, levelPlaces: Int32, slippage: Int32, premium: Int32, extra: Int32, factor: Int32, bands: Int32)
     
     init(statement: SQLite.Statement, indices: Self.Indices) {
@@ -436,7 +436,7 @@ fileprivate extension IG.DB.Market.Forex.DealingInformation {
     }
 }
 
-fileprivate extension IG.DB.Market.Forex.Restrictions {
+fileprivate extension IG.Database.Market.Forex.Restrictions {
     typealias Indices = (dealSize: Int32, minDistance: Int32, maxDistance: Int32, guaranteedStopDistance: Int32, guaranteedStopUnit: Int32, trailing: Int32, minStep: Int32)
     
     init(statement: SQLite.Statement, indices: Self.Indices) {
@@ -444,7 +444,7 @@ fileprivate extension IG.DB.Market.Forex.Restrictions {
         self.regularDistance = .init(minimum: Decimal(sqlite3_column_int64(statement, indices.minDistance), divingByPowerOf10: 2),
                                      maximumAsPercentage: Decimal(sqlite3_column_int64(statement, indices.maxDistance), divingByPowerOf10: 1))
         self.guarantedStopDistance = .init(minimumValue: Decimal(sqlite3_column_int64(statement, indices.guaranteedStopDistance), divingByPowerOf10: 2),
-                                           minimumUnit: IG.DB.Unit(rawValue: Int(sqlite3_column_int(statement, indices.guaranteedStopUnit)))!,
+                                           minimumUnit: IG.Database.Unit(rawValue: Int(sqlite3_column_int(statement, indices.guaranteedStopUnit)))!,
                                            maximumAsPercentage: self.regularDistance.maximumAsPercentage)
         self.trailingStop = .init(isAvailable: Bool(sqlite3_column_int(statement, indices.trailing)),
                                   minimumIncrement: Decimal(sqlite3_column_int64(statement, indices.minStep), divingByPowerOf10: 1))
@@ -463,7 +463,7 @@ fileprivate extension IG.DB.Market.Forex.Restrictions {
 
 // MARK: Margins
 
-extension IG.DB.Market.Forex {
+extension IG.Database.Market.Forex {
     /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
     ///
     /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
@@ -493,7 +493,7 @@ extension IG.DB.Market.Forex {
     }
 }
 
-extension IG.DB.Market.Forex.DealingInformation.Margin.Bands {
+extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
     fileprivate typealias StoredElement = (lowerBound: Decimal, value: Decimal)
     /// The character separators used in encoding/decoding.
     private static let separator: (numbers: Character, elements: Character) = (":", "|")
@@ -575,7 +575,7 @@ extension IG.DB.Market.Forex.DealingInformation.Margin.Bands {
 
 // MARK: API
 
-extension IG.DB.Market.Forex {
+extension IG.Database.Market.Forex {
     /// Returns a Boolean indicating whether the given API market can be represented as a database Forex market.
     /// - parameter market: The market information received from the platform's server.
     internal static func isCompatible(market: IG.API.Market) -> Bool {
@@ -585,10 +585,10 @@ extension IG.DB.Market.Forex {
         return true
     }
     
-    /// Check whether the given API market instance is a valid Forex DB market and returns inferred values.
+    /// Check whether the given API market instance is a valid Forex Database market and returns inferred values.
     /// - parameter market: The market information received from the platform's server.
-    fileprivate static func inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.DB.Unit, bands: Self.DealingInformation.Margin.Bands),IG.DB.Error> {
-        let error: (_ suffix: String) -> IG.DB.Error = {
+    fileprivate static func inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.Database.Unit, bands: Self.DealingInformation.Margin.Bands),IG.Database.Error> {
+        let error: (_ suffix: String) -> IG.Database.Error = {
             return .invalidRequest(.init(#"The API market "\#(market.instrument.epic)" \#($0)"#), suggestion: .reviewError)
         }
         // 1. Check the type is .currency
@@ -658,7 +658,7 @@ extension IG.DB.Market.Forex {
             return .failure(error(#"has a maximum limit distance unit of "\#(market.rules.limit.maximumDistance.unit)" when ".percentage" was expected"#))
         }
         // 11. Check the guaranteed stop units.
-        let unit: IG.DB.Unit
+        let unit: IG.Database.Unit
         switch market.rules.stop.minimumLimitedRiskDistance.unit {
         case .points: unit = .points
         case .percentage: unit = .percentage
@@ -709,9 +709,9 @@ extension IG.DB.Market.Forex {
 
 // MARK: Debugging
 
-extension IG.DB.Market.Forex: IG.DebugDescriptable {
+extension IG.Database.Market.Forex: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return IG.DB.Market.printableDomain.appending(".\(Self.self)")
+        return IG.Database.Market.printableDomain.appending(".\(Self.self)")
     }
     
     public var debugDescription: String {

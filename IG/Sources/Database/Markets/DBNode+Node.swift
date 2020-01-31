@@ -1,6 +1,6 @@
 import Foundation
 
-//extension IG.DB.Node {
+//extension IG.Database.Node {
 //    /// Associative table listing nodes and subnodes.
 //    /// - A node can have none or many subnodes.
 //    /// - A subnode can be owned by one or many parent nodes.
@@ -14,9 +14,9 @@ import Foundation
 //    }
 //}
 
-//extension IG.DB.Node.AssociativeSubnode {
+//extension IG.Database.Node.AssociativeSubnode {
 //    static func tableCreation(in db: GRDB.Database) throws {
-//        typealias N = IG.DB.Node
+//        typealias N = IG.Database.Node
 //
 //        try db.create(table: "nodesMarket", ifNotExists: false) { (t) in
 //            t.autoIncrementedPrimaryKey("id")
@@ -27,7 +27,7 @@ import Foundation
 //    }
 //}
 //
-//extension IG.DB.Node.AssociativeSubnode: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
+//extension IG.Database.Node.AssociativeSubnode: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
 //    public init(row: GRDB.Row) {
 //        self.identifier = row[0]
 //        self.parentIdentifier = row[1]
@@ -46,7 +46,7 @@ import Foundation
 //    }
 //}
 //
-//extension IG.DB.Node.AssociativeSubnode: GRDB.TableRecord {
+//extension IG.Database.Node.AssociativeSubnode: GRDB.TableRecord {
 //    /// The table columns
 //    private enum Columns: String, GRDB.ColumnExpression {
 //        case identifier = "id"

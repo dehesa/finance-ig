@@ -5,7 +5,7 @@ import XCTest
 final class DBNodeTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testNodeTableCreation() {
-//        let database = try! IG.DB(rootURL: nil)
+//        let database = try! IG.Database(rootURL: nil)
 //        
 //        let queue = database.channel
 //        try! queue.write { (db) in

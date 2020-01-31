@@ -87,7 +87,7 @@ extension Int32 {
         return nil
     }
     /// Expects the reeiving integer is equal to `value`; if not, the error in the closure is thrown.
-    func expects(_ value: IG.SQLite.Result, _ error: (_ receivedCode: IG.SQLite.Result) -> IG.DB.Error = { .callFailed(.execCommand, code: $0) }) throws {
+    func expects(_ value: IG.SQLite.Result, _ error: (_ receivedCode: IG.SQLite.Result) -> IG.Database.Error = { .callFailed(.execCommand, code: $0) }) throws {
         if self == value.rawValue { return }
         throw error(.init(trusted: self))
     }

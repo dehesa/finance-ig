@@ -1,6 +1,6 @@
 //import Foundation
 //
-//extension IG.DB {
+//extension IG.Database {
 //    /// Database representation of the IG's platform navigation node.
 //    public struct Node {
 //        /// Node identifier.
@@ -14,7 +14,7 @@
 
 //// MARK: - GRDB Internals
 //
-//extension IG.DB.Node {
+//extension IG.Database.Node {
 //    /// Creates a SQLite table for Forex markets.
 //    static func tableCreation(in db: GRDB.Database) throws {
 //        try db.create(table: "nodes", ifNotExists: false, withoutRowID: true) { (t) in
@@ -24,7 +24,7 @@
 //    }
 //}
 //
-//extension IG.DB.Node: GRDB.FetchableRecord, GRDB.PersistableRecord {
+//extension IG.Database.Node: GRDB.FetchableRecord, GRDB.PersistableRecord {
 //    public init(row: GRDB.Row) {
 //        self.identifier = row[0]
 //        self.name = row[1]
@@ -36,7 +36,7 @@
 //    }
 //}
 //
-//extension IG.DB.Node: GRDB.TableRecord {
+//extension IG.Database.Node: GRDB.TableRecord {
 //    /// The SQLite table columns.
 //    internal enum Columns: String, GRDB.ColumnExpression {
 //        case identifier = "nodeId"
