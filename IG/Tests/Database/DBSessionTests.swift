@@ -13,7 +13,7 @@ final class DBSessionTests: XCTestCase {
         let fileName = String.random(length: Int.random(in: 8...13)).appending(".sqlite")
         let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName, isDirectory: false)
 
-        var database: IG.DB? = Test.makeDatabase(rootURL: fileURL, targetQueue: nil)
+        var database: IG.Database? = Test.makeDatabase(rootURL: fileURL, targetQueue: nil)
         XCTAssertNotNil(database?.rootURL)
         XCTAssertEqual(database!.rootURL!, fileURL.absoluteURL)
 

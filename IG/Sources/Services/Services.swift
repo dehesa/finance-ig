@@ -11,7 +11,7 @@ public final class Services {
     /// Instance letting you subscribe to lightsreamer events.
     public let streamer: IG.Streamer
     /// Instance letting you query a databse for caching purposes.
-    public let database: IG.DB
+    public let database: IG.Database
     
     /// Designated initializer specifying every single service.
     ///
@@ -20,7 +20,7 @@ public final class Services {
     /// - parameter api: The HTTP API manager.
     /// - parameter streamer: The Lightstreamer event manager.
     /// - parameter database: The Database manager.
-    public init(queue: DispatchQueue, api: IG.API, streamer: IG.Streamer, database: IG.DB) {
+    public init(queue: DispatchQueue, api: IG.API, streamer: IG.Streamer, database: IG.Database) {
         self.queue = queue
         self.api = api
         self.streamer = streamer
@@ -30,40 +30,40 @@ public final class Services {
     /// Factory method for all services, which are log into with the provided user credentials.
     ///
     /// The `streamer` service still requires a further `streamer.session.connect()` call.
+    /// - parameter databaseLocation: The location of the database (whether "in-memory" or file system).
     /// - parameter serverURL: The base/root URL for all HTTP endpoint calls. The default URL points to IG's production environment.
-    /// - parameter databaseURL: The file URL indicating the location of the caching database.
-    /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, user: IG.API.User) -> IG.Services.Publishers.Discrete<IG.Services> {
+    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, user: IG.API.User) -> IG.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
-        return api.session.login(type: .certificate, key: key, user: user)
+        return api.session.login(type: .certificate, key: apiKey, user: user)
             .mapError(Self.Error.api)
-            .flatMap { _ in Self.make(with: api, queue: queue, databaseURL: databaseURL) }
+            .flatMap { _ in Self.make(with: api, queue: queue, location: databaseLocation) }
             .eraseToAnyPublisher()
     }
     
     /// Factory method for all services, which are log into with the provided user token (whether OAuth or Certificate).
     ///
     /// The `streamer` service still requires a further `streamer.session.connect()` call.
+    /// - parameter databaseLocation: The location of the database (whether "in-memory" or file system).
     /// - parameter serverURL: The base/root URL for all HTTP endpoint calls. The default URL points to IG's production environment.
-    /// - parameter databaseURL: The file URL indicating the location of the caching database.
-    /// - parameter key: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
+    /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(serverURL: URL = IG.API.rootURL, databaseURL: URL? = IG.DB.rootURL, key: IG.API.Key, token: IG.API.Token) -> IG.Services.Publishers.Discrete<IG.Services> {
+    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, token: IG.API.Token) -> IG.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Token) -> Combine.Publishers.FlatMap<IG.Services.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
-            return api.session.get(key: key, token: token)
+        let signal: (_ token: IG.API.Token) -> Combine.Publishers.FlatMap<IG.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
+            return api.session.get(key: apiKey, token: token)
                 .mapError(Self.Error.api)
-                .flatMap { (session) -> IG.Services.Publishers.Discrete<IG.Services> in
-                    api.channel.credentials = .init(client: session.client, account: session.account, key: key, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
-                    return Self.make(with: api, queue: queue, databaseURL: databaseURL)
+                .flatMap { (session) -> IG.Publishers.Discrete<IG.Services> in
+                    api.channel.credentials = .init(client: session.client, account: session.account, key: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
+                    return Self.make(with: api, queue: queue, location: databaseLocation)
                 }
         }
         
@@ -73,7 +73,7 @@ public final class Services {
                 return Fail(error: .api(error: .invalidRequest("The given certificate token has expired and it cannot be refreshed (it must be renewed)", suggestion: "Log in with your username and password")))
                     .eraseToAnyPublisher()
             case .oauth(_, let refreshToken, _,_):
-                return api.session.refreshOAuth(token: refreshToken, key: key)
+                return api.session.refreshOAuth(token: refreshToken, key: apiKey)
                     .mapError { Self.Error.api(error: .transform($0)) }
                     .flatMap { signal($0) }
                     .eraseToAnyPublisher()
@@ -87,15 +87,15 @@ public final class Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
     private static func makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
-        return DispatchQueue(label: Self.reverseDNS, qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        return DispatchQueue(label: Self.reverseDNS, qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
     }
 
     /// Creates a streamer from an API instance and package both in a `Services` structure.
     /// - parameter api: The API instance with valid credentials.
     /// - parameter queue: Concurrent queue used to synchronize all IG's events.
-    /// - parameter databaseURL: The file URL indicating the location of the caching database.
+    /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
-    private static func make(with api: IG.API, queue: DispatchQueue, databaseURL: URL?) -> IG.Services.Publishers.Discrete<IG.Services> {
+    private static func make(with api: IG.API, queue: DispatchQueue, location: IG.Database.Location) -> IG.Publishers.Discrete<IG.Services> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
             return Fail(error: .api(error: .invalidRequest(.noCredentials, suggestion: .logIn)))
@@ -110,17 +110,17 @@ public final class Services {
         let subServicesGenerator: ()->Result<IG.Services,IG.Services.Error> = {
             do {
                 let secret = try IG.Streamer.Credentials(credentials: apiCredentials)
-                let database = try DB(rootURL: databaseURL, targetQueue: queue)
+                let database = try IG.Database(location: location, targetQueue: queue)
                 let streamer = IG.Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, targetQueue: queue)
                 return .success(.init(queue: queue, api: api, streamer: streamer, database: database))
-            } catch let error as IG.DB.Error {
+            } catch let error as IG.Database.Error {
                 return .failure(.database(error: error))
             } catch let error as IG.Streamer.Error {
                 return .failure(.streamer(error: error))
             } catch let error as IG.API.Error {
                 return .failure(.api(error: error))
             } catch let underlyingError {
-                var error: IG.Streamer.Error = .invalidRequest(.init("An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.DB.self) instance"), suggestion: .fileBug)
+                var error: IG.Streamer.Error = .invalidRequest(.init("An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.Database.self) instance"), suggestion: .fileBug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))
             }
@@ -141,23 +141,23 @@ public final class Services {
     }
 }
 
+/// List of custom publishers and types used with the `Combine` framework.
+public enum Publishers {
+    /// Publisher emitting a single value followed by a successful completion
+    ///
+    /// The following behavior is guaranteed when you see this type:
+    /// - the publisher will emit a single value followed by a succesful completion, or
+    /// - the publisher will emit a `Services.Error` failure.
+    ///
+    /// If a failure is emitted, no value was sent previously.
+    public typealias Discrete<T> = Combine.AnyPublisher<T,IG.Services.Error>
+    /// Publisher that can send zero, one, or many values followed by a successful completion.
+    ///
+    /// A failure may be forwarded when processing a value.
+    public typealias Continuous<T> = Combine.AnyPublisher<T,IG.Services.Error>
+}
+
 extension IG.Services {
-    /// List of custom publishers and types used with the `Combine` framework.
-    public enum Publishers {
-        /// Publisher emitting a single value followed by a successful completion
-        ///
-        /// The following behavior is guaranteed when you see this type:
-        /// - the publisher will emit a single value followed by a succesful completion, or
-        /// - the publisher will emit a `Services.Error` failure.
-        ///
-        /// If a failure is emitted, no value was sent previously.
-        public typealias Discrete<T> = Combine.AnyPublisher<T,IG.Services.Error>
-        /// Publisher that can send zero, one, or many values followed by a successful completion.
-        ///
-        /// A failure may be forwarded when processing a value.
-        public typealias Continuous<T> = Combine.AnyPublisher<T,IG.Services.Error>
-    }
-    
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
         return IG.Bundle.identifier + ".services"

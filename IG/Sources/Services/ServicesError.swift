@@ -6,7 +6,7 @@ extension IG.Services {
         /// Error produced by the Lightstreamer subservice.
         case streamer(error: IG.Streamer.Error)
         /// Error produced by the Database subservice.
-        case database(error: IG.DB.Error)
+        case database(error: IG.Database.Error)
         /// Error produced by the framework user.
         case user(String, suggestion: String, context: [IG.Error.Item] = [])
         
@@ -16,7 +16,7 @@ extension IG.Services {
             switch error {
             case let e as IG.API.Error: self = .api(error: e)
             case let e as IG.Streamer.Error: self = .streamer(error: e)
-            case let e as IG.DB.Error: self = .database(error: e)
+            case let e as IG.Database.Error: self = .database(error: e)
             default: fatalError()
             }
         }

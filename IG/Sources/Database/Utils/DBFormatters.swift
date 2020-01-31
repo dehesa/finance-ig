@@ -1,7 +1,7 @@
 import Foundation
 
-extension IG.DB {
-    /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `DB` instance context.
+extension IG.Database {
+    /// Formatters (whether `DateFormatter`s, `NumberFormatter`s, etc.) used within the `Database` instance context.
     internal enum Formatter {
         /// Database *time* formatter (only giving `HH:mm:ss`).
         /// - Example: `11:43:09`

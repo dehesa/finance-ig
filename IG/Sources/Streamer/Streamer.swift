@@ -26,7 +26,7 @@ public final class Streamer {
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
     public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?) {
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".processing",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }

@@ -1,7 +1,7 @@
 import Combine
 
-extension IG.DB {
-    /// Domain namespace retaining anything related to DB requests.
+extension IG.Database {
+    /// Domain namespace retaining anything related to Database requests.
     public enum Request {}
 }
 
@@ -15,7 +15,7 @@ internal protocol DBTable {
 
 // MARK: - Constants
 
-extension IG.DB {
+extension IG.Database {
     /// Measurement units are usually in pips or as percentage.
     public enum Unit: Int, CustomDebugStringConvertible {
         case points = 0

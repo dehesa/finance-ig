@@ -2,34 +2,34 @@ import Combine
 import Foundation
 import SQLite3
 
-extension IG.DB.Request {
-    /// Contains all functionality related to DB applications.
+extension IG.Database.Request {
+    /// Contains all functionality related to Database applications.
     public struct Accounts {
         /// Pointer to the actual database instance in charge of the low-level objects..
-        fileprivate unowned let database: IG.DB
+        fileprivate unowned let database: IG.Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: IG.DB) { self.database = database }
+        internal init(database: IG.Database) { self.database = database }
     }
 }
 
-extension IG.DB.Request.Accounts {
+extension IG.Database.Request.Accounts {
     /// Returns all applications stored in the database.
     /// - returns: Discrete publisher producing a single value containing an array of all stored applications and then successfully completes.
-    public func getApplications() -> IG.DB.Publishers.Discrete<[IG.DB.Application]> {
+    public func getApplications() -> IG.Database.Publishers.Discrete<[IG.Database.Application]> {
         self.database.publisher { _ in
-                "SELECT * FROM \(IG.DB.Application.tableName)"
+                "SELECT * FROM \(IG.Database.Application.tableName)"
             }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
-                var result: [IG.DB.Application] = .init()
+                var result: [IG.Database.Application] = .init()
                 while true {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
                     }
                 }
-            }.mapError(IG.DB.Error.transform)
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -37,7 +37,7 @@ extension IG.DB.Request.Accounts {
     ///
     /// If the application is not found, an `.invalidResponse` is returned.
     /// - parameter key: The API key identifying the application.
-    public func getApplication(key: IG.API.Key) -> IG.DB.Publishers.Discrete<IG.DB.Application> {
+    public func getApplication(key: IG.API.Key) -> IG.Database.Publishers.Discrete<IG.Database.Application> {
         self.database.publisher { _ in
                 "SELECT * FROM Apps where key = ?1"
             }.read { (sqlite, statement, query) in
@@ -46,20 +46,20 @@ extension IG.DB.Request.Accounts {
                 
                 switch sqlite3_step(statement).result {
                 case .row:  return .init(statement: statement!)
-                case .done: throw IG.DB.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
-                case let e: throw IG.DB.Error.callFailed(.querying(IG.DB.Application.self), code: e)
+                case .done: throw IG.Database.Error.invalidResponse(.valueNotFound, suggestion: .valueNotFound)
+                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
                 }
-            }.mapError(IG.DB.Error.transform)
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
 
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter applications: Information returned from the server.
-    public func update(applications: [IG.API.Application]) -> IG.DB.Publishers.Discrete<Never> {
+    public func update(applications: [IG.API.Application]) -> IG.Database.Publishers.Discrete<Never> {
         self.database.publisher { _ in
             """
-            INSERT INTO \(IG.DB.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
+            INSERT INTO \(IG.Database.Application.tableName) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, CURRENT_TIMESTAMP)
                 ON CONFLICT(key) DO UPDATE SET
                     name = excluded.name, status = excluded.status,
                     equity = excluded.equity, quote = excluded.quote,
@@ -70,7 +70,7 @@ extension IG.DB.Request.Accounts {
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             
             for app in applications {
-                IG.DB.Application(key: app.key, name: app.name, status: .init(app.status),
+                IG.Database.Application(key: app.key, name: app.name, status: .init(app.status),
                                   permission: .init(accessToEquityPrices: app.permission.accessToEquityPrices,
                                                     areQuoteOrdersAllowed: app.permission.areQuoteOrdersAllowed),
                                   allowance: .init(overallRequests: app.allowance.overallRequests,
@@ -82,19 +82,19 @@ extension IG.DB.Request.Accounts {
                                   updated: Date())
                     .bind(to: statement!)
 
-                try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.DB.Application.self), code: $0) }
+                try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }
                 sqlite3_clear_bindings(statement)
                 sqlite3_reset(statement)
             }
         }.ignoreOutput()
-        .mapError(IG.DB.Error.transform)
+        .mapError(IG.Database.Error.transform)
         .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension IG.DB {
+extension IG.Database {
     /// Client application
     public struct Application {
         /// Application API key identifying the application and the developer.
@@ -114,7 +114,7 @@ extension IG.DB {
     }
 }
 
-extension IG.DB.Application {
+extension IG.Database.Application {
     /// Application status in the platform.
     public enum Status: Int32 {
         /// The application is enabled and thus ready to receive/send data.
@@ -158,7 +158,7 @@ extension IG.DB.Application {
 
 // MARK: SQLite
 
-extension IG.DB.Application: DBTable {
+extension IG.Database.Application: DBTable {
     internal static let tableName: String = "Apps"
     internal static var tableDefinition: String {
         """
@@ -182,7 +182,7 @@ extension IG.DB.Application: DBTable {
     }
 }
 
-fileprivate extension IG.DB.Application {
+fileprivate extension IG.Database.Application {
     typealias Indices = (key: Int32, name: Int32, status: Int32, permission: Self.Permission.Indices, allowance: Self.Allowance.Indices, created: Int32, updated: Int32)
     
     init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2, (3, 4), (5, (6, 7, 8), 9), 10, 11)) {
@@ -191,8 +191,8 @@ fileprivate extension IG.DB.Application {
         self.status = Self.Status(rawValue: sqlite3_column_int(s, indices.status))!
         self.permission = .init(statement: s, indices: indices.permission)
         self.allowance = .init(statement: s, indices: indices.allowance)
-        self.created = IG.DB.Formatter.date.date(from: String(cString: sqlite3_column_text(s, indices.created)))!
-        self.updated = IG.DB.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.updated)))!
+        self.created = IG.Database.Formatter.date.date(from: String(cString: sqlite3_column_text(s, indices.created)))!
+        self.updated = IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.updated)))!
     }
     
     func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5), (6, (7, 8, 9), 10), 11, 12)) {
@@ -201,11 +201,11 @@ fileprivate extension IG.DB.Application {
         sqlite3_bind_int (statement, indices.status, status.rawValue)
         self.permission.bind(to: statement, indices: indices.permission)
         self.allowance.bind(to: statement, indices: indices.allowance)
-        sqlite3_bind_text(statement, indices.created, IG.DB.Formatter.date.string(from: self.created), -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.created, IG.Database.Formatter.date.string(from: self.created), -1, SQLite.Destructor.transient)
     }   // Updated is not written for now.
 }
 
-fileprivate extension IG.DB.Application.Permission {
+fileprivate extension IG.Database.Application.Permission {
     typealias Indices = (equity: Int32, quotes: Int32)
     
     init(statement s: SQLite.Statement, indices: Self.Indices) {
@@ -219,7 +219,7 @@ fileprivate extension IG.DB.Application.Permission {
     }
 }
 
-fileprivate extension IG.DB.Application.Allowance {
+fileprivate extension IG.Database.Application.Allowance {
     typealias Indices = (overall: Int32, account: Self.Account.Indices, subs: Int32)
     
     init(statement s: SQLite.Statement, indices: Self.Indices) {
@@ -235,7 +235,7 @@ fileprivate extension IG.DB.Application.Allowance {
     }
 }
 
-fileprivate extension IG.DB.Application.Allowance.Account {
+fileprivate extension IG.Database.Application.Allowance.Account {
     typealias Indices = (overall: Int32, trading: Int32, historical: Int32)
     
     init(statement s: SQLite.Statement, indices: Self.Indices) {
@@ -253,7 +253,7 @@ fileprivate extension IG.DB.Application.Allowance.Account {
 
 // MARK: API
 
-fileprivate extension IG.DB.Application.Status {
+fileprivate extension IG.Database.Application.Status {
     init(_ status: IG.API.Application.Status) {
         switch status {
         case .enabled:  self = .enabled
@@ -265,9 +265,9 @@ fileprivate extension IG.DB.Application.Status {
 
 // MARK: Debugging
 
-extension IG.DB.Application: IG.DebugDescriptable {
+extension IG.Database.Application: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.DB.printableDomain).\(Self.self)"
+        return "\(IG.Database.printableDomain).\(Self.self)"
     }
     
     public var debugDescription: String {
@@ -294,8 +294,8 @@ extension IG.DB.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
         }
-        result.append("created", self.created, formatter: IG.DB.Formatter.date)
-        result.append("updated", self.updated, formatter: IG.DB.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("created", self.created, formatter: IG.Database.Formatter.date)
+        result.append("updated", self.updated, formatter: IG.Database.Formatter.timestamp.deepCopy(timeZone: .current))
         return result.generate()
     }
 }
