@@ -4,7 +4,7 @@ import Combine
 import Foundation
 
 extension Test {
-    /// Structure containing the loging information for the testing environment.
+    /// Contains the loging information for the testing environment.
     final class Account {
         /// The target account identifier.
         let identifier: IG.Account.Identifier
@@ -41,16 +41,16 @@ extension Test.Account {
         /// file://API
         /// ```
         let rootURL: URL
-        /// The API API key used to identify the developer.
-        let key: API.Key
+        /// The API key used to identify the developer.
+        let key: IG.API.Key
         /// The actual user name and password used for this test account.
-        let user: API.User?
+        let user: IG.API.User?
         /// The certificate token being appended to all API endpoints.
         let certificate: TokenCertificate?
         /// The OAuth token being appended to all API endpoints.
         let oauth: TokenOAuth?
         
-        init(url: URL, key: API.Key, user: API.User? = nil, certificate: TokenCertificate? = nil, oauth: TokenOAuth? = nil) {
+        init(url: URL, key: IG.API.Key, user: IG.API.User? = nil, certificate: TokenCertificate? = nil, oauth: TokenOAuth? = nil) {
             self.rootURL = url
             self.key = key
             self.user = user
