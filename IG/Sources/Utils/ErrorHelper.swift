@@ -94,7 +94,7 @@ internal enum ErrorHelper {
             case let statuses as [IG.Streamer.Session.Status]:
                 let string = statuses.map { $0.rawValue }.joined(separator: ", ")
                 result.append("[\(string)]")
-            case let updates as [String:IG.Streamer.Subscription.Update]:
+            case let updates as IG.Streamer.Packet:
                 let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
                 result.append("[\(string)]")
             default:

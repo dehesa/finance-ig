@@ -28,8 +28,7 @@ extension IG.Streamer.Request.Markets {
         let timeFormatter = IG.Streamer.Formatter.time
         
         return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .receive(on: self.streamer.queue)
+            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter)
@@ -111,7 +110,7 @@ extension IG.Streamer {
         public let day: Self.Day
         
         /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: IG.Market.Epic, item: String, update: [String:IG.Streamer.Subscription.Update], timeFormatter: DateFormatter) throws {
+        fileprivate init(epic: IG.Market.Epic, item: String, update: IG.Streamer.Packet, timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
             typealias U = IG.Streamer.Formatter.Update
             typealias E = IG.Streamer.Error
@@ -164,7 +163,7 @@ extension IG.Streamer.Market {
         /// Daily percentage change.
         public let changePercentage: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Market.Field
             typealias U = IG.Streamer.Formatter.Update
             

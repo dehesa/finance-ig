@@ -43,7 +43,7 @@ public final class Streamer {
     
     /// Returns the current streamer status (e.g. whether connecting, connected, disconnected, etc.).
     public final var status: IG.Streamer.Session.Status {
-        return self.channel.status.value
+        return self.channel.status
     }
     
     /// Returns the number of subscriptions currently established (and working) at the moment.
@@ -70,7 +70,7 @@ extension IG.Streamer: IG.DebugDescriptable {
         result.append("processing queue", self.queue.label)
         result.append("processing queue QoS", String(describing: self.queue.qos.qosClass))
         result.append("lightstreamer", IG.Streamer.Channel.lightstreamerVersion)
-        result.append("connection status", self.channel.status.value)
+        result.append("connection status", self.channel.status)
         return result.generate()
     }
 }

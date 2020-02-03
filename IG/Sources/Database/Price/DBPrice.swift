@@ -82,8 +82,9 @@ extension IG.Database.Request.Price {
     }
     
     /// Returns the last available date for which there are prices stored in the database.
+    /// - warning: The table existance is not check before using this method.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - returns: The date from "newest" date stored in the database.
+    /// - returns: The date from "newest" date stored in the database. If `nil`, no price points are for the given table.
     public func getLastDate(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<Date?> {
         self.database.publisher { _ -> String in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)

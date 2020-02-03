@@ -231,6 +231,16 @@ extension IG.API {
 }
 
 extension IG.API.Session {
+    /// The session status.
+    public enum Status {
+        /// There are no credentials within the current session.
+        case logout
+        /// There are credentials and they haven't yet expired.
+        case ready
+        /// There are credentials, but they have already expired.
+        case expired
+    }
+    
     /// Payload received when accounts are switched.
     public struct Settings: Decodable {
         /// Boolean indicating whether trailing stops are currently enabled for the given account.

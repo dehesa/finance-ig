@@ -15,7 +15,7 @@ extension IG.Streamer.Subscription {
         /// The subscription was shut down successfully.
         case unsubscribed
         /// An update has been received.
-        case updateReceived([String:IG.Streamer.Subscription.Update])
+        case updateReceived(IG.Streamer.Packet)
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
         /// There was an error during the subscription/unsubscription process.
@@ -35,9 +35,12 @@ extension IG.Streamer.Subscription {
     }
 }
 
-extension IG.Streamer.Subscription {
+extension IG.Streamer {
+    /// A packet value that has arrived by lightstreamer.
+    internal typealias Packet = [String:IG.Streamer.Row]
+    
     /// A single field update.
-    internal struct Update {
+    internal struct Row {
         /// Whether the field has been updated since the last udpate.
         let isUpdated: Bool
         /// The latest value.

@@ -82,7 +82,7 @@ extension IG.Streamer.Error {
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidResponse(_ message: Self.Message, item: String, update: [String:IG.Streamer.Subscription.Update], underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+    internal static func invalidResponse(_ message: Self.Message, item: String, update: IG.Streamer.Packet, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
         let fields = update.keys.map { $0 }
         var error = self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, item: item, fields: fields, underlying: error)
         error.context.append(("Update", update))

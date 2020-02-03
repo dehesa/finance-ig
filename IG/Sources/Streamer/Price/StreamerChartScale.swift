@@ -29,8 +29,7 @@ extension IG.Streamer.Request.Price {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .receive(on: self.streamer.queue)
+            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, interval: interval, item: item, update: update)
@@ -156,7 +155,7 @@ extension IG.Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: IG.Streamer.Packet) throws {
             typealias F = Self.Field
             typealias U = IG.Streamer.Formatter.Update
             typealias E = IG.Streamer.Error
@@ -194,7 +193,7 @@ extension IG.Streamer.Chart.Aggregated {
         /// The highest bid/ask price for the receiving candle.
         public let highest: Self.Point
 
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Aggregated.Field
             typealias U = IG.Streamer.Formatter.Update
             
@@ -247,7 +246,7 @@ extension IG.Streamer.Chart.Aggregated {
         /// Daily percentage change.
         public let changePercentage: Decimal?
 
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Aggregated.Field
             typealias U = IG.Streamer.Formatter.Update
 
