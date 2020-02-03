@@ -24,7 +24,7 @@ extension IG.Streamer {
         @nonobjc private var subscriptions: [IG.Streamer.Subscription:SubscriptionSink]
         /// The current status for the streamer connection.
         @nonobjc private var statusValue: IG.Streamer.Session.Status
-        /// Returns a subject subscribing to the session status.
+        /// A subject subscribing to the session status.
         @nonobjc private let statusSubject: PassthroughSubject<IG.Streamer.Session.Status,Never>
         /// The lock used to restrict access to the credentials.
         @nonobjc private let lock: UnsafeMutablePointer<os_unfair_lock>

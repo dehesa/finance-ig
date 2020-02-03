@@ -39,4 +39,38 @@ final class APISessionTests: XCTestCase {
         api.session.logout()
             .expectsCompletion(timeout: 1, on: self)
     }
+    
+    /// Tests the static status events.
+    func testAPIStaticStatus() {
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
+        guard let user = self.acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
+        
+        XCTAssertEqual(api.status, .logout)
+        api.session.login(type: .oauth, key: self.acc.api.key, user: user)
+            .expectsCompletion(timeout: 1.2, on: self)
+        XCTAssertTrue(api.status.isReady)
+        
+        api.session.logout()
+            .expectsCompletion(timeout: 1, on: self)
+        XCTAssertEqual(api.status, .logout)
+    }
+    
+    /// Tests the correct status subscription.
+    /// - remark: This test takes around 62 seconds to complete since it checks the OAuth expiration date (which is 60 seconds).
+    func testAPIStatusSubscription() {
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
+        guard let user = self.acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
+        
+        var statuses: [IG.API.Session.Status] = [api.status]
+        let cancellable = api.channel.subscribeToStatus().sink { statuses.append($0) }
+        
+        api.session.login(type: .oauth, key: self.acc.api.key, user: user)
+            .expectsCompletion(timeout: 1.2, on: self)
+        
+        guard case .ready(let limit) = api.status, limit > Date() else { return XCTFail() }
+        self.wait(seconds: limit.timeIntervalSinceNow + 2)
+        
+        XCTAssertEqual(statuses, [.logout, .ready(till: limit), .expired])
+        cancellable.cancel()
+    }
 }
