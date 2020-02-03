@@ -53,7 +53,12 @@ public final class API {
     internal init(rootURL: URL, credentials: IG.API.Credentials?, session: URLSession, processingQueue: DispatchQueue) {
         self.rootURL = rootURL
         self.queue = processingQueue
-        self.channel = .init(session: session, credentials: credentials)
+        self.channel = .init(session: session, credentials: credentials, queue: processingQueue)
+    }
+    
+    /// The credentials status for the receiving API instance.
+    var status: IG.API.Session.Status {
+        return self.channel.status
     }
 }
 

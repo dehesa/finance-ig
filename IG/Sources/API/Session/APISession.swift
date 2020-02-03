@@ -232,13 +232,21 @@ extension IG.API {
 
 extension IG.API.Session {
     /// The session status.
-    public enum Status {
+    public enum Status: Equatable {
         /// There are no credentials within the current session.
         case logout
         /// There are credentials and they haven't yet expired.
-        case ready
+        case ready(till: Date)
         /// There are credentials, but they have already expired.
         case expired
+        
+        /// Boolean indicating whether the status is mark as ready.
+        var isReady: Bool {
+            switch self {
+            case .ready(let date) where date > Date(): return true
+            default: return false
+            }
+        }
     }
     
     /// Payload received when accounts are switched.
