@@ -28,8 +28,7 @@ extension IG.Streamer.Request.Accounts {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .receive(on: self.streamer.queue)
+            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { (update) in
                 do {
                     return try .init(identifier: account, item: item, update: update)
@@ -105,7 +104,7 @@ extension IG.Streamer {
         /// Account Profit and Loss values.
         public let profitLoss: Self.ProfitLoss
         
-        internal init(identifier: IG.Account.Identifier, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
+        internal init(identifier: IG.Account.Identifier, item: String, update: IG.Streamer.Packet) throws {
             typealias E = IG.Streamer.Error
             
             self.identifier = identifier
@@ -131,7 +130,7 @@ extension IG.Streamer.Account {
         /// The equity used.
         public let used: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
             typealias U = IG.Streamer.Formatter.Update
             
@@ -151,7 +150,7 @@ extension IG.Streamer.Account {
         /// Account minimum deposit value required for margins.
         public let deposit: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
             typealias U = IG.Streamer.Formatter.Update
             
@@ -171,7 +170,7 @@ extension IG.Streamer.Account {
         /// Non-limited risk margin.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
             typealias U = IG.Streamer.Formatter.Update
             
@@ -190,7 +189,7 @@ extension IG.Streamer.Account {
         /// Non-limited risk PNL value.
         public let nonLimitedRisk: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
             typealias U = IG.Streamer.Formatter.Update
             

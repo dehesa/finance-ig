@@ -15,8 +15,7 @@ extension IG.Streamer.Request.Price {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(mode: .distinct, item: item, fields: properties, snapshot: snapshot)
-            .receive(on: self.streamer.queue)
+            .subscribe(on: self.streamer.queue, mode: .distinct, item: item, fields: properties, snapshot: snapshot)
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, item: item, update: update)
@@ -92,7 +91,7 @@ extension IG.Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
+        internal init(epic: IG.Market.Epic, item: String, update: IG.Streamer.Packet) throws {
             typealias F = Self.Field
             typealias U = IG.Streamer.Formatter.Update
             typealias E = IG.Streamer.Error
@@ -128,7 +127,7 @@ extension IG.Streamer.Chart.Tick {
         /// Daily percentage change.
         public let changePercentage: Decimal?
         
-        fileprivate init(update: [String:IG.Streamer.Subscription.Update]) throws {
+        fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Tick.Field
             typealias U = IG.Streamer.Formatter.Update
             

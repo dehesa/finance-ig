@@ -17,8 +17,7 @@ extension IG.Streamer.Request.Accounts {
         let properties = [IG.Streamer.Deal.Field.confirmations.rawValue]
         
         return self.streamer.channel
-            .subscribe(mode: .distinct, item: item, fields: properties, snapshot: snapshot)
-            .receive(on: self.streamer.queue)
+            .subscribe(on: self.streamer.queue, mode: .distinct, item: item, fields: properties, snapshot: snapshot)
             .filter {
                 guard let payload = $0[IG.Streamer.Deal.Field.confirmations.rawValue] else { return false }
                 return payload.isUpdated && payload.value != nil
@@ -61,7 +60,7 @@ extension IG.Streamer {
         /// Confirmation update.
         public let confirmation: IG.Confirmation
         
-        internal init(account: IG.Account.Identifier, item: String, update: [String:IG.Streamer.Subscription.Update]) throws {
+        internal init(account: IG.Account.Identifier, item: String, update: IG.Streamer.Packet) throws {
             typealias E = IG.Streamer.Error
             
             self.account = account

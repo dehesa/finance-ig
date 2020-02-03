@@ -17,11 +17,12 @@ extension IG.Streamer {
         /// The underlying Lightstreamer instance.
         @nonobjc final let lowlevel: LSSubscription
         
-        /// `CurrentValueSubject` managing the current channel status and its publisher.
-        ///
-        /// This subject may publish duplicates and it always returns the current status upon activation.
-        /// - important: This publisher returns values on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
-        @nonobjc private let mutableStatus: CurrentValueSubject<IG.Streamer.Subscription.Event,Never>
+        /// The current status for the receiving subscription.
+        @nonobjc private var statusValue: IG.Streamer.Subscription.Event
+        /// Returns a subject subscribing to the subscription status.
+        @nonobjc private let statusSubject: PassthroughSubject<IG.Streamer.Subscription.Event,Never>
+        /// The lock used to restrict access to the credentials.
+        @nonobjc private let lock: UnsafeMutablePointer<os_unfair_lock>
         
         /// Initializes a subscription which is not yet connected to the server.
         ///
@@ -32,7 +33,11 @@ extension IG.Streamer {
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
         @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
-            self.mutableStatus = .init(.unsubscribed)
+            self.lock = UnsafeMutablePointer.allocate(capacity: 1)
+            self.lock.initialize(to: os_unfair_lock())
+            self.statusValue = .unsubscribed
+            self.statusSubject = .init()
+            
             self.item = item
             self.fields = fields
             self.lowlevel = LSSubscription(mode: mode.rawValue, item: item, fields: fields)
@@ -43,21 +48,38 @@ extension IG.Streamer {
         }
         
         deinit {
+            precondition(!self.lowlevel.isActive)
             self.lowlevel.remove(delegate: self)
         }
         
-        /// Returns a publisher to subscribe to status events (the current value is sent first).
-        ///
-        /// This publisher remove duplicates (i.e. there aren't any repeating statuses) and it always returns the current status upon activation.
-        /// - important: This publisher returns values on the Lightstreamer low-level queue. Change queues as soon as possible to let the low-level layers continue processing incoming network pacakges.
-        @nonobjc final var status: some CurrentEventPublisher {
-            return self.mutableStatus
+        /// Returns the current subscription status.
+        @nonobjc final var status: IG.Streamer.Subscription.Event {
+            os_unfair_lock_lock(self.lock)
+            let currentStatus = self.statusValue
+            os_unfair_lock_unlock(self.lock)
+            return currentStatus
         }
         
-        private final func receive(_ status: IG.Streamer.Subscription.Event) {
-            switch (self.mutableStatus.value, status) {
-            case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed): break
-            default: self.mutableStatus.send(status)
+        /// Subscribes to the subscription status events.
+        ///
+        /// This publisher removes duplicates (i.e. there aren't any repeating statuses).
+        @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Combine.Publishers.ReceiveOn<PassthroughSubject<Streamer.Subscription.Event,Never>,DispatchQueue> {
+            return self.statusSubject.receive(on: queue)
+        }
+        
+        /// Receives the low-level events and send them (or not) depending on whether the event is duplicated.
+        /// - parameter status: The new status receive from the low-level handling layers.
+        @nonobjc private final func receive(_ status: IG.Streamer.Subscription.Event) {
+            os_unfair_lock_lock(self.lock)
+            let previousStatus = self.statusValue
+            self.statusValue = status
+            
+            switch (previousStatus, status) {
+            case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed):
+                os_unfair_lock_unlock(self.lock)
+            default:
+                os_unfair_lock_unlock(self.lock)
+                self.statusSubject.send(status)
             }
         }
     }
@@ -79,7 +101,7 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
-        var result: [String:IG.Streamer.Subscription.Update] = .init(minimumCapacity: fields.count)
+        var result: IG.Streamer.Packet = .init(minimumCapacity: fields.count)
         for field in fields {
             let value = itemUpdate.value(withFieldName: field)
             result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
@@ -90,18 +112,9 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
         self.receive(.updateLost(count: lostUpdates, item: itemName))
     }
+    
 //    @objc func didAddDelegate(to subscription: LSSubscription) {}
 //    @objc func didRemoveDelegate(from subscription: LSSubscription) {}
 //    @objc func subscription(_ subscription: LSSubscription, didEndSnapshotForItemName itemName: String?, itemPos: UInt) {}
 //    @objc func subscription(_ subscription: LSSubscription, didClearSnapshotForItemName itemName: String?, itemPos: UInt) {}
 }
-
-// MARK: - Combine Extensions
-
-/// Returns the receiving's publisher current value.
-internal protocol CurrentEventPublisher: Publisher where Output==IG.Streamer.Subscription.Event, Failure==Never {
-    /// The value wrapped by this subject, published as a new element whenever it changes.
-    var value: Output { get }
-}
-
-extension CurrentValueSubject: CurrentEventPublisher where Output==IG.Streamer.Subscription.Event, Failure==Never {}

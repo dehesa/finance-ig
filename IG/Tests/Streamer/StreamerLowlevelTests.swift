@@ -10,9 +10,12 @@ import ConbiniForTesting
 import Foundation
 
 final class StreamerLowlevelTests: XCTestCase {
+    /// The test account being used for the tests in this class.
+    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    
     /// Test the subscription to the market using the Lightstreamer framework directly.
     func testLowlevelMarketSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
+        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
@@ -40,7 +43,7 @@ final class StreamerLowlevelTests: XCTestCase {
     
     /// Tests account confirmation subscription using the Lightstreamer framework directly.
     func testLowlevelConfirmationSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
+        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
