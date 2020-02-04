@@ -259,7 +259,7 @@ extension IG.Confirmation {
 
 extension IG.Confirmation: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Self.self)"
+        return "\(Bundle.IG.name).\(Self.self)"
     }
     
     public var debugDescription: String {
