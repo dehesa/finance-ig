@@ -1,7 +1,7 @@
-#ifndef IG_Framework_h
-#define IG_Framework_h
+#ifndef IG_Bundle_h
+#define IG_Bundle_h
 
-struct IGFrameworkInfo {
+struct IGBundleInfo {
     /// The framework's given name.
     char const* const _Nonnull name;
     /// The framework's bundle identifier
@@ -12,6 +12,6 @@ struct IGFrameworkInfo {
     unsigned short build;
 };
 
-extern struct IGFrameworkInfo IGFramework;
+extern struct IGBundleInfo IGBundle;
 
 #endif

@@ -55,13 +55,13 @@ public final class Streamer {
 extension IG.Streamer {
     /// The reverse DNS identifier for the `Streamer` instance.
     internal static var reverseDNS: String {
-        return IG.Bundle.identifier + ".streamer"
+        return Bundle.IG.identifier + ".streamer"
     }
 }
 
 extension IG.Streamer: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Self.self)"
+        return "\(Bundle.IG.name).\(Self.self)"
     }
     
     public final var debugDescription: String {

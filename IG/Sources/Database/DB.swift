@@ -76,13 +76,13 @@ extension IG.Database {
     
     /// The reverse DNS identifier for the `DB` instance.
     internal static var reverseDNS: String {
-        return IG.Bundle.identifier + ".db"
+        return Bundle.IG.identifier + ".db"
     }
 }
 
 extension IG.Database: DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Self.self)"
+        return "\(Bundle.IG.name).\(Self.self)"
     }
     
     public final var debugDescription: String {

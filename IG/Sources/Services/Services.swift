@@ -160,13 +160,13 @@ public enum Publishers {
 extension IG.Services {
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
-        return IG.Bundle.identifier + ".services"
+        return Bundle.IG.identifier + ".services"
     }
 }
 
 extension IG.Services: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Self.self)"
+        return "\(Bundle.IG.name).\(Self.self)"
     }
     
     public var debugDescription: String {

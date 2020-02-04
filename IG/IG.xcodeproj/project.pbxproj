@@ -37,7 +37,7 @@
 		8D33B8D3233967E1002B524B /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF85B1B22F046FA00F1C525 /* Error.swift */; };
 		8D33B8D62339689E002B524B /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34022FB1E8400521759 /* Account.swift */; };
 		8D33B8D72339689E002B524B /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34222FB201000521759 /* Client.swift */; };
-		8D376D57234C61EE007D4A48 /* Framework.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D45265F233A55FC0034D577 /* Framework.c */; };
+		8D376D57234C61EE007D4A48 /* Bundle.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D45265F233A55FC0034D577 /* Bundle.c */; };
 		8D376D58234C61EE007D4A48 /* Bundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D452667233A67960034D577 /* Bundle.swift */; };
 		8D376D59234C61EE007D4A48 /* Decimal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D911F6422ECF4CA0038E899 /* Decimal.swift */; };
 		8D376D5A234C61EE007D4A48 /* Collections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262422E9FA020080D3C1 /* Collections.swift */; };
@@ -153,9 +153,9 @@
 		8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D30D08023240B0C00D83E0A /* SQLite+Result.swift */; };
 		8D452659233A3ECF0034D577 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D74741422E8439B00B0BA41 /* Currency.swift */; };
 		8D45265A233A3ECF0034D577 /* Money.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3C262B22EB18A50080D3C1 /* Money.swift */; };
-		8D452660233A55FC0034D577 /* Framework.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D45265E233A55FC0034D577 /* Framework.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8D452661233A55FC0034D577 /* Framework.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D45265E233A55FC0034D577 /* Framework.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		8D452663233A55FC0034D577 /* Framework.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D45265F233A55FC0034D577 /* Framework.c */; };
+		8D452660233A55FC0034D577 /* Bundle.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D45265E233A55FC0034D577 /* Bundle.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8D452661233A55FC0034D577 /* Bundle.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D45265E233A55FC0034D577 /* Bundle.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8D452663233A55FC0034D577 /* Bundle.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D45265F233A55FC0034D577 /* Bundle.c */; };
 		8D452669233A67960034D577 /* Bundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D452667233A67960034D577 /* Bundle.swift */; };
 		8D45266A233A69390034D577 /* ErrorHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51A2326459000F029B3 /* ErrorHelper.swift */; };
 		8D45266B233A693C0034D577 /* ErrorCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D30D082232566D900D83E0A /* ErrorCodable.swift */; };
@@ -336,8 +336,8 @@
 		8D3C262422E9FA020080D3C1 /* Collections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Collections.swift; sourceTree = "<group>"; };
 		8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerInternals.swift; sourceTree = "<group>"; };
 		8D3C262B22EB18A50080D3C1 /* Money.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Money.swift; sourceTree = "<group>"; };
-		8D45265E233A55FC0034D577 /* Framework.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Framework.h; sourceTree = "<group>"; };
-		8D45265F233A55FC0034D577 /* Framework.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Framework.c; sourceTree = "<group>"; };
+		8D45265E233A55FC0034D577 /* Bundle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bundle.h; sourceTree = "<group>"; };
+		8D45265F233A55FC0034D577 /* Bundle.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Bundle.c; sourceTree = "<group>"; };
 		8D452667233A67960034D577 /* Bundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bundle.swift; sourceTree = "<group>"; };
 		8D45267A233AC0190034D577 /* MarketExpiry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketExpiry.swift; sourceTree = "<group>"; };
 		8D47E0D623159C8900AD53A2 /* Market.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Market.swift; sourceTree = "<group>"; };
@@ -804,8 +804,8 @@
 		8DC4CA482149A6CE00344CBF /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				8D45265E233A55FC0034D577 /* Framework.h */,
-				8D45265F233A55FC0034D577 /* Framework.c */,
+				8D45265E233A55FC0034D577 /* Bundle.h */,
+				8D45265F233A55FC0034D577 /* Bundle.c */,
 				8D452667233A67960034D577 /* Bundle.swift */,
 				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8D3C262422E9FA020080D3C1 /* Collections.swift */,
@@ -1116,7 +1116,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DBE9EE92338EE2700AA6DE4 /* IG.h in Headers */,
-				8D452661233A55FC0034D577 /* Framework.h in Headers */,
+				8D452661233A55FC0034D577 /* Bundle.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1125,7 +1125,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8DC4CBF92149A81500344CBF /* IG.h in Headers */,
-				8D452660233A55FC0034D577 /* Framework.h in Headers */,
+				8D452660233A55FC0034D577 /* Bundle.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1291,7 +1291,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D452663233A55FC0034D577 /* Framework.c in Sources */,
+				8D452663233A55FC0034D577 /* Bundle.c in Sources */,
 				8D452669233A67960034D577 /* Bundle.swift in Sources */,
 				8D33B8CD233967E1002B524B /* Decimal.swift in Sources */,
 				8D33B8CE233967E1002B524B /* Collections.swift in Sources */,
@@ -1428,7 +1428,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D376D57234C61EE007D4A48 /* Framework.c in Sources */,
+				8D376D57234C61EE007D4A48 /* Bundle.c in Sources */,
 				8D376D58234C61EE007D4A48 /* Bundle.swift in Sources */,
 				8D376D59234C61EE007D4A48 /* Decimal.swift in Sources */,
 				8D376D5A234C61EE007D4A48 /* Collections.swift in Sources */,

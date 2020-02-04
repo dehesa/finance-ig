@@ -70,13 +70,13 @@ extension IG.API {
     
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
-        return IG.Bundle.identifier + ".api"
+        return Bundle.IG.identifier + ".api"
     }
 }
 
 extension IG.API: IG.DebugDescriptable {
     internal static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Self.self)"
+        return "\(Bundle.IG.name).\(Self.self)"
     }
     
     public final var debugDescription: String {

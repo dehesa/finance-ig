@@ -203,7 +203,10 @@ extension IG.API.PriceSnapshot {
                     let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
                 } catch {
+                    #if DEBUG
                     print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(timestamp)")
+                    #endif
+                    continue
                 }
             }
         }

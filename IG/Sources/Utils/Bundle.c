@@ -1,7 +1,7 @@
-#include "Framework.h"
+#include "Bundle.h"
 
 //struct IGInfo const* const _Nonnull IGBundle = &info;
-struct IGFrameworkInfo IGFramework = {
+struct IGBundleInfo IGBundle = {
     .name = IG_BUNDLE_NAME,
     .identifier = IG_BUNDLE_ID,
     .version = IG_BUNDLE_VERSION,

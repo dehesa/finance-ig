@@ -73,7 +73,7 @@ extension Test.Account.Error {
 
 extension Test.Account.Error: IG.ErrorPrintable {
     static var printableDomain: String {
-        return "\(IG.Bundle.name).\(Test.self).\(Test.Account.self).\(Test.Account.Error.self)"
+        return "\(Bundle.IG.name).\(Test.self).\(Test.Account.self).\(Test.Account.Error.self)"
     }
     
     var printableType: String {
