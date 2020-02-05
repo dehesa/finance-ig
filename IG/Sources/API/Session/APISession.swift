@@ -29,6 +29,11 @@ extension IG.API.Request {
 }
 
 extension IG.API.Request.Session {
+    
+    /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
+    public func status() -> AnyPublisher<IG.API.Session.Status,Never> {
+        return self.api.channel.subscribeToStatus()
+    }
 
     // MARK: POST /session
 

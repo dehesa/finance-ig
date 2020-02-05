@@ -12,7 +12,7 @@ This framework provides:
 -   Endpoints & Lighstreamer events cache.
     <br>Implement through SQLite.
 -   Session management helpers.
-    Such as OAuth and certificate token refreshes, etc.
+    <br>Such as OAuth and certificate token refreshes, etc.
 
 # Usage
 
@@ -97,7 +97,7 @@ The following is a list of 1st party and 3rd party library/framework dependencie
 -   SQLite.
 -   Lightstreamer binaries (prepackage within the framework under `/Frameworks`).
 
-I would love to provide the framework through SPM, but SPM doesn't currently support prebuilt binaries; they are, however, on the "pitch" phase.
+I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. The SPM team seems to be on the "pitch" phase for such feature, though.
 
 -   [SPM pitch for binary dependencies](https://forums.swift.org/t/pitch-support-for-binary-dependencies/27620).
 -   [Importing Lightstreamer with SPM](https://forums.lightstreamer.com/showthread.php?8440-Importing-Lightstreamer-with-Swift-Package-Manager).

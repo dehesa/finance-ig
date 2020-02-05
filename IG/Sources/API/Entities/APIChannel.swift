@@ -8,12 +8,12 @@ extension IG.API {
         internal let session: URLSession
         /// The credentials used to call API endpoints.
         private var secret: IG.API.Credentials?
-        /// A subject subscribing to the API credentials status.
+        /// A subject subscribing to the API credentials status (it doesn't send duplicates).
         private let statusSubject: PassthroughSubject<IG.API.Session.Status,Never>
         /// The processing queue for the status cancellable.
         private var statusScheduler: DispatchQueue
         /// The cancellable for the expiration timer.
-        private var statusIndicator: DispatchWorkItem?
+        private var statusTimer: DispatchWorkItem?
         /// The lock used to restrict access to the credentials.
         private let lock: UnsafeMutablePointer<os_unfair_lock>
         
@@ -25,7 +25,7 @@ extension IG.API {
             self.secret = nil
             self.statusSubject = .init()
             self.statusScheduler = queue
-            self.statusIndicator = nil
+            self.statusTimer = nil
             self.lock = UnsafeMutablePointer.allocate(capacity: 1)
             self.lock.initialize(to: os_unfair_lock())
             
@@ -35,8 +35,8 @@ extension IG.API {
         
         deinit {
             os_unfair_lock_lock(self.lock)
-            self.statusIndicator?.cancel()
-            self.statusIndicator = nil
+            self.statusTimer?.cancel()
+            self.statusTimer = nil
             self.secret = nil
             os_unfair_lock_unlock(self.lock)
             self.session.invalidateAndCancel()
@@ -44,6 +44,8 @@ extension IG.API {
         }
         
         /// Returns the current credentials.
+        ///
+        /// If credentials are set and they are different than previous ones, a status event will be published with its appropriate case.
         internal var credentials: API.Credentials? {
             get {
                 os_unfair_lock_lock(self.lock)
@@ -56,17 +58,20 @@ extension IG.API {
                 let previousDate = self.secret?.token.expirationDate
                 let currentDate = newCredentials?.token.expirationDate
                 self.secret = newCredentials
-                // If the expiration date is exactly the same as the one stored, don't perform any work.
+                // If the expiration date is exactly the same as the one stored, there is no need to send any status event.
                 guard previousDate != currentDate else {
                     return os_unfair_lock_unlock(self.lock)
                 }
-                self.statusIndicator?.cancel()
-                self.statusIndicator = nil
-                // If there is no credentials, send a "logout" event.
+                
+                self.statusTimer?.cancel()
+                self.statusTimer = nil
+                
+                // If there are no credentials and before there were some (whether "ready" or "expired"), send a "logout" event.
                 guard let currentExpirationDate = currentDate else {
                     os_unfair_lock_unlock(self.lock)
                     return self.statusSubject.send(.logout)
                 }
+                
                 let limitDate = Date(timeIntervalSinceNow: 0.1)
                 // If the new expiration date is less than aproximately now. Set the "expired" status
                 guard currentExpirationDate > limitDate else {
@@ -76,10 +81,10 @@ extension IG.API {
                 }
                 // If the code reaches here, the new expiration date is a valid date in the future
                 let indicator = DispatchWorkItem { [weak self] in
-                    self?.statusIndicator = nil
+                    self?.statusTimer = nil
                     self?.statusSubject.send(.expired)
                 }
-                self.statusIndicator = indicator
+                self.statusTimer = indicator
                 
                 let deadline = currentExpirationDate.timeIntervalSince(Date(timeIntervalSinceNow: -0.05))
                 os_unfair_lock_unlock(self.lock)
