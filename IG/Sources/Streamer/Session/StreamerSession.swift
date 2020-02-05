@@ -24,7 +24,7 @@ extension IG.Streamer.Request.Session {
     /// This is a multicast publisher, meaning all subscriber will receive the same status in the same order.
     /// - remark: The *status* value at the subscription time is not forwarded. Only subsequent changes in status are upstreamed.
     /// - returns: Publisher forwarding values in the `Streamer` queue.
-    public var status: AnyPublisher<IG.Streamer.Session.Status,Never> {
+    public func status() -> AnyPublisher<IG.Streamer.Session.Status,Never> {
         return self.streamer.channel
             .subscribeToStatus(on: self.streamer.queue)
             .eraseToAnyPublisher()
