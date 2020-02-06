@@ -244,31 +244,34 @@ extension IG.Database.Request.Price {
 extension Publisher where Output==IG.Streamer.Chart.Aggregated {
     /// Updates the database with the price values provided on the stream.
     ///
+    /// The returned publisher forwards any previous error or generates `IG.Database.Error` on some specific scenarios. If upstream there were no errors you can safely forcecast the error to the database error.
     /// - warning: This operator doesn't check the market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
     /// - parameter database: Database where the price data will be stored.
-    public func updatePrice(database: IG.Database) -> AnyPublisher<IG.Database.PriceStreamed,Swift.Error> {
-        self.tryMap { [weak database] (apiPrice) -> IG.Database.Publishers.Output.Instance<(query: String, data: IG.Database.PriceStreamed)> in
+    /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data received should be ignored or throw an error (an break the pipeline. Even with this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
+    public func updatePrice(database: IG.Database, ignoringInvalidPrices: Bool) -> AnyPublisher<IG.Database.PriceStreamed,Swift.Error> {
+        self.tryCompactMap { [weak database] (price) -> IG.Database.Publishers.Output.Instance<(query: String, data: IG.Database.PriceStreamed)>? in
             guard let db = database else { throw IG.Database.Error.sessionExpired() }
-            guard let date = apiPrice.candle.date,
-                  let openBid = apiPrice.candle.open.bid,
-                  let openAsk = apiPrice.candle.open.ask,
-                  let closeBid = apiPrice.candle.close.bid,
-                  let closeAsk = apiPrice.candle.close.ask,
-                  let lowestBid = apiPrice.candle.lowest.bid,
-                  let lowestAsk = apiPrice.candle.lowest.ask,
-                  let highestBid = apiPrice.candle.highest.bid,
-                  let highestAsk = apiPrice.candle.highest.ask,
-                  let volume = apiPrice.candle.numTicks else { throw IG.Database.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection") }
+            guard let date = price.candle.date,
+                  let openBid = price.candle.open.bid,
+                  let openAsk = price.candle.open.ask,
+                  let closeBid = price.candle.close.bid,
+                  let closeAsk = price.candle.close.ask,
+                  let lowestBid = price.candle.lowest.bid,
+                  let lowestAsk = price.candle.lowest.ask,
+                  let highestBid = price.candle.highest.bid,
+                  let highestAsk = price.candle.highest.ask,
+                  let volume = price.candle.numTicks else {
+                guard !ignoringInvalidPrices else { return nil }
+                throw IG.Database.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection")
+            }
             
-            let query = IG.Database.Request.Price.priceInsertionQuery(epic: apiPrice.epic).query
-            let streamPrice = IG.Database.PriceStreamed(epic: apiPrice.epic,
-                                                  interval: apiPrice.interval,
-                                                  price: .init(date: date,
-                                                               open: .init(bid: openBid, ask: openAsk),
-                                                               close: .init(bid: closeBid, ask: closeAsk),
-                                                               lowest: .init(bid: lowestBid, ask: lowestAsk),
-                                                               highest: .init(bid: highestBid, ask: highestAsk),
-                                                               volume: volume))
+            let query = IG.Database.Request.Price.priceInsertionQuery(epic: price.epic).query
+            let streamPrice = IG.Database.PriceStreamed(
+                    epic: price.epic, interval: price.interval,
+                    price: .init(date: date, open: .init(bid: openBid, ask: openAsk),
+                                close: .init(bid: closeBid, ask: closeAsk),
+                                lowest: .init(bid: lowestBid, ask: lowestAsk),
+                                highest: .init(bid: highestBid, ask: highestAsk), volume: volume))
             return ( db, (query, streamPrice) )
         }.write { (sqlite, statement, input) -> IG.Database.PriceStreamed in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }

@@ -96,7 +96,7 @@ extension IG.Streamer {
         /// The current market status.
         public let status: Self.Status?
         
-        /// Publis time of last price update.
+        /// Publish time of last price update.
         public let date: Date?
         /// Boolean indicating whether prices are delayed.
         public let isDelayed: Bool?
