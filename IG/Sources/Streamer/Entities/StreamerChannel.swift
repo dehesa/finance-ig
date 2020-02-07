@@ -22,10 +22,8 @@ extension IG.Streamer {
         @nonobjc private let client: LSLightstreamerClient
         /// All ongoing/active subscriptions paired with the cancellable that will make them stop.
         @nonobjc private var subscriptions: [IG.Streamer.Subscription:SubscriptionSink]
-        /// The current status for the streamer connection.
-        @nonobjc private var statusValue: IG.Streamer.Session.Status
         /// A subject subscribing to the session status.
-        @nonobjc private let statusSubject: PassthroughSubject<IG.Streamer.Session.Status,Never>
+        @nonobjc private let statusSubject: CurrentValueSubject<IG.Streamer.Session.Status,Never>
         /// The lock used to restrict access to the credentials.
         @nonobjc private let lock: UnsafeMutablePointer<os_unfair_lock>
         
@@ -41,8 +39,7 @@ extension IG.Streamer {
             self.client.connectionDetails.user = credentials.identifier.rawValue
             self.client.connectionDetails.setPassword(credentials.password)
             self.subscriptions = .init()
-            self.statusValue = .disconnected(isRetrying: false)
-            self.statusSubject = .init()
+            self.statusSubject = .init(.disconnected(isRetrying: false))
             super.init()
             
             // The client stores the delegate weakly, therefore there is no reference cycle.
@@ -74,18 +71,15 @@ extension IG.Streamer {
 extension IG.Streamer.Channel {
     /// Returns the current session status.
     @nonobjc var status: IG.Streamer.Session.Status {
-        os_unfair_lock_lock(self.lock)
-        let currentStatus = self.statusValue
-        os_unfair_lock_unlock(self.lock)
-        return currentStatus
+        self.statusSubject.value
     }
     
     /// Subscribe to the status events and return the output in the given queue.
     ///
     /// - remark: This publisher filter out any status duplication; therefore each event is unique.
     /// - parameter queue: `DispatchQueue` were values are received.
-    @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Combine.Publishers.ReceiveOn<PassthroughSubject<Streamer.Session.Status,Never>,DispatchQueue> {
-        return self.statusSubject.receive(on: queue)
+    @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Combine.Publishers.RemoveDuplicates<Combine.Publishers.ReceiveOn<CurrentValueSubject<Streamer.Session.Status,Never>, DispatchQueue>> {
+        return self.statusSubject.receive(on: queue).removeDuplicates()
     }
     
     /// Tries to connect the low-level client to the lightstreamer server.
@@ -216,13 +210,6 @@ extension IG.Streamer.Channel: LSClientDelegate {
             fatalError("Lightstreamer client status \"\(status)\" was not recognized")
         }
         
-        os_unfair_lock_lock(self.lock)
-        guard self.statusValue != receivedStatus else {
-            return os_unfair_lock_unlock(self.lock)
-        }
-        
-        self.statusValue = receivedStatus
-        os_unfair_lock_unlock(self.lock)
         self.statusSubject.send(receivedStatus)
     }
     

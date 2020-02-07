@@ -21,13 +21,10 @@ extension IG.Streamer.Request.Session {
     
     /// Returns a publisher to subscribe to the streamer's statuses.
     ///
-    /// This is a multicast publisher, meaning all subscriber will receive the same status in the same order.
-    /// - remark: The *status* value at the subscription time is not forwarded. Only subsequent changes in status are upstreamed.
+    /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
     /// - returns: Publisher forwarding values in the `Streamer` queue.
     public func status() -> AnyPublisher<IG.Streamer.Session.Status,Never> {
-        return self.streamer.channel
-            .subscribeToStatus(on: self.streamer.queue)
-            .eraseToAnyPublisher()
+        return self.streamer.channel.subscribeToStatus(on: self.streamer.queue).eraseToAnyPublisher()
     }
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
@@ -66,7 +63,6 @@ extension IG.Streamer.Request.Session {
             
             cancellable = sink
             streamer.channel.subscribeToStatus(on: streamer.queue)
-                .prepend(streamer.channel.status)
                 .drop(while: { $0 == .disconnected(isRetrying: false) })
                 .subscribe(sink)
             _ = try? streamer.channel.connect()
@@ -103,7 +99,6 @@ extension IG.Streamer.Request.Session {
             cancellable = sink
             streamer.channel.unsubscribeAll()
             streamer.channel.subscribeToStatus(on: streamer.queue)
-                .prepend(streamer.channel.status)
                 .subscribe(sink)
             streamer.channel.disconnect()
         }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)

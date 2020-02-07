@@ -9,7 +9,7 @@ extension IG.API {
         /// The credentials used to call API endpoints.
         private var secret: IG.API.Credentials?
         /// A subject subscribing to the API credentials status (it doesn't send duplicates).
-        private let statusSubject: PassthroughSubject<IG.API.Session.Status,Never>
+        private let statusSubject: CurrentValueSubject<IG.API.Session.Status,Never>
         /// The processing queue for the status cancellable.
         private var statusScheduler: DispatchQueue
         /// The cancellable for the expiration timer.
@@ -23,7 +23,7 @@ extension IG.API {
         init(session: URLSession, credentials: IG.API.Credentials?, queue: DispatchQueue) {
             self.session = session
             self.secret = nil
-            self.statusSubject = .init()
+            self.statusSubject = .init(.logout)
             self.statusScheduler = queue
             self.statusTimer = nil
             self.lock = UnsafeMutablePointer.allocate(capacity: 1)
@@ -53,45 +53,7 @@ extension IG.API {
                 os_unfair_lock_unlock(self.lock)
                 return secret
             }
-            set(newCredentials) {
-                os_unfair_lock_lock(self.lock)
-                let previousDate = self.secret?.token.expirationDate
-                let currentDate = newCredentials?.token.expirationDate
-                self.secret = newCredentials
-                // If the expiration date is exactly the same as the one stored, there is no need to send any status event.
-                guard previousDate != currentDate else {
-                    return os_unfair_lock_unlock(self.lock)
-                }
-                
-                self.statusTimer?.cancel()
-                self.statusTimer = nil
-                
-                // If there are no credentials and before there were some (whether "ready" or "expired"), send a "logout" event.
-                guard let currentExpirationDate = currentDate else {
-                    os_unfair_lock_unlock(self.lock)
-                    return self.statusSubject.send(.logout)
-                }
-                
-                let limitDate = Date(timeIntervalSinceNow: 0.1)
-                // If the new expiration date is less than aproximately now. Set the "expired" status
-                guard currentExpirationDate > limitDate else {
-                    os_unfair_lock_unlock(self.lock)
-                    if let previousExpirationDate = previousDate, previousExpirationDate <= limitDate { return }
-                    return self.statusSubject.send(.expired)
-                }
-                // If the code reaches here, the new expiration date is a valid date in the future
-                let indicator = DispatchWorkItem { [weak self] in
-                    self?.statusTimer = nil
-                    self?.statusSubject.send(.expired)
-                }
-                self.statusTimer = indicator
-                
-                let deadline = currentExpirationDate.timeIntervalSince(Date(timeIntervalSinceNow: -0.05))
-                os_unfair_lock_unlock(self.lock)
-                
-                self.statusSubject.send(.ready(till: currentExpirationDate))
-                self.statusScheduler.asyncAfter(deadline: .now() + deadline, execute: indicator)
-            }
+            set { self.tweakCredentials { (_) in newValue } }
         }
         
         /// Retrieve and modify the channel's credentials synchronously, so it cannot be modified during operation.
@@ -101,26 +63,62 @@ extension IG.API {
         /// - parameter credentials: The current API credentials (or `nil` if there are none).
         internal func tweakCredentials(_ synchronizedClosure: (_ credentials: IG.API.Credentials?) throws -> IG.API.Credentials?) rethrows {
             os_unfair_lock_lock(self.lock)
-            defer { os_unfair_lock_unlock(self.lock) }
-            self.secret = try synchronizedClosure(self.secret)
+            let newCredentials: API.Credentials?
+            do {
+                newCredentials = try synchronizedClosure(self.secret)
+            } catch let error {
+                os_unfair_lock_unlock(self.lock)
+                throw error
+            }
+            
+            let previousDate = self.secret?.token.expirationDate
+            let currentDate = newCredentials?.token.expirationDate
+            self.secret = newCredentials
+            // If the expiration date is exactly the same as the one stored, there is no need to send any status event.
+            guard previousDate != currentDate else {
+                return os_unfair_lock_unlock(self.lock)
+            }
+            
+            self.statusTimer?.cancel()
+            self.statusTimer = nil
+            
+            // If there are no credentials and before there were some (whether "ready" or "expired"), send a "logout" event.
+            guard let currentExpirationDate = currentDate else {
+                os_unfair_lock_unlock(self.lock)
+                return self.statusSubject.send(.logout)
+            }
+            
+            let limitDate = Date(timeIntervalSinceNow: 0.1)
+            // If the new expiration date is less than aproximately now. Set the "expired" status
+            guard currentExpirationDate > limitDate else {
+                os_unfair_lock_unlock(self.lock)
+                if let previousExpirationDate = previousDate, previousExpirationDate <= limitDate { return }
+                return self.statusSubject.send(.expired)
+            }
+            // If the code reaches here, the new expiration date is a valid date in the future
+            let indicator = DispatchWorkItem { [weak self] in
+                self?.statusTimer = nil
+                self?.statusSubject.send(.expired)
+            }
+            self.statusTimer = indicator
+            
+            let deadline = currentExpirationDate.timeIntervalSince(Date(timeIntervalSinceNow: -0.05))
+            os_unfair_lock_unlock(self.lock)
+            
+            self.statusSubject.send(.ready(till: currentExpirationDate))
+            self.statusScheduler.asyncAfter(deadline: .now() + deadline, execute: indicator)
         }
         
         /// The current status for the API credentials.
         var status: IG.API.Session.Status {
-            os_unfair_lock_lock(self.lock)
-            defer { os_unfair_lock_unlock(self.lock) }
-            
-            switch self.secret?.token.expirationDate {
-            case .none: return .logout
-            case let date? where date <= Date(timeIntervalSinceNow: 0.1): return .expired
-            case let date?: return .ready(till: date)
-            }
+            self.statusSubject.value
         }
         
         /// Subscribes to the credentials status (i.e. whether they are expired, etc.).
+        /// - remark: This publisher filter out any status duplication; therefore each event is unique.
         /// - parameter queue: `DispatchQueue` were values are received.
-        internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> AnyPublisher<IG.API.Session.Status,Never> {
-            self.statusSubject.receive(on: queue ?? self.statusScheduler).eraseToAnyPublisher()
+        internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> Combine.Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
+            self.statusSubject.receive(on: queue ?? self.statusScheduler)
         }
     }
 }
