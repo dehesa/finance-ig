@@ -82,7 +82,7 @@ extension Publisher {
     /// - parameter values: Any value arriving as an output from upstream.
     /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
     internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Combine.Publishers.SequentialTryMap<Self, R, Database.Error> where Output==IG.Database.Publishers.Output.Instance<T> {
-        return self.asyncTryMap(failure: IG.Database.Error.self) { (input, promise) in
+        self.asyncTryMap(failure: IG.Database.Error.self) { (input, promise) in
             input.database.channel.writeAsync(promise: promise, on: input.database.queue) { (sqlite) -> R in
                 var statement: SQLite.Statement? = nil
                 defer { sqlite3_finalize(statement) }

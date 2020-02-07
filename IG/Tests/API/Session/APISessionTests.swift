@@ -61,13 +61,14 @@ final class APISessionTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
         guard let user = self.acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
-        var statuses: [IG.API.Session.Status] = [api.status]
+        var statuses: [IG.API.Session.Status] = []
         let cancellable = api.channel.subscribeToStatus().sink { statuses.append($0) }
         
         api.session.login(type: .oauth, key: self.acc.api.key, user: user)
-            .expectsCompletion(timeout: 1.2, on: self)
+            .expectsCompletion(timeout: 3, on: self)
         
         guard case .ready(let limit) = api.status, limit > Date() else { return XCTFail() }
+        print(limit.timeIntervalSinceNow)
         self.wait(seconds: limit.timeIntervalSinceNow + 2)
         
         XCTAssertEqual(statuses, [.logout, .ready(till: limit), .expired])

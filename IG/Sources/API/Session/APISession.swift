@@ -29,10 +29,11 @@ extension IG.API.Request {
 }
 
 extension IG.API.Request.Session {
-    
     /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
+    ///
+    /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
     public func status() -> AnyPublisher<IG.API.Session.Status,Never> {
-        return self.api.channel.subscribeToStatus()
+        return self.api.channel.subscribeToStatus().eraseToAnyPublisher()
     }
 
     // MARK: POST /session
