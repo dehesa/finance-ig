@@ -94,7 +94,9 @@ extension IG.API {
         /// The time offset from UTC.
         public let offsetToUTC: TimeInterval
         /// The price data points available throught the batch endpoint.
-        public let availableBatchPrices: ClosedRange<Date>
+        ///
+        /// The available prices always end at the previous hour ends. For example, if at API endpoint call time  is 10:20 UTC, the last available price will be 09:59 UTC.
+        public let availableBatchPrices: DateInterval
         /// The prices brought with the snapshot (already ordered by the server).
         public let prices: [IG.API.Price]
         
@@ -113,7 +115,8 @@ extension IG.API {
             let intervalContainer = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.IntervalKeys.self, forKey: .intervals)
             let start = try intervalContainer.decode(Int.self, forKey: .startTimestamp)
             let end = try intervalContainer.decode(Int.self, forKey: .endTimestamp)
-            self.availableBatchPrices = Date(timeIntervalSince1970: Double(start / 1000))...Date(timeIntervalSince1970: Double(end / 1000))
+            self.availableBatchPrices = DateInterval(start: Date(timeIntervalSince1970: Double(start / 1000)),
+                                                       end: Date(timeIntervalSince1970: Double(end   / 1000)) )
             self.offsetToUTC = try intervalContainer.decode(TimeInterval.self, forKey: .offsetToUTC)
             
             let storageContainer = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.StorageKeys.self, forKey: .storage)
@@ -202,9 +205,9 @@ extension IG.API.PriceSnapshot {
                     let lowest = try decodePoint(container, .lowest)
                     let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
-                } catch {
+                } catch let error {
                     #if DEBUG
-                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(timestamp)")
+                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(timestamp)\t\(error)")
                     #endif
                     continue
                 }
