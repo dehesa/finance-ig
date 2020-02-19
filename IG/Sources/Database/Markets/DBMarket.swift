@@ -26,7 +26,7 @@ extension IG.Database.Request.Markets {
         return self.database.publisher { _ -> String in
                 let clause = epics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
                 return "SELECT epic FROM \(IG.Database.Market.tableName) WHERE \(clause)"
-            }.read { (sqlite, statement, query) in
+            }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 for (index, epic) in epics.enumerated() {
@@ -53,7 +53,7 @@ extension IG.Database.Request.Markets {
     public func getAll() -> IG.Database.Publishers.Discrete<[IG.Database.Market]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.tableName)"
-            }.read { (sqlite, statement, query) -> [IG.Database.Market] in
+            }.read { (sqlite, statement, query, _) -> [IG.Database.Market] in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 var result: [IG.Database.Market] = .init()
@@ -74,7 +74,7 @@ extension IG.Database.Request.Markets {
     public func type(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Kind?> {
         self.database.publisher { _ in
                 "SELECT type FROM \(IG.Database.Market.tableName) WHERE epic=?1"
-            }.read { (sqlite, statement, query) -> IG.Database.Market.Kind? in
+            }.read { (sqlite, statement, query, _) -> IG.Database.Market.Kind? in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
                 
@@ -103,7 +103,7 @@ extension IG.Database.Request.Markets {
                 INSERT INTO \(IG.Database.Market.tableName) VALUES(?1, ?2)
                     ON CONFLICT(epic) DO UPDATE SET type=excluded.type
                 """
-            }.write { (sqlite, statement, query) -> Void in
+            }.write { (sqlite, statement, query, _) -> Void in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 for apiMarket in markets {

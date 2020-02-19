@@ -30,7 +30,7 @@ extension IG.API.Request.Session {
     // MARK: GET /session?fetchSessionTokens=true
 
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
-    /// - returns: `Future` related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
+    /// - returns: Future related type forwarding a `IG.API.Credentials.Token.certificate` if the process was successful.
     internal func refreshCertificate() -> AnyPublisher<IG.API.Token,Swift.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] })

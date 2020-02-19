@@ -164,7 +164,7 @@ extension Publisher {
                                         Swift.Error
                                     >, Self
                                  > where Self.Output==IG.API.Publishers.Output.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
-        self.flatMap(maxPublishers: .max(4)) { (api, request, values) in
+        self.flatMap { (api, request, values) in
             api.channel.session.dataTaskPublisher(for: request).tryMap { (data, response) in
                 guard let httpResponse = response as? HTTPURLResponse else {
                     let message = #"The response was not of HTTPURLResponse type"#

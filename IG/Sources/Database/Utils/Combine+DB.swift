@@ -65,12 +65,19 @@ extension Publisher {
     /// - parameter statement: Opaque SQLite statement pointer to be filled by the `interaction` closure.
     /// - parameter values: Any value arriving as an output from upstream.
     /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
-    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Combine.Publishers.SequentialTryMap<Self,R,IG.Database.Error> where Output==IG.Database.Publishers.Output.Instance<T> {
-        self.asyncTryMap(failure: IG.Database.Error.self) { (input, promise) in
-            input.database.channel.readAsync(promise: promise, on: input.database.queue) { (sqlite) in
+    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Publishers.Output.Instance<T> {
+        self.asyncTryMap(parallel: .max(1)) { (input, isCancelled, promise) in
+            let mapper: (Result<R,IG.Database.Error>)->Void = { (result) in
+                switch result {
+                case .success(let value): _ = promise(.success((value, .finished)))
+                case .failure(let error): _ = promise(.failure(error))
+                }
+            }
+            
+            input.database.channel.readAsync(promise: mapper, on: input.database.queue) { (sqlite) in
                 var statement: SQLite.Statement? = nil
                 defer { sqlite3_finalize(statement) }
-                return try interaction(sqlite, &statement, input.values)
+                return try interaction(sqlite, &statement, input.values, isCancelled)
             }
         }
     }
@@ -80,13 +87,21 @@ extension Publisher {
     /// - parameter database: The SQLite low-level connection.
     /// - parameter statement: Opaque SQLite statement pointer to be filled by the `interaction` closure.
     /// - parameter values: Any value arriving as an output from upstream.
+    /// - parameter isCancelled: Closure indicating whether the database request has been cancelled.
     /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
-    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T) throws -> R) -> Combine.Publishers.SequentialTryMap<Self, R, Database.Error> where Output==IG.Database.Publishers.Output.Instance<T> {
-        self.asyncTryMap(failure: IG.Database.Error.self) { (input, promise) in
-            input.database.channel.writeAsync(promise: promise, on: input.database.queue) { (sqlite) -> R in
+    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Publishers.Output.Instance<T> {
+        self.asyncTryMap(parallel: .max(1)) { (input, isCancelled, promise) in
+            let mapper: (Result<R,IG.Database.Error>)->Void = { (result) in
+                switch result {
+                case .success(let value): _ = promise(.success((value, .finished)))
+                case .failure(let error): _ = promise(.failure(error))
+                }
+            }
+            
+            input.database.channel.writeAsync(promise: mapper, on: input.database.queue) { (sqlite) -> R in
                 var statement: SQLite.Statement? = nil
                 defer { sqlite3_finalize(statement) }
-                return try interaction(sqlite, &statement, input.values)
+                return try interaction(sqlite, &statement, input.values, isCancelled)
             }
         }
     }

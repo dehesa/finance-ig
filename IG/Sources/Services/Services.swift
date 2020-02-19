@@ -5,7 +5,7 @@ import Foundation
 /// High-level instance containing all services that can communicate with the IG platform.
 public final class Services {
     /// Queue handling all children low-level services.
-    private let queue: DispatchQueue
+    public let queue: DispatchQueue
     /// Instance letting you query any API endpoint.
     public let api: IG.API
     /// Instance letting you subscribe to lightsreamer events.
@@ -37,7 +37,7 @@ public final class Services {
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, user: IG.API.User) -> IG.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
-        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
+        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         return api.session.login(type: .certificate, key: apiKey, user: user)
             .mapError(Self.Error.api)
             .flatMap { _ in Self.make(with: api, queue: queue, location: databaseLocation) }
@@ -54,7 +54,7 @@ public final class Services {
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, token: IG.API.Token) -> IG.Publishers.Discrete<IG.Services> {
         let queue = Self.makeQueue(targetQueue: nil)
-        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue)
+        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
