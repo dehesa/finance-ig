@@ -32,7 +32,7 @@ extension IG.Database.Request.Price {
             }
             query.append(" ORDER BY date ASC")
             return (tableName, query)
-        }.read { (sqlite, statement, input) in
+        }.read { (sqlite, statement, input, _) in
             var result: [Date] = .init()
             // 1. Check the price table is there
             guard try Self.existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
@@ -70,7 +70,7 @@ extension IG.Database.Request.Price {
         self.database.publisher { _ -> String in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MIN(date) FROM '\(tableName)'"
-        }.read { (sqlite, statement, query) in
+        }.read { (sqlite, statement, query, _) in
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             switch sqlite3_step(statement).result {
             case .row:  return IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
@@ -89,7 +89,7 @@ extension IG.Database.Request.Price {
         self.database.publisher { _ -> String in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MAX(date) FROM '\(tableName)'"
-        }.read { (sqlite, statement, query) in
+        }.read { (sqlite, statement, query, _) in
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             switch sqlite3_step(statement).result {
             case .row:  return IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
@@ -121,7 +121,7 @@ extension IG.Database.Request.Price {
             }
             query.append(" ORDER BY date ASC")
             return (tableName, query)
-        }.read { (sqlite, statement, input) in
+        }.read { (sqlite, statement, input, _) in
             var result: [IG.Database.Price] = .init()
             // 1. Check the price table is there.
             guard try Self.existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
@@ -178,7 +178,7 @@ extension IG.Database.Request.Price {
             
             query.append(" ORDER BY date ASC LIMIT 1")
             return (tableName, query)
-        }.write { (sqlite, statement, input) in
+        }.write { (sqlite, statement, input, _) in
             // 1. Compile the SQL statement (there is no check for price table).
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
@@ -207,7 +207,7 @@ extension IG.Database.Request.Price {
     public func update(_ prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<Never> {
         self.database.publisher { _ in
                 Self.priceInsertionQuery(epic: epic)
-            }.write { (sqlite, statement, input) -> Void in
+            }.write { (sqlite, statement, input, _) -> Void in
                 // 1. Check the epic is on the Markets table.
                 guard try Self.existsMarket(epic: epic, sqlite: sqlite) else {
                     throw IG.Database.Error.invalidRequest(.init(#"The market with epic "\#(epic)" must be in the database before storing its price points"#), suggestion: .init("Store explicitly the market and the call this function again."))
@@ -273,7 +273,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
                                 lowest: .init(bid: lowestBid, ask: lowestAsk),
                                 highest: .init(bid: highestBid, ask: highestAsk), volume: volume))
             return ( db, (query, streamPrice) )
-        }.write { (sqlite, statement, input) -> IG.Database.PriceStreamed in
+        }.write { (sqlite, statement, input, _) -> IG.Database.PriceStreamed in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             input.data.price.bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }

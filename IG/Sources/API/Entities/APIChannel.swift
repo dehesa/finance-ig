@@ -40,6 +40,7 @@ extension IG.API {
             self.secret = nil
             os_unfair_lock_unlock(self.lock)
             self.session.invalidateAndCancel()
+            self.lock.deinitialize(count: 1)
             self.lock.deallocate()
         }
         

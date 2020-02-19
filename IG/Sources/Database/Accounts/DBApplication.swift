@@ -18,7 +18,7 @@ extension IG.Database.Request.Accounts {
     public func getApplications() -> IG.Database.Publishers.Discrete<[IG.Database.Application]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Application.tableName)"
-            }.read { (sqlite, statement, query) in
+            }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 var result: [IG.Database.Application] = .init()
@@ -40,7 +40,7 @@ extension IG.Database.Request.Accounts {
     public func getApplication(key: IG.API.Key) -> IG.Database.Publishers.Discrete<IG.Database.Application> {
         self.database.publisher { _ in
                 "SELECT * FROM Apps where key = ?1"
-            }.read { (sqlite, statement, query) in
+            }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 try sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
                 
@@ -66,7 +66,7 @@ extension IG.Database.Request.Accounts {
                     liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
                     created = excluded.created, updated = excluded.updated
             """
-        }.write { (sqlite, statement, query) in
+        }.write { (sqlite, statement, query, _) in
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             
             for app in applications {

@@ -197,8 +197,8 @@ extension IG.API.PriceSnapshot {
             while !pointsContainer.isAtEnd {
                 let container = try pointsContainer.nestedContainer(keyedBy: Self.ElementKeys.DataPointKeys.self)
                 let timestamp = try container.decode(Int.self, forKey: .date)
+                let date = Date(timeIntervalSince1970: Double(timestamp / 1000))
                 do {
-                    let date = Date(timeIntervalSince1970: Double(timestamp / 1000))
                     let open = try decodePoint(container, .open)
                     let close = try decodePoint(container, .close)
                     let highest = try decodePoint(container, .highest)
@@ -207,7 +207,7 @@ extension IG.API.PriceSnapshot {
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
                 } catch let error {
                     #if DEBUG
-                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(timestamp)\t\(error)")
+                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
                     #endif
                     continue
                 }

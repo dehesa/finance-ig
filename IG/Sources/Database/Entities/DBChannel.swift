@@ -15,9 +15,10 @@ extension IG.Database {
         
         /// Designated initializer creating/opening the SQLite database indicated by the `rootURL`.
         /// - parameter location: The location of the database (whether "in-memory" or file system).
-        /// - parameter queue: The queue serializing access to the database.
-        init(location: IG.Database.Location, queue: DispatchQueue) throws {
-            self.queue = queue
+        /// - parameter targetQueue: The target queue on which the database serializer will depend on.
+        init(location: IG.Database.Location, targetQueue: DispatchQueue?) throws {
+            // Research: attributes: .concurrent
+            self.queue = DispatchQueue(label: IG.Database.reverseDNS + ".priviledgeQueue", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
             (self.rootURL, self.database) = try Self.make(location: location, queue: queue)
         }
         

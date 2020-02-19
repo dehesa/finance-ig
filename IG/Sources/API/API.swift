@@ -38,8 +38,10 @@ public final class API {
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
-    public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?) {
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+    /// - parameter qos: The Quality of Service for the API processing queue.
+    public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?, qos: DispatchQoS) {
+        // - todo: It is problematic that the delegate queue is concurrent, since if we ever use URLSession's delegate, the message wouldn't be ordered.
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: qos, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let operationQueue = OperationQueue(name: Self.reverseDNS + ".operationQueue", underlyingQueue: processingQueue)
         let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
         self.init(rootURL: rootURL, credentials: credentials, session: session, processingQueue: processingQueue)

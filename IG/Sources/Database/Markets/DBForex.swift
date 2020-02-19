@@ -19,7 +19,7 @@ extension IG.Database.Request.Markets.Forex {
     public func getAll() -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.Forex.tableName)"
-            }.read { (sqlite, statement, query) in
+            }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 var result: [IG.Database.Market.Forex] = .init()
@@ -41,7 +41,7 @@ extension IG.Database.Request.Markets.Forex {
     public func get(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Forex> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic=?1"
-            }.read { (sqlite, statement, query) in
+            }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
 
                 try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
@@ -70,7 +70,7 @@ extension IG.Database.Request.Markets.Forex {
                 }
             
                 return (sql, binds)
-            }.read { (sqlite, statement, input) in
+            }.read { (sqlite, statement, input, _) in
                 try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
                 
                 for (index, currency) in input.binds {
@@ -109,7 +109,7 @@ extension IG.Database.Request.Markets.Forex {
             }
             
             return (sql, binds)
-        }.read { (sql, statement, input) in
+        }.read { (sql, statement, input, _) in
             for (index, currency) in input.binds {
                 sqlite3_bind_text(statement, index, currency.rawValue, -1, SQLite.Destructor.transient)
             }
