@@ -27,17 +27,44 @@ extension IG.Database.Request.Markets.Forex {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
                     }
                 }
             }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
     
+    /// Returns the markets stored in the database matching the given epics.
+    /// - parameter epic: The forex market epics identifiers.
+    public func get(epics: Set<IG.Market.Epic>) -> IG.Database.Publishers.Discrete<Set<IG.Database.Market.Forex>> {
+        self.database.publisher { _ -> String in
+            let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")
+            return "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic IN (\(values))"
+        }.read { (sqlite, statement, query, _) in
+            var result: Set<IG.Database.Market.Forex> = .init()
+            guard !epics.isEmpty else { return result }
+            
+            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+            
+            for (index, epic) in epics.enumerated() {
+                try sqlite3_bind_text(statement, Int32(index + 1), epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
+            }
+            
+            while true {
+                switch sqlite3_step(statement).result {
+                case .row: result.insert(.init(statement: statement!))
+                case .done: return result
+                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
+                }
+            }
+        }.mapError(IG.Database.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
     /// Returns the market stored in the database matching the given epic.
     ///
     /// If the market is not in the database, a `.invalidResponse` error will be returned.
-    /// - parameter epic: The forex market epic identifyier.
+    /// - parameter epic: The forex market epic identifier.
     public func get(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Forex> {
         self.database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic=?1"
@@ -82,7 +109,7 @@ extension IG.Database.Request.Markets.Forex {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
                     }
                 }
             }.mapError(IG.Database.Error.transform)
@@ -119,7 +146,7 @@ extension IG.Database.Request.Markets.Forex {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
                 case .done: return result
-                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Application.self), code: e)
+                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
                 }
             }
         }.mapError(IG.Database.Error.transform)
@@ -163,7 +190,7 @@ extension IG.Database.Request.Markets.Forex {
                                                                                             maximumAsPercentage: m.rules.limit.maximumDistance.value),
                                                                trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
             forex.bind(to: statement!)
-            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }
+            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Market.Forex.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
         }
