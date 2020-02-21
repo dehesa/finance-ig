@@ -146,7 +146,7 @@ extension XCTestCase {
             guard credentials.token.isExpired else { return credentials }
         }
         
-        let api: API = .init(rootURL: data.rootURL, credentials: data.cached, targetQueue: nil)
+        let api: API = .init(rootURL: data.rootURL, credentials: data.cached, targetQueue: nil, qos: .default)
         let result: API.Credentials
         if case .some = api.channel.credentials {
             api.session.refresh()

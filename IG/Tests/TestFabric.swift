@@ -12,7 +12,7 @@ extension Test {
     static func makeAPI(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> IG.API {
         switch Test.Account.SupportedScheme(url: rootURL) {
         case .https:
-            return .init(rootURL: rootURL, credentials: credentials, targetQueue: targetQueue)
+            return .init(rootURL: rootURL, credentials: credentials, targetQueue: targetQueue, qos: targetQueue?.qos ?? .default)
         case .file:
 //            let configuration = API.defaultSessionConfigurations
 //            configuration.protocolClasses = [APIFileProtocol.self]

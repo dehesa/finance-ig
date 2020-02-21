@@ -231,7 +231,7 @@ extension IG.Database.Request.Price {
                                             highest: .init(bid: p.highest.bid, ask: p.highest.ask),
                                             volume: .init(clamping: v))
                     price.bind(to: statement!)
-                    try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }
+                    try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Price.self), code: $0) }
                     sqlite3_clear_bindings(statement)
                     sqlite3_reset(statement)
                 }
@@ -276,7 +276,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
         }.write { (sqlite, statement, input, _) -> IG.Database.PriceStreamed in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             input.data.price.bind(to: statement!)
-            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Application.self), code: $0) }
+            try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Price.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
             return input.data

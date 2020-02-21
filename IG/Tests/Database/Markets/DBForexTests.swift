@@ -12,17 +12,33 @@ final class DBForexTests: XCTestCase {
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
-            .sorted { $0 < $1 }
             .uniqueElements
-        let apiForex = api.markets.get(epics: .init(epics)).expectsOne(timeout: 2, on: self)
-        db.markets.update(apiForex).expectsCompletion(timeout: 0.5, on: self)
+            .sorted()
         
-        let dbForex = db.markets.forex.getAll()
-            .expectsOne(timeout: 0.5, on: self)
-            .sorted { $0.epic < $1.epic }
-        XCTAssertEqual(epics, dbForex.map { $0.epic })
+        do { // Tests database writes of forex markets.
+            let apiForex = api.markets.get(epics: .init(epics))
+                .expectsOne(timeout: 2, on: self)
+            XCTAssertEqual(epics, apiForex.map { $0.instrument.epic }.sorted() )
+            
+            db.markets.update(apiForex)
+                .expectsCompletion(timeout: 0.5, on: self)
+        }
         
-        for epic in epics {
+        do { // Tests the retrieve-all call to the database.
+            let dbForex = db.markets.forex.getAll()
+                .expectsOne(timeout: 0.5, on: self)
+                .sorted { $0.epic < $1.epic }
+            XCTAssertEqual(epics, dbForex.map { $0.epic })
+        }
+        
+        do { // Test the retrieve-set call to the database.
+            let dbForex = db.markets.forex.get(epics: .init(epics))
+                .expectsOne(timeout: 0.5, on: self)
+                .sorted { $0.epic < $1.epic }
+            XCTAssertEqual(epics, dbForex.map { $0.epic })
+        }
+        
+        for epic in epics { // Test the retrieve-one call to the database.
             let market = db.markets.forex.get(epic: epic).expectsOne(timeout: 0.5, on: self)
             XCTAssertEqual(market.epic, epic)
         }
