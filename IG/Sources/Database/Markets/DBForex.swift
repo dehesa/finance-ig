@@ -35,29 +35,37 @@ extension IG.Database.Request.Markets.Forex {
     }
     
     /// Returns the markets stored in the database matching the given epics.
-    /// - parameter epic: The forex market epics identifiers.
-    public func get(epics: Set<IG.Market.Epic>) -> IG.Database.Publishers.Discrete<Set<IG.Database.Market.Forex>> {
+    ///
+    /// Depending on the `expectsAll` argument, this method will return the exact number of market forex or a subset of them.
+    /// - parameter epics: The forex market epics identifiers.
+    /// - parameter expectsAll: Boolean indicating whether an error should be forwarded when not all markets are in the database.
+    public func get(epics: Set<IG.Market.Epic>, expectsAll: Bool) -> IG.Database.Publishers.Discrete<Set<IG.Database.Market.Forex>> {
         self.database.publisher { _ -> String in
-            let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")
-            return "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic IN (\(values))"
-        }.read { (sqlite, statement, query, _) in
-            var result: Set<IG.Database.Market.Forex> = .init()
-            guard !epics.isEmpty else { return result }
-            
-            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-            
-            for (index, epic) in epics.enumerated() {
-                try sqlite3_bind_text(statement, Int32(index + 1), epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
-            }
-            
-            while true {
-                switch sqlite3_step(statement).result {
-                case .row: result.insert(.init(statement: statement!))
-                case .done: return result
-                case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
+                let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")
+                return "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic IN (\(values))"
+            }.read { (sqlite, statement, query, _) in
+                var result: Set<IG.Database.Market.Forex> = .init()
+                guard !epics.isEmpty else { return result }
+                
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                
+                for (index, epic) in epics.enumerated() {
+                    try sqlite3_bind_text(statement, Int32(index + 1), epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { .callFailed(.bindingAttributes, code: $0) }
                 }
-            }
-        }.mapError(IG.Database.Error.transform)
+                
+                loop: while true {
+                    switch sqlite3_step(statement).result {
+                    case .row: result.insert(.init(statement: statement!))
+                    case .done: break loop
+                    case let e: throw IG.Database.Error.callFailed(.querying(IG.Database.Market.Forex.self), code: e)
+                    }
+                }
+                
+                guard (epics.count == result.count) || !expectsAll else {
+                    throw IG.Database.Error.invalidResponse(.valueNotFound, suggestion: .init("\(epics.count) were provided, however only \(result.count) were found"))
+                }
+                return result
+            }.mapError(IG.Database.Error.transform)
             .eraseToAnyPublisher()
     }
     
