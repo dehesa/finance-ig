@@ -182,7 +182,7 @@ extension IG.Streamer.Channel {
                 
                 subscription.subscribeToStatus(on: queue).subscribe(sink)
                 self.client.subscribe(subscription.lowlevel)
-            }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)
+            }.handleEnd { _ in cleanUp() }
             .eraseToAnyPublisher()
     }
     
