@@ -8,7 +8,7 @@ final class DBApplicationTests: XCTestCase {
     
     /// Tests the creation of an "in-memory" database.
     func testApplicationsInMemory() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         let apiResponse = api.accounts.getApplications().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(apiResponse.isEmpty)
         

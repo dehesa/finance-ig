@@ -9,7 +9,7 @@ final class APIApplicationTests: XCTestCase {
     
     /// Tests the retrieval of all applications accessible by the given user.
     func testApplications() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let applications = api.accounts.getApplications()
             .expectsOne(timeout: 2, on: self)
@@ -28,7 +28,7 @@ final class APIApplicationTests: XCTestCase {
     
     /// Tests the application configuration capabilities.
     func testApplicationSettings() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
 
         let status: API.Application.Status = .enabled
         let allowance: (overall: UInt, trading: UInt) = (60, 100)

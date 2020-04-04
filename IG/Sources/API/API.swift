@@ -40,8 +40,8 @@ public final class API {
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
     /// - parameter qos: The Quality of Service for the API processing queue.
     public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?, qos: DispatchQoS) {
-        // - todo: It is problematic that the delegate queue is concurrent, since if we ever use URLSession's delegate, the message wouldn't be ordered.
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: qos, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        // - warning: If the `URLSession` is ever to have a delegate, `processingQueue` must be serial. Otherwise, the delegate message wouldn't be ordered.
+        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
         let operationQueue = OperationQueue(name: Self.reverseDNS + ".operationQueue", underlyingQueue: processingQueue)
         let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
         self.init(rootURL: rootURL, credentials: credentials, session: session, processingQueue: processingQueue)
@@ -59,9 +59,7 @@ public final class API {
     }
     
     /// The credentials status for the receiving API instance.
-    var status: IG.API.Session.Status {
-        return self.channel.status
-    }
+    var status: IG.API.Session.Status { self.channel.status }
 }
 
 extension IG.API {
@@ -69,17 +67,12 @@ extension IG.API {
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     /// The root URL for the hidden endpoints.
     public static let scrappedRootURL = URL(string: "https://deal.ig.com")!
-    
     /// The reverse DNS identifier for the `API` instance.
-    internal static var reverseDNS: String {
-        return Bundle.IG.identifier + ".api"
-    }
+    internal static var reverseDNS: String { Bundle.IG.identifier + ".api" }
 }
 
 extension IG.API: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(Bundle.IG.name).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public final var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

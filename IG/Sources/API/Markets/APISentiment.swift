@@ -101,9 +101,7 @@ extension IG.API.Error.Suggestion {
 }
 
 extension IG.API.Market.Sentiment: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.self).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.self).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

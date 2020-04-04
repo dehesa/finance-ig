@@ -20,7 +20,7 @@ extension IG.API {
         /// Designated initializer passing the basic requirements for an API channel.
         /// - parameter session: Real or mock URL session calling the endpoints.
         /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-        init(session: URLSession, credentials: IG.API.Credentials?, queue: DispatchQueue) {
+        internal init(session: URLSession, credentials: IG.API.Credentials?, queue: DispatchQueue) {
             self.session = session
             self.secret = nil
             self.statusSubject = .init(.logout)

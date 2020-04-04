@@ -260,9 +260,7 @@ extension IG.Streamer.Chart.Aggregated {
 }
 
 extension IG.Streamer.Chart.Aggregated: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)" }
     
     public var debugDescription: String {
         let represent: (Self.Candle.Point)->String = {

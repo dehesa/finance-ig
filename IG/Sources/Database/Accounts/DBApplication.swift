@@ -266,9 +266,7 @@ fileprivate extension IG.Database.Application.Status {
 // MARK: Debugging
 
 extension IG.Database.Application: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.Database.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Database.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

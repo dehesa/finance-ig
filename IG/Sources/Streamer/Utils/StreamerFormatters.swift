@@ -85,9 +85,7 @@ extension IG.Streamer.Formatter {
 }
 
 extension IG.Streamer.Formatter.Update.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String {
-        return "\(Streamer.printableDomain).\(Streamer.Formatter.self).\(Streamer.Formatter.Update.self).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Formatter.self).\(Streamer.Formatter.Update.self).\(Self.self)" }
     
     internal var printableType: String {
         return self.type

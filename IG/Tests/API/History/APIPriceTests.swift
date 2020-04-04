@@ -9,7 +9,7 @@ final class APIPriceTests: XCTestCase {
     
     /// Tests paginated activity retrieval.
     func testPrices() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let fromDate = Date().lastTuesday
         let toDate = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: fromDate)!

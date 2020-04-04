@@ -32,7 +32,7 @@ extension IG.API.Request.Accounts {
     
     /// Returns the targeted account preferences.
     /// - returns: *Future* forwarding the current account's pereferences.
-    public func preferences() -> IG.API.Publishers.Discrete<IG.API.Account.Preferences> {
+    public func getPreferences() -> IG.API.Publishers.Discrete<IG.API.Account.Preferences> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)

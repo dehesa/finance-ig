@@ -8,7 +8,7 @@ final class APINavigationNodeTests: XCTestCase {
     
     /// Tests navigation nodes retrieval.
     func testNavigationRootNodes() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none)
             .expectsOne(timeout: 2, on: self)
@@ -23,7 +23,7 @@ final class APINavigationNodeTests: XCTestCase {
     
     // Tests the major forex node.
     func testNavigationMarketsSubtree() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("264134", "Major FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none)
@@ -38,7 +38,7 @@ final class APINavigationNodeTests: XCTestCase {
     
     /// Drill down two levels in the navigation nodes tree.
     func testNavigationSubtree() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("195235", "FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all)
@@ -52,7 +52,7 @@ final class APINavigationNodeTests: XCTestCase {
 
     /// Test the market search capabilities.
     func testMarketTermSearch() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
 
         let markets = api.nodes.getMarkets(matching: "NZD")
             .expectsOne(timeout: 2, on: self)

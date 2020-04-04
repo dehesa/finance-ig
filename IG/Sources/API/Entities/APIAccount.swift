@@ -106,9 +106,7 @@ extension IG.API.Account {
 }
 
 extension IG.API.Account: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

@@ -18,7 +18,7 @@ final class DBPriceTests: XCTestCase {
 
     /// Tests the creation of a price table.
     func testPriceTableCreation() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let from = Date().lastTuesday

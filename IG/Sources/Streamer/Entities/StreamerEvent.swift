@@ -76,9 +76,7 @@ extension IG.Streamer.Subscription {
 }
 
 extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String {
-        return "\(IG.Streamer.printableDomain).\(IG.Streamer.Subscription.self).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Subscription.self).\(Self.self)" }
     
     internal var printableType: String {
         switch self.type {

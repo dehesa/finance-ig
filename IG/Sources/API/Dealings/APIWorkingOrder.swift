@@ -118,9 +118,7 @@ extension IG.API {
 // MARK: - Functionality
 
 extension IG.API.WorkingOrder: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)

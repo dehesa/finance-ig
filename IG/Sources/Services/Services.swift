@@ -165,9 +165,7 @@ extension IG.Services {
 }
 
 extension IG.Services: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(Bundle.IG.name).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

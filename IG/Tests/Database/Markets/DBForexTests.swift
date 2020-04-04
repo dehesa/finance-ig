@@ -1,6 +1,7 @@
 import XCTest
 @testable import IG
 import Combine
+import ConbiniForTesting
 
 final class DBForexTests: XCTestCase {
     /// The test account being used for the tests in this class.
@@ -8,7 +9,7 @@ final class DBForexTests: XCTestCase {
     
     /// Test the "successful" retrieval of forex markets from the database.
     func testForexRetrieval() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -32,7 +33,7 @@ final class DBForexTests: XCTestCase {
         }
         
         do { // Test the retrieve-set call to the database.
-            let dbForex = db.markets.forex.get(epics: .init(epics))
+            let dbForex = db.markets.forex.get(epics: .init(epics), expectsAll: true)
                 .expectsOne(timeout: 0.5, on: self)
                 .sorted { $0.epic < $1.epic }
             XCTAssertEqual(epics, dbForex.map { $0.epic })
@@ -46,7 +47,7 @@ final class DBForexTests: XCTestCase {
     
     /// Test a forex retrieval for a market that it is not there.
     func testForexRetrievalFailure() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
 
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -61,7 +62,7 @@ final class DBForexTests: XCTestCase {
 
     /// Test the currency retrieval functions.
     func testForexCurrency() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         // Retrieve 50 forex markets from the server and store them in the database.
         let epics = Test.Epic.forex.prefix(50)

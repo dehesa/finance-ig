@@ -8,7 +8,7 @@ extension Optional {
     /// - parameter rhs: Swift error to throw in case of no value.
     /// - returns: The value (non-optional) passed as parameter.
     /// - throws: The Swift error returned on the right hand-side autoclosure.
-    internal static func ?!(lhs: Self, rhs: @autoclosure ()->Swift.Error) throws -> Wrapped {
+    @inline(__always) internal static func ?!(lhs: Self, rhs: @autoclosure ()->Swift.Error) throws -> Wrapped {
         switch lhs {
         case .some(let v): return v
         case .none: throw rhs()
@@ -16,8 +16,7 @@ extension Optional {
     }
     
     /// Unwraps the receiving optional and execute the appropriate closure depending on whether the value is `.none` or `.some`.
-    @discardableResult
-    internal func unwrap<T>(none: ()->T, `some`: (_ wrapped: Wrapped)->T) -> T {
+    @discardableResult @inline(__always) internal func unwrap<T>(none: ()->T, `some`: (_ wrapped: Wrapped)->T) -> T {
         switch self {
         case .some(let v): return some(v)
         case .none: return none()

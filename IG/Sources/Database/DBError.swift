@@ -119,9 +119,7 @@ extension IG.Database.Error {
 }
 
 extension IG.Database.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String {
-        return "\(IG.Database.printableDomain).\(IG.Database.Error.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Database.printableDomain).\(IG.Database.Error.self)" }
     
     internal var printableType: String {
         switch self.type {

@@ -225,9 +225,7 @@ extension IG.Database.Market.Kind: Equatable {
 // MARK: Debugging
 
 extension IG.Database.Market: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return IG.Database.printableDomain.appending(".\(Self.self)")
-    }
+    internal static var printableDomain: String { IG.Database.printableDomain.appending(".\(Self.self)") }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

@@ -1,9 +1,7 @@
 import Foundation
 
 extension Swift.EncodingError: IG.ErrorPrintable {
-    internal static var printableDomain: String {
-        return "Swift.\(EncodingError.self)"
-    }
+    internal static var printableDomain: String { "Swift.\(EncodingError.self)" }
     
     internal var printableType: String {
         switch self {
@@ -41,9 +39,7 @@ extension Swift.EncodingError: IG.ErrorPrintable {
 }
 
 extension Swift.DecodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
-    internal static var printableDomain: String {
-        return "Swift.\(DecodingError.self)"
-    }
+    internal static var printableDomain: String { "Swift.\(DecodingError.self)" }
     
     internal var printableType: String {
         switch self {

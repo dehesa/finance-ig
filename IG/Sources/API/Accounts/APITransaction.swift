@@ -293,9 +293,7 @@ extension IG.API.Transaction {
 // MARK: - Functionality
 
 extension IG.API.Transaction: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
