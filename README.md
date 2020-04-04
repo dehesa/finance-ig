@@ -1,18 +1,23 @@
 <p align="center">
-    <img src="Assets/IG.svg" alt="IG Framework + Swift"/>
+    <img src="docs/assets/IG.svg" alt="Framework Logo"/>
 </p>
 
-![Swift 5.1](https://img.shields.io/badge/Swift-5.1-orange.svg) ![platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS-lightgrey.svg) ![Xcode 11](https://img.shields.io/badge/Xcode-11-blueviolet.svg) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org)
+<p align="center">
+    <a href="https://swift.org/about/#swiftorg-and-open-source"><img src="docs/assets/badges/Swift.svg" alt="Swift 5.2"></a>
+    <a href="https://github.com/dehesa/CodableCSV/wiki/Implicit-dependencies"><img src="docs/assets/badges/Apple.svg" alt="macOS 10.15+ - iOS 13+"></a>
+    <a href="https://developer.apple.com/xcode"><img src="docs/assets/badges/Xcode.svg" alt="Xcode 11"></a>
+    <a href="http://doge.mit-license.org"><img src="docs/assets/badges/License.svg" alt="MIT License"></a>
+</p>
 
 This framework provides:
 
 -   Access to IG's HTTP APIs.
 -   Access to IG's Lightstreamer service.
     <br>The Lighstreamer binaries are packaged with the source code. IG only supports an older Lightstreamer version and this framework provides exactly that version. To know more, check [labs.ig.com](https://labs.ig.com/lightstreamer-downloads).
--   Endpoints & Lighstreamer events cache.
-    <br>Implement through SQLite.
 -   Session management helpers.
     <br>Such as OAuth and certificate token refreshes, etc.
+-   Endpoints & Lighstreamer events cache.
+    <br>Implement through SQLite.
 
 # Usage
 
@@ -49,7 +54,7 @@ The IG framework can be used to interface with IG's APIs, Lightstreamer's "real-
 -   Create an in-memory or file database with the `DB` instance.
     <br>The database is _work in progress_; currently only supporting price resolutions of one minute.
 
-Although you can cherry pick which service to use, it might be simpler to let the convenience `Services` to initialize all subservices for you. To log in you need:
+Although you can cherry pick which service to use, it might be simpler to let the convenience `Services` initialize all subservices for you. To log in you need:
 
 -   an _API key_.
     <br>You can get one from someone that has an IG application, or you can [generate your own](https://labs.ig.com/gettingstarted); e.g. `a12345bc67890d12345e6789fg0hi123j4567890`.
@@ -92,12 +97,12 @@ services.streamer.markets.subscribe(to: "CS.D.EURUSD.MINI.IP", fields: [.bid, .o
 The following is a list of 1st party and 3rd party library/framework dependencies:
 
 -   Foundation.
--   Combine (iOS 13.1+ & macOS 10.15).
--   [Conbini](https://www.github.com/dehesa/Conbini)
 -   SQLite.
+-   Combine (iOS 13.1+ & macOS 10.15).
+-   [Conbini](https://www.github.com/dehesa/Conbini).
 -   Lightstreamer binaries (prepackage within the framework under `/Frameworks`).
 
-I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. The SPM team seems to be on the "pitch" phase for such feature, though.
+I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. The SPM team seems to be on the "implementation" phase for such feature, though.
 
 -   [SPM pitch for binary dependencies](https://forums.swift.org/t/pitch-support-for-binary-dependencies/27620).
 -   [Importing Lightstreamer with SPM](https://forums.lightstreamer.com/showthread.php?8440-Importing-Lightstreamer-with-Swift-Package-Manager).
@@ -105,5 +110,5 @@ I would love to provide the framework through SPM, but it doesn't currently supp
 # Roadmap
 
 <p align="center">
-    <img src="Assets/Roadmap.svg" alt="Visual roadmap about the Framework's future"/>
+    <img src="docs/assets/Roadmap.svg" alt="Visual roadmap about the Framework's future"/>
 </p>
