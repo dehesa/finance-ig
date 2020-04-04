@@ -201,9 +201,7 @@ extension IG.Streamer.Account {
 }
 
 extension IG.Streamer.Account: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.Streamer.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.identifier))")

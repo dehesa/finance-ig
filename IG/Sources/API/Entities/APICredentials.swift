@@ -120,9 +120,7 @@ extension IG.API.Token {
 // MARK: - Debug helpers
 
 extension IG.API.Credentials: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

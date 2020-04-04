@@ -68,7 +68,6 @@ final class APISessionTests: XCTestCase {
             .expectsCompletion(timeout: 3, on: self)
         
         guard case .ready(let limit) = api.status, limit > Date() else { return XCTFail() }
-        print(limit.timeIntervalSinceNow)
         self.wait(seconds: limit.timeIntervalSinceNow + 2)
         
         XCTAssertEqual(statuses, [.logout, .ready(till: limit), .expired])

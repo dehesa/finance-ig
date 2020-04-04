@@ -177,9 +177,7 @@ extension IG.Streamer.Market {
 }
 
 extension IG.Streamer.Market: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.Streamer.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic.rawValue))")

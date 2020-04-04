@@ -52,9 +52,7 @@ extension IG.Services {
 }
 
 extension IG.Services.Error: IG.ErrorPrintable {
-    static var printableDomain: String {
-        return "\(IG.Services.printableDomain).\(Self.self)"
-    }
+    static var printableDomain: String { "\(IG.Services.printableDomain).\(Self.self)" }
     
     var printableType: String {
         switch self {

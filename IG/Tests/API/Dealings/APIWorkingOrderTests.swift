@@ -8,7 +8,7 @@ final class APIWorkingOrderTests: XCTestCase {
     
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
 
         let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
             .expectsOne(timeout: 2, on: self)

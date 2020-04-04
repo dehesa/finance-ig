@@ -158,9 +158,7 @@ extension IG.API.Error {
 }
 
 extension IG.API.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     internal var printableType: String {
         switch self.type {

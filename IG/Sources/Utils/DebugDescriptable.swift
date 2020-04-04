@@ -1,6 +1,6 @@
 import Foundation
 
-/// Used on types with a custom debug descriptions within this framework.
+/// IG types conforming to this protocol return a custom description and provide a specific identifiable domain.
 internal protocol DebugDescriptable: CustomDebugStringConvertible {
     /// The name to use as the receiver domain.
     static var printableDomain: String { get }

@@ -11,7 +11,7 @@ extension IG.API {
         /// Initializer providing already with fully formed sub-instances.
         /// - parameter name: The user's platform name.
         /// - parameter password: The user's password.
-        public init(_ name: Self.Name, _ password: Self.Password) {
+        @inlinable public init(_ name: Self.Name, _ password: Self.Password) {
             self.name = name
             self.password = password
         }
@@ -20,17 +20,15 @@ extension IG.API {
         /// - parameter name: The user's platform name.
         /// - parameter password: The user's password.
         /// - returns: `nil` if the objects were malformed.
-        public init?(name: Self.Name.RawValue, passsword: String) {
+        @inlinable public init?(name: String, passsword: String) {
             guard let username = Self.Name(rawValue: name),
-                  let pass = Self.Password(rawValue: passsword) else { return nil }
-            self.name = username
-            self.password = pass
+                  let password = Self.Password(rawValue: passsword) else { return nil }
+            self.init(username, password)
         }
         
-        public init(arrayLiteral elements: String...) {
+        @inlinable public init(arrayLiteral elements: String...) {
             guard elements.count == 2 else { fatalError(#"A "\#(Self.self)" type can only be initialized with an array with two non-empty strings"#)}
-            self.name = .init(stringLiteral: elements[0])
-            self.password = .init(stringLiteral: elements[1])
+            self.init(.init(stringLiteral: elements[0]), .init(stringLiteral: elements[1]))
         }
     }
 }
@@ -50,7 +48,7 @@ extension IG.API.User {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @inlinable public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -94,7 +92,7 @@ extension IG.API.User {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @inlinable public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -124,9 +122,7 @@ extension IG.API.User {
 }
 
 extension IG.API.User: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

@@ -9,7 +9,7 @@ final class StreamerTradeTests: XCTestCase {
     
     /// Tests for the stream confirmation subscription.
     func testAccountTrade() {
-        let (rootURL, creds) = self.streamerCredentials(from: acc)
+        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
@@ -24,7 +24,7 @@ final class StreamerTradeTests: XCTestCase {
     }
 
     func testChain() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)

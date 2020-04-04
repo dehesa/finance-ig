@@ -9,7 +9,7 @@ final class APIActivityTests: XCTestCase {
     
     /// Tests paginated activity retrieval.
     func testActivities() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let date = Date().lastTuesday
         let activities = api.accounts.getActivityContinuously(from: date, detailed: true)

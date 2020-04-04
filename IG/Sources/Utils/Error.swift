@@ -17,6 +17,8 @@ public protocol Error: Swift.Error {
     var context: [Item] { get }
 }
 
+// MARK: -
+
 /// Definitions conforming to this protocol are used as namespaces for `IG.Error`s, such as messages and suggestions.
 internal protocol ErrorNameSpace: RawRepresentable, ExpressibleByStringLiteral where Self.RawValue==String, Self.StringLiteralType==String {
     /// Designated initializer with a pre-validated value.
@@ -26,19 +28,17 @@ internal protocol ErrorNameSpace: RawRepresentable, ExpressibleByStringLiteral w
 
 extension ErrorNameSpace {
     init(stringLiteral value: String) {
-        guard !value.isEmpty else {
-            fatalError("Error strings cannot be empty")
-        }
+        guard !value.isEmpty else { fatalError("Error strings cannot be empty") }
         self.init(value)
     }
     
     init?(rawValue: Self.RawValue) {
-        guard !rawValue.isEmpty else {
-            return nil
-        }
+        guard !rawValue.isEmpty else { return nil }
         self.init(rawValue)
     }
 }
+
+// MARK: -
 
 internal protocol ErrorPrintable: IG.DebugDescriptable {
     /// The human readable error type.

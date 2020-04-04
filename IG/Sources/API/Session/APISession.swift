@@ -9,14 +9,10 @@ extension IG.API.Request {
         
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) {
-            self.api = api
-        }
+        init(api: IG.API) { self.api = api }
         
         /// The credentials for the current session (at the time of call).
-        public var credentials: IG.API.Credentials? {
-            return self.api.channel.credentials
-        }
+        public var credentials: IG.API.Credentials? { self.api.channel.credentials }
         
         /// Boolean indicating whether the API can perform priviledge endpoints.
         ///
@@ -277,9 +273,7 @@ extension IG.API.Session {
 // MARK: - Functionality
 
 extension IG.API.Session: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -294,9 +288,7 @@ extension IG.API.Session: IG.DebugDescriptable {
 }
 
 extension IG.API.Session.Settings: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.API.Session.printableDomain).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.API.Session.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

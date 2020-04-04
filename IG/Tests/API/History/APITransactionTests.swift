@@ -9,7 +9,7 @@ final class APITransactionTests: XCTestCase {
     
     /// Tests paginated transaction retrieval.
     func testTransactions() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
         
         let transactions = api.accounts.getTransactionsContinuously(from: Date().lastTuesday)
             .expectsAll(timeout: 2, on: self)

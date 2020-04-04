@@ -8,7 +8,7 @@ final class StreamerAccountTests: XCTestCase {
     
     /// Test Lightstreamer subscription to account changes.
     func testAccountSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: acc)
+        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)

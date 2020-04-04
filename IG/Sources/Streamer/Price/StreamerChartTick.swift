@@ -141,9 +141,7 @@ extension IG.Streamer.Chart.Tick {
 }
 
 extension IG.Streamer.Chart.Tick: IG.DebugDescriptable {
-    internal static var printableDomain: String {
-        return "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)"
-    }
+    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic))")
