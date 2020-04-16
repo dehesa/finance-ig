@@ -6,7 +6,7 @@ extension IG.Database {
     /// - parameter toVersion: The desired database version.
     /// - throws: `IG.Database.Error` exclusively if the database is already on a higher version number or there were problems during migration.
     internal final func migrate(to toVersion: IG.Database.Migration.Version) throws {
-        var info = try self.migrationInfo()
+        var info = try self._migrationInfo()
         guard info.version != toVersion else { return }
         guard info.version < toVersion else {
             let message = "The current database is already on a greater version than the one provided for migration"
@@ -15,7 +15,7 @@ extension IG.Database {
         
         repeat {
             let nextVersion = info.version.next!
-            try self.migrateToNextVersion()
+            try self._migrateToNextVersion()
             info.version = nextVersion
         } while info.version != toVersion
     }
@@ -23,17 +23,17 @@ extension IG.Database {
     /// Apply the needed migrations to reach the hosted database to the latest version.
     /// - throws: `IG.Database.Error` exclusively.
     internal final func migrateToLatestVersion() throws {
-        var info = try self.migrationInfo()
+        var info = try self._migrationInfo()
         
         while let nextVersion = info.version.next {
-            try self.migrateToNextVersion()
+            try self._migrateToNextVersion()
             info.version = nextVersion
         }
     }
     
     /// - precondition: The database version number is expected to be valid at this moment.
     /// - throws: `IG.Database.Error` exclusively.
-    private final func migrateToNextVersion() throws {
+    private final func _migrateToNextVersion() throws {
         typealias M = IG.Database.Migration
         switch M.Version(rawValue: try self.channel.unrestrictedAccess(M.version))! {
         case .v0: try M.initialMigration(channel: self.channel)
@@ -42,14 +42,14 @@ extension IG.Database {
     }
     
     /// - throws: `IG.Database.Error` exclusively.
-    private final func migrationInfo() throws -> (applicationID: Int32, version: IG.Database.Migration.Version) {
+    private final func _migrationInfo() throws -> (applicationID: Int32, version: IG.Database.Migration.Version) {
         // Retrieve the current database version
         let versionNumber = try self.channel.unrestrictedAccess(IG.Database.Migration.version)
         guard let version = IG.Database.Migration.Version(rawValue: versionNumber) else {
             if versionNumber > IG.Database.Migration.Version.latest.rawValue {
-                throw IG.Database.Error.invalidResponse(.init(#"The database version number "\#(versionNumber)" is not supported by your current library"#), suggestion: "Update the library to work with the database")
+                throw IG.Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is not supported by your current library"), suggestion: "Update the library to work with the database")
             } else {
-                throw IG.Database.Error.invalidResponse(.init(#"The database version number "\#(versionNumber)" is invalid"#), suggestion: .fileBug)
+                throw IG.Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is invalid"), suggestion: .fileBug)
             }
         }
         
@@ -77,18 +77,12 @@ extension IG.Database {
             case v1 = 1
             
             /// The last described migration.
-            static var latest: Self {
-                return Self.allCases.last!
-            }
+            static var latest: Self { Self.allCases.last! }
             
             /// Returns the next version from the current version.
-            var next: Self? {
-                return Self.init(rawValue: self.rawValue + 1)
-            }
+            var next: Self? { Self.init(rawValue: self.rawValue + 1) }
             
-            static func < (lhs: Self, rhs: Self) -> Bool {
-                return lhs.rawValue < rhs.rawValue
-            }
+            static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
         }
     }
 }

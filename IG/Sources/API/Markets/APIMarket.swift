@@ -19,7 +19,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> IG.API.Publishers.Discrete<IG.API.Market> {
+    public func get(epic: IG.Market.Epic) -> AnyPublisher<IG.API.Market,IG.API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
@@ -38,8 +38,8 @@ extension IG.API.Request.Markets {
     /// - attention: The array argument `epics` can't be bigger than 50.
     /// - parameter epics: The market epics to target onto.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Discrete<[IG.API.Market]> {
-        return Self.get(api: self.api, epics: epics)
+    public func get(epics: Set<IG.Market.Epic>) -> AnyPublisher<[IG.API.Market],IG.API.Error> {
+        Self._get(api: self.api, epics: epics)
     }
     
     /// Returns the details of the given markets.
@@ -47,9 +47,9 @@ extension IG.API.Request.Markets {
     /// This endpoint circumvents `get(epics:)` limitation of quering for 50 markets and publish the results as several values.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
-    public func getContinuously(epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Continuous<[IG.API.Market]> {
+    public func getContinuously(epics: Set<IG.Market.Epic>) -> AnyPublisher<[IG.API.Market],IG.API.Error> {
         let maxEpicsPerChunk = 50
-        guard epics.count > maxEpicsPerChunk else { return Self.get(api: api, epics: epics) }
+        guard epics.count > maxEpicsPerChunk else { return Self._get(api: api, epics: epics) }
         
         return self.api.publisher({ _ in epics.chunked(into: maxEpicsPerChunk) })
             .flatMap { (api, chunks) -> PassthroughSubject<[IG.API.Market],IG.API.Error> in
@@ -61,7 +61,7 @@ extension IG.API.Request.Markets {
                 var cancellable: AnyCancellable? = nil
                 
                 fetchChunk = { (chunkAPI: IG.API, chunkIndex) in
-                    Self.get(api: chunkAPI, epics: chunks[chunkIndex])
+                    Self._get(api: chunkAPI, epics: chunks[chunkIndex])
                         .sink(receiveCompletion: { [weak weakAPI = chunkAPI] in
                             if case .failure(let error) = $0 {
                                 subject.send(completion: .failure(error))
@@ -94,7 +94,7 @@ extension IG.API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
-    private static func get(api: API, epics: Set<IG.Market.Epic>) -> IG.API.Publishers.Discrete<[IG.API.Market]> {
+    private static func _get(api: API, epics: Set<IG.Market.Epic>) -> AnyPublisher<[IG.API.Market],IG.API.Error> {
         guard !epics.isEmpty else {
             return Just([]).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
         }
@@ -115,7 +115,7 @@ extension IG.API.Request.Markets {
                 [.init(name: "filter", value: "ALL"),
                  .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(values: true, date: true)) { (l: Self.WrapperList, _) in l.marketDetails }
+            .decodeJSON(decoder: .default(values: true, date: true)) { (l: _WrapperList, _) in l.marketDetails }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -124,7 +124,7 @@ extension IG.API.Request.Markets {
 // MARK: - Entities
 
 extension IG.API.Request.Markets {
-    private struct WrapperList: Decodable {
+    private struct _WrapperList: Decodable {
         let marketDetails: [IG.API.Market]
     }
 }
@@ -153,16 +153,16 @@ extension IG.API {
         public let snapshot: Self.Snapshot
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.instrument = try container.decode(Self.Instrument.self, forKey: .instrument)
             self.rules = try container.decode(Self.Rules.self, forKey: .rules)
             self.snapshot = try container.decode(Self.Snapshot.self, forKey: .snapshot)
             
-            let instrumentContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.InstrumentKeys.self, forKey: .instrument)
+            let instrumentContainer = try container.nestedContainer(keyedBy: _CodingKeys.InstrumentKeys.self, forKey: .instrument)
             self.identifier = try (instrumentContainer).decodeIfPresent(String.self, forKey: .identifier)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case instrument
             case rules = "dealingRules"
             case snapshot
@@ -232,7 +232,7 @@ extension IG.API.Market {
         public let sprintMarket: Self.SprintMarket?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try container.decode(String.self, forKey: .name)
             self.type = try container.decode(IG.API.Market.Instrument.Kind.self, forKey: .type)
@@ -242,8 +242,8 @@ extension IG.API.Market {
             self.currencies = try container.decodeIfPresent(Array<Self.Currency>.self, forKey: .currencies) ?? []
             
             if let wrapper = try container.decodeIfPresent([String:Array<Self.HourRange>].self, forKey: .openingTime) {
-                self.openingTime = try wrapper[Self.CodingKeys.openingMarketTimes.rawValue]
-                    ?! DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(Self.CodingKeys.openingMarketTimes.rawValue)\" was not found")
+                self.openingTime = try wrapper[_CodingKeys.openingMarketTimes.rawValue]
+                    ?> DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(_CodingKeys.openingMarketTimes.rawValue)\" was not found")
             } else {
                 self.openingTime = nil
             }
@@ -262,7 +262,7 @@ extension IG.API.Market {
             self.lotSize = try container.decode(Decimal.self, forKey: .lotSize)
             if let contractString = try container.decodeIfPresent(String.self, forKey: .contractSize) {
                 self.contractSize = try Decimal(string: contractString)
-                    ?! DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number")
+                    ?> DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number")
             } else {
                 self.contractSize = nil
             }
@@ -281,7 +281,7 @@ extension IG.API.Market {
             self.details = details.flatMap { (!$0.isEmpty) ? $0 : nil }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case epic, name, type, country, currencies
             case openingMarketTimes = "marketTimes"
             case unit, pipMeaning = "onePipMeans"
@@ -338,63 +338,61 @@ extension IG.API.Market.Instrument {
         }
         
         public init?(rawValue: String) {
-            typealias V = Self.Value
             switch rawValue {
-            case V.binary:       self = .binary
-            case V.commodities:  self = .commodities
-            case V.currencies:   self = .currencies
-            case V.indices:      self = .indices
-            case V.optionsCommodities: self = .options(.commodities)
-            case V.optionCurrencies:   self = .options(.currencies)
-            case V.optionIndices:      self = .options(.indices)
-            case V.optionRates:        self = .options(.rates)
-            case V.optionShares:       self = .options(.shares)
-            case V.rates:        self = .rates
-            case V.sectors:      self = .sectors
-            case V.shares:       self = .shares
-            case V.sprintMarket: self = .sprintMarket
-            case V.testMarket:   self = .testMarket
-            case V.bungeeCapped:       self = .bungee(.capped)
-            case V.bungeeCommodities:  self = .bungee(.commodities)
-            case V.bungeeCurrencies:   self = .bungee(.currencies)
-            case V.bungeeIndices:      self = .bungee(.indices)
-            case V.unknown:      self = .unknown
+            case _Value.binary:       self = .binary
+            case _Value.commodities:  self = .commodities
+            case _Value.currencies:   self = .currencies
+            case _Value.indices:      self = .indices
+            case _Value.optionsCommodities: self = .options(.commodities)
+            case _Value.optionCurrencies:   self = .options(.currencies)
+            case _Value.optionIndices:      self = .options(.indices)
+            case _Value.optionRates:        self = .options(.rates)
+            case _Value.optionShares:       self = .options(.shares)
+            case _Value.rates:        self = .rates
+            case _Value.sectors:      self = .sectors
+            case _Value.shares:       self = .shares
+            case _Value.sprintMarket: self = .sprintMarket
+            case _Value.testMarket:   self = .testMarket
+            case _Value.bungeeCapped:       self = .bungee(.capped)
+            case _Value.bungeeCommodities:  self = .bungee(.commodities)
+            case _Value.bungeeCurrencies:   self = .bungee(.currencies)
+            case _Value.bungeeIndices:      self = .bungee(.indices)
+            case _Value.unknown:      self = .unknown
             default: return nil
             }
         }
         
         public var rawValue: String {
-            typealias V = Self.Value
             switch self {
-            case .binary:       return V.binary
-            case .commodities:  return V.commodities
-            case .currencies:   return V.currencies
-            case .indices:      return V.indices
+            case .binary:       return _Value.binary
+            case .commodities:  return _Value.commodities
+            case .currencies:   return _Value.currencies
+            case .indices:      return _Value.indices
             case .options(let type):
                 switch type {
-                case .commodities:  return V.optionsCommodities
-                case .currencies:   return V.optionCurrencies
-                case .indices:      return V.optionIndices
-                case .rates:        return V.optionRates
-                case .shares:       return V.optionShares
+                case .commodities:  return _Value.optionsCommodities
+                case .currencies:   return _Value.optionCurrencies
+                case .indices:      return _Value.optionIndices
+                case .rates:        return _Value.optionRates
+                case .shares:       return _Value.optionShares
                 }
-            case .rates:        return V.rates
-            case .sectors:      return V.sectors
-            case .shares:       return V.shares
-            case .sprintMarket: return V.sprintMarket
-            case .testMarket:   return V.testMarket
+            case .rates:        return _Value.rates
+            case .sectors:      return _Value.sectors
+            case .shares:       return _Value.shares
+            case .sprintMarket: return _Value.sprintMarket
+            case .testMarket:   return _Value.testMarket
             case .bungee(let type):
                 switch type {
-                case .capped:       return V.bungeeCapped
-                case .commodities:  return V.bungeeCommodities
-                case .currencies:   return V.bungeeCurrencies
-                case .indices:      return V.bungeeIndices
+                case .capped:       return _Value.bungeeCapped
+                case .commodities:  return _Value.bungeeCommodities
+                case .currencies:   return _Value.bungeeCurrencies
+                case .indices:      return _Value.bungeeIndices
                 }
-            case .unknown:      return V.unknown
+            case .unknown:      return _Value.unknown
             }
         }
         
-        private enum Value {
+        private enum _Value {
             static let binary = "BINARY"
             static let commodities = "COMMODITIES"
             static let currencies = "CURRENCIES"
@@ -427,7 +425,7 @@ extension IG.API.Market.Instrument {
         public let settlementInfo: String?
 
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
 
             self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expirationDate) ?? .none
             guard container.contains(.expirationDetails), !(try container.decodeNil(forKey: .expirationDetails)) else {
@@ -436,15 +434,15 @@ extension IG.API.Market.Instrument {
                 return
             }
 
-            let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.NestedKeys.self, forKey: .expirationDetails)
+            let nestedContainer = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .expirationDetails)
             self.settlementInfo = try nestedContainer.decodeIfPresent(String.self, forKey: .settlementInfo)
             
             let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter
-                ?! DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
+                ?> DecodingError.dataCorruptedError(forKey: .lastDealingDate, in: nestedContainer, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.lastDealingDate = try nestedContainer.decodeIfPresent(Date.self, forKey: .lastDealingDate, with: formatter)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case expirationDate = "expiry"
             case expirationDetails = "expiryDetails"
 
@@ -551,7 +549,7 @@ extension IG.API.Market.Instrument {
         public let info: String
 
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter else {
                 throw DecodingError.dataCorruptedError(forKey: .lastDate, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             }
@@ -560,7 +558,7 @@ extension IG.API.Market.Instrument {
             self.info = try container.decode(String.self, forKey: .info)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case lastDate = "lastRolloverTime"
             case info = "rolloverInfo"
         }
@@ -574,7 +572,7 @@ extension IG.API.Market.Instrument {
         public let maxExpirationDate: Date
 
         public init?(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             
             switch (try container.decodeNil(forKey: .sprintMin), try container.decodeNil(forKey: .sprintMax)) {
             case (false, false): break
@@ -586,7 +584,7 @@ extension IG.API.Market.Instrument {
             self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.dateDenormalBroad)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case sprintMin = "sprintMarketsMinimumExpiryTime"
             case sprintMax = "sprintMarketsMaximumExpiryTime"
         }
@@ -610,14 +608,14 @@ extension IG.API.Market {
         
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.marketOrder = try container.decode(Self.Order.self, forKey: .marketOrder)
             self.minimumDealSize = try container.decode(IG.API.Market.Distance.self, forKey: .minimumDealSize)
             self.limit = try .init(from: decoder)
             self.stop = try .init(from: decoder)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case marketOrder = "marketOrderPreference"
             case minimumDealSize = "minDealSize"
         }
@@ -632,22 +630,22 @@ extension IG.API.Market {
             
             public init?(rawValue: String) {
                 switch rawValue {
-                case Self.Value.unavailable:  self = .unavailable
-                case Self.Value.availableOff: self = .available(isDefault: false)
-                case Self.Value.availableOn:  self = .available(isDefault: true)
+                case _Value.unavailable:  self = .unavailable
+                case _Value.availableOff: self = .available(isDefault: false)
+                case _Value.availableOn:  self = .available(isDefault: true)
                 default: return nil
                 }
             }
             
             public var rawValue: String {
                 switch self {
-                case .unavailable: return Self.Value.unavailable
-                case .available(isDefault: false): return Self.Value.availableOff
-                case .available(isDefault: true): return Self.Value.availableOn
+                case .unavailable: return _Value.unavailable
+                case .available(isDefault: false): return _Value.availableOff
+                case .available(isDefault: true): return _Value.availableOn
                 }
             }
             
-            private enum Value {
+            private enum _Value {
                 static let unavailable = "NOT_AVAILABLE"
                 static let availableOn = "AVAILABLE_DEFAULT_ON"
                 static let availableOff = "AVAILABLE_DEFAULT_OFF"
@@ -679,14 +677,14 @@ extension IG.API.Market {
             public let trailing: Self.Trailing
             
             public init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+                let container = try decoder.container(keyedBy: _CodingKeys.self)
                 self.mininumDistance = try container.decode(IG.API.Market.Distance.self, forKey: .mininumDistance)
                 self.minimumLimitedRiskDistance = try container.decode(IG.API.Market.Distance.self, forKey: .limitedRisk)
                 self.maximumDistance = try container.decode(IG.API.Market.Distance.self, forKey: .maximumDistance)
                 self.trailing = try .init(from: decoder)
             }
             
-            private enum CodingKeys: String, CodingKey {
+            private enum _CodingKeys: String, CodingKey {
                 case mininumDistance = "minNormalStopOrLimitDistance"
                 case limitedRisk = "minControlledRiskStopDistance"
                 case maximumDistance = "maxStopOrLimitDistance"
@@ -700,18 +698,18 @@ extension IG.API.Market {
                 public let minimumIncrement: IG.API.Market.Distance
                 
                 public init(from decoder: Decoder) throws {
-                    let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+                    let container = try decoder.container(keyedBy: _CodingKeys.self)
                     self.minimumIncrement = try container.decode(IG.API.Market.Distance.self, forKey: .minimumIncrement)
-                    let trailingStops = try container.decode(Self.Availability.self, forKey: .areTrailingStopsAvailable)
+                    let trailingStops = try container.decode(_Availability.self, forKey: .areTrailingStopsAvailable)
                     self.areAvailable = trailingStops == .available
                 }
                 
-                private enum CodingKeys: String, CodingKey {
+                private enum _CodingKeys: String, CodingKey {
                     case minimumIncrement = "minStepDistance"
                     case areTrailingStopsAvailable = "trailingStopsPreference"
                 }
                 
-                private enum Availability: String, Decodable {
+                private enum _Availability: String, Decodable {
                     case available = "AVAILABLE"
                     case unavailable = "NOT_AVAILABLE"
                 }
@@ -742,10 +740,10 @@ extension IG.API.Market {
         public let binaryOdds: Decimal?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             
             guard let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date else {
-                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The response date wasn't found on JSONDecoder "userInfo""#)
+                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The response date wasn't found on JSONDecoder 'userInfo'")
                 throw DecodingError.valueNotFound(Date.self, ctx)
             }
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
@@ -772,7 +770,7 @@ extension IG.API.Market {
             self.binaryOdds = try container.decodeIfPresent(Decimal.self, forKey: .binaryOdds)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case lastUpdate = "updateTime"
             case delay = "delayTime"
             case status = "marketStatus"

@@ -41,31 +41,31 @@ extension Test.Account.Error {
     }
     
     static func environmentVariableNotFound(key: String) -> Self {
-        let message = #"The target environment key "\#(key)" doesn't seem to be set"#
-        let suggestion = #"If you are running the tests through the Command line, remember to add an environment variable when running the test command. If you are running the tests with Xcode: 1. Edit the "IG" scheme. 2. Select the "Test" section. 3. Select the "Arguments" tab. 4. Add an environment variable with key "\#(key)" and the value as the location JSON file with the test account data (e.g. "file://Environment/mocked.json"). 5. Be sure to have the filled JSON account on that location"#
+        let message = "The target environment key '\(key)' doesn't seem to be set"
+        let suggestion = "If you are running the tests through the Command line, remember to add an environment variable when running the test command. If you are running the tests with Xcode: 1. Edit the 'IG' scheme. 2. Select the 'Test' section. 3. Select the 'Arguments' tab. 4. Add an environment variable with key '\(key)' and the value as the location JSON file with the test account data (e.g. 'file://Environment/mocked.json'). 5. Be sure to have the filled JSON account on that location"
         return self.init(.environmentVariableNotFound, message, suggestion: suggestion)
     }
     
     static func invalidURL(_ path: String) -> Self {
-        let message = (path.isEmpty) ? "The targeted URL is empty" : #"The URL path is "\#(path)""#
+        let message = (path.isEmpty) ? "The targeted URL is empty" : "The URL path is '\(path)'"
         let suggestion = "The given URL was invalid. Review it carefully"
         return self.init(.invalidURL, message, suggestion: suggestion)
     }
     
     static func bundleResourcesNotFound() -> Self {
-        let message = #"The test Bundle resources (i.e. "bundle.resourceURL" couldn't be loaded"#
+        let message = "The test Bundle resources (i.e. 'bundle.resourceURL' couldn't be loaded"
         let suggestion = "Please contact the repository maintainer"
         return self.init(.bundleResourcesNotFound, message, suggestion: suggestion)
     }
     
     static func dataLoadFailed(url: URL, underlyingError error: Swift.Error) -> Self {
-        let message = #"The file with URL "\#(url.absoluteString)" couldn't be loaded through "Data(contentsOf:)""#
+        let message = "The file with URL '\(url.absoluteString)' couldn't be loaded through 'Data(contentsOf:)'"
         let suggestion = "Review the URL and be sure there is a JSON file under that path"
         return self.init(.dataLoadFailed, message, suggestion: suggestion, underlying: error)
     }
     
     static func accountParsingFailed(url: URL, underlyingError error: Swift.Error) -> Self {
-        let message = #"An error was encountered decoding the Test Account JSON file at "\#(url.absoluteString)""#
+        let message = "An error was encountered decoding the Test Account JSON file at '\(url.absoluteString)"
         let suggestion = "Be sure the JSON file is valid and review the underlying error"
         return self.init(.accountParsingFailed, message, suggestion: suggestion, underlying: error)
     }

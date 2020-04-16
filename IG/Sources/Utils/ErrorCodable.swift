@@ -88,9 +88,9 @@ extension Swift.DecodingError: IG.ErrorPrintable, CustomDebugStringConvertible {
 
 // MARK: - Supporting functionality
 
-extension Swift.CodingKey {
+fileprivate extension Swift.CodingKey {
     /// Human readable print version of the coding key.
-    fileprivate var printableString: String {
+    var printableString: String {
         if let number = self.intValue {
             return String(number)
         } else {
@@ -99,8 +99,8 @@ extension Swift.CodingKey {
     }
 }
 
-extension Array where Array.Element == Swift.CodingKey {
-    fileprivate var printableString: String {
-        return self.map { $0.printableString }.joined(separator: "/")
+fileprivate extension Array where Array.Element == Swift.CodingKey {
+    var printableString: String {
+        self.map { $0.printableString }.joined(separator: "/")
     }
 }

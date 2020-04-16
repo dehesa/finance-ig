@@ -18,11 +18,11 @@ extension IG.API.Request.WorkingOrders {
     
     /// Returns all open working orders for the active account.
     /// - returns: *Future* forwarding all open working orders.
-    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.WorkingOrder]> {
+    public func getAll() -> AnyPublisher<[IG.API.WorkingOrder],IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperList, _) in w.workingOrders }
+            .decodeJSON(decoder: .default(date: true)) { (w: _WrapperList, _) in w.workingOrders }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -31,8 +31,8 @@ extension IG.API.Request.WorkingOrders {
 
 // MARK: - Entity
 
-extension IG.API.Request.WorkingOrders {
-    private struct WrapperList: Decodable {
+private extension IG.API.Request.WorkingOrders {
+    struct _WrapperList: Decodable {
         let workingOrders: [IG.API.WorkingOrder]
     }
 }
@@ -68,10 +68,10 @@ extension IG.API {
         public let market: IG.API.Node.Market
         
         public init(from decoder: Decoder) throws {
-            let topContainer = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let topContainer = try decoder.container(keyedBy: _CodingKeys.self)
             self.market = try topContainer.decode(IG.API.Node.Market.self, forKey: .market)
             
-            let container = try topContainer.nestedContainer(keyedBy: Self.CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
+            let container = try topContainer.nestedContainer(keyedBy: _CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
@@ -92,7 +92,7 @@ extension IG.API {
             }(try container.decode(String.self, forKey: .expiration))
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case workingOrder = "workingOrderData"
             case market = "marketData"
             

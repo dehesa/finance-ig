@@ -5,23 +5,23 @@ import XCTest
 /// Tests API Session related endpoints.
 final class APISessionTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Tests the Session information retrieval mechanisms.
     func testAPISession() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
 
-        guard let user = self.acc.api.user else {
+        guard let user = self._acc.api.user else {
             return XCTFail("Session tests can't be performed without username and password")
         }
 
-        api.session.login(type: .oauth, key: self.acc.api.key, user: user)
+        api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 1.2, on: self)
         XCTAssertNotNil(api.channel.credentials)
         
         let credentials = api.channel.credentials!
-        XCTAssertEqual(self.acc.api.key, credentials.key)
-        XCTAssertEqual(self.acc.api.rootURL, api.rootURL)
+        XCTAssertEqual(self._acc.api.key, credentials.key)
+        XCTAssertEqual(self._acc.api.rootURL, api.rootURL)
         
         let session = api.session.get()
             .expectsOne(timeout: 2, on: self)
@@ -42,11 +42,11 @@ final class APISessionTests: XCTestCase {
     
     /// Tests the static status events.
     func testAPIStaticStatus() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
-        guard let user = self.acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
+        guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
         XCTAssertEqual(api.status, .logout)
-        api.session.login(type: .oauth, key: self.acc.api.key, user: user)
+        api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 1.2, on: self)
         XCTAssertTrue(api.status.isReady)
         
@@ -58,13 +58,13 @@ final class APISessionTests: XCTestCase {
     /// Tests the correct status subscription.
     /// - remark: This test takes around 62 seconds to complete since it checks the OAuth expiration date (which is 60 seconds).
     func testAPIStatusSubscription() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: nil, targetQueue: nil)
-        guard let user = self.acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
+        guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
         var statuses: [IG.API.Session.Status] = []
         let cancellable = api.channel.subscribeToStatus().sink { statuses.append($0) }
         
-        api.session.login(type: .oauth, key: self.acc.api.key, user: user)
+        api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 3, on: self)
         
         guard case .ready(let limit) = api.status, limit > Date() else { return XCTFail() }

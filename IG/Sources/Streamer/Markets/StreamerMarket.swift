@@ -22,7 +22,7 @@ extension IG.Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Market> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Market,IG.Streamer.Error> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = IG.Streamer.Formatter.time
@@ -77,12 +77,12 @@ extension IG.Streamer.Market {
 extension Set where Element == IG.Streamer.Market.Field {
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
-        return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+        Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
     
     /// Returns all queryable fields.
     public static var all: Self {
-        return .init(Element.allCases)
+        .init(Element.allCases)
     }
 }
 

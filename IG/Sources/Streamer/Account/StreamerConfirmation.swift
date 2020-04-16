@@ -12,14 +12,14 @@ extension IG.Streamer.Request.Accounts {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribeToConfirmations(account: IG.Account.Identifier, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Deal> {
+    public func subscribeToConfirmations(account: IG.Account.Identifier, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Deal,IG.Streamer.Error> {
         let item = "TRADE:".appending(account.rawValue)
-        let properties = [IG.Streamer.Deal.Field.confirmations.rawValue]
+        let properties = [IG.Streamer.Deal._Field.confirmations.rawValue]
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .distinct, item: item, fields: properties, snapshot: snapshot)
             .filter {
-                guard let payload = $0[IG.Streamer.Deal.Field.confirmations.rawValue] else { return false }
+                guard let payload = $0[IG.Streamer.Deal._Field.confirmations.rawValue] else { return false }
                 return payload.isUpdated && payload.value != nil
             }.tryMap { (update) in
                 do {
@@ -38,9 +38,9 @@ extension IG.Streamer.Request.Accounts {
 
 // MARK: - Entities
 
-extension IG.Streamer.Deal {
+fileprivate extension IG.Streamer.Deal {
     /// Possible fields to subscribe to when querying account data.
-    fileprivate enum Field: String, CaseIterable {
+    enum _Field: String, CaseIterable {
         /// Trade confirmations for an account.
         case confirmations = "CONFIRMS"
 //        /// Open position updates for an account.
@@ -64,7 +64,7 @@ extension IG.Streamer {
             typealias E = IG.Streamer.Error
             
             self.account = account
-            guard let confirmationUpdate = update[Self.Field.confirmations.rawValue] else {
+            guard let confirmationUpdate = update[_Field.confirmations.rawValue] else {
                 throw E.invalidResponse("The confirmation field wasn't found in confirmation updates", item: item, update: update, underlying: nil, suggestion: E.Suggestion.fileBug)
             }
             
@@ -86,6 +86,6 @@ extension IG.Streamer {
 
 extension IG.Streamer.Deal: CustomDebugStringConvertible {
     public var debugDescription: String {
-        return "\(self.account.rawValue) \(self.confirmation.debugDescription)"
+        "\(self.account.rawValue) \(self.confirmation.debugDescription)"
     }
 }

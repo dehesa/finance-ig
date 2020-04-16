@@ -11,7 +11,7 @@ extension IG.API.Request.Accounts {
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> IG.API.Publishers.Discrete<[IG.API.Transaction]> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> AnyPublisher<[IG.API.Transaction],IG.API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -48,16 +48,16 @@ extension IG.API.Request.Accounts {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received. `page.size` references the amount of transactions forward per value.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of transactions.
-    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<[IG.API.Transaction]> {
+    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<[IG.API.Transaction],IG.API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {
-                    throw IG.API.Error.invalidRequest(.init(#"The page size must be greater than zero; however, "\#(page.size)" was provided instead"#), suggestion: .readDocs)
+                    throw IG.API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
                 }
                 guard page.number > 0 else {
-                    throw IG.API.Error.invalidRequest(.init(#"The page number must be greater than zero; however, "\#(page.number)" was provided instead"#), suggestion: .readDocs)
+                    throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
                 return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
@@ -85,7 +85,7 @@ extension IG.API.Request.Accounts {
                 return try initial.request.set { try $0.addQueries([.init(name: "pageNumber", value: String(nextPage))]) }
             }, call: { (publisher, _) in
                 publisher.send(expecting: .json, statusCode: 200)
-                    .decodeJSON(decoder: .default()) { (response: Self.PagedTransactions, _) in
+                    .decodeJSON(decoder: .default()) { (response: _PagedTransactions, _) in
                         (response.metadata.page, response.transactions)
                     }.mapError(IG.API.Error.transform)
             }).mapError(IG.API.Error.transform)
@@ -115,7 +115,7 @@ extension IG.API.Request.Accounts {
 
 extension IG.API.Request.Accounts {
     /// A single Page of transactions request.
-    private struct PagedTransactions: Decodable {
+    private struct _PagedTransactions: Decodable {
         let transactions: [IG.API.Transaction]
         let metadata: Self.Metadata
         
@@ -123,7 +123,7 @@ extension IG.API.Request.Accounts {
             let page: Self.Page
             
             init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+                let container = try decoder.container(keyedBy: _CodingKeys.self)
                 let subContainer = try container.nestedContainer(keyedBy: Self.Page.CodingKeys.self, forKey: .pageData)
                 
                 let size = try container.decode(Int.self, forKey: .size)
@@ -132,7 +132,7 @@ extension IG.API.Request.Accounts {
                 self.page = Page(number: number, size: size, count: count)
             }
             
-            private enum CodingKeys: String, CodingKey {
+            private enum _CodingKeys: String, CodingKey {
                 case size, pageData
             }
             
@@ -144,9 +144,7 @@ extension IG.API.Request.Accounts {
                 /// The total number of pages.
                 let count: Int
                 /// Returns the next page number if there are more to go (`nil` otherwise).
-                var next: Int? {
-                    return self.number < self.count ? self.number + 1 : nil
-                }
+                var next: Int? { self.number < self.count ? self.number + 1 : nil }
                 
                 enum CodingKeys: String, CodingKey {
                     case pageSize, pageNumber, totalPages
@@ -182,7 +180,7 @@ extension IG.API {
         public let isCash: Bool
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             
             self.type = try container.decode(Self.Kind.self, forKey: .type)
             self.reference = try container.decode(String.self, forKey: .reference)
@@ -220,7 +218,7 @@ extension IG.API {
             }
             
             let currencyInitial = try container.decode(String.self, forKey: .currency)
-            guard let currency = Self.currency(from: currencyInitial) else {
+            guard let currency = Self._currency(from: currencyInitial) else {
                 throw DecodingError.dataCorruptedError(forKey: .currency, in: container, debugDescription: "The currency initials \"\(currencyInitial)\" for this transaction couldn't be identified")
             }
             
@@ -239,7 +237,7 @@ extension IG.API {
             self.isCash = try container.decode(Bool.self, forKey: .isCash)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case type = "transactionType"
             case reference
             case title = "instrumentName"
@@ -264,7 +262,7 @@ extension IG.API.Transaction {
     
     /// Transform the currency initial given into  a proper ISO currency.
     /// - note: These are retrieved from `market.intrument.currencies.symbol`.
-    private static func currency(from initial: String)-> IG.Currency.Code? {
+    private static func _currency(from initial: String)-> IG.Currency.Code? {
         switch initial {
         case "E": return .eur
         case "$": return .usd

@@ -27,7 +27,7 @@ extension IG.API {
         }
         
         @inlinable public init(arrayLiteral elements: String...) {
-            guard elements.count == 2 else { fatalError(#"A "\#(Self.self)" type can only be initialized with an array with two non-empty strings"#)}
+            guard elements.count == 2 else { fatalError("A '\(Self.self)' type can only be initialized with an array with two non-empty strings") }
             self.init(.init(stringLiteral: elements[0]), .init(stringLiteral: elements[1]))
         }
     }
@@ -39,12 +39,12 @@ extension IG.API.User {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The username "\#(value)" is not in a valid format"#) }
+            guard Self._validate(value) else { fatalError("The username '\(value)' is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -55,8 +55,8 @@ extension IG.API.User {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let name = try container.decode(String.self)
-            guard Self.validate(name) else {
-                let reason = #"The username "\#(name)" doesn't conform to the validation function"#
+            guard Self._validate(name) else {
+                let reason = "The username '\(name)' doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = name
@@ -72,7 +72,7 @@ extension IG.API.User {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
@@ -83,12 +83,12 @@ extension IG.API.User {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError("The password is not in a valid format") }
+            guard Self._validate(value) else { fatalError("The password is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -99,8 +99,8 @@ extension IG.API.User {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let password = try container.decode(String.self)
-            guard Self.validate(password) else {
-                let reason = #"The password doesn't conform to the validation function"#
+            guard Self._validate(password) else {
+                let reason = "The password doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = password
@@ -116,7 +116,7 @@ extension IG.API.User {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
@@ -133,13 +133,13 @@ extension IG.API.User: IG.DebugDescriptable {
 }
 
 extension IG.API.User.Name {
-    private static func validate(_ value: String) -> Bool {
+    private static func _validate(_ value: String) -> Bool {
         let allowedRange = 1...30
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
     }
     
     /// The allowed character set for username. It is used on validation.
-    private static let allowedSet: CharacterSet = {
+    private static let _allowedSet: CharacterSet = {
         var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
         result.formUnion(CharacterSet.lowercaseANSI)
         result.formUnion(CharacterSet.uppercaseANSI)
@@ -149,7 +149,7 @@ extension IG.API.User.Name {
 }
 
 extension IG.API.User.Password {
-    private static func validate(_ value: String) -> Bool {
+    private static func _validate(_ value: String) -> Bool {
         let allowedRange = 1...350
         return allowedRange.contains(value.count)
     }

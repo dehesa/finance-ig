@@ -5,21 +5,13 @@ extension IG.Database {
     internal enum Formatter {
         /// Database *time* formatter (only giving `HH:mm:ss`).
         /// - Example: `11:43:09`
-        static var time: DateFormatter {
-            return IG.Formatter.time
-        }
-        
+        static var time: DateFormatter { IG.Formatter.time }
         /// Database *date* formatter (only giving `yyyy-MM-dd`).
         /// - Example: `2019-09-09`
-        static var date: DateFormatter {
-            return IG.Formatter.date
-        }
-        
+        static var date: DateFormatter { IG.Formatter.date }
         /// Database *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
         /// - Example: `2019-09-09 11:43:09`
-        static var timestamp: DateFormatter {
-            return IG.Formatter.timestamp
-        }
+        static var timestamp: DateFormatter { IG.Formatter.timestamp }
     }
 }
 

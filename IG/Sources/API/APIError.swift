@@ -21,7 +21,7 @@ extension IG.API {
         /// If the error contains a `responseData`, this data may be decoded into a server code message.
         public var serverCode: String? {
             guard let data = self.responseData,
-                  let payload = try? JSONDecoder().decode(Self.Payload.self, from: data) else { return nil }
+                  let payload = try? JSONDecoder().decode(_Payload.self, from: data) else { return nil }
             return payload.code
         }
         
@@ -131,17 +131,17 @@ extension IG.API.Error {
         static var readDocs: Self    { "Read the request documentation and be sure to follow all requirements" }
         static var reviewError: Self { "Review the returned error and try to fix the problem" }
         static var fileBug: Self     { "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print" }
-        static var validLimit: Self  { #"If the limit mode ".distance()" is chosen, input a positive number greater than zero. If the limit mode ".level()" is chosen, be sure the limit is above the reference level for "BUY" deals and below it for "SELL" deals"# }
-        static var validStop: Self   { #"If the stop mode ".distance()" is chose, input a positive number greater than zero. If the stop mode ".level()" is chosen, be sure the stop is below the reference level for "BUY" deals and above it for "SELL" deals"# }
+        static var validLimit: Self  { "If the limit mode '.distance()' is chosen, input a positive number greater than zero. If the limit mode '.level()' is chosen, be sure the limit is above the reference level for 'BUY' deals and below it for 'SELL' deals" }
+        static var validStop: Self   { "If the stop mode '.distance()' is chose, input a positive number greater than zero. If the stop mode '.level()' is chosen, be sure the stop is below the reference level for 'BUY' deals and above it for 'SELL' deals" }
     }
 
     /// A typical server error payload.
-    private struct Payload: Decodable {
+    private struct _Payload: Decodable {
         /// The server error code.
         let code: String
 
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.code = try container.decode(String.self, forKey: .code)
             
             let keys = container.allKeys
@@ -151,7 +151,7 @@ extension IG.API.Error {
             }
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case code = "errorCode"
         }
     }

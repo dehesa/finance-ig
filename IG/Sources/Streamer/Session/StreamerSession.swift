@@ -6,17 +6,17 @@ extension IG.Streamer.Request {
     /// Contains all functionality related to the Streamer session.
     public struct Session {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let streamer: IG.Streamer
+        fileprivate unowned let _streamer: IG.Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) { self.streamer = streamer }
+        init(streamer: IG.Streamer) { self._streamer = streamer }
     }
 }
 
 extension IG.Streamer.Request.Session {
     /// The credentials being currently used on this streamer.
     public var credentials: IG.Streamer.Credentials {
-        return self.streamer.channel.credentials
+        self._streamer.channel.credentials
     }
     
     /// Returns a publisher to subscribe to the streamer's statuses.
@@ -24,20 +24,20 @@ extension IG.Streamer.Request.Session {
     /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
     /// - returns: Publisher forwarding values in the `Streamer` queue.
     public func status() -> AnyPublisher<IG.Streamer.Session.Status,Never> {
-        return self.streamer.channel.subscribeToStatus(on: self.streamer.queue).eraseToAnyPublisher()
+        self._streamer.channel.subscribeToStatus(on: self._streamer.queue).eraseToAnyPublisher()
     }
     
     /// Connects to the Lightstreamer server specified in the `Streamer` properties.
     ///
     /// If the `Streamer` is already connected, then the *connected* status is forwarded and the publisher completes immediately.
     /// - returns: Forwards all statuses till it reliably connects to the server (in which case that status is sent and then the publisher completes). If the connection is not possible, an error is thrown.
-    public func connect() -> IG.Streamer.Publishers.Continuous<IG.Streamer.Session.Status> {
+    public func connect() -> AnyPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> {
         /// Keep the necessary state to clean up the *slate* once the publisher finishes or it is cancelled.
         var cancellable: Cancellable? = nil
         /// When triggered, it stops the status monitoring and forwarding.
         let cleanUp: ()->Void = { cancellable?.cancel(); cancellable = nil }
         
-        return DeferredPassthrough<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self.streamer] (subject) in
+        return DeferredPassthrough<IG.Streamer.Session.Status,IG.Streamer.Error> { [weak weakStreamer = self._streamer] (subject) in
             guard let streamer = weakStreamer else {
                 return subject.send(completion: .failure(.sessionExpired()))
             }
@@ -68,7 +68,7 @@ extension IG.Streamer.Request.Session {
             _ = try? streamer.channel.connect()
             
         }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)
-        .receive(on: self.streamer.queue)
+        .receive(on: self._streamer.queue)
         .eraseToAnyPublisher()
     }
     
@@ -83,7 +83,7 @@ extension IG.Streamer.Request.Session {
         /// When triggered, it stops the status monitoring and forwarding.
         let cleanUp: ()->Void = { cancellable?.cancel(); cancellable = nil }
         
-        return DeferredPassthrough<IG.Streamer.Session.Status,Never> { [weak weakStreamer = self.streamer] (subject) in
+        return DeferredPassthrough<IG.Streamer.Session.Status,Never> { [weak weakStreamer = self._streamer] (subject) in
             guard let streamer = weakStreamer else {
                 return subject.send(completion: .finished)
             }
@@ -102,7 +102,7 @@ extension IG.Streamer.Request.Session {
                 .subscribe(sink)
             streamer.channel.disconnect()
         }.handleEvents(receiveCompletion: { _ in cleanUp() }, receiveCancel: cleanUp)
-        .receive(on: self.streamer.queue)
+        .receive(on: self._streamer.queue)
         .eraseToAnyPublisher()
     }
     
@@ -115,8 +115,8 @@ extension IG.Streamer.Request.Session {
     ///
     /// - returns: Forwards all "items" that have been successfully unsubscribed, till there are no more, in which case it sends a *complete* event.
     /// - todo: Figure out a way to communicate the ongoing unsubscriptions. Currently the implementation supposes unsubscription is immediate (which most times it is).
-    public func unsubscribeAll() -> IG.Streamer.Publishers.Continuous<String> {
-        DeferredResult { [weak streamer = self.streamer] () -> Result<IG.Streamer,IG.Streamer.Error> in
+    public func unsubscribeAll() -> AnyPublisher<String,IG.Streamer.Error> {
+        DeferredResult { [weak streamer = self._streamer] () -> Result<IG.Streamer,IG.Streamer.Error> in
             guard let streamer = streamer else {
                 return .failure(.sessionExpired())
             }
@@ -149,30 +149,30 @@ extension IG.Streamer.Session {
         
         public init?(rawValue: String) {
             switch rawValue {
-            case Key.connecting.rawValue: self = .connecting
-            case Key.connectedSensing.rawValue: self = .connected(.sensing)
-            case Key.connectedWebSocketStream.rawValue: self = .connected(.websocket(isPolling: false))
-            case Key.connectedWebSocketPoll.rawValue: self = .connected(.websocket(isPolling: true))
-            case Key.connectedHTTPStream.rawValue: self = .connected(.http(isPolling: false))
-            case Key.connectedHTTPPoll.rawValue: self = .connected(.http(isPolling: true))
-            case Key.stalled.rawValue: self = .stalled
-            case Key.disconnectedRetrying.rawValue: self = .disconnected(isRetrying: true)
-            case Key.disconnectedNoRetry.rawValue: self = .disconnected(isRetrying: false)
+            case _Key.connecting.rawValue: self = .connecting
+            case _Key.connectedSensing.rawValue: self = .connected(.sensing)
+            case _Key.connectedWebSocketStream.rawValue: self = .connected(.websocket(isPolling: false))
+            case _Key.connectedWebSocketPoll.rawValue: self = .connected(.websocket(isPolling: true))
+            case _Key.connectedHTTPStream.rawValue: self = .connected(.http(isPolling: false))
+            case _Key.connectedHTTPPoll.rawValue: self = .connected(.http(isPolling: true))
+            case _Key.stalled.rawValue: self = .stalled
+            case _Key.disconnectedRetrying.rawValue: self = .disconnected(isRetrying: true)
+            case _Key.disconnectedNoRetry.rawValue: self = .disconnected(isRetrying: false)
             default: return nil
             }
         }
         
         public var rawValue: String {
             switch self {
-            case .connecting: return Key.connecting.rawValue
+            case .connecting: return _Key.connecting.rawValue
             case .connected(let connection):
                 switch connection {
-                case .sensing: return Key.connectedSensing.rawValue
-                case .websocket(let isPolling): return (!isPolling) ? Key.connectedWebSocketStream.rawValue : Key.connectedWebSocketPoll.rawValue
-                case .http(let isPolling): return (!isPolling) ? Key.connectedHTTPStream.rawValue : Key.connectedHTTPPoll.rawValue
+                case .sensing: return _Key.connectedSensing.rawValue
+                case .websocket(let isPolling): return (!isPolling) ? _Key.connectedWebSocketStream.rawValue : _Key.connectedWebSocketPoll.rawValue
+                case .http(let isPolling): return (!isPolling) ? _Key.connectedHTTPStream.rawValue : _Key.connectedHTTPPoll.rawValue
                 }
-            case .stalled: return Key.stalled.rawValue
-            case .disconnected(let isRetrying): return (!isRetrying) ? Key.disconnectedNoRetry.rawValue : Key.disconnectedRetrying.rawValue
+            case .stalled: return _Key.stalled.rawValue
+            case .disconnected(let isRetrying): return (!isRetrying) ? _Key.disconnectedNoRetry.rawValue : _Key.disconnectedRetrying.rawValue
             }
         }
         
@@ -194,7 +194,7 @@ extension IG.Streamer.Session {
         }
         
         /// State representation as the Lightstreamer needs it.
-        private enum Key: String {
+        private enum _Key: String {
             case connecting = "CONNECTING"
             case connectedSensing = "CONNECTED:STREAM-SENSING"
             case connectedWebSocketStream = "CONNECTED:WS-STREAMING"

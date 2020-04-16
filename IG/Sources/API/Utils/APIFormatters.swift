@@ -7,34 +7,34 @@ extension IG.API {
         /// - Format: `HH:mm:ss`
         /// - Example: `18:30:02`
         static var time: DateFormatter {
-            return IG.Formatter.time
+            IG.Formatter.time
         }
 
         /// Standard human readable format using the UTC calendar and timezone as `DateFormatter` base.
         /// - Format: `yyyy-MM-dd`
         /// - Example: `2019-11-25`
         static var date: DateFormatter {
-            return IG.Formatter.date
+            IG.Formatter.date
         }
 
         /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.
         /// - Format: `MMM-yy`
         /// - Example: `DEC-19`
         static var dateDenormalBroad: DateFormatter {
-            return IG.Formatter.dateDenormalBroad
+            IG.Formatter.dateDenormalBroad
         }
         
         /// Debuggable-friendly *timestamp* using the UTC calendar and timezone as `DateFormatter` base.
         /// - Example: `2019-09-09 11:43:09`
         static var timestamp: DateFormatter {
-            return IG.Formatter.timestamp
+            IG.Formatter.timestamp
         }
 
         /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
         /// - Format: `yyyy-MM-dd'T'HH:mm:ss`
         /// - Example: `2019-11-25T22:33:11`
         static var iso8601Broad: DateFormatter {
-            return IG.Formatter.iso8601Broad
+            IG.Formatter.iso8601Broad
         }
 
         /// ISO 8601 (without timezone) using the UTC calendar and timezone as `DateFormatter` base.
@@ -50,7 +50,7 @@ extension IG.API {
         /// - Format: `yyyy/MM/dd HH:mm:ss`
         /// - Example: `2019/11/25 22:33:11`
         static var humanReadable: DateFormatter {
-            return DateFormatter().set {
+            DateFormatter().set {
                 $0.dateFormat = "yyyy/MM/dd HH:mm:ss"
                 $0.calendar = IG.UTC.calendar
                 $0.timeZone = IG.UTC.timezone

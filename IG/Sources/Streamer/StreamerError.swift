@@ -107,7 +107,7 @@ extension IG.Streamer.Error {
         static var noCredentials: Self  { "No credentials were found on the Streamer instance" }
         static var unknownParsing: Self { "An unknown error occur while parsing a subscription update" }
         static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> Self {
-            .init(#"An error was encountered when parsing the value "\#(error.value)" from a "String" to a "\#(error.type)" type"#)
+            .init("An error was encountered when parsing the value '\(error.value)' from a '\(String.self)' to a '\(error.type)' type")
         }
     }
     

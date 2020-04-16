@@ -5,17 +5,17 @@ import Combine
 
 final class StreamerTradeTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Tests for the stream confirmation subscription.
     func testAccountTrade() {
-        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
+        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.status.isReady)
         
-        streamer.accounts.subscribeToConfirmations(account: self.acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
+        streamer.accounts.subscribeToConfirmations(account: self._acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
             print(confirmation)
         }
         
@@ -24,9 +24,9 @@ final class StreamerTradeTests: XCTestCase {
     }
 
     func testChain() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let (rootURL, creds) = self.streamerCredentials(from: self.acc)
+        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
@@ -34,7 +34,7 @@ final class StreamerTradeTests: XCTestCase {
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
-        let cancellable = streamer.accounts.subscribeToConfirmations(account: self.acc.identifier, snapshot: false)
+        let cancellable = streamer.accounts.subscribeToConfirmations(account: self._acc.identifier, snapshot: false)
             .sink(receiveCompletion: {
                 if case .failure(let error) = $0 {
                     XCTFail("The publisher failed unexpectedly with \(error)")
@@ -56,7 +56,7 @@ final class StreamerTradeTests: XCTestCase {
         // 3. Create the working order
         api.workingOrders.create(epic: epic, currency: .usd, direction: .buy, type: .limit, size: 1, level: level, limit: .distance(50), stop: (.distance(50), .exposed), expiration: .tillDate(Date().addingTimeInterval(60*60*5)))
             .expectsOne(timeout: 2, on: self)
-        self.wait(max: 1.2, interval: 0.2) { (expectation) in
+        self._wait(max: 1.2, interval: 0.2) { (expectation) in
             guard case .some = dealId else { return }
             expectation.fulfill()
         }
@@ -81,7 +81,7 @@ final class StreamerTradeTests: XCTestCase {
 
 extension StreamerTradeTests {
     /// Waits a maximum amount of seconds, executing the closure every amount of `interval` seconds.
-    private func wait(max maxWait: TimeInterval, interval: TimeInterval, checking: @escaping (XCTestExpectation)->Void) {
+    private func _wait(max maxWait: TimeInterval, interval: TimeInterval, checking: @escaping (XCTestExpectation)->Void) {
         precondition(interval < maxWait)
         
         let e = self.expectation(description: "Waiting a max of \(maxWait) seconds. Checking every \(interval) seconds.")

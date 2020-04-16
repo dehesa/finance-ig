@@ -4,33 +4,17 @@ import Foundation
 import SQLite3
 
 extension IG.Database {
-    /// List of custom publishers and types used with the `Combine` framework.
-    public enum Publishers {
-        /// Publisher emitting a single value followed by a successful completion
-        ///
-        /// The following behavior is guaranteed when you see this type:
-        /// - the publisher will emit a single value followed by a succesful completion, or
-        /// - the publisher will emit a `Database.Error` failure.
-        ///
-        /// If a failure is emitted, no value was sent previously.
-        public typealias Discrete<T> = Combine.AnyPublisher<T,IG.Database.Error>
-        /// Publisher that can send zero, one, or many values followed by a successful completion.
-        ///
-        /// A failure may be forwarded when processing a value.
-        public typealias Continuous<T> = Combine.AnyPublisher<T,IG.Database.Error>
-
-        /// Publisher output types.
-        internal enum Output {
-            /// Database pipeline's first stage variables: the Database instance to use and some computed values (or `Void`).
-            internal typealias Instance<T> = (database: IG.Database, values: T)
-        }
+    /// Publisher output types.
+    internal enum Transit {
+        /// Database pipeline's first stage variables: the Database instance to use and some computed values (or `Void`).
+        typealias Instance<T> = (database: IG.Database, values: T)
     }
 }
 
 extension IG.Database {
     /// Publisher sending downstream the receiving `DB` instance. If the instance has been deallocated when the chain is activated a failure is sent downstream isntead.
     /// - returns: A Combine `Future` sending a `DB` instance and completing immediately once it is activated.
-    internal var publisher: DeferredResult<IG.Database.Publishers.Output.Instance<Void>,IG.Database.Error> {
+    internal var publisher: DeferredResult<IG.Database.Transit.Instance<Void>,IG.Database.Error> {
         .init { [weak self] in
             if let self = self {
                 return .success( (self,()) )
@@ -43,7 +27,7 @@ extension IG.Database {
     /// Publisher sending downstream the receiving `Database` instance and some computed values. If the instance has been deallocated or the values cannot be generated, the publisher fails.
     /// - parameter valuesGenerator: Closure generating the values to be send downstream along with the `Database` instance.
     /// - returns: A Combine `Future` sending a `Database` instance along with some computed values and completing immediately once it is activated.
-    internal func publisher<T>(_ valuesGenerator: @escaping (_ db: IG.Database) throws -> T) -> DeferredResult<IG.Database.Publishers.Output.Instance<T>,IG.Database.Error> {
+    internal func publisher<T>(_ valuesGenerator: @escaping (_ db: IG.Database) throws -> T) -> DeferredResult<IG.Database.Transit.Instance<T>,IG.Database.Error> {
         .init { [weak self] in
             guard let self = self else { return .failure(.sessionExpired()) }
             do {
@@ -65,7 +49,7 @@ extension Publisher {
     /// - parameter statement: Opaque SQLite statement pointer to be filled by the `interaction` closure.
     /// - parameter values: Any value arriving as an output from upstream.
     /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
-    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Publishers.Output.Instance<T> {
+    internal func read<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Transit.Instance<T> {
         self.asyncTryMap(parallel: .max(1)) { (input, isCancelled, promise) in
             let mapper: (Result<R,IG.Database.Error>)->Void = { (result) in
                 switch result {
@@ -89,7 +73,7 @@ extension Publisher {
     /// - parameter values: Any value arriving as an output from upstream.
     /// - parameter isCancelled: Closure indicating whether the database request has been cancelled.
     /// - returns: A `Future`-like publisher returning a single value and completing successfully, or failing.
-    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Publishers.Output.Instance<T> {
+    internal func write<T,R>(_ interaction: @escaping (_ database: SQLite.Database, _ statement: inout SQLite.Statement?, _ values: T, _ isCancelled: ()->Bool) throws -> R) -> Combine.Publishers.AsyncTryMap<Self,R> where Output==IG.Database.Transit.Instance<T> {
         self.asyncTryMap(parallel: .max(1)) { (input, isCancelled, promise) in
             let mapper: (Result<R,IG.Database.Error>)->Void = { (result) in
                 switch result {

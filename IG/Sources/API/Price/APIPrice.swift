@@ -5,10 +5,10 @@ extension IG.API.Request {
     /// List of endpoints related to a user's activity.
     public struct Price {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let api: IG.API
+        fileprivate unowned let _api: IG.API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) { self.api = api }
+        init(api: IG.API) { self._api = api }
     }
 }
 
@@ -23,8 +23,8 @@ extension IG.API.Request.Price {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> IG.API.Publishers.Discrete<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
-        api.publisher { (api) -> DateFormatter in
+    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> AnyPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
+        _api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
@@ -36,7 +36,7 @@ extension IG.API.Request.Price {
                  .init(name: "pageSize", value: "0"),
                  .init(name: "pageNumber", value: "1") ]
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (response: Self.PagedPrices, _) in
+            .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                 (response.prices, response.metadata.allowance)
             }.mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
@@ -53,16 +53,16 @@ extension IG.API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> IG.API.Publishers.Continuous<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance)> {
-        api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
+    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
+        _api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {
-                    throw IG.API.Error.invalidRequest(.init(#"The page size must be greater than zero; however, "\#(page.size)" was provided instead"#), suggestion: .readDocs)
+                    throw IG.API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
                 }
                 guard page.number > 0 else {
-                    throw IG.API.Error.invalidRequest(.init(#"The page number must be greater than zero; however, "\#(page.number)" was provided instead"#), suggestion: .readDocs)
+                    throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
 
                 let formatter = IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
@@ -79,7 +79,7 @@ extension IG.API.Request.Price {
                 return try initial.request.set { try $0.addQueries([URLQueryItem(name: "pageNumber", value: String(pageNumber))]) }
             }, call: { (publisher, _) in
                 publisher.send(expecting: .json, statusCode: 200)
-                    .decodeJSON(decoder: .default(response: true)) { (response: Self.PagedPrices, _) in
+                    .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                         (response.metadata.page, (response.prices, response.metadata.allowance))
                     }.mapError(IG.API.Error.transform)
             }).mapError(IG.API.Error.transform)
@@ -138,7 +138,7 @@ extension IG.API.Price {
 
 extension IG.API.Request.Price {
     /// Single page of prices request.
-    private struct PagedPrices: Decodable {
+    private struct _PagedPrices: Decodable {
         let instrumentType: IG.API.Market.Instrument.Kind
         let prices: [IG.API.Price]
         let metadata: Self.Metadata
@@ -248,7 +248,7 @@ extension IG.API.Price {
         
         /// The middle price between the *bid* and the *ask* price.
         public var mid: Decimal {
-            return self.bid + 0.5 * (self.ask - self.bid)
+            self.bid + 0.5 * (self.ask - self.bid)
         }
     }
 }
@@ -264,10 +264,10 @@ extension IG.API.Price {
         public let total: UInt
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             
             guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
-                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: #"The request/response values stored in the JSONDecoder "userInfo" couldn't be found"#)
+                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The request/response values stored in the JSONDecoder 'userInfo' couldn't be found")
                 throw DecodingError.valueNotFound(HTTPURLResponse.self, ctx)
             }
             
@@ -284,7 +284,7 @@ extension IG.API.Price {
             self.total = try container.decode(UInt.self, forKey: .totalDataPoints)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case seconds = "allowanceExpiry"
             case remainingDataPoints = "remainingAllowance"
             case totalDataPoints = "totalAllowance"
@@ -300,16 +300,16 @@ extension IG.API.Price: IG.DebugDescriptable {
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("date", self.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
-        result.append("open", Self.represent(self.open))
-        result.append("close", Self.represent(self.close))
-        result.append("lowest", Self.represent(self.lowest))
-        result.append("highest", Self.represent(self.highest))
+        result.append("open", Self._represent(self.open))
+        result.append("close", Self._represent(self.close))
+        result.append("lowest", Self._represent(self.lowest))
+        result.append("highest", Self._represent(self.highest))
         result.append("volume", self.volume)
         return result.generate()
     }
     
-    private static func represent(_ point: Self.Point) -> String {
-        return "\(point.ask) ask, \(point.bid) bid"
+    private static func _represent(_ point: Self.Point) -> String {
+        "\(point.ask) ask, \(point.bid) bid"
     }
 }
 

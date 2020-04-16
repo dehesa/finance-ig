@@ -5,9 +5,9 @@ extension IG.Database {
     /// Contains the low-level functionality related to the SQLite database.
     internal final class Channel {
         /// The queue handling all database accesses.
-        private let queue: DispatchQueue
+        private let _queue: DispatchQueue
         /// The underlying SQLite instance (referencing the SQLite file).
-        private let database: SQLite.Database
+        private let _database: SQLite.Database
         /// File URL where the database can be found.
         ///
         /// If `nil`, the database is created "in-memory".
@@ -18,12 +18,12 @@ extension IG.Database {
         /// - parameter targetQueue: The target queue on which the database serializer will depend on.
         init(location: IG.Database.Location, targetQueue: DispatchQueue?) throws {
             // Research: attributes: .concurrent
-            self.queue = DispatchQueue(label: IG.Database.reverseDNS + ".priviledgeQueue", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
-            (self.rootURL, self.database) = try Self.make(location: location, queue: queue)
+            self._queue = DispatchQueue(label: IG.Database.reverseDNS + ".priviledgeQueue", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
+            (self.rootURL, self._database) = try Self._make(location: location, queue: _queue)
         }
         
         deinit {
-            Self.destroy(database: self.database, queue: self.queue)
+            Self._destroy(database: self._database, queue: self._queue)
         }
     }
 }
@@ -38,9 +38,9 @@ extension IG.Database.Channel {
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
     internal func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.queue.sync(flags: .barrier) {
-            try interaction(self.database)
+        dispatchPrecondition(condition: .notOnQueue(self._queue))
+        return try self._queue.sync(flags: .barrier) {
+            try interaction(self._database)
         }
     }
     
@@ -54,8 +54,8 @@ extension IG.Database.Channel {
     /// - returns: The result returned in the `interaction` closure.
     /// - todo: Make parallel reads (currently they are serial).
     internal func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.transactionAccess(flags: [], interaction)
+        dispatchPrecondition(condition: .notOnQueue(self._queue))
+        return try self._transactionAccess(flags: [], interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -67,8 +67,8 @@ extension IG.Database.Channel {
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
     internal func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        return try self.transactionAccess(flags: .barrier, interaction)
+        dispatchPrecondition(condition: .notOnQueue(self._queue))
+        return try self._transactionAccess(flags: .barrier, interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -79,21 +79,21 @@ extension IG.Database.Channel {
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
-    private func transactionAccess<T>(flags: DispatchWorkItemFlags, _ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
-        return try self.queue.sync(flags: flags) {
-            try sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
+    private func _transactionAccess<T>(flags: DispatchWorkItemFlags, _ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+        try self._queue.sync(flags: flags) {
+            try sqlite3_exec(self._database, "BEGIN TRANSACTION", nil, nil, nil).expects(.ok)
             
             let output: T
             do {
-                output = try interaction(self.database)
+                output = try interaction(self._database)
             } catch let error {
-                if let errorCode = sqlite3_exec(self.database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+                if let errorCode = sqlite3_exec(self._database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
                     fatalError("An error occurred (code: \(errorCode) trying to rollback an operation")
                 }
                 throw error
             }
             
-            if let errorCode = sqlite3_exec(self.database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
+            if let errorCode = sqlite3_exec(self._database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
                 fatalError("An error occurred (code: \(errorCode) trying to end a transaction")
             }
             return output
@@ -111,8 +111,8 @@ extension IG.Database.Channel {
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     internal func readAsync<T>(promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        self.asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
+        dispatchPrecondition(condition: .notOnQueue(self._queue))
+        self._asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -124,8 +124,8 @@ extension IG.Database.Channel {
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     internal func writeAsync<T>(promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
-        dispatchPrecondition(condition: .notOnQueue(self.queue))
-        self.asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
+        dispatchPrecondition(condition: .notOnQueue(self._queue))
+        self._asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
     }
     
     /// Reads and/or writes from the database in a transaction.
@@ -136,9 +136,9 @@ extension IG.Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    private func asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
-        self.queue.async(flags: flags) {
-            if let errorCode = sqlite3_exec(self.database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
+    private func _asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+        self._queue.async(flags: flags) {
+            if let errorCode = sqlite3_exec(self._database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
                 return receptionQueue.async {
                     promise(.failure( .callFailed(.execCommand, code: errorCode) ))
                 }
@@ -146,9 +146,9 @@ extension IG.Database.Channel {
             
             let output: T
             do {
-                output = try interaction(self.database)
+                output = try interaction(self._database)
             } catch let error {
-                if let errorCode = sqlite3_exec(self.database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+                if let errorCode = sqlite3_exec(self._database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
                     fatalError("An error occurred (code: \(errorCode) trying to rollback an operation")
                 }
                 
@@ -157,7 +157,7 @@ extension IG.Database.Channel {
                 }
             }
             
-            if let errorCode = sqlite3_exec(self.database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
+            if let errorCode = sqlite3_exec(self._database, "END TRANSACTION", nil, nil, nil).enforce(.ok) {
                 fatalError("An error occurred (code: \(errorCode) trying to end a transaction")
             }
             
@@ -168,13 +168,13 @@ extension IG.Database.Channel {
     }
 }
 
-extension IG.Database.Channel {
+private extension IG.Database.Channel {
     /// Opens or creates a SQLite database and returns the pointer handler to it.
     /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter queue: The queue serializing access to the database.
     /// - throws: `IG.Database.Error` exclusively.
-    private static func make(location: IG.Database.Location, queue: DispatchQueue) throws -> (rootURL: URL?, database: SQLite.Database) {
+    static func _make(location: IG.Database.Location, queue: DispatchQueue) throws -> (rootURL: URL?, database: SQLite.Database) {
         let (rootURL, path): (URL?, String)
         
         // 1. Define file path (or in-memory keyword)
@@ -185,7 +185,7 @@ extension IG.Database.Channel {
             (rootURL, path) = (url, url.path)
             // Check the URL is valid
             guard url.isFileURL else {
-                var error = IG.Database.Error.invalidRequest("The database location provided is not a valid file URL", suggestion: #"Make sure the URL is of "file://" domain"#)
+                var error = IG.Database.Error.invalidRequest("The database location provided is not a valid file URL", suggestion: "Make sure the URL is of 'file://' domain")
                 error.context.append(("Root URL", url))
                 throw error
             }
@@ -193,7 +193,7 @@ extension IG.Database.Channel {
             switch expectsExistance {
             case .some(true):
                 guard FileManager.default.fileExists(atPath: path) else {
-                    throw IG.Database.Error.invalidRequest("The database location didn't contain any SQLite database", suggestion: .init(#"Make sure the database is in location "\#(path)""#))
+                    throw IG.Database.Error.invalidRequest("The database location didn't contain any SQLite database", suggestion: .init("Make sure the database is in location '\(path)'"))
                 }
             case .some(false):
                 guard !FileManager.default.fileExists(atPath: path) else {
@@ -232,7 +232,7 @@ extension IG.Database.Channel {
         // If there is an error, it shall be thrown in the calling queue
         switch (db, error) {
         case (.some,  .none):  break
-        case (let c?, let e?): Self.destroy(database: c, queue: queue); fallthrough
+        case (let c?, let e?): Self._destroy(database: c, queue: queue); fallthrough
         case (.none,  let e?): throw e
         case (.none,  .none):  fatalError("SQLite returned SQLITE_OK, but there was no database connection pointer. This should never happen")
         }
@@ -254,7 +254,7 @@ extension IG.Database.Channel {
         
         // If there is an error, it shall be thrown in the calling queue.
         if let e = error {
-            Self.destroy(database: db!, queue: queue)
+            Self._destroy(database: db!, queue: queue)
             throw e
         }
         
@@ -264,7 +264,7 @@ extension IG.Database.Channel {
     /// Destroys/Deinitialize a low-level SQLite connection.
     /// - parameter database: The C pointer to the SQLite database.
     /// - parameter queue: The queue serializing access to the database.
-    private static func destroy(database: SQLite.Database, queue: DispatchQueue) {
+    static func _destroy(database: SQLite.Database, queue: DispatchQueue) {
         queue.async {
             // Close the database connection normally.
             let closeResult = sqlite3_close(database)

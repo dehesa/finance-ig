@@ -23,7 +23,7 @@ extension IG.API {
         public let balance: Self.Balance
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .identifier)
             self.name = try container.decode(String.self, forKey: .name)
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
@@ -38,7 +38,7 @@ extension IG.API {
             self.balance = try container.decode(Balance.self, forKey: .balance)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case identifier = "accountId"
             case name = "accountName"
             case alias = "accountAlias"

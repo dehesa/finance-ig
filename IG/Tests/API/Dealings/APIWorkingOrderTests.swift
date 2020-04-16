@@ -4,11 +4,11 @@ import XCTest
 
 final class APIWorkingOrderTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
 
         let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
             .expectsOne(timeout: 2, on: self)

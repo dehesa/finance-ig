@@ -50,9 +50,9 @@ internal enum ErrorHelper {
             case let response as URLResponse:
                 result.append(IG.ErrorHelper.representation(of: response, prefixCount: beginning.count, maxCharacters: maxCharacters))
             case let limit as IG.Deal.Limit:
-                result.append(Self.representation(of: limit.type))
+                result.append(Self._representation(of: limit.type))
             case let stop as IG.Deal.Stop:
-                result.append(Self.representation(of: stop.type))
+                result.append(Self._representation(of: stop.type))
                 result.append(", ")
                 switch stop.risk {
                 case .exposed:
@@ -60,7 +60,7 @@ internal enum ErrorHelper {
                 case .limited(let premium):
                     result.append("limited risk")
                     if let comission = premium {
-                        result.append(#" (premium "\#(comission)""#)
+                        result.append(" (premium '\(comission)'")
                     }
                 }
                 switch stop.trailing {
@@ -68,18 +68,18 @@ internal enum ErrorHelper {
                 case .dynamic(let settings):
                     result.append(", trailing")
                     if let s = settings {
-                        result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#)
+                        result.append(" distance '\(s.distance)', increment '\(s.increment)'")
                     }
                 }
             case let stopType as IG.Deal.Stop.Kind:
-                result.append(Self.representation(of: stopType))
+                result.append(Self._representation(of: stopType))
             case let stopTrailing as IG.Deal.Stop.Trailing:
                 switch stopTrailing {
                 case .static: result.append("static")
                 case .dynamic(let settings):
                     result.append("dynamic")
                     if let s = settings {
-                        result.append(#" distance "\#(s.distance)", increment "\#(s.increment)""#)
+                        result.append(" distance '\(s.distance)', increment '\(s.increment)'")
                     }
                 }
             case let code as IG.SQLite.Result:
@@ -108,20 +108,20 @@ internal enum ErrorHelper {
     /// Returns a `String` representation of a deal limit type.
     /// - parameter limitType: A type of limit for a given deal.
     /// - returns: A representation for a deal's limit.
-    private static func representation(of limitType: IG.Deal.Limit.Kind) -> String {
+    private static func _representation(of limitType: IG.Deal.Limit.Kind) -> String {
         switch limitType {
-        case .distance(let distance): return #"distance "\#(distance)""#
-        case .position(let level):    return #"level "\#(level)""#
+        case .distance(let distance): return "distance '\(distance)'"
+        case .position(let level):    return "level '\(level)'"
         }
     }
     
     /// Returns a `String` representation of a deal stop type.
     /// - parameter limitType: A type of stop for a given deal.
     /// - returns: A representation for a deal's stop.
-    private static func representation(of stopType: IG.Deal.Stop.Kind) -> String {
+    private static func _representation(of stopType: IG.Deal.Stop.Kind) -> String {
         switch stopType {
-        case .distance(let distance): return #"distance "\#(distance)""#
-        case .position(let level):    return #"level "\#(level)""#
+        case .distance(let distance): return "distance '\(distance)'"
+        case .position(let level):    return "level '\(level)'"
         }
     }
 }

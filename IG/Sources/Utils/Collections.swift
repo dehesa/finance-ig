@@ -36,7 +36,7 @@ extension RangeReplaceableCollection where Index==Int {
     /// ```
     /// - parameter size: The size of each chunk.
     internal func chunked(into size: Int) -> [Self] {
-        return stride(from: 0, to: self.count, by: size).map {
+        stride(from: 0, to: self.count, by: size).map {
             Self(self[$0 ..< Swift.min($0 + size, count)])
         }
     }

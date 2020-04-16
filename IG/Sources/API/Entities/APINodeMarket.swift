@@ -38,7 +38,7 @@ extension IG.API.Node.Market {
         public let isOTCTradeable: Bool?
 
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.exchangeIdentifier = try container.decodeIfPresent(String.self, forKey: .exchangeId)
             self.name = try container.decode(String.self, forKey: .name)
@@ -49,7 +49,7 @@ extension IG.API.Node.Market {
             self.isOTCTradeable = try container.decodeIfPresent(Bool.self, forKey: .isOTCTradeable)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case epic, exchangeId
             case name = "instrumentName"
             case type = "instrumentType"
@@ -76,17 +76,18 @@ extension IG.API.Node.Market {
         public let scalingFactor: Decimal
 
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
 
-            let responseDate = try decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date ?! DecodingError.valueNotFound(Date.self, .init(codingPath: container.codingPath, debugDescription: "The decoder was expected to have the response date in its userInfo dictionary"))
+            guard let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date else {
+                throw DecodingError.valueNotFound(Date.self, .init(codingPath: container.codingPath, debugDescription: "The decoder was expected to have the response date in its userInfo dictionary"))
+            }
             let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
-            let update = try responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) ?!
-                DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
+            guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) else {
+                throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
+            }
 
             if update > responseDate {
-                let newDate = try IG.UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) ?!
-                    DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time")
-                self.date = newDate
+                self.date = try IG.UTC.calendar.date(byAdding: DateComponents(day: -1), to: update) ?> DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "Error processing update time")
             } else {
                 self.date = update
             }
@@ -97,7 +98,7 @@ extension IG.API.Node.Market {
             self.scalingFactor = try container.decode(Decimal.self, forKey: .scalingFactor)
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case lastUpdate = "updateTimeUTC"
             case delay = "delayTime"
             case status = "marketStatus"

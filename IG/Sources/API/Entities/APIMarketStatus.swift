@@ -31,7 +31,7 @@ extension IG.API.Market {
         public let change: (net: Decimal, percentage: Decimal)
 
         public init?(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.bid = try container.decodeIfPresent(Decimal.self, forKey: .bid)
             self.ask = try container.decodeIfPresent(Decimal.self, forKey: .ask)
             let lowest = try container.decodeIfPresent(Decimal.self, forKey: .lowest)
@@ -46,7 +46,7 @@ extension IG.API.Market {
                            try container.decode(Decimal.self, forKey: .percentageChange))
         }
 
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case bid, ask = "offer"
             case lowest = "low"
             case highest = "high"

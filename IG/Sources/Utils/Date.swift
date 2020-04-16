@@ -70,7 +70,7 @@ extension DateFormatter {
     /// Debug error line to be used within the file's decoding functions.
     /// - parameter date: The date that couldn't be parsed from String to Date format.
     internal func parseErrorLine(date: String) -> String {
-        return "Date \"\(date)\" couldn't be parsed with formatter \"\(self.dateFormat!)\""
+        "Date \"\(date)\" couldn't be parsed with formatter \"\(self.dateFormat!)\""
     }
 }
 
@@ -88,7 +88,7 @@ extension SingleValueDecodingContainer {
     ///   is null.
     internal func decode(_ type: Date.Type, with formatter: DateFormatter) throws -> Date {
         let dateString = try self.decode(String.self)
-        return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
+        return try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
 }
 
@@ -105,7 +105,7 @@ extension UnkeyedDecodingContainer {
     ///   is null, or of there are no more values to decode.
     internal mutating func decode(_ type: Date.Type, with formatter: DateFormatter) throws -> Date {
         let dateString = try self.decode(String.self)
-        return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
+        return try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
     
     /// Decodes a string value (if present) and tries to transform it into a date.
@@ -121,7 +121,7 @@ extension UnkeyedDecodingContainer {
     ///   is not convertible to the requested type.
     internal mutating func decodeIfPresent(_ type: Date.Type, with formatter: DateFormatter) throws -> Date? {
         guard let dateString = try self.decodeIfPresent(String.self) else { return nil }
-        return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
+        return try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
 }
 
@@ -141,7 +141,7 @@ extension KeyedDecodingContainer {
     ///   the given key.
     internal func decode(_ type: Date.Type, forKey key: KeyedDecodingContainer<K>.Key, with formatter: DateFormatter) throws -> Date {
         let dateString = try self.decode(String.self, forKey: key)
-        return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: formatter.parseErrorLine(date: dateString))
+        return try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
     
     /// Decodes a string value for the given key (if present) and tries to transform it into a date.
@@ -160,7 +160,7 @@ extension KeyedDecodingContainer {
     ///   is not convertible to the requested type.
     internal func decodeIfPresent(_ type: Date.Type, forKey key: K, with formatter: DateFormatter) throws -> Date? {
         guard let dateString = try self.decodeIfPresent(String.self, forKey: key) else { return nil }
-        return try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: formatter.parseErrorLine(date: dateString))
+        return try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: formatter.parseErrorLine(date: dateString))
     }
 }
 

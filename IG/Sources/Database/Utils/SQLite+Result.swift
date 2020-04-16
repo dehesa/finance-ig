@@ -18,7 +18,7 @@ extension SQLite {
         
         // Returns the constant name of the result code.
         var name: String? {
-            return Self.primary[self.rawValue]?.name ?? Self.extended[self.rawValue]?.name
+            Self.primary[self.rawValue]?.name ?? Self.extended[self.rawValue]?.name
         }
         
         var description: String {
@@ -37,17 +37,17 @@ extension SQLite {
 extension IG.SQLite.Result {
     /// Booleain indicating whether the receiving result is "just" a primary result or it is a extended result.
     var isPrimary: Bool {
-        return self.rawValue >> 8 == 0
+        self.rawValue >> 8 == 0
     }
     /// Boolean indicating whether the result code is in the extended error category.
     var isExtended: Bool {
-        return self.rawValue >> 8 > 0
+        self.rawValue >> 8 > 0
     }
     /// Returns the primary result of the given result.
     ///
     /// If the result is already primary, it returns itself.
     var primary: Self {
-        return .init(trusted: self.rawValue & 0xFF)
+        .init(trusted: self.rawValue & 0xFF)
     }
     /// Boolean indicating whether the receiving result is from the category/primary of any of the given as argument.
     /// - parameter primaries: Primary results that the receiving result may be related to.
@@ -61,17 +61,17 @@ extension IG.SQLite.Result {
     
     /// Returns `true` if the code on the left matches the code on the right.
     public static func ~= (pattern: Self, code: Self) -> Bool {
-        return pattern.rawValue == code.rawValue
+        pattern.rawValue == code.rawValue
     }
     
     /// Returns `true` if the code on the left matches the code on the right.
     public static func ~= (pattern: Self, code: Int32) -> Bool {
-        return pattern.rawValue == code
+        pattern.rawValue == code
     }
     
     /// Returns `true` if the code on the left matches the code on the right.
     public static func ~= (pattern: Int32, code: Self) -> Bool {
-        return code.rawValue == pattern
+        code.rawValue == pattern
     }
 }
 
@@ -79,7 +79,7 @@ extension Int32 {
     /// Returns the result representation of an SQLite result.
     /// - precondition: This function expect the value to be a correct SQLite result. No conditions are performed.
     var result: IG.SQLite.Result {
-        return .init(trusted: self)
+        .init(trusted: self)
     }
     /// Checks that the receiving integer is equal to `value`; if so, `nil` is returned. Otherwise, returns the receiving value wrapped as a result.
     func enforce(_ value: IG.SQLite.Result) -> IG.SQLite.Result? {
@@ -93,11 +93,11 @@ extension Int32 {
     }
     
     static func == (lhs: Self, rhs: IG.SQLite.Result) -> Bool {
-        return lhs == rhs.rawValue
+        lhs == rhs.rawValue
     }
     
     static func == (lhs: IG.SQLite.Result, rhs: Self) -> Bool {
-        return lhs.rawValue == rhs
+        lhs.rawValue == rhs
     }
 }
 

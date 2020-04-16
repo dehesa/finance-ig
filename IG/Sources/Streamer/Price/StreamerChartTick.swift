@@ -10,7 +10,7 @@ extension IG.Streamer.Request.Price {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Tick> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Chart.Tick,IG.Streamer.Error> {
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         
@@ -66,12 +66,12 @@ extension IG.Streamer.Chart.Tick {
 extension Set where Element == IG.Streamer.Chart.Tick.Field {
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
-        return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+        Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
     
     /// Returns all queryable fields.
     public static var all: Self {
-        return .init(Element.allCases)
+        .init(Element.allCases)
     }
 }
 

@@ -6,9 +6,9 @@ extension IG.Database.Request {
     /// Contains all functionality related to Database user's activity, transaction, and history of prices.
     public struct Price {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let database: IG.Database
+        fileprivate unowned let _database: IG.Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: IG.Database) { self.database = database }
+        internal init(database: IG.Database) { self._database = database }
     }
 }
 
@@ -18,13 +18,13 @@ extension IG.Database.Request.Price {
     /// - parameter from: The date from which to start the query. If `nil`, the date at the beginning of the database is assumed.
     /// - parameter to: The date from which to end the query. If `nil`, the date at the end of the database is assumed.
     /// - returns: The dates under which there are prices or an empty array if no data has been previously stored for that timeframe.
-    public func getAvailableDates(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> IG.Database.Publishers.Discrete<[Date]> {
-        self.database.publisher { _ -> (tableName: String, query: String) in
+    public func getAvailableDates(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[Date],IG.Database.Error> {
+        self._database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             var query = "SELECT date FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
-                guard from <= to else { throw IG.Database.Error.invalidRequest(#"The "from" date must indicate a date before the "to" date"#, suggestion: .readDocs) }
+                guard from <= to else { throw IG.Database.Error.invalidRequest("The 'from' date must indicate a date before the 'to' date", suggestion: .readDocs) }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             case (.some, .none): query.append(" WHERE date >= ?1")
             case (.none, .some): query.append(" WHERE date <= ?1")
@@ -35,7 +35,7 @@ extension IG.Database.Request.Price {
         }.read { (sqlite, statement, input, _) in
             var result: [Date] = .init()
             // 1. Check the price table is there
-            guard try Self.existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
+            guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
             // 2. Compile the SQL statement
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
@@ -66,8 +66,8 @@ extension IG.Database.Request.Price {
     /// Returns the first available date for which there are prices stored in the database.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: The date furthest in the past stored in the database.
-    public func getFirstDate(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<Date?> {
-        self.database.publisher { _ -> String in
+    public func getFirstDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Database.Error> {
+        self._database.publisher { _ -> String in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MIN(date) FROM '\(tableName)'"
         }.read { (sqlite, statement, query, _) in
@@ -85,8 +85,8 @@ extension IG.Database.Request.Price {
     /// - warning: The table existance is not check before using this method.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: The date from "newest" date stored in the database. If `nil`, no price points are for the given table.
-    public func getLastDate(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<Date?> {
-        self.database.publisher { _ -> String in
+    public func getLastDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Database.Error> {
+        self._database.publisher { _ -> String in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MAX(date) FROM '\(tableName)'"
         }.read { (sqlite, statement, query, _) in
@@ -107,13 +107,13 @@ extension IG.Database.Request.Price {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
-    public func get(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> IG.Database.Publishers.Discrete<[IG.Database.Price]> {
-        self.database.publisher { _ -> (tableName: String, query: String) in
+    public func get(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[IG.Database.Price],IG.Database.Error> {
+        self._database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             var query = "SELECT * FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
-                guard from <= to else { throw IG.Database.Error.invalidRequest(#"The "from" date must indicate a date before the "to" date"#, suggestion: .readDocs) }
+                guard from <= to else { throw IG.Database.Error.invalidRequest("The 'from' date must indicate a date before the 'to' date", suggestion: .readDocs) }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             case (.some, .none): query.append(" WHERE date >= ?1")
             case (.none, .some): query.append(" WHERE date <= ?1")
@@ -124,7 +124,7 @@ extension IG.Database.Request.Price {
         }.read { (sqlite, statement, input, _) in
             var result: [IG.Database.Price] = .init()
             // 1. Check the price table is there.
-            guard try Self.existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
+            guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
             // 2. Compile the SQL statement
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
@@ -157,8 +157,8 @@ extension IG.Database.Request.Price {
     /// - parameter buying: The buying price at which to match the price.
     /// - parameter selling: The selling price at which to match the price.
     /// - returns: A signal with price point matching the closure as value.
-    public func first(epic: IG.Market.Epic, from: Date, to: Date?, buying: Decimal, selling: Decimal) -> IG.Database.Publishers.Discrete<IG.Database.Price?> {
-        return self.database.publisher { _ -> (tableName: String, query: String) in
+    public func first(epic: IG.Market.Epic, from: Date, to: Date?, buying: Decimal, selling: Decimal) -> AnyPublisher<IG.Database.Price?,IG.Database.Error> {
+        return self._database.publisher { _ -> (tableName: String, query: String) in
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             var query = "SELECT * FROM '\(tableName)'"
             
@@ -204,18 +204,18 @@ extension IG.Database.Request.Price {
     /// - parameter prices: The array of price points that have arrived from the server.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
-    public func update(_ prices: [IG.API.Price], epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<Never> {
-        self.database.publisher { _ in
-                Self.priceInsertionQuery(epic: epic)
+    public func update(_ prices: [IG.API.Price], epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Database.Error> {
+        self._database.publisher { _ in
+                Self._priceInsertionQuery(epic: epic)
             }.write { (sqlite, statement, input, _) -> Void in
                 // 1. Check the epic is on the Markets table.
-                guard try Self.existsMarket(epic: epic, sqlite: sqlite) else {
-                    throw IG.Database.Error.invalidRequest(.init(#"The market with epic "\#(epic)" must be in the database before storing its price points"#), suggestion: .init("Store explicitly the market and the call this function again."))
+                guard try Self._existsMarket(epic: epic, sqlite: sqlite) else {
+                    throw IG.Database.Error.invalidRequest(.init("The market with epic '\(epic)' must be in the database before storing its price points"), suggestion: .init("Store explicitly the market and the call this function again."))
                 }
                 // 2. Check the existance of the price table or create it if it is not there.
-                if try !Self.existsPriceTable(epic: epic, sqlite: sqlite) {
+                if try !Self._existsPriceTable(epic: epic, sqlite: sqlite) {
                     try sqlite3_exec(sqlite, IG.Database.Price.tableDefinition(name: input.tableName), nil, nil, nil).expects(.ok) {
-                        .callFailed(.init(#"The SQL statement to create a table for "\#(input.tableName)" failed to execute"#), code: $0)
+                        .callFailed(.init("The SQL statement to create a table for '\(input.tableName)' failed to execute"), code: $0)
                     }
                 }
                 // 3. Add the data to the database.
@@ -230,7 +230,7 @@ extension IG.Database.Request.Price {
                                             lowest: .init(bid: p.lowest.bid, ask: p.lowest.ask),
                                             highest: .init(bid: p.highest.bid, ask: p.highest.ask),
                                             volume: .init(clamping: v))
-                    price.bind(to: statement!)
+                    price._bind(to: statement!)
                     try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Price.self), code: $0) }
                     sqlite3_clear_bindings(statement)
                     sqlite3_reset(statement)
@@ -249,7 +249,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
     /// - parameter database: Database where the price data will be stored.
     /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data received should be ignored or throw an error (an break the pipeline. Even with this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
     public func updatePrice(database: IG.Database, ignoringInvalidPrices: Bool) -> AnyPublisher<IG.Database.PriceStreamed,Swift.Error> {
-        self.tryCompactMap { [weak database] (price) -> IG.Database.Publishers.Output.Instance<(query: String, data: IG.Database.PriceStreamed)>? in
+        self.tryCompactMap { [weak database] (price) -> IG.Database.Transit.Instance<(query: String, data: IG.Database.PriceStreamed)>? in
             guard let db = database else { throw IG.Database.Error.sessionExpired() }
             guard let date = price.candle.date,
                   let openBid = price.candle.open.bid,
@@ -265,7 +265,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
                 throw IG.Database.Error.invalidRequest("The emitted price value is missing some properties", suggestion: "Retry the connection")
             }
             
-            let query = IG.Database.Request.Price.priceInsertionQuery(epic: price.epic).query
+            let query = IG.Database.Request.Price._priceInsertionQuery(epic: price.epic).query
             let streamPrice = IG.Database.PriceStreamed(
                     epic: price.epic, interval: price.interval,
                     price: .init(date: date, open: .init(bid: openBid, ask: openAsk),
@@ -275,7 +275,7 @@ extension Publisher where Output==IG.Streamer.Chart.Aggregated {
             return ( db, (query, streamPrice) )
         }.write { (sqlite, statement, input, _) -> IG.Database.PriceStreamed in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-            input.data.price.bind(to: statement!)
+            input.data.price._bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Price.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
@@ -323,9 +323,7 @@ extension IG.Database.Price {
         public let ask: Decimal
         
         /// The middle price between the *bid* and the *ask* price.
-        public var mid: Decimal {
-            return self.bid + 0.5 * (self.ask - self.bid)
-        }
+        public var mid: Decimal { self.bid + 0.5 * (self.ask - self.bid) }
     }
 }
 
@@ -335,7 +333,7 @@ extension IG.Database.Price {
 
 extension IG.Database.Price {
     internal static let tableNamePrefix: String = "Price_"
-    internal static func tableDefinition(name: String) -> String { return """
+    internal static func tableDefinition(name: String) -> String { """
         CREATE TABLE '\(name)' (
             date     TEXT    NOT NULL CHECK( (date IS DATETIME(date)) AND (date <= CURRENT_TIMESTAMP) ),
             openBid  INTEGER NOT NULL,
@@ -355,9 +353,9 @@ extension IG.Database.Price {
 }
 
 fileprivate extension IG.Database.Price {
-    typealias Indices = (date: Int32, openBid: Int32, openAsk: Int32, closeBid: Int32, closeAsk: Int32, lowBid: Int32, lowAsk: Int32, highBid: Int32, highAsk: Int32, volume: Int32)
+    typealias _Indices = (date: Int32, openBid: Int32, openAsk: Int32, closeBid: Int32, closeAsk: Int32, lowBid: Int32, lowAsk: Int32, highBid: Int32, highAsk: Int32, volume: Int32)
     
-    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
+    init(statement s: SQLite.Statement, indices: _Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
         self.date = IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.date)))!
         self.open = .init(statement: s, indices: (indices.openBid, indices.openAsk))
         self.close = .init(statement: s, indices: (indices.closeBid, indices.closeAsk))
@@ -366,7 +364,7 @@ fileprivate extension IG.Database.Price {
         self.volume = Int(sqlite3_column_int(s, indices.volume))
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
         sqlite3_bind_text(statement, indices.date, IG.Database.Formatter.timestamp.string(from: self.date), -1, SQLite.Destructor.transient)
         self.open.bind(to: statement, indices: (indices.openBid, indices.openAsk))
         self.close.bind(to: statement, indices: (indices.closeBid, indices.closeAsk))
@@ -377,15 +375,15 @@ fileprivate extension IG.Database.Price {
 }
 
 fileprivate extension IG.Database.Price.Point {
-    typealias Indices = (bid: Int32, ask: Int32)
+    typealias _Indices = (bid: Int32, ask: Int32)
     static let powerOf10: Int = 5
     
-    init(statement s: SQLite.Statement, indices: Self.Indices) {
+    init(statement s: SQLite.Statement, indices: _Indices) {
         self.bid = Decimal(sqlite3_column_int(s, indices.bid), divingByPowerOf10: Self.powerOf10)
         self.ask = Decimal(sqlite3_column_int(s, indices.ask), divingByPowerOf10: Self.powerOf10)
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+    func bind(to statement: SQLite.Statement, indices: _Indices) {
         sqlite3_bind_int(statement, indices.bid, .init(clamping: self.bid, multiplyingByPowerOf10: Self.powerOf10))
         sqlite3_bind_int(statement, indices.ask, .init(clamping: self.ask, multiplyingByPowerOf10: Self.powerOf10))
     }
@@ -396,7 +394,7 @@ fileprivate extension IG.Database.Price.Point {
 extension IG.Database.Request.Price {
     /// SQLite query to insert a `IG.Database.Price` in the database.
     /// - parameter epic: The market epic being targeted.
-    fileprivate static func priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {
+    fileprivate static func _priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {
         let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
         let query = """
             INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
@@ -413,7 +411,7 @@ extension IG.Database.Request.Price {
     /// Returns a Boolean indicating whether the market is currently stored in the database.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter sqlite: SQLite pointer priviledge access.
-    private static func existsMarket(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
+    private static func _existsMarket(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         
@@ -431,7 +429,7 @@ extension IG.Database.Request.Price {
     /// Returns a Boolean indicating whether the price table exists in the database.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter sqlite: SQLite pointer priviledge access.
-    fileprivate static func existsPriceTable(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
+    fileprivate static func _existsPriceTable(epic: IG.Market.Epic, sqlite: SQLite.Database) throws -> Bool {
         var statement: SQLite.Statement? = nil
         defer { sqlite3_finalize(statement) }
         

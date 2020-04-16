@@ -13,10 +13,10 @@ extension IG.API.Request.Session {
     internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.API.Credentials,Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
-                let payload = Self.PayloadOAuth(user: user)
+                let payload = _PayloadOAuth(user: user)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth, _) -> IG.API.Credentials in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session._OAuth, _) -> IG.API.Credentials in
                 let token = IG.API.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }.eraseToAnyPublisher()
@@ -30,14 +30,14 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
     internal func refreshOAuth(token: String, key: IG.API.Key) -> AnyPublisher<IG.API.Token,Swift.Error> {
-        self.api.publisher { _ -> Self.TemporaryRefresh in
+        self.api.publisher { _ -> _TemporaryRefresh in
                 guard !token.isEmpty else { throw IG.API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
-                return Self.TemporaryRefresh(refreshToken: token, apiKey: key)
+                return _TemporaryRefresh(refreshToken: token, apiKey: key)
             }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session.OAuth.Token, _) in
+            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session._OAuth._Token, _) in
                 .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }.eraseToAnyPublisher()
     }
@@ -45,22 +45,22 @@ extension IG.API.Request.Session {
 
 // MARK: - Entities
 
-extension IG.API.Request.Session {
-    private struct PayloadOAuth: Encodable {
+private extension IG.API.Request.Session {
+    struct _PayloadOAuth: Encodable {
         let user: IG.API.User
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             try container.encode(self.user.name, forKey: .identifier)
             try container.encode(self.user.password, forKey: .password)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case identifier, password
         }
     }
     
-    private struct TemporaryRefresh {
+    struct _TemporaryRefresh {
         let refreshToken: String
         let apiKey: IG.API.Key
     }
@@ -68,9 +68,9 @@ extension IG.API.Request.Session {
 
 // MARK: Response Entities
 
-extension IG.API.Session {
+fileprivate extension IG.API.Session {
     /// Oauth credentials used to access the IG platform.
-    fileprivate struct OAuth: Decodable {
+    struct _OAuth: Decodable {
         /// Client identifier.
         let clientId: IG.Client.Identifier
         /// Active account identifier.
@@ -80,21 +80,21 @@ extension IG.API.Session {
         /// Timezone of the active account.
         let timezone: TimeZone
         /// The OAuth token granting access to the platform
-        let tokens: Self.Token
+        let tokens: _Token
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
             self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             // - warning: The OAuth login doesn't account for summer/winter time. However the certificate and getSession do.
             let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset) + 1
-            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?! DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
+            self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?> DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             
-            self.tokens = try container.decode(IG.API.Session.OAuth.Token.self, forKey: .tokens)
+            self.tokens = try container.decode(IG.API.Session._OAuth._Token.self, forKey: .tokens)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case clientId
             case accountId
             case timezoneOffset
@@ -104,9 +104,9 @@ extension IG.API.Session {
     }
 }
 
-extension IG.API.Session.OAuth {
+fileprivate extension IG.API.Session._OAuth {
     /// OAuth token with metadata information such as expiration date or refresh token.
-    fileprivate struct Token: Decodable {
+    struct _Token: Decodable {
         /// Acess token expiration date.
         let expirationDate: Date
         /// The token actually used on the requests.
@@ -119,7 +119,7 @@ extension IG.API.Session.OAuth {
         let type: String
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             
             self.accessToken = try container.decode(String.self, forKey: .accessToken)
             self.refreshToken = try container.decode(String.self, forKey: .refreshToken)
@@ -128,7 +128,7 @@ extension IG.API.Session.OAuth {
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
             let seconds = try TimeInterval(secondsString)
-                ?! DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number")
+                ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(_CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number")
             
             if let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
@@ -139,7 +139,7 @@ extension IG.API.Session.OAuth {
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case accessToken = "access_token"
             case refreshToken = "refresh_token"
             case scope

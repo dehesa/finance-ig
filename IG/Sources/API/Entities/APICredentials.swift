@@ -69,7 +69,7 @@ extension IG.API {
         
         /// Returns `true` when the `expirationDate` is in the past.
         public var isExpired: Bool {
-            return self.expirationDate < Date()
+            self.expirationDate < Date()
         }
     }
 }
@@ -83,7 +83,7 @@ extension IG.API.Token {
         case oauth(access: String, refresh: String, scope: String, type: String)
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             let access = try container.decode(String.self, forKey: .access)
             if container.contains(.security) {
                 let security = try container.decode(String.self, forKey: .security)
@@ -97,7 +97,7 @@ extension IG.API.Token {
         }
         
         public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             switch self {
             case .certificate(let access, let security):
                 try container.encode(access, forKey: .access)
@@ -110,7 +110,7 @@ extension IG.API.Token {
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case access, security
             case refresh, scope, type
         }
