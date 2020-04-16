@@ -24,7 +24,7 @@ extension IG.Streamer.Request.Price {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Chart.Aggregated> {
+    public func subscribe(epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Chart.Aggregated,IG.Streamer.Error> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -120,19 +120,19 @@ extension IG.Streamer.Chart.Aggregated {
 extension Set where Element == IG.Streamer.Chart.Aggregated.Field {
     /// Returns a set with all the candle related fields.
     public static var candle: Self {
-        return Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
+        Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
                           .lowestBid, .lowestAsk, .highestBid, .highestAsk,
                           .isFinished, .numTicks, .volume])
     }
     
     /// Returns a set with all the dayly related fields.
     public static var day: Self {
-        return Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+        Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
     
     /// Returns all queryable fields.
     public static var all: Self {
-        return .init(Element.allCases)
+        .init(Element.allCases)
     }
 }
 

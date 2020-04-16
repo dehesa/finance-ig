@@ -35,9 +35,9 @@ extension IG.Market.Expiry: Codable {
         
         let string = try container.decode(String.self)
         switch string {
-        case Self.CodingKeys.none.rawValue:
+        case _CodingKeys.none.rawValue:
             self = .none
-        case Self.CodingKeys.dfb.rawValue, Self.CodingKeys.dfb.rawValue.lowercased():
+        case _CodingKeys.dfb.rawValue, _CodingKeys.dfb.rawValue.lowercased():
             self = .dailyFunded
         default:
             if let date = IG.Formatter.dateDenormal.date(from: string) {
@@ -47,7 +47,7 @@ extension IG.Market.Expiry: Codable {
             } else if let date = IG.Formatter.iso8601Broad.date(from: string) {
                 self = .forward(date)
             } else {
-                throw DecodingError.dataCorruptedError(in: container, debugDescription: #"Market expiry couldn't be inferred from date: "\#(string)""#)
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market expiry couldn't be inferred from date: \(string)")
             }
         }
     }
@@ -56,16 +56,16 @@ extension IG.Market.Expiry: Codable {
         var container = encoder.singleValueContainer()
         switch self {
         case .none:
-            try container.encode(Self.CodingKeys.none.rawValue)
+            try container.encode(_CodingKeys.none.rawValue)
         case .dailyFunded:
-            try container.encode(Self.CodingKeys.dfb.rawValue)
+            try container.encode(_CodingKeys.dfb.rawValue)
         case .forward(let date):
             let formatter = (date.isLastDayOfMonth) ? IG.Formatter.dateDenormalBroad : IG.Formatter.dateDenormal
             try container.encode(formatter.string(from: date))
         }
     }
     
-    private enum CodingKeys: String, CodingKey {
+    private enum _CodingKeys: String, CodingKey {
         case dfb = "DFB"
         case none = "-"
     }

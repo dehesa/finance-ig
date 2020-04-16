@@ -5,11 +5,11 @@ import ConbiniForTesting
 
 final class DBForexTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Test the "successful" retrieval of forex markets from the database.
     func testForexRetrieval() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -47,7 +47,7 @@ final class DBForexTests: XCTestCase {
     
     /// Test a forex retrieval for a market that it is not there.
     func testForexRetrievalFailure() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
 
         let epics = ((1...5).map { _ in Test.Epic.forex.randomElement()! })
@@ -62,7 +62,7 @@ final class DBForexTests: XCTestCase {
 
     /// Test the currency retrieval functions.
     func testForexCurrency() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         // Retrieve 50 forex markets from the server and store them in the database.
         let epics = Test.Epic.forex.prefix(50)

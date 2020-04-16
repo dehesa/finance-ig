@@ -10,13 +10,13 @@ public final class Streamer {
     internal final let channel: IG.Streamer.Channel
     
     /// Namespace for the functionality related to managing a LightStreamer connection (e.g. open/close, status, reset, etc.).
-    public final var session: IG.Streamer.Request.Session { return .init(streamer: self) }
+    public final var session: IG.Streamer.Request.Session { .init(streamer: self) }
     /// Namespace for subscriptions related to a user's account.
-    public final var accounts: IG.Streamer.Request.Accounts { return .init(streamer: self) }
+    public final var accounts: IG.Streamer.Request.Accounts { .init(streamer: self) }
     /// Namespace for subscriptions related to market information.
-    public final var markets: IG.Streamer.Request.Markets { return .init(streamer: self) }
+    public final var markets: IG.Streamer.Request.Markets { .init(streamer: self) }
     /// Namespace for subscriptions related to 
-    public final var price: IG.Streamer.Request.Price { return .init(streamer: self) }
+    public final var price: IG.Streamer.Request.Price { .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
@@ -43,19 +43,19 @@ public final class Streamer {
     
     /// Returns the current streamer status (e.g. whether connecting, connected, disconnected, etc.).
     public final var status: IG.Streamer.Session.Status {
-        return self.channel.status
+        self.channel.status
     }
     
     /// Returns the number of subscriptions currently established (and working) at the moment.
     public final var subscriptionsCount: Int {
-        return self.channel.ongoingSubscriptions
+        self.channel.ongoingSubscriptions
     }
 }
 
 extension IG.Streamer {
     /// The reverse DNS identifier for the `Streamer` instance.
     internal static var reverseDNS: String {
-        return Bundle.IG.identifier + ".streamer"
+        Bundle.IG.identifier + ".streamer"
     }
 }
 

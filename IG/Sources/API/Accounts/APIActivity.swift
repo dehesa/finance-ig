@@ -16,7 +16,7 @@ extension IG.API.Request.Accounts {
     /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value). The valid range is between 10 and 500; anything beyond that will be clamped.
     /// - todo: validate `FIQL`.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
-    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> IG.API.Publishers.Continuous<[IG.API.Activity]> {
+    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[IG.API.Activity],IG.API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
@@ -60,20 +60,20 @@ extension IG.API.Request.Accounts {
                 }
 
                 guard let queries = URLComponents(string: next)?.queryItems else {
-                    let message = #"The paginated request for activities couldn't be processed because there were no "next" queries"#
+                    let message = "The paginated request for activities couldn't be processed because there were no 'next' queries"
                     throw IG.API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
                 }
 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
-                    let message = #"The paginated request for activies couldn't be processed because the "from" and/or "to" queries couldn't be found"#
+                    let message = "The paginated request for activies couldn't be processed because the 'from' and/or 'to' queries couldn't be found"
                     throw IG.API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
                 }
 
                 return try initial.request.set { try $0.addQueries([from, to])}
             }, call: { (publisher, _) in
                 publisher.send(expecting: .json, statusCode: 200)
-                    .decodeJSON(decoder: .default(values: true)) { (response: Self.PagedActivities, _) in
+                    .decodeJSON(decoder: .default(values: true)) { (response: _PagedActivities, _) in
                         (response.metadata.paging, response.activities)
                     }.mapError(IG.API.Error.transform)
             }).mapError(IG.API.Error.transform)
@@ -85,7 +85,7 @@ extension IG.API.Request.Accounts {
 
 extension IG.API.Request.Accounts {
     /// A single page of activity requests.
-    private struct PagedActivities: Decodable {
+    private struct _PagedActivities: Decodable {
         let activities: [IG.API.Activity]
         let metadata: Metadata
         
@@ -125,9 +125,9 @@ extension IG.API {
         public let details: Self.Details?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             let formatter = try decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter
-                ?! DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
+                ?> DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
             self.date = try container.decode(Date.self, forKey: .date, with: formatter)
             self.title = try container.decode(String.self, forKey: .title)
             self.type = try container.decode(Self.Kind.self, forKey: .type)
@@ -139,7 +139,7 @@ extension IG.API {
             self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case date, title = "description"
             case type, status, channel
             case dealIdentifier = "dealId"
@@ -214,7 +214,7 @@ extension IG.API.Activity {
         public let workingOrderExpiration: IG.API.WorkingOrder.Expiration?
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.dealReference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .dealReference)
             self.actions = try container.decode([IG.API.Activity.Action].self, forKey: .actions)
             self.marketName = try container.decode(String.self, forKey: .marketName)
@@ -232,13 +232,13 @@ extension IG.API.Activity {
                     guard let formatter = decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] as? DateFormatter else {
                         throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The date formatter supposed to be passed as user info couldn't be found")
                     }
-                    let date = try formatter.date(from: dateString) ?! DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
+                    let date = try formatter.date(from: dateString) ?> DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: dateString))
                     return .tillDate(date)
                 }
             }()
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case dealReference, actions
             case currencyCode = "currency"
             case direction, marketName, size
@@ -260,7 +260,7 @@ extension IG.API.Activity {
         
         /// Do not call! The only way to initialize is through `Decodable`.
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
             
             let type = try container.decode(String.self, forKey: .type)
@@ -284,12 +284,12 @@ extension IG.API.Activity {
             case "WORKING_ORDER_DELETED": self.type = .workingOrder(status: .deleted, type: nil)
             case "UNKNOWN":             self.type = .unknown
             default:
-                let description = #"The action type "\#(type)" couldn't be identified"#
+                let description = "The action type '\(type)' couldn't be identified"
                 throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: description)
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case type = "actionType"
             case dealIdentifier = "affectedDealId"
         }

@@ -36,13 +36,13 @@ extension IG.API.Request.Positions {
                        size: Decimal, limit: IG.Deal.Limit?,
                        stop: IG.Deal.Stop?,
                        forceOpen: Bool = true,
-                       reference: IG.Deal.Reference? = nil) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+                       reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher { _ in
-                try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
+                try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference)
             }.makeRequest(.post, "positions/otc", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -59,13 +59,13 @@ extension IG.API.Request.Positions {
     /// - note: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
     public func update(identifier: IG.Deal.Identifier,
                        limitLevel: Decimal?,
-                       stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+                       stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher { _ in
-                try Self.PayloadUpdate(limit: limitLevel, stop: stop)
+                try _PayloadUpdate(limit: limitLevel, stop: stop)
             }.makeRequest(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -80,13 +80,13 @@ extension IG.API.Request.Positions {
                        direction: IG.Deal.Direction,
                        order: IG.API.Position.Order,
                        strategy: IG.API.Position.Order.Strategy,
-                       size: Decimal) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+                       size: Decimal) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher { _ in
-                try Self.PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
+                try _PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size)
             }.makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: IG.API.HTTP.Method.delete.rawValue] }, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
+            .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -95,7 +95,7 @@ extension IG.API.Request.Positions {
 // MARK: - Entities
 
 extension IG.API.Request.Positions {
-    private struct PayloadCreation: Encodable {
+    private struct _PayloadCreation: Encodable {
         let epic: IG.Market.Epic
         let expiry: IG.Market.Expiry
         let currency: IG.Currency.Code
@@ -130,7 +130,7 @@ extension IG.API.Request.Positions {
             // Check for "forceOpen" agreement: if a limit or stop is set, then force open must be true
             let forceOpenValidation: (Bool) throws -> Void = {
                 guard $0 else {
-                    throw E.invalidRequest(#"The "forceOpen" value is invalid for the given limit or stop"#, suggestion: #"A position must set "forceOpen" to true if a limit or stop is set"#)
+                    throw E.invalidRequest("The 'forceOpen' value is invalid for the given limit or stop", suggestion: "A position must set 'forceOpen' to true if a limit or stop is set")
                 }
             }
             /// Check for limit validation.
@@ -153,7 +153,7 @@ extension IG.API.Request.Positions {
                     }
                     
                     guard case .distance(let stopDistance) = stop.type else {
-                        throw E.invalidRequest(.invalidTrailingStop, suggestion: #"If a trailing stop is chosen, only the stop type ".distance" is allowed as a stop level"#).set { $0.context.append(("Position stop", stop)) }
+                        throw E.invalidRequest(.invalidTrailingStop, suggestion: "If a trailing stop is chosen, only the stop type '.distance' is allowed as a stop level").set { $0.context.append(("Position stop", stop)) }
                     }
                     
                     guard trailing.distance.isEqual(to: stopDistance) else {
@@ -194,12 +194,12 @@ extension IG.API.Request.Positions {
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             try container.encode(self.epic, forKey: .epic)
             try container.encode(self.expiry, forKey: .expiry)
             try container.encode(self.currency, forKey: .currency)
             try container.encode(self.direction, forKey: .direction)
-            try container.encode(self.order.rawValue, forKey: .order)
+            try container.encode(self.order._rawValue, forKey: .order)
             switch order {
             case .market: break
             case .limit(level: let level):
@@ -233,7 +233,7 @@ extension IG.API.Request.Positions {
                 case .dynamic(let settings): try container.encode(true,  forKey: .isStopTrailing)
                     guard let behavior = settings else {
                         var codingPaths = container.codingPath
-                        codingPaths.append(Self.CodingKeys.isStopTrailing)
+                        codingPaths.append(_CodingKeys.isStopTrailing)
                         throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found"))
                     }
                     try container.encode(behavior.increment, forKey: .stopTrailingIncrement)
@@ -246,7 +246,7 @@ extension IG.API.Request.Positions {
             try container.encodeIfPresent(self.reference, forKey: .reference)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case epic, expiry
             case currency = "currencyCode"
             case direction
@@ -265,7 +265,7 @@ extension IG.API.Request.Positions {
 }
 
 extension IG.API.Request.Positions {
-    private struct PayloadUpdate: Encodable {
+    private struct _PayloadUpdate: Encodable {
         let limit: Decimal?
         let stop: (level: Decimal, trailing: IG.Deal.Stop.Trailing)?
         
@@ -299,7 +299,7 @@ extension IG.API.Request.Positions {
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             
             if let limit = self.limit {
                 try container.encodeIfPresent(limit, forKey: .limitLevel)
@@ -317,7 +317,7 @@ extension IG.API.Request.Positions {
                 case .dynamic(let behavior):
                     guard let behavior = behavior else {
                         var codingPaths = container.codingPath
-                        codingPaths.append(Self.CodingKeys.isTrailingStop)
+                        codingPaths.append(_CodingKeys.isTrailingStop)
                         throw EncodingError.invalidValue(stop.trailing, EncodingError.Context(codingPath: codingPaths, debugDescription: "The stop trailing behavior was not found"))
                     }
                     try container.encode(true, forKey: .isTrailingStop)
@@ -332,7 +332,7 @@ extension IG.API.Request.Positions {
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case limitLevel, stopLevel
             case isTrailingStop = "trailingStop"
             case stopTrailingDistance = "trailingStopDistance"
@@ -352,7 +352,7 @@ extension IG.API.Request.Positions {
 }
 
 extension IG.API.Request.Positions {
-    private struct PayloadDeletion: Encodable {
+    private struct _PayloadDeletion: Encodable {
         let identification: IG.API.Request.Positions.Identification
         let direction: IG.Deal.Direction
         let order: IG.API.Position.Order
@@ -375,7 +375,7 @@ extension IG.API.Request.Positions {
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             switch self.identification {
             case .identifier(let identifier):
                 try container.encode(identifier, forKey: .identifier)
@@ -385,7 +385,7 @@ extension IG.API.Request.Positions {
             }
             
             try container.encode(self.direction, forKey: .direction)
-            try container.encode(self.order.rawValue, forKey: .order)
+            try container.encode(self.order._rawValue, forKey: .order)
             switch order {
             case .limit(level: let level):
                 try container.encode(level, forKey: .level)
@@ -400,7 +400,7 @@ extension IG.API.Request.Positions {
             try container.encode(self.size, forKey: .size)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case identifier = "dealId"
             case epic, expiry
             case direction
@@ -411,9 +411,9 @@ extension IG.API.Request.Positions {
     }
 }
 
-extension IG.API.Position.Order {
+fileprivate extension IG.API.Position.Order {
     /// The representation understood by the server.
-    fileprivate var rawValue: String {
+    var _rawValue: String {
         switch self {
         case .market: return "MARKET"
         case .limit: return "LIMIT"
@@ -422,8 +422,8 @@ extension IG.API.Position.Order {
     }
 }
 
-extension IG.API.Request.Positions {
-    private struct WrapperReference: Decodable {
+private extension IG.API.Request.Positions {
+    struct _WrapperReference: Decodable {
         let dealReference: IG.Deal.Reference
     }
 }

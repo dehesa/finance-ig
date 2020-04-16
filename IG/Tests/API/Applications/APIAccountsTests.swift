@@ -5,11 +5,11 @@ import XCTest
 /// Tests API Account related endpoints.
 final class APIAccountTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Tests Account information retrieval.
     func testAccounts() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let accounts = api.accounts.getAll()
             .expectsOne(timeout: 2, on: self)
@@ -23,7 +23,7 @@ final class APIAccountTests: XCTestCase {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let initial = api.accounts.getPreferences()
             .expectsOne(timeout: 2, on: self)

@@ -7,41 +7,41 @@ extension IG.API {
         /// The `URLSession` instance performing the HTTPS requests.
         internal let session: URLSession
         /// The credentials used to call API endpoints.
-        private var secret: IG.API.Credentials?
+        private var _secret: IG.API.Credentials?
         /// A subject subscribing to the API credentials status (it doesn't send duplicates).
-        private let statusSubject: CurrentValueSubject<IG.API.Session.Status,Never>
+        private let _statusSubject: CurrentValueSubject<IG.API.Session.Status,Never>
         /// The processing queue for the status cancellable.
-        private var statusScheduler: DispatchQueue
+        private var _statusScheduler: DispatchQueue
         /// The cancellable for the expiration timer.
-        private var statusTimer: DispatchWorkItem?
+        private var _statusTimer: DispatchWorkItem?
         /// The lock used to restrict access to the credentials.
-        private let lock: UnsafeMutablePointer<os_unfair_lock>
+        private let _lock: UnsafeMutablePointer<os_unfair_lock>
         
         /// Designated initializer passing the basic requirements for an API channel.
         /// - parameter session: Real or mock URL session calling the endpoints.
         /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
         internal init(session: URLSession, credentials: IG.API.Credentials?, queue: DispatchQueue) {
             self.session = session
-            self.secret = nil
-            self.statusSubject = .init(.logout)
-            self.statusScheduler = queue
-            self.statusTimer = nil
-            self.lock = UnsafeMutablePointer.allocate(capacity: 1)
-            self.lock.initialize(to: os_unfair_lock())
+            self._secret = nil
+            self._statusSubject = .init(.logout)
+            self._statusScheduler = queue
+            self._statusTimer = nil
+            self._lock = UnsafeMutablePointer.allocate(capacity: 1)
+            self._lock.initialize(to: os_unfair_lock())
             
             guard let creds = credentials else { return }
             self.credentials = creds
         }
         
         deinit {
-            os_unfair_lock_lock(self.lock)
-            self.statusTimer?.cancel()
-            self.statusTimer = nil
-            self.secret = nil
-            os_unfair_lock_unlock(self.lock)
+            os_unfair_lock_lock(self._lock)
+            self._statusTimer?.cancel()
+            self._statusTimer = nil
+            self._secret = nil
+            os_unfair_lock_unlock(self._lock)
             self.session.invalidateAndCancel()
-            self.lock.deinitialize(count: 1)
-            self.lock.deallocate()
+            self._lock.deinitialize(count: 1)
+            self._lock.deallocate()
         }
         
         /// Returns the current credentials.
@@ -49,9 +49,9 @@ extension IG.API {
         /// If credentials are set and they are different than previous ones, a status event will be published with its appropriate case.
         internal var credentials: API.Credentials? {
             get {
-                os_unfair_lock_lock(self.lock)
-                let secret = self.secret
-                os_unfair_lock_unlock(self.lock)
+                os_unfair_lock_lock(self._lock)
+                let secret = self._secret
+                os_unfair_lock_unlock(self._lock)
                 return secret
             }
             set { self.tweakCredentials { (_) in newValue } }
@@ -63,63 +63,63 @@ extension IG.API {
         /// - parameter synchronizedClosure: Closure executing the priviledge instructions.
         /// - parameter credentials: The current API credentials (or `nil` if there are none).
         internal func tweakCredentials(_ synchronizedClosure: (_ credentials: IG.API.Credentials?) throws -> IG.API.Credentials?) rethrows {
-            os_unfair_lock_lock(self.lock)
+            os_unfair_lock_lock(self._lock)
             let newCredentials: API.Credentials?
             do {
-                newCredentials = try synchronizedClosure(self.secret)
+                newCredentials = try synchronizedClosure(self._secret)
             } catch let error {
-                os_unfair_lock_unlock(self.lock)
+                os_unfair_lock_unlock(self._lock)
                 throw error
             }
             
-            let previousDate = self.secret?.token.expirationDate
+            let previousDate = self._secret?.token.expirationDate
             let currentDate = newCredentials?.token.expirationDate
-            self.secret = newCredentials
+            self._secret = newCredentials
             // If the expiration date is exactly the same as the one stored, there is no need to send any status event.
             guard previousDate != currentDate else {
-                return os_unfair_lock_unlock(self.lock)
+                return os_unfair_lock_unlock(self._lock)
             }
             
-            self.statusTimer?.cancel()
-            self.statusTimer = nil
+            self._statusTimer?.cancel()
+            self._statusTimer = nil
             
             // If there are no credentials and before there were some (whether "ready" or "expired"), send a "logout" event.
             guard let currentExpirationDate = currentDate else {
-                os_unfair_lock_unlock(self.lock)
-                return self.statusSubject.send(.logout)
+                os_unfair_lock_unlock(self._lock)
+                return self._statusSubject.send(.logout)
             }
             
             let limitDate = Date(timeIntervalSinceNow: 0.1)
             // If the new expiration date is less than aproximately now. Set the "expired" status
             guard currentExpirationDate > limitDate else {
-                os_unfair_lock_unlock(self.lock)
+                os_unfair_lock_unlock(self._lock)
                 if let previousExpirationDate = previousDate, previousExpirationDate <= limitDate { return }
-                return self.statusSubject.send(.expired)
+                return self._statusSubject.send(.expired)
             }
             // If the code reaches here, the new expiration date is a valid date in the future
             let indicator = DispatchWorkItem { [weak self] in
-                self?.statusTimer = nil
-                self?.statusSubject.send(.expired)
+                self?._statusTimer = nil
+                self?._statusSubject.send(.expired)
             }
-            self.statusTimer = indicator
+            self._statusTimer = indicator
             
             let deadline = currentExpirationDate.timeIntervalSince(Date(timeIntervalSinceNow: -0.05))
-            os_unfair_lock_unlock(self.lock)
+            os_unfair_lock_unlock(self._lock)
             
-            self.statusSubject.send(.ready(till: currentExpirationDate))
-            self.statusScheduler.asyncAfter(deadline: .now() + deadline, execute: indicator)
+            self._statusSubject.send(.ready(till: currentExpirationDate))
+            self._statusScheduler.asyncAfter(deadline: .now() + deadline, execute: indicator)
         }
         
         /// The current status for the API credentials.
         var status: IG.API.Session.Status {
-            self.statusSubject.value
+            self._statusSubject.value
         }
         
         /// Subscribes to the credentials status (i.e. whether they are expired, etc.).
         /// - remark: This publisher filter out any status duplication; therefore each event is unique.
         /// - parameter queue: `DispatchQueue` were values are received.
-        internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> Combine.Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
-            self.statusSubject.receive(on: queue ?? self.statusScheduler)
+        internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
+            self._statusSubject.receive(on: queue ?? self._statusScheduler)
         }
     }
 }

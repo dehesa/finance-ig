@@ -4,11 +4,11 @@ import Combine
 
 final class DBMarketTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Test a market API retrieval and a database insertion.
     func testSingleMarketUpdate() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.CFD.IP"
@@ -30,7 +30,7 @@ final class DBMarketTests: XCTestCase {
     
     /// Test simple market API retrieval and database insertion.
     func testMarketUpdate() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let all = (Test.Epic.forex + Test.Epic.forexMini).sorted(by: { $0.rawValue < $1.rawValue })

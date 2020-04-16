@@ -18,11 +18,11 @@ extension IG.Streamer {
         @nonobjc final let lowlevel: LSSubscription
         
         /// The current status for the receiving subscription.
-        @nonobjc private var statusValue: IG.Streamer.Subscription.Event
+        @nonobjc private var _statusValue: IG.Streamer.Subscription.Event
         /// Returns a subject subscribing to the subscription status.
-        @nonobjc private let statusSubject: PassthroughSubject<IG.Streamer.Subscription.Event,Never>
+        @nonobjc private let _statusSubject: PassthroughSubject<IG.Streamer.Subscription.Event,Never>
         /// The lock used to restrict access to the credentials.
-        @nonobjc private let lock: UnsafeMutablePointer<os_unfair_lock>
+        @nonobjc private let _lock: UnsafeMutablePointer<os_unfair_lock>
         
         /// Initializes a subscription which is not yet connected to the server.
         ///
@@ -33,10 +33,10 @@ extension IG.Streamer {
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
         @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
-            self.lock = UnsafeMutablePointer.allocate(capacity: 1)
-            self.lock.initialize(to: os_unfair_lock())
-            self.statusValue = .unsubscribed
-            self.statusSubject = .init()
+            self._lock = UnsafeMutablePointer.allocate(capacity: 1)
+            self._lock.initialize(to: os_unfair_lock())
+            self._statusValue = .unsubscribed
+            self._statusSubject = .init()
             
             self.item = item
             self.fields = fields
@@ -48,38 +48,38 @@ extension IG.Streamer {
         }
         
         deinit {
-            precondition(!self.lowlevel.isActive)
+            assert(!self.lowlevel.isActive)
             self.lowlevel.remove(delegate: self)
         }
         
         /// Returns the current subscription status.
         @nonobjc final var status: IG.Streamer.Subscription.Event {
-            os_unfair_lock_lock(self.lock)
-            let currentStatus = self.statusValue
-            os_unfair_lock_unlock(self.lock)
+            os_unfair_lock_lock(self._lock)
+            let currentStatus = self._statusValue
+            os_unfair_lock_unlock(self._lock)
             return currentStatus
         }
         
         /// Subscribes to the subscription status events.
         ///
         /// This publisher removes duplicates (i.e. there aren't any repeating statuses).
-        @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Combine.Publishers.ReceiveOn<PassthroughSubject<Streamer.Subscription.Event,Never>,DispatchQueue> {
-            return self.statusSubject.receive(on: queue)
+        @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Publishers.ReceiveOn<PassthroughSubject<Streamer.Subscription.Event,Never>,DispatchQueue> {
+            self._statusSubject.receive(on: queue)
         }
         
         /// Receives the low-level events and send them (or not) depending on whether the event is duplicated.
         /// - parameter status: The new status receive from the low-level handling layers.
-        @nonobjc private final func receive(_ status: IG.Streamer.Subscription.Event) {
-            os_unfair_lock_lock(self.lock)
-            let previousStatus = self.statusValue
-            self.statusValue = status
+        @nonobjc private final func _receive(_ status: IG.Streamer.Subscription.Event) {
+            os_unfair_lock_lock(self._lock)
+            let previousStatus = self._statusValue
+            self._statusValue = status
             
             switch (previousStatus, status) {
             case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed):
-                os_unfair_lock_unlock(self.lock)
+                os_unfair_lock_unlock(self._lock)
             default:
-                os_unfair_lock_unlock(self.lock)
-                self.statusSubject.send(status)
+                os_unfair_lock_unlock(self._lock)
+                self._statusSubject.send(status)
             }
         }
     }
@@ -89,15 +89,15 @@ extension IG.Streamer {
 
 extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
-        self.receive(.subscribed)
+        self._receive(.subscribed)
     }
     
     @objc func didUnsubscribe(from subscription: LSSubscription) {
-        self.receive(.unsubscribed)
+        self._receive(.unsubscribed)
     }
     
     @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
-        self.receive(.error(.init(code: code, message: message)))
+        self._receive(.error(.init(code: code, message: message)))
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
@@ -106,11 +106,11 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
             let value = itemUpdate.value(withFieldName: field)
             result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
         }
-        self.receive(.updateReceived(result))
+        self._receive(.updateReceived(result))
     }
     
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {
-        self.receive(.updateLost(count: lostUpdates, item: itemName))
+        self._receive(.updateLost(count: lostUpdates, item: itemName))
     }
     
 //    @objc func didAddDelegate(to subscription: LSSubscription) {}

@@ -13,16 +13,16 @@ public final class Database {
     internal final let channel: IG.Database.Channel
     
     /// Namespace for functionality related to user accounts.
-    public final var accounts: IG.Database.Request.Accounts { return .init(database: self) }
+    public final var accounts: IG.Database.Request.Accounts { .init(database: self) }
     /// Namespace for functionality related to IG's markets.
-    public final var markets: IG.Database.Request.Markets { return .init(database: self) }
+    public final var markets: IG.Database.Request.Markets { .init(database: self) }
     /// Namespace for functionality related to price data points.
-    public final var price: IG.Database.Request.Price { return .init(database: self) }
+    public final var price: IG.Database.Request.Price { .init(database: self) }
     
     /// The database version.
-    public final var version: Int { return IG.Database.Migration.Version.latest.rawValue }
+    public final var version: Int { IG.Database.Migration.Version.latest.rawValue }
     /// The version of SQLite being used.
-    public final var sqliteVersion: String { return SQLITE_VERSION }
+    public final var sqliteVersion: String { SQLITE_VERSION }
     
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
@@ -69,14 +69,14 @@ extension IG.Database {
         do {
             result = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
         } catch let error {
-            fatalError(#"The "documents" folder in the user domain couldn't be retrieved in this system.\nUnderlying error: \#(error)"#)
+            fatalError("The 'documents' folder in the user domain couldn't be retrieved in this system.\nUnderlying error: \(error)")
         }
         return result.appendingPathComponent("IG.sqlite")
     }
     
     /// The reverse DNS identifier for the `DB` instance.
     internal static var reverseDNS: String {
-        return Bundle.IG.identifier + ".db"
+        Bundle.IG.identifier + ".db"
     }
 }
 

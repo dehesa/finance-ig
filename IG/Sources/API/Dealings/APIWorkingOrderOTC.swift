@@ -30,9 +30,9 @@ extension IG.API.Request.WorkingOrders {
                        stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?,
                        forceOpen: Bool = true,
                        expiration: IG.API.WorkingOrder.Expiration,
-                       reference: IG.Deal.Reference? = nil) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+                       reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher { _ in
-                try Self.PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
+                try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
@@ -51,9 +51,9 @@ extension IG.API.Request.WorkingOrders {
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+    public func update(identifier: IG.Deal.Identifier, type: IG.API.WorkingOrder.Kind, level: Decimal, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: IG.API.WorkingOrder.Expiration) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher { _ in
-                try Self.PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
+                try _PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.makeRequest(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
@@ -67,7 +67,7 @@ extension IG.API.Request.WorkingOrders {
     /// Deletes an OTC working order.
     /// - parameter identifier: A permanent deal reference for a confirmed working order.
     /// - returns: *Future* forwarding the deal reference.
-    public func delete(identifier: IG.Deal.Identifier) -> IG.API.Publishers.Discrete<IG.Deal.Reference> {
+    public func delete(identifier: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,IG.API.Error> {
         self.api.publisher
             .makeRequest(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -81,7 +81,7 @@ extension IG.API.Request.WorkingOrders {
 // MARK: - Entities
 
 extension IG.API.Request.WorkingOrders {
-    private struct PayloadCreation: Encodable {
+    private struct _PayloadCreation: Encodable {
         let epic: IG.Market.Epic
         let expiry: IG.Market.Expiry
         let currency: IG.Currency.Code
@@ -131,7 +131,7 @@ extension IG.API.Request.WorkingOrders {
                 }
                 
                 if case .limited = stop.risk, case .position = stop.type {
-                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: #"Only working order's stop distances may be "guaranteed stops" (or limited risk)"#).set { $0.context.append(("Working order stop", stop)) }
+                    throw IG.API.Error.invalidRequest("The given stop is invalid", suggestion: "Only working order's stop distances may be 'guaranteed stops' (or limited risk)").set { $0.context.append(("Working order stop", stop)) }
                 }
                 
                 return result
@@ -147,7 +147,7 @@ extension IG.API.Request.WorkingOrders {
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             try container.encode(self.epic, forKey: .epic)
             try container.encode(self.expiry, forKey: .expiry)
             try container.encode(self.currency, forKey: .currency)
@@ -188,7 +188,7 @@ extension IG.API.Request.WorkingOrders {
             try container.encodeIfPresent(self.reference, forKey: .reference)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case epic, expiry
             case currency = "currencyCode"
             case direction, type, size, level
@@ -203,7 +203,7 @@ extension IG.API.Request.WorkingOrders {
 }
 
 extension IG.API.Request.WorkingOrders {
-    private struct PayloadUpdate: Encodable {
+    private struct _PayloadUpdate: Encodable {
         let type: IG.API.WorkingOrder.Kind
         let level: Decimal
         let limit: IG.Deal.Limit?
@@ -236,13 +236,13 @@ extension IG.API.Request.WorkingOrders {
                 case .position(let l): result = .position(level: l)
                 case .distance(let d): result = .distance(d)
                 }
-                return try result ?! IG.API.Error.invalidRequest("The given stop is invalid", suggestion: .validStop).set { $0.context.append(("Working order stop", type)) }
+                return try result ?> IG.API.Error.invalidRequest("The given stop is invalid", suggestion: .validStop).set { $0.context.append(("Working order stop", type)) }
             }
             self.expiration = expiration
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: Self.CodingKeys.self)
+            var container = encoder.container(keyedBy: _CodingKeys.self)
             try container.encode(self.type, forKey: .type)
             try container.encode(self.level, forKey: .level)
             
@@ -267,7 +267,7 @@ extension IG.API.Request.WorkingOrders {
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case type, level
             case limitLevel, limitDistance
             case stopLevel, stopDistance

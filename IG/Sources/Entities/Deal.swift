@@ -7,12 +7,12 @@ public enum Deal {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The deal identifier "\#(value)" is not in a valid format"#) }
+            guard Self._validate(value) else { fatalError("The deal identifier '\(value)' is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -23,8 +23,8 @@ public enum Deal {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                let reason = #"The deal identifier being decoded "\#(rawValue)" doesn't conform to the validation function"#
+            guard Self._validate(rawValue) else {
+                let reason = "The deal identifier being decoded '\(rawValue)' doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = rawValue
@@ -40,7 +40,7 @@ public enum Deal {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
@@ -48,8 +48,8 @@ public enum Deal {
 extension IG.Deal.Identifier {
     /// Tests the given argument/rawValue for a matching instance.
     /// - parameter value: The future raw value of this instance.
-    private static func validate(_ value: String) -> Bool {
-        return (1...30).contains(value.count)
+    private static func _validate(_ value: String) -> Bool {
+        (1...30).contains(value.count)
     }
 }
 
@@ -59,12 +59,12 @@ extension IG.Deal {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The deal reference "\#(value)" is not in a valid format"#) }
+            guard Self._validate(value) else { fatalError("The deal reference '\(value)' is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -75,8 +75,8 @@ extension IG.Deal {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                let reason = #"The deal reference being decoded "\#(rawValue)" doesn't conform to the validation function"#
+            guard Self._validate(rawValue) else {
+                let reason = "The deal reference being decoded '\(rawValue)' doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = rawValue
@@ -92,7 +92,7 @@ extension IG.Deal {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
@@ -100,18 +100,18 @@ extension IG.Deal {
 extension IG.Deal.Reference {
     /// Tests the given argument/rawValue for a matching instance.
     /// - parameter value: The future raw value of this instance.
-    private static func validate(_ value: String) -> Bool {
+    private static func _validate(_ value: String) -> Bool {
         let allowedRange = 1...30
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
     }
     
     /// The allowed character set used on validation.
-    private static let allowedSet: CharacterSet = {
-        var result = CharacterSet(arrayLiteral: "_", "-", #"\"#)
-        result.formUnion(CharacterSet.lowercaseANSI)
-        result.formUnion(CharacterSet.uppercaseANSI)
-        result.formUnion(CharacterSet.decimalDigits)
-        return result
+    private static let _allowedSet: CharacterSet = {
+        CharacterSet(arrayLiteral: "_", "-", #"\"#).set {
+            $0.formUnion(CharacterSet.lowercaseANSI)
+            $0.formUnion(CharacterSet.uppercaseANSI)
+            $0.formUnion(CharacterSet.decimalDigits)
+        }
     }()
 }
 
@@ -145,16 +145,16 @@ extension IG.Deal {
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
             switch value {
-            case Self.CodingKeys.openA.rawValue, Self.CodingKeys.openB.rawValue: self = .open
-            case Self.CodingKeys.amended.rawValue: self = .amended
-            case Self.CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
-            case Self.CodingKeys.closedA.rawValue, Self.CodingKeys.closedB.rawValue: self = .closed
-            case Self.CodingKeys.deleted.rawValue: self = .deleted
-            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: #"The status value "\#(value)" couldn't be parsed"#)
+            case _CodingKeys.openA.rawValue, _CodingKeys.openB.rawValue: self = .open
+            case _CodingKeys.amended.rawValue: self = .amended
+            case _CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
+            case _CodingKeys.closedA.rawValue, _CodingKeys.closedB.rawValue: self = .closed
+            case _CodingKeys.deleted.rawValue: self = .deleted
+            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value '\(value)' couldn't be parsed")
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case openA = "OPEN", openB = "OPENED"
             case amended = "AMENDED"
             case partiallyClosed = "PARTIALLY_CLOSED"
@@ -186,7 +186,7 @@ extension IG.Deal {
         }
         
         public var description: String {
-            return "\(self.currencyCode)\(self.value)"
+            "\(self.currencyCode)\(self.value)"
         }
     }
 }

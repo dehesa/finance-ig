@@ -4,11 +4,11 @@ import Combine
 
 final class DBApplicationTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Tests the creation of an "in-memory" database.
     func testApplicationsInMemory() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let apiResponse = api.accounts.getApplications().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(apiResponse.isEmpty)
         

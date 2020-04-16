@@ -6,24 +6,24 @@ extension IG.Database.Request {
     /// Contains all functionality related to Database markets.
     public struct Markets {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let database: IG.Database
+        fileprivate unowned let _database: IG.Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: IG.Database) { self.database = database }
+        internal init(database: IG.Database) { self._database = database }
         
         /// It holds data and functionality related to the forex markets.
-        public var forex: IG.Database.Request.Markets.Forex { return .init(database: self.database) }
+        public var forex: IG.Database.Request.Markets.Forex { .init(database: self._database) }
     }
 }
 
 extension IG.Database.Request.Markets {
     /// Returns an array for which each element has the epic and a Boolean indicating whether the market is currently stored on the database or not.
     /// - parameter epics: Array of market identifiers to be checked against the database.
-    public func contains(epics: Set<IG.Market.Epic>) -> IG.Database.Publishers.Discrete<[(epic: IG.Market.Epic, isInDatabase: Bool)]> {
+    public func contains(epics: Set<IG.Market.Epic>) -> AnyPublisher<[(epic: IG.Market.Epic, isInDatabase: Bool)],IG.Database.Error> {
         guard !epics.isEmpty else {
             return Just([]).setFailureType(to: IG.Database.Error.self).eraseToAnyPublisher()
         }
         
-        return self.database.publisher { _ -> String in
+        return self._database.publisher { _ -> String in
                 let clause = epics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
                 return "SELECT epic FROM \(IG.Database.Market.tableName) WHERE \(clause)"
             }.read { (sqlite, statement, query, _) in
@@ -50,8 +50,8 @@ extension IG.Database.Request.Markets {
     /// Returns all markets stored in the database.
     ///
     /// Only the epic and the type of markets are returned.
-    public func getAll() -> IG.Database.Publishers.Discrete<[IG.Database.Market]> {
-        self.database.publisher { _ in
+    public func getAll() -> AnyPublisher<[IG.Database.Market],IG.Database.Error> {
+        self._database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.tableName)"
             }.read { (sqlite, statement, query, _) -> [IG.Database.Market] in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
@@ -71,8 +71,8 @@ extension IG.Database.Request.Markets {
     /// Returns the type of Market identified by the given epic.
     /// - parameter epic: Market instrument identifier.
     /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.Database.Error.invalidResponse`.
-    public func type(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Kind?> {
-        self.database.publisher { _ in
+    public func type(epic: IG.Market.Epic) -> AnyPublisher<IG.Database.Market.Kind?,IG.Database.Error> {
+        self._database.publisher { _ in
                 "SELECT type FROM \(IG.Database.Market.tableName) WHERE epic=?1"
             }.read { (sqlite, statement, query, _) -> IG.Database.Market.Kind? in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
@@ -90,15 +90,15 @@ extension IG.Database.Request.Markets {
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter market: Information returned from the server.
-    public func update(_ market: IG.API.Market...) -> IG.Database.Publishers.Discrete<Never> {
+    public func update(_ market: IG.API.Market...) -> AnyPublisher<Never,IG.Database.Error> {
         self.update(market)
     }
     
     /// Updates the database with the information received from the server.
     /// - remark: If this function encounters an error in the middle of a transaction, it keeps the values stored right before the error.
     /// - parameter markets: Information returned from the server.
-    public func update(_ markets: [IG.API.Market]) -> IG.Database.Publishers.Discrete<Never> {
-        self.database.publisher { _ in
+    public func update(_ markets: [IG.API.Market]) -> AnyPublisher<Never,IG.Database.Error> {
+        self._database.publisher { _ in
                 """
                 INSERT INTO \(IG.Database.Market.tableName) VALUES(?1, ?2)
                     ON CONFLICT(epic) DO UPDATE SET type=excluded.type
@@ -108,7 +108,7 @@ extension IG.Database.Request.Markets {
                 
                 for apiMarket in markets {
                     let dbMarket = IG.Database.Market(epic: apiMarket.instrument.epic, type: IG.Database.Market.Kind(market: apiMarket))
-                    dbMarket.bind(to: statement!)
+                    dbMarket._bind(to: statement!)
 
                     try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Market.self), code: $0) }
                     sqlite3_clear_bindings(statement)
@@ -156,7 +156,7 @@ extension IG.Database.Market {
 
 extension IG.Database.Market: DBTable {
     internal static let tableName: String = "Markets"
-    internal static var tableDefinition: String { return """
+    internal static var tableDefinition: String { """
         CREATE TABLE \(Self.tableName) (
             epic  TEXT    NOT NULL CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
             type  INTEGER,
@@ -168,14 +168,14 @@ extension IG.Database.Market: DBTable {
 }
 
 fileprivate extension IG.Database.Market {
-    typealias Indices = (epic: Int32, type: Int32)
+    typealias _Indices = (epic: Int32, type: Int32)
     
-    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1)) {
+    init(statement s: SQLite.Statement, indices: _Indices = (0, 1)) {
         self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, indices.epic)))!
         self.type = Self.Kind(rawValue: sqlite3_column_int(s, indices.type))    // Implicit SQLite conversion from `NULL` to `0`
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2)) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices = (1, 2)) {
         sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
         self.type.unwrap( none: { sqlite3_bind_null(statement, indices.type) },
                           some: { sqlite3_bind_int (statement, indices.type, $0.rawValue) })
@@ -186,7 +186,7 @@ fileprivate extension IG.Database.Market {
 
 extension IG.Database.Market.Kind: Equatable {
     public init?(rawValue: Int32) {
-        typealias V = Self.Value
+        typealias V = _Value
         switch rawValue {
         case 0: return nil
         case V.currenciesForex:  self = .currencies(.forex)
@@ -208,14 +208,14 @@ extension IG.Database.Market.Kind: Equatable {
     }
     
     public var rawValue: Int32 {
-        typealias V = Self.Value
+        typealias V = _Value
         switch self {
         case .currencies(.forex):  return V.currenciesForex
         case .indices:             return V.indices
         }
     }
     
-    private enum Value {
+    private enum _Value {
         static let currencies:       Int32 = 1
         static let currenciesForex:  Int32 = Self.currencies | (1 << 16)
         static let indices:          Int32 = 2

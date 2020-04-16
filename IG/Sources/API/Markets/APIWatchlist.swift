@@ -5,10 +5,10 @@ extension IG.API.Request {
     /// List of endpoints related to API watchlists.
     public struct Watchlists {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let api: IG.API
+        fileprivate unowned let _api: IG.API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: IG.API) { self.api = api }
+        init(api: IG.API) { self._api = api }
     }
 }
 
@@ -20,8 +20,8 @@ extension IG.API.Request.Watchlists {
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: *Future* forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
-    public func create(name: String, epics: [IG.Market.Epic]) -> IG.API.Publishers.Discrete<(identifier: String, areAllInstrumentsAdded: Bool)> {
-        self.api.publisher { _ -> Self.PayloadCreation in
+    public func create(name: String, epics: [IG.Market.Epic]) -> AnyPublisher<(identifier: String, areAllInstrumentsAdded: Bool),IG.API.Error> {
+        self._api.publisher { _ -> _PayloadCreation in
                 guard !name.isEmpty else {
                     throw IG.API.Error.invalidRequest("The watchlist name cannot be empty", suggestion: "The watchlist name must contain at least one character")
                 }
@@ -29,7 +29,7 @@ extension IG.API.Request.Watchlists {
             }.makeRequest(.post, "watchlists", version: 1, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperCreation, _) in (w.identifier, w.areAllInstrumentsAdded) }
+            .decodeJSON(decoder: .default()) { (w: _WrapperCreation, _) in (w.identifier, w.areAllInstrumentsAdded) }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -39,11 +39,11 @@ extension IG.API.Request.Watchlists {
     
     /// Returns all watchlists belonging to the active account.
     /// - returns: *Future* forwarding an array of watchlists.
-    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Watchlist]> {
-        self.api.publisher
+    public func getAll() -> AnyPublisher<[IG.API.Watchlist],IG.API.Error> {
+        self._api.publisher
             .makeRequest(.get, "watchlists", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperList, _) in w.watchlists }
+            .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in w.watchlists }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -53,14 +53,14 @@ extension IG.API.Request.Watchlists {
     /// Returns the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: *Future* forwarding all markets under the targeted watchlist.
-    public func getMarkets(from identifier: String) -> IG.API.Publishers.Discrete<[IG.API.Node.Market]> {
-        self.api.publisher { _ -> Void in
+    public func getMarkets(from identifier: String) -> AnyPublisher<[IG.API.Node.Market],IG.API.Error> {
+        self._api.publisher { _ -> Void in
                 guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(IG.API.Error.Message.emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion.emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(IG.API.Error.Message._emptyWatchlistIdentifier, suggestion: IG.API.Error.Suggestion._emptyWatchlistIdentifier)
                 }
             }.makeRequest(.get, "watchlists/\(identifier)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperWatchlist, _) in w.markets }
+            .decodeJSON(decoder: .default(date: true)) { (w: _WrapperWatchlist, _) in w.markets }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -71,10 +71,10 @@ extension IG.API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: *Future* indicating the success of the operation.
-    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> IG.API.Publishers.Discrete<Never> {
-        self.api.publisher { _ in
+    public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> AnyPublisher<Never,IG.API.Error> {
+        self._api.publisher { _ in
                 guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(._emptyWatchlistIdentifier, suggestion: ._emptyWatchlistIdentifier)
                 }
             }.makeRequest(.put, "watchlists/\(identifier)", version: 1, credentials: true, body: {
                 (.json, try JSONEncoder().encode(["epic": epic]))
@@ -92,10 +92,10 @@ extension IG.API.Request.Watchlists {
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: *Future* indicating the success of the operation.
-    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> IG.API.Publishers.Discrete<Never> {
-        self.api.publisher { _ in
+    public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> AnyPublisher<Never,IG.API.Error> {
+        self._api.publisher { _ in
                 guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(._emptyWatchlistIdentifier, suggestion: ._emptyWatchlistIdentifier)
                 }
             }.makeRequest(.delete, "watchlists/\(identifier)/\(epic.rawValue)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -110,10 +110,10 @@ extension IG.API.Request.Watchlists {
     /// Deletes the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: *Future* indicating the success of the operation.
-    public func delete(identifier: String) -> IG.API.Publishers.Discrete<Never> {
-        self.api.publisher { _ in
+    public func delete(identifier: String) -> AnyPublisher<Never,IG.API.Error> {
+        self._api.publisher { _ in
                 guard !identifier.isEmpty else {
-                    throw IG.API.Error.invalidRequest(.emptyWatchlistIdentifier, suggestion: .emptyWatchlistIdentifier)
+                    throw IG.API.Error.invalidRequest(._emptyWatchlistIdentifier, suggestion: ._emptyWatchlistIdentifier)
                 }
             }.makeRequest(.delete, "watchlists/\(identifier)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -126,15 +126,15 @@ extension IG.API.Request.Watchlists {
 
 // MARK: - Entities
 
-extension IG.API.Request.Watchlists {
-    private struct PayloadCreation: Encodable {
+private extension IG.API.Request.Watchlists {
+    struct _PayloadCreation: Encodable {
         let name: String
         let epics: [IG.Market.Epic]
     }
 }
 
-extension IG.API.Request.Watchlists {
-    private struct WrapperCreation: Decodable {
+private extension IG.API.Request.Watchlists {
+    struct _WrapperCreation: Decodable {
         let identifier: String
         let areAllInstrumentsAdded: Bool
 
@@ -156,15 +156,15 @@ extension IG.API.Request.Watchlists {
         }
     }
     
-    private struct WrapperWatchlist: Decodable {
+    struct _WrapperWatchlist: Decodable {
         let markets: [IG.API.Node.Market]
     }
     
-    private struct WrapperList: Decodable {
+    struct _WrapperList: Decodable {
         let watchlists: [IG.API.Watchlist]
     }
     
-    private struct WrapperUpdate: Decodable {
+    struct _WrapperUpdate: Decodable {
         let status: Self.Status
         
         enum Status: String, Decodable {
@@ -202,12 +202,12 @@ extension IG.API {
 
 // MARK: - Functionality
 
-extension IG.API.Error.Message {
-    fileprivate static var emptyWatchlistIdentifier: Self { "The watchlist identifier cannot be empty" }
+fileprivate extension IG.API.Error.Message {
+    static var _emptyWatchlistIdentifier: Self { "The watchlist identifier cannot be empty" }
 }
 
-extension IG.API.Error.Suggestion {
-    fileprivate static var emptyWatchlistIdentifier: Self { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
+fileprivate extension IG.API.Error.Suggestion {
+    static var _emptyWatchlistIdentifier: Self { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
 }
 
 extension IG.API.Watchlist: IG.DebugDescriptable {

@@ -28,7 +28,7 @@ internal protocol DebugDescriptable: CustomDebugStringConvertible {
 /// ```
 internal struct DebugDescription {
     /// Gathers the result so far.
-    private var result: String
+    private var _result: String
     /// The divider between each line.
     let lineSeparator: String
     /// The "spacer" indicating one level.
@@ -56,11 +56,11 @@ internal struct DebugDescription {
     /// - parameter ends: The last line of the generated result.
     init(_ start: String?, line: String = "\n", spacer: String = "\t", item: String = ": ", ends: String? = nil) {
         if let start = start {
-            self.result = start
-            self.result.append(line)
+            self._result = start
+            self._result.append(line)
             self.level = 1
         } else {
-            self.result = String()
+            self._result = String()
             self.level = 0
         }
         self.lineSeparator = line
@@ -85,11 +85,11 @@ internal struct DebugDescription {
     /// - parameter name: The beginning of the description line (the text before the `itemDelimiter`).
     /// - parameter value: A String value that will be represented after the `itemDelimiter`.
     mutating func append(_ name: String, _ value: String) {
-        self.result.append(String(repeating: self.levelMarker, count: self.level))
-        self.result.append(name)
-        self.result.append(self.itemDelimiter)
-        self.result.append(value)
-        self.result.append(self.lineSeparator)
+        self._result.append(String(repeating: self.levelMarker, count: self.level))
+        self._result.append(name)
+        self._result.append(self.itemDelimiter)
+        self._result.append(value)
+        self._result.append(self.lineSeparator)
     }
     
     /// Appends the given name, an item delimiter, a `String` value to the `String` representation, and a line separator.
@@ -184,30 +184,30 @@ internal struct DebugDescription {
     /// - parameter childrenPostfix: Characters to be included after all children have been printed. The characters will be contained in a new line.
     /// - parameter children: Closure printing all lines of the `value`. The lines will be marked a having a +1 level.
     mutating func append<T>(_ name: String, delimiter: Bool = true, _ value: T?, prefix childrenPrefix: String? = nil, postfix childrenPostfix: String? = nil, _ children: (inout Self,T)->Void) {
-        self.result.append(String(repeating: self.levelMarker, count: self.level))
-        self.result.append(name)
+        self._result.append(String(repeating: self.levelMarker, count: self.level))
+        self._result.append(name)
         if delimiter {
-            self.result.append(self.itemDelimiter)
+            self._result.append(self.itemDelimiter)
         }
         
         guard let value = value else {
-            self.result.append(Self.Symbol.nil)
-            return self.result.append(self.lineSeparator)
+            self._result.append(Self.Symbol.nil)
+            return self._result.append(self.lineSeparator)
         }
         
         if let prefix = childrenPrefix {
-            self.result.append(prefix)
+            self._result.append(prefix)
         }
-        self.result.append(self.lineSeparator)
+        self._result.append(self.lineSeparator)
         
         self.level += 1
         children(&self,value)
         self.level -= 1
         
         if let postfix = childrenPostfix {
-            self.result.append(String(repeating: self.levelMarker, count: self.level))
-            self.result.append(postfix)
-            self.result.append(self.lineSeparator)
+            self._result.append(String(repeating: self.levelMarker, count: self.level))
+            self._result.append(postfix)
+            self._result.append(self.lineSeparator)
         }
     }
     
@@ -216,10 +216,10 @@ internal struct DebugDescription {
     /// It basically append at the end of the string the final characters given in the initializer.
     func generate() -> String {
         guard let stop = self.stop else {
-            return self.result
+            return self._result
         }
         
-        var result = self.result
+        var result = self._result
         result.append(self.lineSeparator)
         result.append(stop)
         return result

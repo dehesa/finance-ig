@@ -214,8 +214,6 @@
 		8DA40AB92362D172004F596D /* Country.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA40AB72362CF17004F596D /* Country.swift */; };
 		8DAC346D233D15A90082DB1C /* APIApplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7A2149A6CE00344CBF /* APIApplications.swift */; };
 		8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7B2149A6CE00344CBF /* APIAccounts.swift */; };
-		8DAC68682372D9FD00470BA2 /* Combine+Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAC68672372D99F00470BA2 /* Combine+Streamer.swift */; };
-		8DAC68692372DA0900470BA2 /* Combine+Streamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAC68672372D99F00470BA2 /* Combine+Streamer.swift */; };
 		8DB266B7234B279300F168CE /* StreamerChartTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */; };
 		8DB266B8234B279F00F168CE /* StreamerTradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */; };
 		8DB266BA234B41B400F168CE /* StreamerLowlevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */; };
@@ -372,7 +370,6 @@
 		8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplication.swift; sourceTree = "<group>"; };
 		8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMigration.swift; sourceTree = "<group>"; };
 		8DA8F89623181E7200F1A2C0 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
-		8DAC68672372D99F00470BA2 /* Combine+Streamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Combine+Streamer.swift"; sourceTree = "<group>"; };
 		8DAEF08122F9994F005AB34C /* TestFabric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFabric.swift; sourceTree = "<group>"; };
 		8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplicationTests.swift; sourceTree = "<group>"; };
 		8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerLowlevelTests.swift; sourceTree = "<group>"; };
@@ -827,7 +824,6 @@
 			isa = PBXGroup;
 			children = (
 				8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */,
-				8DAC68672372D99F00470BA2 /* Combine+Streamer.swift */,
 				8DE2C3DB22FBF7DD00BB6261 /* StreamerFormatters.swift */,
 			);
 			path = Utils;
@@ -1338,7 +1334,6 @@
 				8D89C78F23431F1300FD0F3D /* StreamerError.swift in Sources */,
 				8D89C7972343219500FD0F3D /* StreamerFormatters.swift in Sources */,
 				8D89C790234320FE00FD0F3D /* StreamerInternals.swift in Sources */,
-				8DAC68692372DA0900470BA2 /* Combine+Streamer.swift in Sources */,
 				8D89C791234320FE00FD0F3D /* StreamerCredentials.swift in Sources */,
 				8D89C792234320FF00FD0F3D /* StreamerSubscription.swift in Sources */,
 				8D89C793234320FF00FD0F3D /* StreamerEvent.swift in Sources */,
@@ -1474,7 +1469,6 @@
 				8D376D8C234C62B2007D4A48 /* Streamer.swift in Sources */,
 				8D376D8D234C62B2007D4A48 /* StreamerError.swift in Sources */,
 				8D376D8F234C62C1007D4A48 /* StreamerInternals.swift in Sources */,
-				8DAC68682372D9FD00470BA2 /* Combine+Streamer.swift in Sources */,
 				8D376D8E234C62B2007D4A48 /* StreamerFormatters.swift in Sources */,
 				8D376D90234C62DA007D4A48 /* StreamerCredentials.swift in Sources */,
 				8D376D91234C62DA007D4A48 /* StreamerSubscription.swift in Sources */,

@@ -55,7 +55,7 @@ public enum Country: Hashable, CaseIterable, Decodable {
     case australia
     case newZealand
     
-    private static let matcher: [Country:CountryType.Type] = [
+    private static let _matcher: [Country:_CountryType.Type] = [
         .canada: Country.Canada.self,
         .unitedStates: Country.UnitedStates.self,
         .mexico: Country.Mexico.self,
@@ -112,25 +112,25 @@ public enum Country: Hashable, CaseIterable, Decodable {
     
     /// Initialize a country from its two-letter ISO 3166 code.
     public init?(alphaCode2: String) {
-        guard let result = Self.matcher.first(where: { $0.value.alphaCode2 == alphaCode2 }) else { return nil }
+        guard let result = Self._matcher.first(where: { $0.value.alphaCode2 == alphaCode2 }) else { return nil }
         self = result.key
     }
     
     /// Initialize a country from its three-letter ISO 3166 code.
     public init?(alphaCode3: String) {
-        guard let result = Self.matcher.first(where: { $0.value.alphaCode3 == alphaCode3 }) else { return nil }
+        guard let result = Self._matcher.first(where: { $0.value.alphaCode3 == alphaCode3 }) else { return nil }
         self = result.key
     }
     
     /// Initialize a country from its numeric ISO 3166 code.
     public init?(numeric: Int) {
-        guard let result = Self.matcher.first(where: { $0.value.numeric == numeric }) else { return nil }
+        guard let result = Self._matcher.first(where: { $0.value.numeric == numeric }) else { return nil }
         self = result.key
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        let closure: ((key: Country, value: CountryType.Type)) -> Bool
+        let closure: ((key: Country, value: _CountryType.Type)) -> Bool
         
         if let string = try? container.decode(String.self) {
             switch string.count {
@@ -145,31 +145,31 @@ public enum Country: Hashable, CaseIterable, Decodable {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "The country value is not a String or an Integer")
         }
         
-        guard let result = Self.matcher.first(where: closure) else {
+        guard let result = Self._matcher.first(where: closure) else {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "The decoded value is not supported.")
         }
         
         self = result.key
     }
     
-    private var underlyingType: CountryType.Type {
-        Self.matcher[self]!
+    private var _underlyingType: _CountryType.Type {
+        Self._matcher[self]!
     }
     
     /// The human readable name of the receiving country.
-    public var name: String { self.underlyingType.name }
+    public var name: String { self._underlyingType.name }
     /// The two letter ISO 3166 code.
-    public var alphaCode2: String { self.underlyingType.alphaCode2 }
+    public var alphaCode2: String { self._underlyingType.alphaCode2 }
     /// The three letter ISO 3166 code.
-    public var alphaCode3: String { self.underlyingType.alphaCode3 }
+    public var alphaCode3: String { self._underlyingType.alphaCode3 }
     /// The numeric ISO 3166 code.
-    public var numeric: Int { self.underlyingType.numeric }
+    public var numeric: Int { self._underlyingType.numeric }
 }
 
 // MARK: -
 
 /// Base for all countries.
-private protocol CountryType {
+private protocol _CountryType {
     /// The human readable name of the receiving country.
     static var name: String { get }
     /// The two letter ISO 3166 code.
@@ -182,7 +182,7 @@ private protocol CountryType {
 
 extension IG.Country {
     /// Canada.
-    private struct Canada: CountryType {
+    private struct Canada: _CountryType {
         static var name: String { "Canada" }
         static var alphaCode2: String { "CA" }
         static var alphaCode3: String { "CAN" }
@@ -190,7 +190,7 @@ extension IG.Country {
     }
     
     /// United States of America.
-    private struct UnitedStates: CountryType {
+    private struct UnitedStates: _CountryType {
         static var name: String { "United States" }
         static var alphaCode2: String { "US" }
         static var alphaCode3: String { "USA" }
@@ -198,7 +198,7 @@ extension IG.Country {
     }
     
     /// México.
-    private struct Mexico: CountryType {
+    private struct Mexico: _CountryType {
         static var name: String { "Mexico" }
         static var alphaCode2: String { "MX" }
         static var alphaCode3: String { "MEX" }
@@ -206,7 +206,7 @@ extension IG.Country {
     }
     
     /// Colombia.
-    private struct Colombia: CountryType {
+    private struct Colombia: _CountryType {
         static var name: String { "Colombia" }
         static var alphaCode2: String { "CO" }
         static var alphaCode3: String { "COL" }
@@ -214,7 +214,7 @@ extension IG.Country {
     }
     
     /// Peru.
-    private struct Peru: CountryType {
+    private struct Peru: _CountryType {
         static var name: String { "Peru" }
         static var alphaCode2: String { "PE" }
         static var alphaCode3: String { "PER" }
@@ -222,7 +222,7 @@ extension IG.Country {
     }
     
     /// Chile.
-    private struct Chile: CountryType {
+    private struct Chile: _CountryType {
         static var name: String { "Chile" }
         static var alphaCode2: String { "CL" }
         static var alphaCode3: String { "CHL" }
@@ -230,7 +230,7 @@ extension IG.Country {
     }
     
     /// Brazil.
-    private struct Brazil: CountryType {
+    private struct Brazil: _CountryType {
         static var name: String { "Brazil" }
         static var alphaCode2: String { "BR" }
         static var alphaCode3: String { "BRA" }
@@ -238,7 +238,7 @@ extension IG.Country {
     }
     
     /// Argentina.
-    private struct Argentina: CountryType {
+    private struct Argentina: _CountryType {
         static var name: String { "Argentina" }
         static var alphaCode2: String { "AR" }
         static var alphaCode3: String { "ARG" }
@@ -246,7 +246,7 @@ extension IG.Country {
     }
     
     /// Iceland.
-    private struct Iceland: CountryType {
+    private struct Iceland: _CountryType {
         static var name: String { "Iceland" }
         static var alphaCode2: String { "IS" }
         static var alphaCode3: String { "ISL" }
@@ -254,7 +254,7 @@ extension IG.Country {
     }
     
     /// Republic of Ireland.
-    private struct Ireland: CountryType {
+    private struct Ireland: _CountryType {
         static var name: String { "Ireland" }
         static var alphaCode2: String { "IE" }
         static var alphaCode3: String { "IRL" }
@@ -262,7 +262,7 @@ extension IG.Country {
     }
     
     /// United Kingdom of Great Britain and Northern Ireland.
-    private struct UnitedKingdom: CountryType {
+    private struct UnitedKingdom: _CountryType {
         static var name: String { "United Kingdom" }
         static var alphaCode2: String { "GB" }
         static var alphaCode3: String { "GBR" }
@@ -270,7 +270,7 @@ extension IG.Country {
     }
     
     /// Norway.
-    private struct Norway: CountryType {
+    private struct Norway: _CountryType {
         static var name: String { "Norway" }
         static var alphaCode2: String { "NO" }
         static var alphaCode3: String { "NOR" }
@@ -278,7 +278,7 @@ extension IG.Country {
     }
     
     /// Sweden.
-    private struct Sweden: CountryType {
+    private struct Sweden: _CountryType {
         static var name: String { "Sweden" }
         static var alphaCode2: String { "SE" }
         static var alphaCode3: String { "SWE" }
@@ -286,7 +286,7 @@ extension IG.Country {
     }
     
     /// Denmark.
-    private struct Denmark: CountryType {
+    private struct Denmark: _CountryType {
         static var name: String { "Denmark" }
         static var alphaCode2: String { "DK" }
         static var alphaCode3: String { "DNK" }
@@ -294,7 +294,7 @@ extension IG.Country {
     }
     
     /// Finland.
-    private struct Finland: CountryType {
+    private struct Finland: _CountryType {
         static var name: String { "Finland" }
         static var alphaCode2: String { "FI" }
         static var alphaCode3: String { "FIN" }
@@ -302,7 +302,7 @@ extension IG.Country {
     }
     
     /// Portugal.
-    private struct Portugal: CountryType {
+    private struct Portugal: _CountryType {
         static var name: String { "Portugal" }
         static var alphaCode2: String { "PT" }
         static var alphaCode3: String { "PRT" }
@@ -310,7 +310,7 @@ extension IG.Country {
     }
     
     /// Spain
-    private struct Spain: CountryType {
+    private struct Spain: _CountryType {
         static var name: String { "Spain" }
         static var alphaCode2: String { "ES" }
         static var alphaCode3: String { "ESP" }
@@ -318,7 +318,7 @@ extension IG.Country {
     }
     
     /// France.
-    private struct France: CountryType {
+    private struct France: _CountryType {
         static var name: String { "France" }
         static var alphaCode2: String { "FR" }
         static var alphaCode3: String { "FRA" }
@@ -326,7 +326,7 @@ extension IG.Country {
     }
     
     /// Belgium.
-    private struct Belgium: CountryType {
+    private struct Belgium: _CountryType {
         static var name: String { "Belgium" }
         static var alphaCode2: String { "BE" }
         static var alphaCode3: String { "BEL" }
@@ -334,7 +334,7 @@ extension IG.Country {
     }
     
     /// The Netherlands.
-    private struct Netherlands: CountryType {
+    private struct Netherlands: _CountryType {
         static var name: String { "Netherlands" }
         static var alphaCode2: String { "NL" }
         static var alphaCode3: String { "NLD" }
@@ -343,7 +343,7 @@ extension IG.Country {
     
     /// European Union.
     /// - attention: The European Union is no in the ISO 3166, that is why the 3 letter code and the numeric code are not really "true".
-    private struct EuropeanUnion: CountryType {
+    private struct EuropeanUnion: _CountryType {
         static var name: String { "European Union" }
         static var alphaCode2: String { "EU" }
         static var alphaCode3: String { "EUR" }
@@ -351,7 +351,7 @@ extension IG.Country {
     }
     
     /// Switzerland
-    private struct Switzerland: CountryType {
+    private struct Switzerland: _CountryType {
         static var name: String { "Switzerland" }
         static var alphaCode2: String { "CH" }
         static var alphaCode3: String { "CHE" }
@@ -359,7 +359,7 @@ extension IG.Country {
     }
     
     /// Italy
-    private struct Italy: CountryType {
+    private struct Italy: _CountryType {
         static var name: String { "Italy" }
         static var alphaCode2: String { "IT" }
         static var alphaCode3: String { "ITA" }
@@ -367,7 +367,7 @@ extension IG.Country {
     }
     
     /// Slovenia..
-    private struct Slovenia: CountryType {
+    private struct Slovenia: _CountryType {
         static var name: String { "Slovenia" }
         static var alphaCode2: String { "SI" }
         static var alphaCode3: String { "SVN" }
@@ -375,7 +375,7 @@ extension IG.Country {
     }
     
     /// Croatia.
-    private struct Croatia: CountryType {
+    private struct Croatia: _CountryType {
         static var name: String { "Croatia" }
         static var alphaCode2: String { "HR" }
         static var alphaCode3: String { "HRV" }
@@ -383,7 +383,7 @@ extension IG.Country {
     }
     
     /// Germany
-    private struct Germany: CountryType {
+    private struct Germany: _CountryType {
         static var name: String { "Germany" }
         static var alphaCode2: String { "DE" }
         static var alphaCode3: String { "DEU" }
@@ -391,7 +391,7 @@ extension IG.Country {
     }
     
     /// Austria
-    private struct Austria: CountryType {
+    private struct Austria: _CountryType {
         static var name: String { "Austria" }
         static var alphaCode2: String { "AT" }
         static var alphaCode3: String { "AUT" }
@@ -399,7 +399,7 @@ extension IG.Country {
     }
     
     /// Czech Republic.
-    private struct Czechia: CountryType {
+    private struct Czechia: _CountryType {
         static var name: String { "Czechia" }
         static var alphaCode2: String { "CZ" }
         static var alphaCode3: String { "CZE" }
@@ -407,7 +407,7 @@ extension IG.Country {
     }
     
     /// Hungary.
-    private struct Hungary: CountryType {
+    private struct Hungary: _CountryType {
         static var name: String { "Hungary" }
         static var alphaCode2: String { "HU" }
         static var alphaCode3: String { "HUN" }
@@ -415,7 +415,7 @@ extension IG.Country {
     }
     
     /// Slovakia.
-    private struct Slovakia: CountryType {
+    private struct Slovakia: _CountryType {
         static var name: String { "Slovakia" }
         static var alphaCode2: String { "SK" }
         static var alphaCode3: String { "SVK" }
@@ -423,7 +423,7 @@ extension IG.Country {
     }
     
     /// Romania.
-    private struct Romania: CountryType {
+    private struct Romania: _CountryType {
         static var name: String { "Romania" }
         static var alphaCode2: String { "RO" }
         static var alphaCode3: String { "ROU" }
@@ -431,7 +431,7 @@ extension IG.Country {
     }
     
     /// Bulgaria.
-    private struct Bulgaria: CountryType {
+    private struct Bulgaria: _CountryType {
         static var name: String { "Bulgaria" }
         static var alphaCode2: String { "BG" }
         static var alphaCode3: String { "BGR" }
@@ -439,7 +439,7 @@ extension IG.Country {
     }
     
     /// Poland.
-    private struct Poland: CountryType {
+    private struct Poland: _CountryType {
         static var name: String { "Poland" }
         static var alphaCode2: String { "PL" }
         static var alphaCode3: String { "POL" }
@@ -447,7 +447,7 @@ extension IG.Country {
     }
     
     /// Estonia
-    private struct Estonia: CountryType {
+    private struct Estonia: _CountryType {
         static var name: String { "Estonia" }
         static var alphaCode2: String { "EE" }
         static var alphaCode3: String { "EST" }
@@ -455,7 +455,7 @@ extension IG.Country {
     }
     
     /// Latvia.
-    private struct Latvia: CountryType {
+    private struct Latvia: _CountryType {
         static var name: String { "Latvia" }
         static var alphaCode2: String { "LV" }
         static var alphaCode3: String { "LVA" }
@@ -463,7 +463,7 @@ extension IG.Country {
     }
     
     /// Lithuania.
-    private struct Lithuania: CountryType {
+    private struct Lithuania: _CountryType {
         static var name: String { "Lithuania" }
         static var alphaCode2: String { "LT" }
         static var alphaCode3: String { "LTU" }
@@ -471,7 +471,7 @@ extension IG.Country {
     }
     
     /// Ukrania.
-    private struct Ukraine: CountryType {
+    private struct Ukraine: _CountryType {
         static var name: String { "Ukraine" }
         static var alphaCode2: String { "UA" }
         static var alphaCode3: String { "UKR" }
@@ -479,7 +479,7 @@ extension IG.Country {
     }
     
     /// Russian Federation.
-    private struct Russia: CountryType {
+    private struct Russia: _CountryType {
         static var name: String { "Russia" }
         static var alphaCode2: String { "RU" }
         static var alphaCode3: String { "RUS" }
@@ -487,7 +487,7 @@ extension IG.Country {
     }
     
     /// Greece
-    private struct Greece: CountryType {
+    private struct Greece: _CountryType {
         static var name: String { "Greece" }
         static var alphaCode2: String { "GR" }
         static var alphaCode3: String { "GRC" }
@@ -495,7 +495,7 @@ extension IG.Country {
     }
     
     /// Turkey.
-    private struct Turkey: CountryType {
+    private struct Turkey: _CountryType {
         static var name: String { "Turkey" }
         static var alphaCode2: String { "TR" }
         static var alphaCode3: String { "TUR" }
@@ -503,7 +503,7 @@ extension IG.Country {
     }
     
     /// South Africa.
-    private struct SouthAfrica: CountryType {
+    private struct SouthAfrica: _CountryType {
         static var name: String { "South Africa" }
         static var alphaCode2: String { "ZA" }
         static var alphaCode3: String { "ZAF" }
@@ -511,7 +511,7 @@ extension IG.Country {
     }
     
     /// India.
-    private struct India: CountryType {
+    private struct India: _CountryType {
         static var name: String { "India" }
         static var alphaCode2: String { "IN" }
         static var alphaCode3: String { "IND" }
@@ -519,7 +519,7 @@ extension IG.Country {
     }
     
     /// Singapore.
-    private struct Singapore: CountryType {
+    private struct Singapore: _CountryType {
         static var name: String { "Singapore" }
         static var alphaCode2: String { "SG" }
         static var alphaCode3: String { "SGP" }
@@ -527,7 +527,7 @@ extension IG.Country {
     }
     
     /// Republic of China.
-    private struct China: CountryType {
+    private struct China: _CountryType {
         static var name: String { "China" }
         static var alphaCode2: String { "CN" }
         static var alphaCode3: String { "CHN" }
@@ -535,7 +535,7 @@ extension IG.Country {
     }
     
     /// Hong Kong.
-    private struct HongKong: CountryType {
+    private struct HongKong: _CountryType {
         static var name: String { "Hong Kong" }
         static var alphaCode2: String { "HK" }
         static var alphaCode3: String { "HKG" }
@@ -543,7 +543,7 @@ extension IG.Country {
     }
     
     /// Taiwan.
-    private struct Taiwan: CountryType {
+    private struct Taiwan: _CountryType {
         static var name: String { "Taiwan" }
         static var alphaCode2: String { "TW" }
         static var alphaCode3: String { "TWN" }
@@ -551,7 +551,7 @@ extension IG.Country {
     }
     
     /// Republic of Korea.
-    private struct SouthKorea: CountryType {
+    private struct SouthKorea: _CountryType {
         static var name: String { "South Korea" }
         static var alphaCode2: String { "KR" }
         static var alphaCode3: String { "KOR" }
@@ -559,7 +559,7 @@ extension IG.Country {
     }
     
     /// Japan.
-    private struct Japan: CountryType {
+    private struct Japan: _CountryType {
         static var name: String { "Japan" }
         static var alphaCode2: String { "JP" }
         static var alphaCode3: String { "JPN" }
@@ -567,7 +567,7 @@ extension IG.Country {
     }
     
     /// The Philippines.
-    private struct Philippines: CountryType {
+    private struct Philippines: _CountryType {
         static var name: String { "The Philippines" }
         static var alphaCode2: String { "PH" }
         static var alphaCode3: String { "PHL" }
@@ -575,7 +575,7 @@ extension IG.Country {
     }
     
     /// Indonesia.
-    private struct Indonesia: CountryType {
+    private struct Indonesia: _CountryType {
         static var name: String { "Indonesia" }
         static var alphaCode2: String { "ID" }
         static var alphaCode3: String { "IDN" }
@@ -583,7 +583,7 @@ extension IG.Country {
     }
     
     /// Australia.
-    private struct Australia: CountryType {
+    private struct Australia: _CountryType {
         static var name: String { "Australia" }
         static var alphaCode2: String { "AU" }
         static var alphaCode3: String { "AUS" }
@@ -591,7 +591,7 @@ extension IG.Country {
     }
     
     /// New Zealand.
-    private struct NewZealand: CountryType {
+    private struct NewZealand: _CountryType {
         static var name: String { "New Zealand" }
         static var alphaCode2: String { "NZ" }
         static var alphaCode3: String { "NZL" }

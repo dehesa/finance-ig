@@ -7,12 +7,12 @@ public enum Client {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The client identifier "\#(value)" is not in a valid format"#) }
+            guard Self._validate(value) else { fatalError("The client identifier '\(value)' is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -23,8 +23,8 @@ public enum Client {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                let reason = #"The client identifier being decoded "\#(rawValue)" doesn't conform to the validation function"#
+            guard Self._validate(rawValue) else {
+                let reason = "The client identifier being decoded '\(rawValue)' doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = rawValue
@@ -40,20 +40,16 @@ public enum Client {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
 
 extension IG.Client.Identifier {
     /// Returns a Boolean indicating whether the raw value can represent a client identifier.
-    private static func validate(_ value: String) -> Bool {
+    private static func _validate(_ value: String) -> Bool {
         let allowedRange = 8...10
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        let allowedSet = CharacterSet.decimalDigits
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { allowedSet.contains($0) }
     }
-    
-    /// The allowed character set for the client identifier. It is used on validation.
-    private static let allowedSet: CharacterSet = {
-        return CharacterSet.decimalDigits
-    }()
 }

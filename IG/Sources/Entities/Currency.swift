@@ -118,11 +118,11 @@ public enum Currency {
         }
         
         public static func < (lhs: Self, rhs: Self) -> Bool {
-            return lhs.rawValue < rhs.rawValue
+            lhs.rawValue < rhs.rawValue
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }

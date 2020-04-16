@@ -14,7 +14,7 @@ extension IG.Database.Migration {
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {
-                    .callFailed(.init(#"The SQL statement to create a table for "\#(type.printableDomain)" failed to execute"#), code: $0)
+                    .callFailed(.init("The SQL statement to create a table for '\(type.printableDomain)' failed to execute"), code: $0)
                 }
             }
             

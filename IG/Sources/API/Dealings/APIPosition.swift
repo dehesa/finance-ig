@@ -20,11 +20,11 @@ extension IG.API.Request.Positions {
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
     /// - returns: *Future* forwarding a list of open positions.
-    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Position]> {
+    public func getAll() -> AnyPublisher<[IG.API.Position],IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(date: true)) { (w: Self.WrapperList, _) in w.positions }
+            .decodeJSON(decoder: .default(date: true)) { (w: _WrapperList, _) in w.positions }
             .mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
     }
@@ -34,7 +34,7 @@ extension IG.API.Request.Positions {
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
     /// - returns: *Future* forwarding the targeted position.
-    public func get(identifier: IG.Deal.Identifier) -> IG.API.Publishers.Discrete<IG.API.Position> {
+    public func get(identifier: IG.Deal.Identifier) -> AnyPublisher<IG.API.Position,IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -47,7 +47,7 @@ extension IG.API.Request.Positions {
 // MARK: - Entities
 
 extension IG.API.Request.Positions {
-    private struct WrapperList: Decodable {
+    private struct _WrapperList: Decodable {
         let positions: [IG.API.Position]
     }
 }
@@ -79,10 +79,10 @@ extension IG.API {
         public let market: IG.API.Node.Market
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.market = try container.decode(IG.API.Node.Market.self, forKey: .market)
             
-            let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.PositionKeys.self, forKey: .position)
+            let nestedContainer = try container.nestedContainer(keyedBy: _CodingKeys.PositionKeys.self, forKey: .position)
             self.identifier = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
             self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
             self.date = try nestedContainer.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
@@ -95,7 +95,7 @@ extension IG.API {
             self.stop = try nestedContainer.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: nil, riskKey: (.isStopGuaranteed, .stopRiskPremium), trailingKey: (nil, .stopTrailingDistance, .stopTrailingIncrement))
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case position
             case market
             

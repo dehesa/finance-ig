@@ -6,9 +6,9 @@ extension IG.Database.Request.Markets {
     /// Contains all functionality related to Database Forex.
     public struct Forex {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let database: IG.Database
+        fileprivate unowned let _database: IG.Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: IG.Database) { self.database = database }
+        internal init(database: IG.Database) { self._database = database }
     }
 }
 
@@ -16,8 +16,8 @@ extension IG.Database.Request.Markets.Forex {
     /// Returns all forex markets.
     ///
     /// If there are no forex markets in the database yet, an empty array will be returned.
-    public func getAll() -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
-        self.database.publisher { _ in
+    public func getAll() -> AnyPublisher<[IG.Database.Market.Forex],IG.Database.Error> {
+        self._database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.Forex.tableName)"
             }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
@@ -39,8 +39,8 @@ extension IG.Database.Request.Markets.Forex {
     /// Depending on the `expectsAll` argument, this method will return the exact number of market forex or a subset of them.
     /// - parameter epics: The forex market epics identifiers.
     /// - parameter expectsAll: Boolean indicating whether an error should be forwarded when not all markets are in the database.
-    public func get(epics: Set<IG.Market.Epic>, expectsAll: Bool) -> IG.Database.Publishers.Discrete<Set<IG.Database.Market.Forex>> {
-        self.database.publisher { _ -> String in
+    public func get(epics: Set<IG.Market.Epic>, expectsAll: Bool) -> AnyPublisher<Set<IG.Database.Market.Forex>,IG.Database.Error> {
+        self._database.publisher { _ -> String in
                 let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")
                 return "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic IN (\(values))"
             }.read { (sqlite, statement, query, _) in
@@ -73,8 +73,8 @@ extension IG.Database.Request.Markets.Forex {
     ///
     /// If the market is not in the database, a `.invalidResponse` error will be returned.
     /// - parameter epic: The forex market epic identifier.
-    public func get(epic: IG.Market.Epic) -> IG.Database.Publishers.Discrete<IG.Database.Market.Forex> {
-        self.database.publisher { _ in
+    public func get(epic: IG.Market.Epic) -> AnyPublisher<IG.Database.Market.Forex,IG.Database.Error> {
+        self._database.publisher { _ in
                 "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE epic=?1"
             }.read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
@@ -93,8 +93,8 @@ extension IG.Database.Request.Markets.Forex {
     /// Returns the forex markets matching the given currency.
     /// - parameter currency: A currency used as base or counter in the result markets.
     /// - parameter otherCurrency: A currency matching the first argument. It is optional.
-    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
-        self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
+    public func get(currency: IG.Currency.Code, _ otherCurrency: IG.Currency.Code? = nil) -> AnyPublisher<[IG.Database.Market.Forex],IG.Database.Error> {
+        self._database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
                 var sql = "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE "
             
                 var binds: [(index: Int32, text: IG.Currency.Code)] = [(1, currency)]
@@ -129,10 +129,10 @@ extension IG.Database.Request.Markets.Forex {
     /// If there are no forex markets matching the given requirements, an empty array will be returned.
     /// - parameter base: The base currency code (or `nil` if this requirement is not needed).
     /// - parameter counter: The counter currency code (or `nil` if this requirement is not needed).
-    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> IG.Database.Publishers.Discrete<[IG.Database.Market.Forex]> {
+    public func get(base: IG.Currency.Code?, counter: IG.Currency.Code?) -> AnyPublisher<[IG.Database.Market.Forex],IG.Database.Error> {
         guard base != nil || counter != nil else { return self.getAll() }
         
-        return self.database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
+        return self._database.publisher { _ -> (query: String, binds: [(index: Int32, text: IG.Currency.Code)]) in
             var sql = "SELECT * FROM \(IG.Database.Market.Forex.tableName) WHERE "
             
             let binds: [(index: Int32, text: IG.Currency.Code)]
@@ -180,7 +180,7 @@ extension IG.Database.Request.Markets.Forex {
         try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
         
         for m in markets {
-            guard case .success(let inferred) = IG.Database.Market.Forex.inferred(from: m) else { continue }
+            guard case .success(let inferred) = IG.Database.Market.Forex._inferred(from: m) else { continue }
             // The pip value can also be inferred from: `instrument.pip.value`
             let forex = IG.Database.Market.Forex(epic: m.instrument.epic,
                                            currencies:  .init(base: inferred.base, counter: inferred.counter),
@@ -197,7 +197,7 @@ extension IG.Database.Request.Markets.Forex {
                                                                                             minimumUnit: inferred.guaranteedStopUnit,
                                                                                             maximumAsPercentage: m.rules.limit.maximumDistance.value),
                                                                trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
-            forex.bind(to: statement!)
+            forex._bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { .callFailed(.storing(IG.Database.Market.Forex.self), code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
@@ -308,7 +308,7 @@ extension IG.Database.Market.Forex {
             public struct Bands: RandomAccessCollection {
                 public typealias Element = (range: Any, depositFactor: Decimal)
                 /// The underlying storage.
-                fileprivate let storage: [Self.StoredElement]
+                fileprivate let storage: [_StoredElement]
             }
         }
     }
@@ -403,9 +403,9 @@ extension IG.Database.Market.Forex: DBTable {
 }
 
 fileprivate extension IG.Database.Market.Forex {
-    typealias Indices = (epic: Int32, base: Int32, counter: Int32, identifiers: Self.Identifiers.Indices, information: Self.DealingInformation.Indices, restrictions: Self.Restrictions.Indices)
+    typealias _Indices = (epic: Int32, base: Int32, counter: Int32, identifiers: Self.Identifiers._Indices, information: Self.DealingInformation._Indices, restrictions: Self.Restrictions._Indices)
     
-    init(statement s: SQLite.Statement, indices: Self.Indices = (0, 1, 2, (3, 4, 5, 6), (7, 8, 9, 10, 11, 12, 13, 14, 15), (16, 17, 18, 19, 20, 21, 22)) ) {
+    init(statement s: SQLite.Statement, indices: _Indices = (0, 1, 2, (3, 4, 5, 6), (7, 8, 9, 10, 11, 12, 13, 14, 15), (16, 17, 18, 19, 20, 21, 22)) ) {
         self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, indices.epic)))!
         self.currencies = .init(base:    IG.Currency.Code(rawValue: String(cString: sqlite3_column_text(s, indices.base)))!,
                                 counter: IG.Currency.Code(rawValue: String(cString: sqlite3_column_text(s, indices.counter)))!)
@@ -414,27 +414,27 @@ fileprivate extension IG.Database.Market.Forex {
         self.restrictions = .init(statement: s, indices: indices.restrictions)
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices = (1, 2, 3, (4, 5, 6, 7), (8, 9, 10, 11, 12, 13, 14, 15, 16), (17, 18, 19, 20, 21, 22, 23))) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices = (1, 2, 3, (4, 5, 6, 7), (8, 9, 10, 11, 12, 13, 14, 15, 16), (17, 18, 19, 20, 21, 22, 23))) {
         sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.base, self.currencies.base.rawValue, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.counter, self.currencies.counter.rawValue, -1, SQLite.Destructor.transient)
-        self.identifiers.bind(to: statement, indices: indices.identifiers)
-        self.information.bind(to: statement, indices: indices.information)
-        self.restrictions.bind(to: statement, indices: indices.restrictions)
+        self.identifiers._bind(to: statement, indices: indices.identifiers)
+        self.information._bind(to: statement, indices: indices.information)
+        self.restrictions._bind(to: statement, indices: indices.restrictions)
     }
 }
 
 fileprivate extension IG.Database.Market.Forex.Identifiers {
-    typealias Indices = (name: Int32, market: Int32, chart: Int32, reuters: Int32)
+    typealias _Indices = (name: Int32, market: Int32, chart: Int32, reuters: Int32)
     
-    init(statement: SQLite.Statement, indices: Self.Indices) {
+    init(statement: SQLite.Statement, indices: _Indices) {
         self.name = String(cString: sqlite3_column_text(statement, indices.name))
         self.market = String(cString: sqlite3_column_text(statement, indices.market))
         self.chart = sqlite3_column_text(statement, indices.chart).map { String(cString: $0) }
         self.reuters = String(cString: sqlite3_column_text(statement, indices.reuters))
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices) {
         sqlite3_bind_text(statement, indices.name, self.name, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.market, self.market, -1, SQLite.Destructor.transient)
         self.chart.unwrap(none: { sqlite3_bind_null(statement, indices.chart) },
@@ -444,9 +444,9 @@ fileprivate extension IG.Database.Market.Forex.Identifiers {
 }
 
 fileprivate extension IG.Database.Market.Forex.DealingInformation {
-    typealias Indices = (contractSize: Int32, pipValue: Int32, pipPlaces: Int32, levelPlaces: Int32, slippage: Int32, premium: Int32, extra: Int32, factor: Int32, bands: Int32)
+    typealias _Indices = (contractSize: Int32, pipValue: Int32, pipPlaces: Int32, levelPlaces: Int32, slippage: Int32, premium: Int32, extra: Int32, factor: Int32, bands: Int32)
     
-    init(statement: SQLite.Statement, indices: Self.Indices) {
+    init(statement: SQLite.Statement, indices: _Indices) {
         self.contractSize = Int(sqlite3_column_int64(statement, indices.contractSize))
         self.pip = .init(value: Int(sqlite3_column_int64(statement, indices.pipValue)),
                          decimalPlaces: Int(sqlite3_column_int(statement, indices.pipPlaces)))
@@ -458,7 +458,7 @@ fileprivate extension IG.Database.Market.Forex.DealingInformation {
                             depositBands: .init(underlying: String(cString: sqlite3_column_text(statement, indices.bands))))
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices) {
         sqlite3_bind_int64(statement, indices.contractSize, Int64(self.contractSize))
         sqlite3_bind_int64(statement, indices.pipValue,     Int64(self.pip.value))
         sqlite3_bind_int  (statement, indices.pipPlaces,    Int32(self.pip.decimalPlaces))
@@ -472,9 +472,9 @@ fileprivate extension IG.Database.Market.Forex.DealingInformation {
 }
 
 fileprivate extension IG.Database.Market.Forex.Restrictions {
-    typealias Indices = (dealSize: Int32, minDistance: Int32, maxDistance: Int32, guaranteedStopDistance: Int32, guaranteedStopUnit: Int32, trailing: Int32, minStep: Int32)
+    typealias _Indices = (dealSize: Int32, minDistance: Int32, maxDistance: Int32, guaranteedStopDistance: Int32, guaranteedStopUnit: Int32, trailing: Int32, minStep: Int32)
     
-    init(statement: SQLite.Statement, indices: Self.Indices) {
+    init(statement: SQLite.Statement, indices: _Indices) {
         self.minimumDealSize = Decimal(sqlite3_column_int64(statement, indices.dealSize), divingByPowerOf10: 2)
         self.regularDistance = .init(minimum: Decimal(sqlite3_column_int64(statement, indices.minDistance), divingByPowerOf10: 2),
                                      maximumAsPercentage: Decimal(sqlite3_column_int64(statement, indices.maxDistance), divingByPowerOf10: 1))
@@ -485,7 +485,7 @@ fileprivate extension IG.Database.Market.Forex.Restrictions {
                                   minimumIncrement: Decimal(sqlite3_column_int64(statement, indices.minStep), divingByPowerOf10: 1))
     }
     
-    func bind(to statement: SQLite.Statement, indices: Self.Indices) {
+    func _bind(to statement: SQLite.Statement, indices: _Indices) {
         sqlite3_bind_int64(statement, indices.dealSize,               Int64(clamping: self.minimumDealSize, multiplyingByPowerOf10: 2))
         sqlite3_bind_int64(statement, indices.minDistance,            Int64(clamping: self.regularDistance.minimum, multiplyingByPowerOf10: 2))
         sqlite3_bind_int64(statement, indices.maxDistance,            Int64(clamping: self.regularDistance.maximumAsPercentage, multiplyingByPowerOf10: 1))
@@ -529,16 +529,16 @@ extension IG.Database.Market.Forex {
 }
 
 extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
-    fileprivate typealias StoredElement = (lowerBound: Decimal, value: Decimal)
+    fileprivate typealias _StoredElement = (lowerBound: Decimal, value: Decimal)
     /// The character separators used in encoding/decoding.
-    private static let separator: (numbers: Character, elements: Character) = (":", "|")
+    private static let _separator: (numbers: Character, elements: Character) = (":", "|")
     
     /// Designated initializer.
     fileprivate init(underlying: String) {
-        self.storage = underlying.split(separator: Self.separator.elements).map {
-            let strings = $0.split(separator: Self.separator.numbers)
+        self.storage = underlying.split(separator: Self._separator.elements).map {
+            let strings = $0.split(separator: Self._separator.numbers)
             guard strings.count == 2 else {
-                let msg = #"The given forex margin band "\#(String($0))" is invalid since it contains \#(strings.count) elements. Only 2 are expected"#
+                let msg = "The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected"
                 fatalError(msg)
             }
             guard let lowerBound = Decimal(string: String(strings[0])) else { fatalError() }
@@ -553,21 +553,21 @@ extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
     
     /// Encodes the receiving margin bands into a single `String`.
     fileprivate func encode() -> String {
-        return self.storage.map {
+        self.storage.map {
             var result = String()
             result.append($0.lowerBound.description)
-            result.append(Self.separator.numbers)
+            result.append(Self._separator.numbers)
             result.append($0.value.description)
             return result
-        }.joined(separator: .init(Self.separator.elements))
+        }.joined(separator: .init(Self._separator.elements))
     }
 
     public var startIndex: Int {
-        return self.storage.startIndex
+        self.storage.startIndex
     }
     
     public var endIndex: Int {
-        return self.storage.endIndex
+        self.storage.endIndex
     }
     
     public subscript(position: Int) -> (range: Any, depositFactor: Decimal) {
@@ -582,11 +582,11 @@ extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
     }
     
     public func index(before i: Int) -> Int {
-        return self.storage.index(before: i)
+        self.storage.index(before: i)
     }
     
     public func index(after i: Int) -> Int {
-        return self.storage.index(after: i)
+        self.storage.index(after: i)
     }
     
     /// Returns the deposit factor (expressed as a percentage `%`).
@@ -602,9 +602,7 @@ extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
     
     /// Returns the last band.
     public var last: (range: PartialRangeFrom<Decimal>, depositFactor: Decimal)? {
-        return self.storage.last.map { (element) in
-            return (element.lowerBound..., element.value)
-        }
+        self.storage.last.map { ($0.lowerBound..., $0.value) }
     }
 }
 
@@ -615,25 +613,25 @@ extension IG.Database.Market.Forex {
     /// - parameter market: The market information received from the platform's server.
     internal static func isCompatible(market: IG.API.Market) -> Bool {
         guard market.instrument.type == .currencies,
-              let codes = Self.currencyCodes(from: market),
+              let codes = Self._currencyCodes(from: market),
               codes.base != codes.counter else { return false }
         return true
     }
     
     /// Check whether the given API market instance is a valid Forex Database market and returns inferred values.
     /// - parameter market: The market information received from the platform's server.
-    fileprivate static func inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.Database.Unit, bands: Self.DealingInformation.Margin.Bands),IG.Database.Error> {
+    fileprivate static func _inferred(from market: IG.API.Market) -> Result<(base: IG.Currency.Code, counter: IG.Currency.Code, marketId: String, contractSize: Decimal, guaranteedStopUnit: IG.Database.Unit, bands: Self.DealingInformation.Margin.Bands),IG.Database.Error> {
         let error: (_ suffix: String) -> IG.Database.Error = {
-            return .invalidRequest(.init(#"The API market "\#(market.instrument.epic)" \#($0)"#), suggestion: .reviewError)
+            .invalidRequest(.init("The API market '\(market.instrument.epic)' \($0)"), suggestion: .reviewError)
         }
         // 1. Check the type is .currency
         guard market.instrument.type == .currencies else {
-            return .failure(error(#"is not of "currency" type"#))
+            return .failure(error("is not of 'currency' type"))
         }
         
         // 2. Check that currencies can be actually inferred and they are not equal
-        guard let currencies = Self.currencyCodes(from: market), currencies.base != currencies.counter else {
-            return .failure(error(#"is not of "currency" type"#))
+        guard let currencies = Self._currencyCodes(from: market), currencies.base != currencies.counter else {
+            return .failure(error("is not of 'currency' type"))
         }
         // 3. Check the market identifier
         guard let marketId = market.identifier else {
@@ -645,52 +643,52 @@ extension IG.Database.Market.Forex {
         }
         // 5. Check the slippage factor unit
         guard market.instrument.slippageFactor.unit == .percentage else {
-            return .failure(error(#"has a slippage factor unit of "\#(market.instrument.slippageFactor.unit)" when ".percentage" was expected"#))
+            return .failure(error("has a slippage factor unit of '\(market.instrument.slippageFactor.unit)' when '.percentage' was expected"))
         }
         // 6. Check the guaranteed stop premium unit
         guard market.instrument.limitedRiskPremium.unit == .points else {
-            return .failure(error(#"has a limit risk premium unit of "\#(market.instrument.limitedRiskPremium.unit)" when ".points" was expected"#))
+            return .failure(error("has a limit risk premium unit of '\(market.instrument.limitedRiskPremium.unit)' when '.points' was expected"))
         }
         // 7. Check the margin unit
         guard market.instrument.margin.unit == .percentage else {
-            return .failure(error(#"has a margin unit of "\#(market.instrument.margin.unit)" when ".percentage" was expected"#))
+            return .failure(error("has a margin unit of '\(market.instrument.margin.unit)' when '.percentage' was expected"))
         }
         // 8. Check the margin deposit bands
         let apiBands = market.instrument.margin.depositBands.sorted { $0.minimum < $1.minimum }
         
         guard let code = apiBands.first?.currencyCode else {
-            return .failure(error(#"doesn't have margin bands"#))
+            return .failure(error("doesn't have margin bands"))
         }
         
         guard apiBands.allSatisfy({ $0.currencyCode == code }) else {
-            return .failure(error(#"margin bands have different currency units"#))
+            return .failure(error("margin bands have different currency units"))
         }
         
         for index in 0..<apiBands.count-1 {
             guard let max = apiBands[index].maximum else {
                 let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode) -> \($0.margin)%" }.joined(separator: ", ")
-                return .failure(error(#"expected a maximum at index "\#(index)" for deposit bands [\#(representation)]"#))
+                return .failure(error("expected a maximum at index '\(index)' for deposit bands [\(representation)]"))
             }
             
             guard max == apiBands[index+1].minimum else {
                 let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode) -> \($0.margin)%" }.joined(separator: ", ")
-                return .failure(error(#"doesn't have contiguous deposit bands [\#(representation)]"#))
+                return .failure(error("doesn't have contiguous deposit bands [\(representation)]"))
             }
         }
         
         let bands = Self.DealingInformation.Margin.Bands(storage: apiBands.map { ($0.minimum, $0.margin) })
         // 9. Check the minimum deal size units.
         guard market.rules.minimumDealSize.unit == .points else {
-            return .failure(error(#"has a minimum deal size unit of "\#(market.rules.limit.mininumDistance.unit)" when ".points" was expected"#))
+            return .failure(error("has a minimum deal size unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
         }
         
         // 10. Check the limit units (they are the same as the stop units).
         guard market.rules.limit.mininumDistance.unit == .points else {
-            return .failure(error(#"has a minimum limit distance unit of "\#(market.rules.limit.mininumDistance.unit)" when ".points" was expected"#))
+            return .failure(error("has a minimum limit distance unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
         }
         
         guard market.rules.limit.maximumDistance.unit == .percentage else {
-            return .failure(error(#"has a maximum limit distance unit of "\#(market.rules.limit.maximumDistance.unit)" when ".percentage" was expected"#))
+            return .failure(error("has a maximum limit distance unit of '\(market.rules.limit.maximumDistance.unit)' when '.percentage' was expected"))
         }
         // 11. Check the guaranteed stop units.
         let unit: IG.Database.Unit
@@ -700,7 +698,7 @@ extension IG.Database.Market.Forex {
         }
         // 12. Check the trailing units.
         guard market.rules.stop.trailing.minimumIncrement.unit == .points else {
-            return .failure(error(#"has a minimum trailing step increment unit of "\#(market.rules.stop.trailing.minimumIncrement.unit)" when ".points" was expected"#))
+            return .failure(error("has a minimum trailing step increment unit of '\(market.rules.stop.trailing.minimumIncrement.unit)' when '.points' was expected"))
         }
         
         return .success((currencies.base, currencies.counter, marketId, contractSize, unit, bands))
@@ -708,7 +706,7 @@ extension IG.Database.Market.Forex {
     
     /// Returns the currencies for the given market.
     /// - parameter market: The market information received from the platform's server.
-    private static func currencyCodes(from market: IG.API.Market) -> (base: IG.Currency.Code, counter: IG.Currency.Code)? {
+    private static func _currencyCodes(from market: IG.API.Market) -> (base: IG.Currency.Code, counter: IG.Currency.Code)? {
         // A. The safest value is the pip meaning. However, it is not always there
         if let pip = market.instrument.pip?.meaning {
             // The pip meaning is divided in the meaning number and the currencies

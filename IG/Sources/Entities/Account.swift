@@ -7,12 +7,12 @@ public enum Account {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self.validate(value) else { fatalError(#"The account identifier "\#(value)" is not in a valid format"#) }
+            guard Self._validate(value) else { fatalError("The account identifier '\(value)' is not in a valid format") }
             self.rawValue = value
         }
         
         public init?(rawValue: String) {
-            guard Self.validate(rawValue) else { return nil }
+            guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
         }
         
@@ -23,8 +23,8 @@ public enum Account {
         public init(from decoder: Decoder) throws {
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            guard Self.validate(rawValue) else {
-                let reason = #"The account identifier being decoded "\#(rawValue)" doesn't conform to the validation function"#
+            guard Self._validate(rawValue) else {
+                let reason = "The account identifier being decoded '\(rawValue)' doesn't conform to the validation function"
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
             }
             self.rawValue = rawValue
@@ -40,22 +40,16 @@ public enum Account {
         }
         
         public var description: String {
-            return self.rawValue
+            self.rawValue
         }
     }
 }
 
 extension IG.Account.Identifier {
     /// Returns a Boolean indicating whether the raw value can represent an account identifier.
-    private static func validate(_ value: String) -> Bool {
+    private static func _validate(_ value: String) -> Bool {
         let allowedRange = 3...6
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { Self.allowedSet.contains($0) }
+        let allowedSet = CharacterSet.decimalDigits.set { $0.formUnion(CharacterSet.uppercaseANSI) }
+        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { allowedSet.contains($0) }
     }
-    
-    /// The allowed character set for the account identifier. It is used on validation.
-    private static let allowedSet: CharacterSet = {
-        var result = CharacterSet.decimalDigits
-        result.formUnion(CharacterSet.uppercaseANSI)
-        return result
-    }()
 }

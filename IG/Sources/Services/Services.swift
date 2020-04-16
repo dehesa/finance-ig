@@ -35,12 +35,12 @@ public final class Services {
     /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, user: IG.API.User) -> IG.Publishers.Discrete<IG.Services> {
-        let queue = Self.makeQueue(targetQueue: nil)
+    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.Services,IG.Services.Error> {
+        let queue = _makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         return api.session.login(type: .certificate, key: apiKey, user: user)
             .mapError(Self.Error.api)
-            .flatMap { _ in Self.make(with: api, queue: queue, location: databaseLocation) }
+            .flatMap { _ in _make(with: api, queue: queue, location: databaseLocation) }
             .eraseToAnyPublisher()
     }
     
@@ -52,18 +52,18 @@ public final class Services {
     /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, token: IG.API.Token) -> IG.Publishers.Discrete<IG.Services> {
-        let queue = Self.makeQueue(targetQueue: nil)
+    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, token: IG.API.Token) -> AnyPublisher<IG.Services,IG.Services.Error> {
+        let queue = _makeQueue(targetQueue: nil)
         let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Token) -> Combine.Publishers.FlatMap<IG.Publishers.Discrete<Services>,Combine.Publishers.MapError<IG.API.Publishers.Discrete<IG.API.Session>,IG.Services.Error>> = { (token) in
+        let signal: (_ token: IG.API.Token) -> Publishers.FlatMap<AnyPublisher<IG.Services,IG.Services.Error>,Publishers.MapError<AnyPublisher<IG.API.Session,IG.API.Error>,IG.Services.Error>> = { (token) in
             return api.session.get(key: apiKey, token: token)
                 .mapError(Self.Error.api)
-                .flatMap { (session) -> IG.Publishers.Discrete<IG.Services> in
+                .flatMap { (session) -> AnyPublisher<IG.Services,IG.Services.Error> in
                     api.channel.credentials = .init(client: session.client, account: session.account, key: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
-                    return Self.make(with: api, queue: queue, location: databaseLocation)
+                    return _make(with: api, queue: queue, location: databaseLocation)
                 }
         }
         
@@ -83,11 +83,13 @@ public final class Services {
         return signal(token)
             .eraseToAnyPublisher()
     }
-    
+}
+
+private extension IG.Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
-    private static func makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
-        return DispatchQueue(label: Self.reverseDNS, qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+    static func _makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
+        DispatchQueue(label: Self.reverseDNS, qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
     }
 
     /// Creates a streamer from an API instance and package both in a `Services` structure.
@@ -95,7 +97,7 @@ public final class Services {
     /// - parameter queue: Concurrent queue used to synchronize all IG's events.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
-    private static func make(with api: IG.API, queue: DispatchQueue, location: IG.Database.Location) -> IG.Publishers.Discrete<IG.Services> {
+    static func _make(with api: IG.API, queue: DispatchQueue, location: IG.Database.Location) -> AnyPublisher<IG.Services,IG.Services.Error> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
             return Fail(error: .api(error: .invalidRequest(.noCredentials, suggestion: .logIn)))
@@ -141,26 +143,11 @@ public final class Services {
     }
 }
 
-/// List of custom publishers and types used with the `Combine` framework.
-public enum Publishers {
-    /// Publisher emitting a single value followed by a successful completion
-    ///
-    /// The following behavior is guaranteed when you see this type:
-    /// - the publisher will emit a single value followed by a succesful completion, or
-    /// - the publisher will emit a `Services.Error` failure.
-    ///
-    /// If a failure is emitted, no value was sent previously.
-    public typealias Discrete<T> = Combine.AnyPublisher<T,IG.Services.Error>
-    /// Publisher that can send zero, one, or many values followed by a successful completion.
-    ///
-    /// A failure may be forwarded when processing a value.
-    public typealias Continuous<T> = Combine.AnyPublisher<T,IG.Services.Error>
-}
 
 extension IG.Services {
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
-        return Bundle.IG.identifier + ".services"
+        Bundle.IG.identifier + ".services"
     }
 }
 

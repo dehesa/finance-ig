@@ -23,7 +23,7 @@ extension IG.Streamer.Request.Accounts {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> IG.Streamer.Publishers.Continuous<IG.Streamer.Account> {
+    public func subscribe(account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Account,IG.Streamer.Error> {
         let item = "ACCOUNT:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         
@@ -84,7 +84,7 @@ extension IG.Streamer.Account {
 extension Set where Element == IG.Streamer.Account.Field {
     /// Returns all queryable fields.
     public static var all: Self {
-        return .init(Element.allCases)
+        .init(Element.allCases)
     }
 }
 

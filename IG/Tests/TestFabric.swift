@@ -19,7 +19,7 @@ extension Test {
 //            return .init(rootURL: rootURL, credentials: credentials, configuration: configuration)
             fatalError(file: file, line: line)
         case .none:
-            fatalError(#"The API rootURL "\#(rootURL)" is invalid"#, file: file, line: line)
+            fatalError("The API rootURL '\(rootURL)' is invalid", file: file, line: line)
         }
     }
 }

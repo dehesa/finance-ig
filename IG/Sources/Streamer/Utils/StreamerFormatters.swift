@@ -7,7 +7,8 @@ extension IG.Streamer {
         static let time = DateFormatter().set {
             $0.dateFormat = "HH:mm:ss"
             $0.calendar = Calendar(identifier: .iso8601)
-            $0.timeZone = TimeZone(identifier: "Europe/London")!
+            guard let zone = TimeZone(identifier: "Europe/London") else { fatalError() }
+            $0.timeZone = zone
         }
     }
 }
@@ -29,13 +30,13 @@ extension IG.Streamer.Formatter {
         /// - parameter value: The `String` value representing the result.
         /// - throws: `IG.Streamer.Formatter.Update.Error` exclusively.
         static func toInt(_ value: String) throws -> Int {
-            return try Int(value) ?! Self.Error(value: value, to: Int.self)
+            try Int(value) ?> Self.Error(value: value, to: Int.self)
         }
         /// Transforms a `String` representing a decimal number (could be a floating-point number) into an actual `Decimal` value.
         /// - parameter value: The `String` value representing the result.
         /// - throws: `IG.Streamer.Formatter.Update.Error` exclusively.
         static func toDecimal(_ value: String) throws -> Decimal {
-            return try Decimal(string: value) ?! Self.Error(value: value, to: Decimal.self)
+            try Decimal(string: value) ?> Self.Error(value: value, to: Decimal.self)
         }
         /// Transforms a `String` representing the time (without any more "date" information into a `Date` instance.
         /// - parameter value: The `String` value representing the result.
@@ -51,7 +52,7 @@ extension IG.Streamer.Formatter {
             }
             
             guard mixDate > now else { return mixDate }
-            let newDate = try cal.date(byAdding: DateComponents(day: -1), to: mixDate) ?! Self.Error(value: value, to: Date.self)
+            let newDate = try cal.date(byAdding: DateComponents(day: -1), to: mixDate) ?> Self.Error(value: value, to: Date.self)
             return newDate
         }
         /// Transforms a `String` representing an Epoch date into a `Date` instance.
@@ -59,14 +60,14 @@ extension IG.Streamer.Formatter {
         /// - returns: The time given in `value` of today.
         /// - throws: `IG.Streamer.Formatter.Update.Error` exclusively.
         static func toEpochDate(_ value: String) throws -> Date {
-            let milliseconds = try TimeInterval(value) ?! Self.Error(value: value, to: Date.self)
+            let milliseconds = try TimeInterval(value) ?> Self.Error(value: value, to: Date.self)
             return Date(timeIntervalSince1970: milliseconds / 1000)
         }
         /// Transforms a `String` representing a raw value type.
         /// - parameter value: The `String` value representing the result.
         /// - throws: `IG.Streamer.Formatter.Update.Error` exclusively. 
         static func toRawType<T>(_ value: String) throws -> T where T:RawRepresentable, T.RawValue == String {
-            return try T.init(rawValue: value) ?! Self.Error(value: value, to: T.self)
+            try T.init(rawValue: value) ?> Self.Error(value: value, to: T.self)
         }
         
         /// Represents an error that happen when transforming an updated value from a `String` to a type `T` representation.
@@ -88,7 +89,7 @@ extension IG.Streamer.Formatter.Update.Error: IG.ErrorPrintable {
     internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Formatter.self).\(Streamer.Formatter.Update.self).\(Self.self)" }
     
     internal var printableType: String {
-        return self.type
+        self.type
     }
     
     internal func printableMultiline(level: Int) -> String {

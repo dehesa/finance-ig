@@ -70,7 +70,7 @@ extension IG.Streamer.Subscription {
         }
         
         static func == (lhs: Self, rhs: Self) -> Bool {
-            return lhs.code == rhs.code
+            lhs.code == rhs.code
         }
     }
 }

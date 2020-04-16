@@ -59,9 +59,9 @@ extension Test.Account {
         }
         
         /// Semaphore used to modified the data.
-        fileprivate let semaphore = DispatchSemaphore(value: 1)
+        fileprivate let _semaphore = DispatchSemaphore(value: 1)
         /// Cached credentials
-        fileprivate var cached: API.Credentials? = nil
+        fileprivate var _cached: API.Credentials? = nil
     }
 }
 
@@ -71,7 +71,7 @@ extension Test.Account {
     /// Account test environment Streamer information.
     final class StreamerData {
         /// Semaphore used to modified the data.
-        private let semaphore = DispatchSemaphore(value: 1)
+        private let _semaphore = DispatchSemaphore(value: 1)
         /// The root URL from where to get the streaming messages.
         ///
         /// It can be one of the followings:
@@ -137,16 +137,16 @@ extension XCTestCase {
         let data: Test.Account.APIData = testAccount.api
         
         let timeout = 3
-        guard case .success = data.semaphore.wait(timeout: .now() + .seconds(timeout)) else {
+        guard case .success = data._semaphore.wait(timeout: .now() + .seconds(timeout)) else {
             fatalError("The semaphore for accessing the API credentials timeout (\(timeout) seconds)")
         }
-        defer { data.semaphore.signal() }
+        defer { data._semaphore.signal() }
         
-        if let credentials = data.cached {
+        if let credentials = data._cached {
             guard credentials.token.isExpired else { return credentials }
         }
         
-        let api: API = .init(rootURL: data.rootURL, credentials: data.cached, targetQueue: nil, qos: .default)
+        let api: API = .init(rootURL: data.rootURL, credentials: data._cached, targetQueue: nil, qos: .default)
         let result: API.Credentials
         if case .some = api.channel.credentials {
             api.session.refresh()
@@ -170,7 +170,7 @@ extension XCTestCase {
             fatalError("Some type of information must be provided to retrieve the API credentials")
         }
         
-        data.cached = result
+        data._cached = result
         return result
     }
 }

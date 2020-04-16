@@ -23,9 +23,9 @@ extension IG.API.Request.Scrapped {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: *Future* forwarding all user's applications.
-    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> IG.API.Publishers.Discrete<[IG.API.Calendar.Event]> {
+    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[IG.API.Calendar.Event],IG.API.Error> {
         self.api.publisher { _ throws -> (from: Int, to: Int) in
-                guard from <= to else { throw IG.API.Error.invalidRequest(#"The "from" date must occur before the "to" date"#, suggestion: .readDocs) }
+                guard from <= to else { throw IG.API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
                 let fromInterval = Int(from.timeIntervalSince1970) * 1000
                 let toInterval = Int(to.timeIntervalSince1970) * 1000
                 return (fromInterval, toInterval)
@@ -67,20 +67,20 @@ extension IG.API {
             public let actual: Self.Value?
             
             public init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+                let container = try decoder.container(keyedBy: _CodingKeys.self)
                 
                 let timestamp = try container.decode(Int.self, forKey: .date)
                 self.date = Date(timeIntervalSince1970: Double(timestamp / 1000))
                 self.country = try container.decode(Country.self, forKey: .country)
                 self.headline = try container.decode(String.self, forKey: .headline)
                 
-                let nestedContainer = try container.nestedContainer(keyedBy: Self.CodingKeys.DataKeys.self, forKey: .data)
+                let nestedContainer = try container.nestedContainer(keyedBy: _CodingKeys.DataKeys.self, forKey: .data)
                 self.previous = try nestedContainer.decodeIfPresent(Self.Value.self, forKey: .previous)
                 self.expected = try nestedContainer.decodeIfPresent(Self.Value.self, forKey: .expected)
                 self.actual = try nestedContainer.decodeIfPresent(Self.Value.self, forKey: .actual)
             }
             
-            private enum CodingKeys: String, CodingKey {
+            private enum _CodingKeys: String, CodingKey {
                 case type
                 case date = "timestamp"
                 case headline
@@ -140,7 +140,7 @@ extension IG.API.Calendar.Event {
                 self = .unknown(string); return
             }
             
-            guard string.droppingTrailingZeros == String(describing: number) else {
+            guard string._droppingTrailingZeros == String(describing: number) else {
                 self = .unknown(string); return
             }
             
@@ -159,7 +159,7 @@ extension IG.API.Calendar.Event {
 
 private extension String {
     /// Drops the trailing ".0" or ".00" (.etc) from a `String` representing a number.
-    var droppingTrailingZeros: String {
+    var _droppingTrailingZeros: String {
         guard self.contains(".") else { return self }
         
         var result: String.SubSequence = .init(self)

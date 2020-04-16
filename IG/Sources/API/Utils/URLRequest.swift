@@ -15,7 +15,7 @@ extension URLRequest {
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
-            let message = #"New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into "URLComponents""#
+            let message = "New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into '\(URLComponents.self)'"
             throw IG.API.Error.invalidRequest(.init(message), request: self, suggestion: .readDocs)
         }
         

@@ -7,7 +7,7 @@ extension IG.API.Request.Accounts {
 
     /// Returns a list of client-owned applications.
     /// - returns: *Future* forwarding all user's applications.
-    public func getApplications() -> IG.API.Publishers.Discrete<[IG.API.Application]> {
+    public func getApplications() -> AnyPublisher<[IG.API.Application],IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -23,9 +23,9 @@ extension IG.API.Request.Accounts {
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
     /// - returns: *Future* forwarding the newly set targeted application values.
-    public func updateApplication(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> IG.API.Publishers.Discrete<IG.API.Application> {
-        self.api.publisher { (api) throws -> Self.PayloadUpdate in
-                let apiKey = try (key ?? api.channel.credentials?.key) ?! IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+    public func updateApplication(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<IG.API.Application,IG.API.Error> {
+        self.api.publisher { (api) throws -> _PayloadUpdate in
+                let apiKey = try (key ?? api.channel.credentials?.key) ?> IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { (payload) in
                 return (.json, try JSONEncoder().encode(payload))
@@ -38,9 +38,9 @@ extension IG.API.Request.Accounts {
 
 // MARK: - Entities
 
-extension IG.API.Request.Accounts {
+private extension IG.API.Request.Accounts {
     /// Let the user updates one parameter of its application.
-    private struct PayloadUpdate: Encodable {
+    struct _PayloadUpdate: Encodable {
         ///.API key to be added to the request.
         let key: IG.API.Key
         /// Desired application status.
@@ -112,12 +112,12 @@ extension IG.API.Application {
         public let areQuoteOrdersAllowed: Bool
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.accessToEquityPrices = try container.decode(Bool.self, forKey: .equities)
             self.areQuoteOrdersAllowed = try container.decode(Bool.self, forKey: .quoteOrders)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        enum _CodingKeys: String, CodingKey {
             case equities = "allowEquities"
             case quoteOrders = "allowQuoteOrders"
         }
@@ -135,13 +135,13 @@ extension IG.API.Application {
         public let subscriptionsLimit: Int
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: Self.CodingKeys.self)
+            let container = try decoder.container(keyedBy: _CodingKeys.self)
             self.overallRequests = try container.decode(Int.self, forKey: .requests)
             self.subscriptionsLimit = try container.decode(Int.self, forKey: .subscriptions)
             self.account = try Account(from: decoder)
         }
         
-        private enum CodingKeys: String, CodingKey {
+        private enum _CodingKeys: String, CodingKey {
             case requests = "allowanceApplicationOverall"
             case subscriptions = "concurrentSubscriptionsLimit"
         }

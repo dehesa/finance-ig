@@ -118,7 +118,7 @@ extension IG.Deal.Limit {
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
     public static func isValid(level: Decimal) -> Bool {
-        return level.isFinite
+        level.isFinite
     }
     
     /// Checks that the given level is finite and greater than the base level on a `.buy` direction and less than the base level on a `.sell` direction.
@@ -137,7 +137,7 @@ extension IG.Deal.Limit {
     /// - parameter distance: A number reflecting a relative distance.
     /// - Boolean indicating whether the argument will work as a *distance* level.
     public static func isValid(distance: Decimal) -> Bool {
-        return distance.isFinite
+        distance.isFinite
     }
 }
 
@@ -151,18 +151,14 @@ extension KeyedDecodingContainer {
     /// - returns: A decoded value of the deal limit type, or  `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
     /// - throws: `DecodingError` exclusively.
     internal func decodeIfPresent(_ type: IG.Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?) throws -> IG.Deal.Limit? {
-        
         typealias L = IG.Deal.Limit
-        
         let level = try levelKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
         let distance = try distanceKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
+        
         switch (level, distance) {
-        case (.none, .none):
-            return nil
-        case (.none, let distance?):
-            return .distance(distance)
-        case (let level?, .none):
-            return .position(level: level)
+        case (.none, .none):  return nil
+        case (.none, let d?): return .distance(d)
+        case (let l?, .none): return .position(level: l)
         case (let level?, let distance?):
             var possibleLimit: L? = nil
             // Whole numbers are prefered as distances.
@@ -178,8 +174,8 @@ extension KeyedDecodingContainer {
             }
             
             guard let limit = possibleLimit else {
-                let msg = #"The limit level "\#(level)" and/or the limit distance "\#(distance)" decoded were invalid"#
-                throw DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: msg)
+                guard let key = levelKey else { fatalError() }
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The limit level '\(level)' and/or the limit distance '\(distance)' decoded were invalid")
             }
             return limit
         }

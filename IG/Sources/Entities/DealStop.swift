@@ -233,7 +233,7 @@ extension IG.Deal.Stop {
     /// - parameter level: A number reflecting an absolute level.
     /// - Boolean indicating whether the argument will work as a *position* level.
     public static func isValid(level: Decimal) -> Bool {
-        return level.isFinite
+        level.isFinite
     }
     
     /// Checks that the given level is finite and lower than the base level on a `.buy` direction and greater than the base level on a `.sell` direction.
@@ -252,21 +252,21 @@ extension IG.Deal.Stop {
     /// - parameter distance: A number reflecting a relative distance.
     /// - Boolean indicating whether the argument will work as a *distance* level.
     public static func isValid(distance: Decimal) -> Bool {
-        return distance.isFinite
+        distance.isFinite
     }
 }
 
 extension IG.Deal.Stop.Risk {
     /// Check whether the given premium is valid.
     internal static func isValid(premium: Decimal) -> Bool {
-        return premium.isNormal && !premium.isSignMinus
+        premium.isNormal && !premium.isSignMinus
     }
 }
 
 extension IG.Deal.Stop.Trailing.Settings {
     /// Check whether the given premium is valid.
     internal static func isValid(_ measurement: Decimal) -> Bool {
-        return measurement.isNormal && !measurement.isSignMinus
+        measurement.isNormal && !measurement.isSignMinus
     }
 }
 
@@ -311,29 +311,37 @@ extension KeyedDecodingContainer {
                 return .dynamic(nil)
             case (true, let d?, let i?):
                 guard case .exposed = risk else {
-                    let msg = #"The decoded stop is indicated as both trailing and limited risk. IG doesn't allow trailing stops to be "guaranteed stops""#
+                    let msg = "The decoded stop is indicated as both trailing and limited risk. IG doesn't allow trailing stops to be 'guaranteed stops'"
                     throw DecodingError.dataCorruptedError(forKey: riskKey.isGuaranteed, in: self, debugDescription: msg)
                 }
                 return .dynamic(.init(distance: d, increment: i))
             case (_, let d?, .none):
-                let msg = #"A stop trailing distance was decoded "\#(d)", but a stop trailing increment was not found for key "\#(trailingKey.distance!.stringValue)". Both must be set or be nil at the same time"#
-                throw DecodingError.dataCorruptedError(forKey: trailingKey.distance!, in: self, debugDescription: msg)
+                guard let key = trailingKey.distance else { fatalError() }
+                let msg = "A stop trailing distance was decoded '\(d), but a stop trailing increment was not found for key '\(key.stringValue)'. Both must be set or be nil at the same time"
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: msg)
             case (_, .none, let i?):
-                let msg = #"A stop trailing increment was decoded "\#(i)", but a stop trailing distance was not found for key "\#(trailingKey.increment!.stringValue)". Both must be set or be nil at the same time"#
-                throw DecodingError.dataCorruptedError(forKey: trailingKey.increment!, in: self, debugDescription: msg)
+                guard let key = trailingKey.increment else { fatalError() }
+                let msg = "A stop trailing increment was decoded '\(i)', but a stop trailing distance was not found for key '\(key.stringValue)'. Both must be set or be nil at the same time"
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: msg)
             case (false, let d?, let i?):
-                let msg = #"The stop is indicated as "not trailing", but there are trailing stop distance "\#(d)" and increment "\#(i)""#
+                let msg = "The stop is indicated as 'not trailing', but there are trailing stop distance '\(d)' and increment '\(i)'"
                 throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: msg))
             }
         }()
         
         switch stop {
         case (.none, let distance?):
-            return try S.distance(distance, risk: risk, trailing: trailing)
-                ?! DecodingError.dataCorruptedError(forKey: distanceKey!, in: self, debugDescription: #"The stop distance "\#(distance)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)""#)
+            guard let stop = S.distance(distance, risk: risk, trailing: trailing) else {
+                guard let key = distanceKey else { fatalError() }
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop distance '\(distance)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
+            }
+            return stop
         case (let level?, .none):
-            return try S.position(level: level, risk: risk, trailing: trailing)
-                ?! DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: #"The stop level "\#(level)" decoded is not valid with the decoded risk "\#(risk)" and trailing "\#(trailing)""#)
+            guard let stop = S.position(level: level, risk: risk, trailing: trailing) else {
+                guard let key = levelKey else { fatalError() }
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
+            }
+            return stop
         case (let level?, let distance?):
             var possibleStop: S? = nil
             // Whole numbers are prefered as distances.
@@ -349,8 +357,8 @@ extension KeyedDecodingContainer {
             }
             
             guard let stop = possibleStop else {
-                let msg = #"The stop level "\#(level)" and/or the stop distance "\#(distance)" decoded were invalid"#
-                throw DecodingError.dataCorruptedError(forKey: levelKey!, in: self, debugDescription: msg)
+                guard let key = levelKey else { fatalError() }
+                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' and/or the stop distance '\(distance)' decoded were invalid")
             }
             return stop
         case (.none, .none):

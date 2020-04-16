@@ -9,28 +9,28 @@ public final class API {
     /// URL root address.
     public final let rootURL: URL
     /// The queue processing and delivering server values.
-    private final let queue: DispatchQueue
+    private final let _queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
     internal final let channel: IG.API.Channel
     
     /// Namespace for endpoints related to the current API session (e.g. log in/out, refresh token, etc.).
-    public final var session: IG.API.Request.Session { return .init(api: self) }
+    public final var session: IG.API.Request.Session { .init(api: self) }
     /// Namespace for endpoints related to the user's account/s (e.g. account info, transactions, activity, etc.).
-    public final var accounts: IG.API.Request.Accounts { return .init(api: self) }
+    public final var accounts: IG.API.Request.Accounts { .init(api: self) }
     /// Namespace for endpoints related to the IG markets (e.g. market info, snapshots, etc.).
-    public final var markets: IG.API.Request.Markets { return .init(api: self) }
+    public final var markets: IG.API.Request.Markets { .init(api: self) }
     /// Namespace for endpoints related to price data point retrieval (e.g. return all data points for EUR/USD market with resolution of 1 minute).
-    public final var price: IG.API.Request.Price { return .init(api: self) }
+    public final var price: IG.API.Request.Price { .init(api: self) }
     /// Namespace for endpoints related to open positions (e.g. create a position, tweak it, or close it).
-    public final var positions: IG.API.Request.Positions { return .init(api: self) }
+    public final var positions: IG.API.Request.Positions { .init(api: self) }
     /// Namespace for endpoints related to open working orders (e.g. create a working order, tweak it, or close it).
-    public final var workingOrders: IG.API.Request.WorkingOrders { return .init(api: self) }
+    public final var workingOrders: IG.API.Request.WorkingOrders { .init(api: self) }
     /// Namespace for endpoints related to IG nodes; that is what IG uses to navigate its tree of available markets.
-    public final var nodes: IG.API.Request.Nodes { return .init(api: self) }
+    public final var nodes: IG.API.Request.Nodes { .init(api: self) }
     /// Namespace for endpoints related to watchlist management (e.g. create/remove watchlist, add/remove markets to it, etc.).
-    public final var watchlists: IG.API.Request.Watchlists { return .init(api: self) }
+    public final var watchlists: IG.API.Request.Watchlists { .init(api: self) }
     /// Namespace for endpoints related to endpoints scrapped from IG website (e.g. economic calendar).
-    public final var scrapped: IG.API.Request.Scrapped { return .init(api: self) }
+    public final var scrapped: IG.API.Request.Scrapped { .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -54,12 +54,12 @@ public final class API {
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
     internal init(rootURL: URL, credentials: IG.API.Credentials?, session: URLSession, processingQueue: DispatchQueue) {
         self.rootURL = rootURL
-        self.queue = processingQueue
+        self._queue = processingQueue
         self.channel = .init(session: session, credentials: credentials, queue: processingQueue)
     }
     
     /// The credentials status for the receiving API instance.
-    var status: IG.API.Session.Status { self.channel.status }
+    public var status: IG.API.Session.Status { self.channel.status }
 }
 
 extension IG.API {
@@ -77,8 +77,8 @@ extension IG.API: IG.DebugDescriptable {
     public final var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("root URL", self.rootURL.absoluteString)
-        result.append("queue", self.queue.label)
-        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
+        result.append("queue", self._queue.label)
+        result.append("queue QoS", String(describing: self._queue.qos.qosClass))
         return result.generate()
     }
 }

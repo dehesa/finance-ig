@@ -18,11 +18,11 @@ extension IG.API.Request.Accounts {
     
     /// Returns a list of accounts belonging to the logged-in client.
     /// - returns: *Future* forwarding a list of user's accounts.
-    public func getAll() -> IG.API.Publishers.Discrete<[IG.API.Account]> {
+    public func getAll() -> AnyPublisher<[IG.API.Account],IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: Self.WrapperList, _) in
+            .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in
                 w.accounts
             }.mapError(IG.API.Error.transform)
             .eraseToAnyPublisher()
@@ -32,7 +32,7 @@ extension IG.API.Request.Accounts {
     
     /// Returns the targeted account preferences.
     /// - returns: *Future* forwarding the current account's pereferences.
-    public func getPreferences() -> IG.API.Publishers.Discrete<IG.API.Account.Preferences> {
+    public func getPreferences() -> AnyPublisher<IG.API.Account.Preferences,IG.API.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -46,8 +46,8 @@ extension IG.API.Request.Accounts {
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: *Future* indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> IG.API.Publishers.Discrete<Never> {
-        self.api.publisher { _ -> Self.PayloadPreferences in
+    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,IG.API.Error> {
+        self.api.publisher { _ -> _PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
             }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in
                 (.json, try JSONEncoder().encode(payload))
@@ -60,14 +60,14 @@ extension IG.API.Request.Accounts {
 
 // MARK: - Entities
 
-extension IG.API.Request.Accounts {
-    private struct PayloadPreferences: Encodable {
+private extension IG.API.Request.Accounts {
+    struct _PayloadPreferences: Encodable {
         let trailingStopsEnabled: Bool
     }
 }
 
-extension IG.API.Request.Accounts {
-    private struct WrapperList: Decodable {
+private extension IG.API.Request.Accounts {
+    struct _WrapperList: Decodable {
         let accounts: [IG.API.Account]
     }
 }

@@ -4,7 +4,7 @@ import Combine
 
 final class DBPriceTests: XCTestCase {
     /// The test account being used for the tests in this class.
-    private let acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
     /// Test the retrieval of price data from a table that it is not there.
     func testNonExistentPriceTable() {
@@ -18,7 +18,7 @@ final class DBPriceTests: XCTestCase {
 
     /// Tests the creation of a price table.
     func testPriceTableCreation() {
-        let api = Test.makeAPI(rootURL: self.acc.api.rootURL, credentials: self.apiCredentials(from: self.acc), targetQueue: nil)
+        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
         let from = Date().lastTuesday
