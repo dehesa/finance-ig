@@ -28,6 +28,7 @@ extension IG.API.Request.Session {
     /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
     ///
     /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
+    /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
     public func status() -> AnyPublisher<IG.API.Session.Status,Never> {
         self.api.channel.subscribeToStatus().eraseToAnyPublisher()
     }

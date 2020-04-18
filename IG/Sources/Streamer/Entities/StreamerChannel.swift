@@ -23,6 +23,8 @@ extension IG.Streamer {
         /// All ongoing/active subscriptions paired with the cancellable that will make them stop.
         @nonobjc private var _subscriptions: [IG.Streamer.Subscription:_SubscriptionSink]
         /// A subject subscribing to the session status.
+        ///
+        /// When the `Channel` is deinitialized, the subject sends a completion event.
         @nonobjc private let _statusSubject: CurrentValueSubject<IG.Streamer.Session.Status,Never>
         /// The lock used to restrict access to the credentials.
         @nonobjc private let _lock: UnsafeMutablePointer<os_unfair_lock>
@@ -50,6 +52,7 @@ extension IG.Streamer {
             self._client.remove(delegate: self)
             self.unsubscribeAll()
             self.disconnect()
+            self._statusSubject.send(completion: .finished)
             self._lock.deallocate()
         }
         
@@ -78,7 +81,8 @@ extension IG.Streamer.Channel {
     ///
     /// - remark: This publisher filter out any status duplication; therefore each event is unique.
     /// - parameter queue: `DispatchQueue` were values are received.
-    @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Publishers.RemoveDuplicates<Publishers.ReceiveOn<CurrentValueSubject<Streamer.Session.Status,Never>, DispatchQueue>> {
+    /// - returns: Publisher emitting unique status values and only completing (successfully) when the `Channel` is deinitialized.
+    @nonobjc func subscribeToStatus(on queue: DispatchQueue) -> Publishers.RemoveDuplicates<Publishers.ReceiveOn<CurrentValueSubject<Streamer.Session.Status,Never>,DispatchQueue>> {
         self._statusSubject.receive(on: queue).removeDuplicates()
     }
     
