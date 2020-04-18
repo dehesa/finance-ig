@@ -9,6 +9,8 @@ extension IG.API {
         /// The credentials used to call API endpoints.
         private var _secret: IG.API.Credentials?
         /// A subject subscribing to the API credentials status (it doesn't send duplicates).
+        ///
+        /// When the `Channel` is deinitialized, the subject sends a completion event.
         private let _statusSubject: CurrentValueSubject<IG.API.Session.Status,Never>
         /// The processing queue for the status cancellable.
         private var _statusScheduler: DispatchQueue
@@ -34,6 +36,7 @@ extension IG.API {
         }
         
         deinit {
+            self._statusSubject.send(completion: .finished)
             os_unfair_lock_lock(self._lock)
             self._statusTimer?.cancel()
             self._statusTimer = nil
@@ -118,6 +121,7 @@ extension IG.API {
         /// Subscribes to the credentials status (i.e. whether they are expired, etc.).
         /// - remark: This publisher filter out any status duplication; therefore each event is unique.
         /// - parameter queue: `DispatchQueue` were values are received.
+        /// - returns: Publisher emitting unique status values and only completing (successfully) when the `Channel` is deinitialized.
         internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
             self._statusSubject.receive(on: queue ?? self._statusScheduler)
         }
