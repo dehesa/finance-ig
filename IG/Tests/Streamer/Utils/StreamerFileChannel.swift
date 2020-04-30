@@ -72,7 +72,7 @@ final class StreamerFileChannel: StreamerMockableChannel {
 //        guard !subscription.isActive else { return }
 //        // If the subscription instance is not of file type, there has been a major problem somewhere else.
 //        guard let subSession = subscription as? StreamerFileSession.SubscriptionSession else {
-//            fatalError("The subscription session is not a \"file subscription session\"")
+//            fatalError("The subscription session is not a 'file subscription session'")
 //        }
 //        // Send a value every second.
 //        guard subSession.start(every: [1], rootURL: self.rootURL) else {
@@ -85,7 +85,7 @@ final class StreamerFileChannel: StreamerMockableChannel {
 //        self.subscriptionObjects.remove(at: location.index)
 //
 //        guard let subSession = subscription as? StreamerFileSession.SubscriptionSession else {
-//            fatalError("The subscription session is not a \"file subscription session\"")
+//            fatalError("The subscription session is not a 'file subscription session'")
 //        }
 //        subSession.stop()
 //    }

@@ -96,7 +96,7 @@ extension IG.API.Request.Markets {
     /// - returns: Extended information of all the requested markets.
     private static func _get(api: API, epics: Set<IG.Market.Epic>) -> AnyPublisher<[IG.API.Market],IG.API.Error> {
         guard !epics.isEmpty else {
-            return Just([]).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
+            return Result.Publisher([]).eraseToAnyPublisher()
         }
         
         return api.publisher { (api) -> DateFormatter in
@@ -243,7 +243,7 @@ extension IG.API.Market {
             
             if let wrapper = try container.decodeIfPresent([String:Array<Self.HourRange>].self, forKey: .openingTime) {
                 self.openingTime = try wrapper[_CodingKeys.openingMarketTimes.rawValue]
-                    ?> DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key \"\(_CodingKeys.openingMarketTimes.rawValue)\" was not found")
+                    ?> DecodingError.dataCorruptedError(forKey: .openingTime, in: container, debugDescription: "Openning times wrapper key '\(_CodingKeys.openingMarketTimes.rawValue)' was not found")
             } else {
                 self.openingTime = nil
             }
@@ -262,7 +262,7 @@ extension IG.API.Market {
             self.lotSize = try container.decode(Decimal.self, forKey: .lotSize)
             if let contractString = try container.decodeIfPresent(String.self, forKey: .contractSize) {
                 self.contractSize = try Decimal(string: contractString)
-                    ?> DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size \"\(contractString)\" couldn't be parsed into a number")
+                    ?> DecodingError.dataCorruptedError(forKey: .contractSize, in: container, debugDescription: "The contract size '\(contractString)' couldn't be parsed into a number")
             } else {
                 self.contractSize = nil
             }

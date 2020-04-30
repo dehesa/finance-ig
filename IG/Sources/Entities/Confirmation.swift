@@ -102,7 +102,7 @@ extension IG.Confirmation {
             case (let v?, let c?): self.profit = .init(value: v, currency: c)
             case (.none, .none):   self.profit = nil
             case (.none, .some), (.some, .none):
-                let description = "Both \"\(_CodingKeys.profitValue.rawValue)\" and \"\(_CodingKeys.profitCurrency.rawValue)\" must be set or be `nil` at the same time"
+                let description = "Both '\(_CodingKeys.profitValue.rawValue)' and '\(_CodingKeys.profitCurrency.rawValue)' must be set or be `nil` at the same time"
                 throw DecodingError.dataCorruptedError(forKey: .profitValue, in: container, debugDescription: description)
             }
         }

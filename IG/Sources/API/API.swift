@@ -57,9 +57,6 @@ public final class API {
         self._queue = processingQueue
         self.channel = .init(session: session, credentials: credentials, queue: processingQueue)
     }
-    
-    /// The credentials status for the receiving API instance.
-    public var status: IG.API.Session.Status { self.channel.status }
 }
 
 extension IG.API {

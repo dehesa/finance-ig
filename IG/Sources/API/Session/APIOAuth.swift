@@ -128,7 +128,7 @@ fileprivate extension IG.API.Session._OAuth {
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
             let seconds = try TimeInterval(secondsString)
-                ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The \"\(_CodingKeys.expireInSeconds)\" value (i.e. \(secondsString) could not be transformed into a number")
+                ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The '\(_CodingKeys.expireInSeconds)' value (i.e. \(secondsString) could not be transformed into a number")
             
             if let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,

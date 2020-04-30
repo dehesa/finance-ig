@@ -10,27 +10,34 @@ extension IG.API.Request {
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         init(api: IG.API) { self.api = api }
-        
-        /// The credentials for the current session (at the time of call).
-        public var credentials: IG.API.Credentials? { self.api.channel.credentials }
-        
-        /// Boolean indicating whether the API can perform priviledge endpoints.
-        ///
-        /// To return `true`, there must be credentials in the session and the token must not be expired.
-        public var isActive: Bool {
-            guard let credentials = self.api.channel.credentials else { return false }
-            return !credentials.token.isExpired
-        }
     }
 }
 
 extension IG.API.Request.Session {
+    /// The credentials for the current session (at the time of call).
+    public var credentials: IG.API.Credentials? {
+        self.api.channel.credentials
+    }
+    
+    /// Boolean indicating whether the API can perform priviledge endpoints.
+    ///
+    /// To return `true`, there must be credentials in the session and the token must not be expired.
+    public var isActive: Bool {
+        guard let credentials = self.api.channel.credentials else { return false }
+        return !credentials.token.isExpired
+    }
+    
+    /// The credentials status for the receiving API instance.
+    public var status: IG.API.Session.Status {
+        self.api.channel.status
+    }
+    #warning("Make the same changes as Streamer")
     /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
     ///
     /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
-    public func status() -> AnyPublisher<IG.API.Session.Status,Never> {
-        self.api.channel.subscribeToStatus().eraseToAnyPublisher()
+    public var statusStream: AnyPublisher<IG.API.Session.Status,Never> {
+        self.api.channel.statusStream(on: nil).eraseToAnyPublisher()
     }
 
     // MARK: POST /session

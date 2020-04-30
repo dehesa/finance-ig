@@ -73,7 +73,7 @@ public enum Currency {
         
         public init(stringLiteral value: String) {
             guard let currency = Self.init(rawValue: value) else {
-                fatalError("The given string \"\(value)\" couldn't be identified as a currency")
+                fatalError("The given string '\(value)' couldn't be identified as a currency")
             }
             self = currency
         }

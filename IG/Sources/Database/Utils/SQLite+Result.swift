@@ -22,7 +22,7 @@ extension SQLite {
         }
         
         var description: String {
-            guard let pointer = sqlite3_errstr(self.rawValue) else { fatalError("The receiving result \"\(self.rawValue)\" is not an SQLite result") }
+            guard let pointer = sqlite3_errstr(self.rawValue) else { fatalError("The receiving result '\(self.rawValue)' is not an SQLite result") }
             return .init(cString: pointer)
         }
         

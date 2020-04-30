@@ -34,11 +34,11 @@ extension IG.Database.Request.Markets.Forex {
             .eraseToAnyPublisher()
     }
     
-    /// Returns the markets stored in the database matching the given epics.
+    /// Discrete publisher returning the markets stored in the database matching the given epics.
     ///
     /// Depending on the `expectsAll` argument, this method will return the exact number of market forex or a subset of them.
     /// - parameter epics: The forex market epics identifiers.
-    /// - parameter expectsAll: Boolean indicating whether an error should be forwarded when not all markets are in the database.
+    /// - parameter expectsAll: Boolean indicating whether an error should be emitted if not all markets are in the database.
     public func get(epics: Set<IG.Market.Epic>, expectsAll: Bool) -> AnyPublisher<Set<IG.Database.Market.Forex>,IG.Database.Error> {
         self._database.publisher { _ -> String in
                 let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")

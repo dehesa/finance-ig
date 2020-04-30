@@ -18,11 +18,12 @@ extension IG.Streamer {
         @nonobjc final let lowlevel: LSSubscription
         
         /// The current status for the receiving subscription.
+        /// - attention: The `.updateReceived` event cached in this variable doesn't contain any actual data (empty array).
         @nonobjc private var _statusValue: IG.Streamer.Subscription.Event
         /// Returns a subject subscribing to the subscription status.
         @nonobjc private let _statusSubject: PassthroughSubject<IG.Streamer.Subscription.Event,Never>
         /// The lock used to restrict access to the credentials.
-        @nonobjc private let _lock: UnsafeMutablePointer<os_unfair_lock>
+        @nonobjc private let _lock: UnfairLock
         
         /// Initializes a subscription which is not yet connected to the server.
         ///
@@ -33,8 +34,7 @@ extension IG.Streamer {
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
         @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
-            self._lock = UnsafeMutablePointer.allocate(capacity: 1)
-            self._lock.initialize(to: os_unfair_lock())
+            self._lock = UnfairLock()
             self._statusValue = .unsubscribed
             self._statusSubject = .init()
             
@@ -52,13 +52,10 @@ extension IG.Streamer {
             self.lowlevel.remove(delegate: self)
         }
         
-        /// Returns the current subscription status.
-        @nonobjc final var status: IG.Streamer.Subscription.Event {
-            os_unfair_lock_lock(self._lock)
-            let currentStatus = self._statusValue
-            os_unfair_lock_unlock(self._lock)
-            return currentStatus
-        }
+//        /// Returns the current subscription status.
+//        @nonobjc final var status: IG.Streamer.Subscription.Event {
+//            self._lock.execute { self._statusValue }
+//        }
         
         /// Subscribes to the subscription status events.
         ///
@@ -70,19 +67,19 @@ extension IG.Streamer {
         /// Receives the low-level events and send them (or not) depending on whether the event is duplicated.
         /// - parameter status: The new status receive from the low-level handling layers.
         @nonobjc private final func _receive(_ status: IG.Streamer.Subscription.Event) {
-            os_unfair_lock_lock(self._lock)
-            let previousStatus = self._statusValue
+            self._lock.lock()
+            guard self._statusValue != status else { return self._lock.unlock() }
             self._statusValue = status
+            self._lock.unlock()
             
-            switch (previousStatus, status) {
-            case (.subscribed, .subscribed), (.error, .error), (.unsubscribed, .unsubscribed):
-                os_unfair_lock_unlock(self._lock)
-            default:
-                os_unfair_lock_unlock(self._lock)
-                self._statusSubject.send(status)
-            }
+            self._statusSubject.send(status)
         }
     }
+}
+
+fileprivate extension Dictionary where Key==String, Value==IG.Streamer.Row {
+    /// An empty dictionary.
+    static let empty = Self(minimumCapacity: 0)
 }
 
 // MARK: - Lightstreamer Delegate
@@ -102,11 +99,13 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
         var result: IG.Streamer.Packet = .init(minimumCapacity: fields.count)
-        for field in fields {
+        for field in self.fields {
             let value = itemUpdate.value(withFieldName: field)
             result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))
         }
-        self._receive(.updateReceived(result))
+        
+        self._lock.execute { self._statusValue = .updateReceived(.empty) }
+        self._statusSubject.send(.updateReceived(result))
     }
     
     @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {

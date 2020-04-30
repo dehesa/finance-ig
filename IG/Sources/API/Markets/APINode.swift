@@ -92,7 +92,7 @@ extension IG.API.Request.Nodes {
             let countdown = depth - 1
             // 2. If there aren't any more levels to drill down into or the target node doesn't have subnodes, send the targeted node.
             guard countdown >= 0, let subnodes = node.subnodes, !subnodes.isEmpty else {
-                return Just(node).setFailureType(to: IG.API.Error.self).eraseToAnyPublisher()
+                return Result.Publisher(node).eraseToAnyPublisher()
             }
             // 3. Check the API instance is still there.
             guard let api = weakAPI else {

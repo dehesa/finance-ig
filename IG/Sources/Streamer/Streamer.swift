@@ -40,16 +40,6 @@ public final class Streamer {
         self.queue = queue
         self.channel = channel
     }
-    
-    /// Returns the current streamer status (e.g. whether connecting, connected, disconnected, etc.).
-    public final var status: IG.Streamer.Session.Status {
-        self.channel.status
-    }
-    
-    /// Returns the number of subscriptions currently established (and working) at the moment.
-    public final var subscriptionsCount: Int {
-        self.channel.ongoingSubscriptions
-    }
 }
 
 extension IG.Streamer {

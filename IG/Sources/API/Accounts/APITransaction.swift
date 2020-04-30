@@ -196,7 +196,7 @@ extension IG.API {
                 case .minus: self.size = (.sell, size.magnitude)
                 }
             } else {
-                throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string \"\(sizeString)\" couldn't be parsed into a number")
+                throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string '\(sizeString)' couldn't be parsed into a number")
             }
             
             let openDate = try container.decode(Date.self, forKey: .openDate, with: IG.API.Formatter.iso8601Broad)
@@ -206,7 +206,7 @@ extension IG.API {
             } else if let openLevel = Decimal(string: openString) {
                 self.open = (openDate, openLevel)
             } else {
-                throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level \"\(openString)\" couldn't be parsed into a number")
+                throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level '\(openString)' couldn't be parsed into a number")
             }
             
             let closeDate = try container.decode(Date.self, forKey: .closeDate, with: IG.API.Formatter.iso8601Broad)
@@ -214,23 +214,23 @@ extension IG.API {
             if let closeLevel = Decimal(string: closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
             } else {
-                throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level \"\(closeString)\" couldn't be parsed into a number")
+                throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level '\(closeString)' couldn't be parsed into a number")
             }
             
             let currencyInitial = try container.decode(String.self, forKey: .currency)
             guard let currency = Self._currency(from: currencyInitial) else {
-                throw DecodingError.dataCorruptedError(forKey: .currency, in: container, debugDescription: "The currency initials \"\(currencyInitial)\" for this transaction couldn't be identified")
+                throw DecodingError.dataCorruptedError(forKey: .currency, in: container, debugDescription: "The currency initials '\(currencyInitial)' for this transaction couldn't be identified")
             }
             
             let profitString = try container.decode(String.self, forKey: .profitLoss)
             guard profitString.hasPrefix(currencyInitial) else {
-                throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string \"\(profitString)\" cannot be process with currency \"\(currencyInitial)\"")
+                throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string '\(profitString)' cannot be process with currency '\(currencyInitial)'")
             }
             
             var processedString = String(profitString[currencyInitial.endIndex...])
             processedString.removeAll { $0 == "," }
             guard let profitValue = Decimal(string: processedString) else {
-                throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string \"\(profitString)\" cannot be transformed to a decimal number")
+                throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string '\(profitString)' cannot be transformed to a decimal number")
             }
             
             self.profitLoss = .init(value: profitValue, currency: currency)

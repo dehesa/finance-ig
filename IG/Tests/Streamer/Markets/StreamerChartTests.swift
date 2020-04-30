@@ -9,7 +9,7 @@ final class StreamerChartTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.price.subscribe(epic: epic, interval: .second, fields: .all)
@@ -30,8 +30,8 @@ final class StreamerChartTests: XCTestCase {
                 XCTAssertNotNil(second.day.changePercentage)
             }
         
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
     
     /// Tests subscription to tick charts.
@@ -40,7 +40,7 @@ final class StreamerChartTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.price.subscribe(epic: epic, fields: .all)
@@ -50,7 +50,7 @@ final class StreamerChartTests: XCTestCase {
                 XCTAssertLessThanOrEqual(tick.date!, Date())
             }
 
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 }

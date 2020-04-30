@@ -62,7 +62,7 @@ final class APISessionTests: XCTestCase {
         guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
         var statuses: [IG.API.Session.Status] = []
-        let cancellable = api.channel.subscribeToStatus().sink { statuses.append($0) }
+        let cancellable = api.channel.statusStream(on: nil).sink { statuses.append($0) }
         
         api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 3, on: self)
