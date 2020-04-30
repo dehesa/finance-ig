@@ -12,7 +12,7 @@ final class StreamerAccountTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         streamer.accounts.subscribe(account: self._acc.identifier, fields: .all)
             .expectsAtLeast(values: 1, timeout: 2, on: self) { (account) in
@@ -31,7 +31,7 @@ final class StreamerAccountTests: XCTestCase {
                 XCTAssertNotNil(account.profitLoss.nonLimitedRisk)
             }
         
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 }

@@ -92,7 +92,7 @@ extension StreamerLowlevelTests: LSSubscriptionDelegate {
     
     @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
         var info = "failed with code \(code)"
-        if let msg = message { info.append(" and message \"\(msg)\"") }
+        if let msg = message { info.append(" and message '\(msg)'") }
         print(info)
     }
     

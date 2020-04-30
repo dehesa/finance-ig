@@ -245,6 +245,8 @@
 		8DDC808D234F1520004A7138 /* DBPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D520C0123326A4100BDF54D /* DBPrice.swift */; };
 		8DDC808E234F3676004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
 		8DDC808F234F367A004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
+		8DE50472245AD09C001BD304 /* UnfairLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE50471245AD09C001BD304 /* UnfairLock.swift */; };
+		8DE50473245AD09C001BD304 /* UnfairLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE50471245AD09C001BD304 /* UnfairLock.swift */; };
 		8DE8A19E2349DCE000031B1E /* DBFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51C23266CBD00F029B3 /* DBFormatters.swift */; };
 		8DE8A19F2349DE7E00031B1E /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA952316575500AFBA1E /* Database.swift */; };
 		8DE8A1A02349DE8200031B1E /* DBError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9723165DB500AFBA1E /* DBError.swift */; };
@@ -455,6 +457,7 @@
 		8DE2C3E122FC789B00BB6261 /* Deal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deal.swift; sourceTree = "<group>"; };
 		8DE4A67022FB40890036CF5E /* APIMarketStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketStatus.swift; sourceTree = "<group>"; };
 		8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINodeMarket.swift; sourceTree = "<group>"; };
+		8DE50471245AD09C001BD304 /* UnfairLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnfairLock.swift; sourceTree = "<group>"; };
 		8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBMigration+v1.swift"; sourceTree = "<group>"; };
 		8DF1233D2330D9C900312A30 /* DBForexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForexTests.swift; sourceTree = "<group>"; };
 		8DF75CDB2322A85100130229 /* PlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundTests.swift; sourceTree = "<group>"; };
@@ -801,6 +804,7 @@
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
 				8D19C51A2326459000F029B3 /* ErrorHelper.swift */,
 				8D30D082232566D900D83E0A /* ErrorCodable.swift */,
+				8DE50471245AD09C001BD304 /* UnfairLock.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -1310,6 +1314,7 @@
 				8D2EA93A233B605C0004A4C2 /* APIAccount.swift in Sources */,
 				8D2EA931233B57710004A4C2 /* APIDeal.swift in Sources */,
 				8D2EA932233B57A10004A4C2 /* APIMarketStatus.swift in Sources */,
+				8DE50473245AD09C001BD304 /* UnfairLock.swift in Sources */,
 				8D2EA933233B57A40004A4C2 /* APINodeMarket.swift in Sources */,
 				8D2EA936233B5CB50004A4C2 /* APISession.swift in Sources */,
 				8D2EA937233B5CB80004A4C2 /* APICertificate.swift in Sources */,
@@ -1446,6 +1451,7 @@
 				8D376D77234C627D007D4A48 /* APIAccount.swift in Sources */,
 				8D376D78234C627D007D4A48 /* APIDeal.swift in Sources */,
 				8D376D79234C627D007D4A48 /* APIMarketStatus.swift in Sources */,
+				8DE50472245AD09C001BD304 /* UnfairLock.swift in Sources */,
 				8D376D7A234C627D007D4A48 /* APINodeMarket.swift in Sources */,
 				8D376D7B234C6297007D4A48 /* APISession.swift in Sources */,
 				8D376D7C234C6297007D4A48 /* APICertificate.swift in Sources */,

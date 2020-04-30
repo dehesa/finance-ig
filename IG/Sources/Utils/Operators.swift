@@ -1,6 +1,7 @@
 // MARK: - Optionals
 
 infix operator ?>
+infix operator ?!
 
 internal extension Optional {
     /// Checks whether the value exists. If so, it returns it; if not, it throws the given error.
@@ -13,6 +14,15 @@ internal extension Optional {
         case .some(let v): return v
         case .none: throw rhs()
         }
+    }
+    
+    /// Checks whether the value exists. If so, it returns it; if not, it stops the program execution with the code writen in `rhs`.
+    /// - parameter lhs: Optional value to check for existance.
+    /// - parameter rhs: Closure halting the program execution.
+    /// - returns: The value (non-optional) passed as parameter.
+    @_transparent static func ?!(lhs: Self, rhs: @autoclosure ()->Never) -> Wrapped {
+        guard let result = lhs else { rhs() }
+        return result
     }
     
     /// Unwraps the receiving optional and execute the appropriate closure depending on whether the value is `.none` or `.some`.

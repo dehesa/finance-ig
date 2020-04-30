@@ -9,19 +9,15 @@ final class StreamerSessionTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        let connectionStatuses = streamer.session.connect()
-            .expectsAll(timeout: 2, on: self)
-        XCTAssertNotNil(connectionStatuses.last)
-        XCTAssertTrue(connectionStatuses.last!.isReady)
-        XCTAssertTrue(streamer.status.isReady)
+        let connectionStatus = streamer.session.connect().expectsOne(timeout: 2, on: self)
+        XCTAssertTrue(connectionStatus.isReady)
+        XCTAssertEqual(connectionStatus, streamer.session.status)
         
         self.wait(seconds: 0.3)
         
-        let disconnectionStatuses = streamer.session.disconnect()
-            .expectsAll(timeout: 2, on: self)
-        XCTAssertNotNil(disconnectionStatuses.last)
-        XCTAssertEqual(disconnectionStatuses.last!, .disconnected(isRetrying: false))
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        let disconnectionStatus = streamer.session.disconnect().expectsOne(timeout: 1, on: self)
+        XCTAssertEqual(disconnectionStatus, .disconnected(isRetrying: false))
+        XCTAssertEqual(disconnectionStatus, streamer.session.status)
     }
     
     /// Test unsubscription when there is no subscriptions.
@@ -29,18 +25,13 @@ final class StreamerSessionTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect()
-            .expectsAll(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        streamer.session.connect().expectsOne(timeout: 2, on: self)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         self.wait(seconds: 0.3)
         
-        let items = streamer.session.unsubscribeAll()
-            .expectsAll(timeout: 2, on: self)
-        XCTAssertTrue(items.isEmpty)
-        
-        streamer.session.disconnect()
-            .expectsAll(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.unsubscribeAll()
+        streamer.session.disconnect().expectsOne(timeout: 1, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 }

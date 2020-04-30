@@ -146,7 +146,7 @@ extension IG.API.Error {
             
             let keys = container.allKeys
             guard keys.count == 1 else {
-                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The server error payload (JSON) was expected to have only one key, but it has \(keys.count): \"\(keys.map { $0.rawValue }.joined(separator: ", "))\"")
+                let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The server error payload (JSON) was expected to have only one key, but it has \(keys.count): '\(keys.map { $0.rawValue }.joined(separator: ", "))'")
                 throw DecodingError.typeMismatch(Self.self, ctx)
             }
         }

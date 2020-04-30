@@ -181,7 +181,7 @@ extension Decimal {
         }
         
         guard let result = Decimal(string: String(double)) else {
-            throw onError("The double value \"\(double)\" couldn't be transformed into a Decimal")
+            throw onError("The double value '\(double)' couldn't be transformed into a Decimal")
         }
         
         self = result

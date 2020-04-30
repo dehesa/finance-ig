@@ -70,7 +70,7 @@ extension DateFormatter {
     /// Debug error line to be used within the file's decoding functions.
     /// - parameter date: The date that couldn't be parsed from String to Date format.
     internal func parseErrorLine(date: String) -> String {
-        "Date \"\(date)\" couldn't be parsed with formatter \"\(self.dateFormat!)\""
+        "Date '\(date)' couldn't be parsed with formatter '\(self.dateFormat!)'"
     }
 }
 

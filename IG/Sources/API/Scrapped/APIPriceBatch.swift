@@ -107,8 +107,8 @@ extension IG.API {
             self.epic = try instrumentContainer.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try instrumentContainer.decode(String.self, forKey: .name)
             self.locale = Locale(identifier: try instrumentContainer.decode(String.self, forKey: .locale))
-            self.scalingFactor = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .scalingFactor)) ?> DecodingError.dataCorruptedError(forKey: .scalingFactor, in: instrumentContainer, debugDescription: "The \"scaling factor\" value cannot be transformed into a numeric value")
-            self.decimalPlaces = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .decimalPlaces)) ?> DecodingError.dataCorruptedError(forKey: .decimalPlaces, in: instrumentContainer, debugDescription: "The \"decimal places\" value cannot be transformed into a numeric value")
+            self.scalingFactor = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .scalingFactor)) ?> DecodingError.dataCorruptedError(forKey: .scalingFactor, in: instrumentContainer, debugDescription: "The 'scaling factor' value cannot be transformed into a numeric value")
+            self.decimalPlaces = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .decimalPlaces)) ?> DecodingError.dataCorruptedError(forKey: .decimalPlaces, in: instrumentContainer, debugDescription: "The 'decimal places' value cannot be transformed into a numeric value")
             self.isScaled = try instrumentContainer.decode(Bool.self, forKey: .isScaled)
             self.delay = try instrumentContainer.decode(Int.self, forKey: .delay)
             
@@ -167,7 +167,7 @@ fileprivate extension IG.API.Market {
             self.transactionIdentifier = try container.decode(String.self, forKey: .transactionIdentifier)
             
             let unkeyedContainer = try container.nestedUnkeyedContainer(forKey: .prices)
-            let scalingFactor = try (decoder.userInfo[._scalingFactor] as? Decimal) ?> DecodingError.valueNotFound(Decimal.self, .init(codingPath: container.codingPath, debugDescription: "The userInfo value under key \"\(CodingUserInfoKey._scalingFactor)\" wasn't found or it was invalid"))
+            let scalingFactor = try (decoder.userInfo[._scalingFactor] as? Decimal) ?> DecodingError.valueNotFound(Decimal.self, .init(codingPath: container.codingPath, debugDescription: "The userInfo value under key '\(CodingUserInfoKey._scalingFactor)' wasn't found or it was invalid"))
             self.prices = try IG.API.PriceSnapshot._decode(scrappedDataPoints: unkeyedContainer, scalingFactor: scalingFactor)
         }
         

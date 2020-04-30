@@ -9,7 +9,7 @@ final class StreamerMarketTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
 
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.markets.subscribe(epic: epic, fields: .all)
@@ -27,7 +27,7 @@ final class StreamerMarketTests: XCTestCase {
                 XCTAssertNotNil(market.day.changePercentage)
             }
         
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 }

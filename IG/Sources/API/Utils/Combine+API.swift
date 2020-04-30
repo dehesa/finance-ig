@@ -141,13 +141,13 @@ extension Publisher {
     /// - parameter statusCodes: If not `nil`, the sequence indicates all *viable*/supported status codes.
     /// - returns: A `Future` related type forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    internal func send<S,T>(expecting type: IG.API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil
-                            ) -> Publishers.FlatMap<
-                                    Publishers.MapError<
-                                        Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Transit.Call<T> >,
-                                        Swift.Error
-                                    >, Self
-                                 > where Self.Output==IG.API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
+    internal func send<S,T>(expecting type: IG.API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) ->
+            Publishers.FlatMap<
+                Publishers.MapError<
+                    Publishers.TryMap< URLSession.DataTaskPublisher, IG.API.Transit.Call<T> >,
+                    Swift.Error
+                >, Self
+            > where Self.Output==IG.API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap { (api, request, values) in
             api.channel.session.dataTaskPublisher(for: request).tryMap { (data, response) in
                 guard let httpResponse = response as? HTTPURLResponse else {
@@ -194,8 +194,7 @@ extension Publisher {
     /// - parameter pageCall: The actual combine pipeline sending the request and decoding the result. The values/errors will be forwarded to the returned publisher.
     /// - returns: A continuous publisher returning the values from `pageCall` as soon as they arrive. Only when `nil` is returned on the `pageRequestGenerator` closure, will the returned publisher complete.
     internal func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: IG.API, _ initial: (request: URLRequest, values: T), _ previous: IG.API.Transit.PreviousPage<M>?) throws -> URLRequest?,
-                                          call pageCall: @escaping (_ pageRequest: Result<IG.API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
-                                         ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==IG.API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
+                                          call pageCall: @escaping (_ pageRequest: Result<IG.API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==IG.API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.API.Error {
         self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
             .init { (subject) in
                 typealias Iterator = (_ previous: IG.API.Transit.PreviousPage<M>?) -> Void

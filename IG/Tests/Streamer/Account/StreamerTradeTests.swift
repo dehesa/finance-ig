@@ -13,14 +13,14 @@ final class StreamerTradeTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         streamer.accounts.subscribeToConfirmations(account: self._acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
             print(confirmation)
         }
         
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertEqual(streamer.status, .disconnected(isRetrying: false))
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
 
     func testChain() {
@@ -30,7 +30,7 @@ final class StreamerTradeTests: XCTestCase {
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-        XCTAssertTrue(streamer.status.isReady)
+        XCTAssertTrue(streamer.session.status.isReady)
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
@@ -44,7 +44,6 @@ final class StreamerTradeTests: XCTestCase {
                 guard case .none = dealId else { return }
                 dealId = update.confirmation.dealIdentifier
             })
-        XCTAssertEqual(streamer.subscriptionsCount, 1)
         self.wait(seconds: 0.8)
         
         // 2. Gather information
@@ -75,7 +74,7 @@ final class StreamerTradeTests: XCTestCase {
         
         // 6. Unsubscribe & disconnect
         cancellable.cancel()
-        streamer.session.disconnect().expectsCompletion(timeout: 2, on: self)
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
     }
 }
 

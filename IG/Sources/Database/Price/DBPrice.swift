@@ -164,7 +164,7 @@ extension IG.Database.Request.Price {
             
             if let to = to {
                 guard from <= to else {
-                    throw IG.Database.Error.invalidRequest("The \"from\" date must indicate a date before the \"to\" date", suggestion: .readDocs)
+                    throw IG.Database.Error.invalidRequest("The 'from' date must indicate a date before the 'to' date", suggestion: .readDocs)
                 }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             } else {
@@ -422,7 +422,7 @@ extension IG.Database.Request.Price {
         switch sqlite3_step(statement).result {
         case .row:  return true
         case .done: return false
-        case let c: throw IG.Database.Error.callFailed(.init("SQLite couldn't verify the existance of the market with epic \"\(epic)\""), code: c)
+        case let c: throw IG.Database.Error.callFailed(.init("SQLite couldn't verify the existance of the market with epic '\(epic)'"), code: c)
         }
     }
     
@@ -442,7 +442,7 @@ extension IG.Database.Request.Price {
         switch sqlite3_step(statement).result {
         case .row:  return true
         case .done: return false
-        case let c: throw IG.Database.Error.callFailed(.init("SQLite couldn't verify the existance of the \"\(epic)\"'s price table"), code: c)
+        case let c: throw IG.Database.Error.callFailed(.init("SQLite couldn't verify the existance of the '\(epic)''s price table"), code: c)
         }
     }
 }

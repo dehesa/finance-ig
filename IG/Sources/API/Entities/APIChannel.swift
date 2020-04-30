@@ -122,7 +122,7 @@ extension IG.API {
         /// - remark: This publisher filter out any status duplication; therefore each event is unique.
         /// - parameter queue: `DispatchQueue` were values are received.
         /// - returns: Publisher emitting unique status values and only completing (successfully) when the `Channel` is deinitialized.
-        internal func subscribeToStatus(on queue: DispatchQueue? = nil) -> Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
+        internal func statusStream(on queue: DispatchQueue?) -> Publishers.ReceiveOn<CurrentValueSubject<API.Session.Status,Never>,DispatchQueue> {
             self._statusSubject.receive(on: queue ?? self._statusScheduler)
         }
     }
