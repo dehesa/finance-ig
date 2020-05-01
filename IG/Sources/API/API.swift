@@ -9,7 +9,7 @@ public final class API {
     /// URL root address.
     public final let rootURL: URL
     /// The queue processing and delivering server values.
-    private final let _queue: DispatchQueue
+    internal final let queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
     internal final let channel: IG.API.Channel
     
@@ -44,7 +44,7 @@ public final class API {
         let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
         let operationQueue = OperationQueue(name: Self.reverseDNS + ".operationQueue", underlyingQueue: processingQueue)
         let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
-        self.init(rootURL: rootURL, credentials: credentials, session: session, processingQueue: processingQueue)
+        self.init(rootURL: rootURL, credentials: credentials, queue: processingQueue, session: session)
     }
     
     /// Designated initializer used for both real and mocked usage.
@@ -52,10 +52,10 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter session: The URL session used to call the real (or mocked) endpoints.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
-    internal init(rootURL: URL, credentials: IG.API.Credentials?, session: URLSession, processingQueue: DispatchQueue) {
+    internal init(rootURL: URL, credentials: IG.API.Credentials?, queue: DispatchQueue, session: URLSession) {
         self.rootURL = rootURL
-        self._queue = processingQueue
-        self.channel = .init(session: session, credentials: credentials, queue: processingQueue)
+        self.queue = queue
+        self.channel = .init(session: session, credentials: credentials, scheduler: queue)
     }
 }
 
@@ -74,8 +74,8 @@ extension IG.API: IG.DebugDescriptable {
     public final var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
         result.append("root URL", self.rootURL.absoluteString)
-        result.append("queue", self._queue.label)
-        result.append("queue QoS", String(describing: self._queue.qos.qosClass))
+        result.append("queue", self.queue.label)
+        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
         return result.generate()
     }
 }

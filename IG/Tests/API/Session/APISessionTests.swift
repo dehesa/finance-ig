@@ -45,29 +45,31 @@ final class APISessionTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
         guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
-        XCTAssertEqual(api.status, .logout)
+        XCTAssertEqual(api.session.status, .logout)
         api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 1.2, on: self)
-        XCTAssertTrue(api.status.isReady)
+        
+        guard case .ready(let date) = api.session.status,
+              date > Date() else { return XCTFail("The API configuration status is not properly set") }
         
         api.session.logout()
             .expectsCompletion(timeout: 1, on: self)
-        XCTAssertEqual(api.status, .logout)
+        XCTAssertEqual(api.session.status, .logout)
     }
     
-    /// Tests the correct status subscription.
+    /// Tests the status delivery through subscriptions.
     /// - remark: This test takes around 62 seconds to complete since it checks the OAuth expiration date (which is 60 seconds).
     func testAPIStatusSubscription() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
         guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
-        var statuses: [IG.API.Session.Status] = []
-        let cancellable = api.channel.statusStream(on: nil).sink { statuses.append($0) }
+        var statuses: [IG.API.Session.Status] = [api.session.status]
+        let cancellable = api.session.statusStream.sink { statuses.append($0) }
         
         api.session.login(type: .oauth, key: self._acc.api.key, user: user)
             .expectsCompletion(timeout: 3, on: self)
         
-        guard case .ready(let limit) = api.status, limit > Date() else { return XCTFail() }
+        guard case .ready(let limit) = api.session.status, limit > Date() else { return XCTFail() }
         self.wait(seconds: limit.timeIntervalSinceNow + 2)
         
         XCTAssertEqual(statuses, [.logout, .ready(till: limit), .expired])

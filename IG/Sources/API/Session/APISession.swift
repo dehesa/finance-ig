@@ -6,7 +6,6 @@ extension IG.API.Request {
     public struct Session {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         internal unowned let api: IG.API
-        
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         init(api: IG.API) { self.api = api }
@@ -31,13 +30,13 @@ extension IG.API.Request.Session {
     public var status: IG.API.Session.Status {
         self.api.channel.status
     }
-    #warning("Make the same changes as Streamer")
+    
     /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
-    ///
-    /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
-    /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
+    /// - remark: The subject never fails and only completes successfully when the `API` instance gets deinitialized.
+    /// - returns: Publisher emitting unique status values.
     public var statusStream: AnyPublisher<IG.API.Session.Status,Never> {
-        self.api.channel.statusStream(on: nil).eraseToAnyPublisher()
+        self.api.channel.statusStream(on: self.api.queue)
+            .eraseToAnyPublisher()
     }
 
     // MARK: POST /session
@@ -88,7 +87,7 @@ extension IG.API.Request.Session {
                 }
             }.tryMap { [weak weakAPI = self.api] (token) -> Void in
                 guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                try api.channel.tweakCredentials { (oldCredentials) in
+                try api.channel.setCredentials { (oldCredentials) in
                     guard var newCredentials = oldCredentials else {
                         let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
                         throw IG.API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
@@ -154,7 +153,7 @@ extension IG.API.Request.Session {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings, call) throws in
                 guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
-                try api.channel.tweakCredentials { (oldCredentials) in
+                try api.channel.setCredentials { (oldCredentials) in
                     guard var newCredentials = oldCredentials else {
                         throw IG.API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession)
                     }
@@ -249,14 +248,6 @@ extension IG.API.Session {
         case ready(till: Date)
         /// There are credentials, but they have already expired.
         case expired
-        
-        /// Boolean indicating whether the status is mark as ready.
-        var isReady: Bool {
-            switch self {
-            case .ready(let date) where date > Date(): return true
-            default: return false
-            }
-        }
     }
     
     /// Payload received when accounts are switched.

@@ -34,4 +34,24 @@ final class StreamerSessionTests: XCTestCase {
         streamer.session.disconnect().expectsOne(timeout: 1, on: self)
         XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
+    
+    /// Tests the status delivery through subscription.
+    func testStreamerStatusSubscription() {
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+        
+        var statuses: [IG.Streamer.Session.Status] = [streamer.session.status]
+        let cancellable = streamer.session.statusStream.sink { statuses.append($0) }
+        
+        streamer.session.connect().expectsOne(timeout: 2, on: self)
+        XCTAssertTrue(streamer.session.status.isReady)
+        
+        self.wait(seconds: 0.3)
+        
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
+        
+        XCTAssertGreaterThanOrEqual(statuses.count, 4)
+        cancellable.cancel()
+    }
 }
