@@ -10,7 +10,7 @@ import Combine
 import Foundation
 
 extension IG.Streamer {
-    /// Contains all functionality related to the Streamer session.
+    /// Instances of this class control the underlying LIghtStreamer objects.
     internal final class Channel: NSObject {
         /// Streamer credentials used to access the trading platform.
         @nonobjc let credentials: IG.Streamer.Credentials
@@ -19,16 +19,15 @@ extension IG.Streamer {
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let _client: LSLightstreamerClient
         /// A subject subscribing to the session status.
-        ///
-        /// When the `Channel` is deinitialized, the subject sends a completion event.
+        /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
         @nonobjc private let _statusSubject: PassthroughSubject<IG.Streamer.Session.Status,Never>
         /// Sends a `()` everytime a unsubscription is requested.
+        /// - remark: The subject never completes (when `Channel` gets deinitialized, the subject gets cancelled).
         @nonobjc private let _unsubscriptionSubject: PassthroughSubject<(),Never>
         
         /// Initializes the session setting up all parameters to be ready to connect.
         /// - parameter rootURL: The URL where the streaming server is located.
         /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
-        /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
         @nonobjc init(rootURL: URL, credentials: IG.Streamer.Credentials) {
             self.credentials = credentials
             self._client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
@@ -37,7 +36,6 @@ extension IG.Streamer {
             self._statusSubject = .init()
             self._unsubscriptionSubject = .init()
             super.init()
-            
             // The client stores the delegate weakly, therefore there is no reference cycle.
             self._client.add(delegate: self)
         }
@@ -46,6 +44,7 @@ extension IG.Streamer {
             self._client.remove(delegate: self)
             self.unsubscribeAll()
             self.disconnect()
+            self._statusSubject.send(completion: .finished)
         }
         
         /// The Lightstreamer library version.
@@ -62,8 +61,9 @@ internal extension IG.Streamer.Channel {
     }
     
     /// Subscribe to the status events and return the output in the given queue.
+    /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
     /// - parameter queue: `DispatchQueue` were values are received.
-    /// - returns: Publisher emitting status values (can be duplicated) and never completing.
+    /// - returns: Publisher emitting status values (can be duplicated).
     @nonobjc func statusStream(on queue: DispatchQueue) -> Publishers.ReceiveOn<PassthroughSubject<Streamer.Session.Status,Never>,DispatchQueue> {
         self._statusSubject.receive(on: queue)
     }
@@ -74,6 +74,7 @@ internal extension IG.Streamer.Channel {
     /// - If `.disconnected` and it is not retrying further connection, a full-fledge connection attempt will be made.
     /// - If `.stalled`, an error will be thrown.
     /// - For any other case, the current status is returned and no work will be performed, since the supposition is made that a previous call has been made.
+    /// 
     /// - throws: `IG.Streamer.Error.invalidRequest` exclusively when the status is `.stalled`.
     /// - returns: The client status at the time of the call (right before the low-level client calls the underlying *connect*).
     @nonobjc @discardableResult func connect() throws -> IG.Streamer.Session.Status {
@@ -125,7 +126,6 @@ internal extension IG.Streamer.Channel {
                     .setFailureType(to: IG.Streamer.Error.self)
             // 5. Map the subscription event, letting pass the updates, ignoring the lost packages, and throwing errors for any other case.
             }.tryCompactMap { (event) -> IG.Streamer.Packet? in
-                print(event)
                 switch event {
                 case .updateReceived(let update):
                     return update

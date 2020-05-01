@@ -24,12 +24,10 @@ extension IG.Streamer.Request.Session {
         self._streamer.channel.status
     }
     
-    #warning("Remove the dependency on `CurrentValueSubject` from users of this method")
-    #warning("Modify .connect() functionality")
-    #warning("Modify .disconnect() functionality")
     /// Returns a publisher to subscribe to the streamer's statuses.
     ///
     /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
+    /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
     public var statusStream: AnyPublisher<IG.Streamer.Session.Status,Never> {
         self._streamer.channel.statusStream(on: self._streamer.queue)
@@ -41,22 +39,24 @@ extension IG.Streamer.Request.Session {
     ///
     /// If the `Streamer` is already connected, then the *connected* status is forwarded and the publisher completes immediately.
     ///
-    /// There is no timeout for this operation, if you want one, you should append the `timeout` operator.
-    /// - remark: Once the operation is started, the streamer will try to get connected. If you want to disconnect the streamer on cancel, you need to add that operator yourself.
+    /// There is no timeout for this operation, if you want one, you should append the `timeout` operator. Also, if you want to disconnect the streamer on cancel, you need to add that operator yourself.
+    /// - remark: If the holding streamer instance gets deinitialized, the returned publisher gets cancelled (no completion event is emitted).
     /// - returns: Forwards the connected status and then completes. If the connection isn't possible, an error is emitted.
     public func connect() -> AnyPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> {
         // 1. Subscribe to the channel statuses.
         return self._streamer.channel.statusStream(on: self._streamer.queue)
             .setFailureType(to: Swift.Error.self)
+            // 2. If the status stream completes, it means the streamer got deinitialized, and therefore the connection failed.
+            .append( Fail(error: IG.Streamer.Error.sessionExpired() as Swift.Error) )
+            // 3. Only connect to the channel, when a subscription has been made.
             .prepend( Deferred { [weak weakStreamer = self._streamer] in
-                // 2. Connect the channel.
                 Result.Publisher( Result {
                     guard let streamer = weakStreamer else { throw IG.Streamer.Error.sessionExpired() }
                     let status = try streamer.channel.connect()
                     return (status == .disconnected(isRetrying: false)) ? .connecting : status
                 } )
+            // 4. Filter the _connecting_ statuses.
             }).tryFirst(where: {
-                // 3. Filter the _connecting_ statuses.
                 switch $0 {
                 case .connected(.http), .connected(.websocket): return true
                 case .connected(.sensing), .connecting, .disconnected(isRetrying: true): return false
@@ -72,15 +72,19 @@ extension IG.Streamer.Request.Session {
         self._streamer.channel.unsubscribeAll()
     }
     
-    /// Disconnects to the Lightstreamer server.
+    /// Disconnects to the Lightstreamer server. This function also unsubscribes any ongoing subscription (i.e. cancels the subscription publishers).
     ///
     /// If the `Streamer` is already disconnected, then the disconnected status is forwarded and the publisher completes immediately.
-    /// - remark: This function also unsubscribe any ongoing subscription (i.e. cancels the subscription publishers).
+    ///
+    /// There is no timeout for this operation, if you want one, you should append the `timeout` operator.
+    /// - remark: If the holding streamer instance gets deinitialized, the returned publisher gets cancelled (no completion event is emitted).
     /// - returns: Forwards the disconnected status and then completes. If the connection isn't possible, an error is emitted.
     public func disconnect() -> AnyPublisher<IG.Streamer.Session.Status,Never> {
-        return self._streamer.channel.statusStream(on: self._streamer.queue)
-            .prepend( Deferred<Just<IG.Streamer.Session.Status>> { [weak weakStreamer = self._streamer] in
+        // 1. Subscribe to the channel status.
+        self._streamer.channel.statusStream(on: self._streamer.queue)
+            .prepend( Deferred { [weak weakStreamer = self._streamer] () -> Just<IG.Streamer.Session.Status> in
                 let status: IG.Streamer.Session.Status
+                // 2. Unsubscribe all if needed and disconnect.
                 if let channel = weakStreamer?.channel {
                     channel.unsubscribeAll()
                     status = channel.disconnect()
@@ -88,6 +92,7 @@ extension IG.Streamer.Request.Session {
                     status = .disconnected(isRetrying: false)
                 }
                 return Just(status)
+            // 3. Wait for the disconnect message and then finish.
             }).first(where: { $0 == .disconnected(isRetrying: false) })
             .eraseToAnyPublisher()
     }
