@@ -25,8 +25,6 @@ extension IG.Streamer.Request.Session {
     }
     
     /// Returns a publisher to subscribe to the streamer's statuses.
-    ///
-    /// The subject behind this function is a `CurrentValueSubject`, which means on subscription you will receive the current value.
     /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
     public var statusStream: AnyPublisher<IG.Streamer.Session.Status,Never> {
