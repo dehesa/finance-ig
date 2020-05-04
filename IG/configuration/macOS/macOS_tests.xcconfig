@@ -4,7 +4,7 @@ SDKROOT = macosx
 // Packaging
 PRODUCT_NAME = $(PRODUCT_NAME)Tests
 PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER).tests
-INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS_tests.plist
+INFOPLIST_FILE = $(PROJECT_DIR)/configuration/macOS/macOS_tests.plist
 
 // Signing
 CODE_SIGN_IDENTITY = -

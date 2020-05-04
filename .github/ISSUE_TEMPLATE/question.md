@@ -15,5 +15,5 @@ Add any other context about the question here.
 
 ## System
 Delete section if not applicable
- - OS: [e.g. macOS 10.15.4, iOS 13.4, Ubuntu 20.04]
- - IG: [e.g. 0.5.4]
+ - OS: [e.g. macOS 10.15.4, iOS 13.4]
+ - IG: [e.g. 0.8.1]

@@ -18,7 +18,7 @@ extension IG.Database {
         /// - parameter targetQueue: The target queue on which the database serializer will depend on.
         init(location: IG.Database.Location, targetQueue: DispatchQueue?) throws {
             // Research: attributes: .concurrent
-            self._queue = DispatchQueue(label: IG.Database.reverseDNS + ".priviledgeQueue", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
+            self._queue = DispatchQueue(label: IG.Database.reverseDNS + ".queue.channel", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
             (self.rootURL, self._database) = try Self._make(location: location, queue: _queue)
         }
         

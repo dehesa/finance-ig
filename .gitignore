@@ -46,5 +46,5 @@ Package.pins
 Package.resolved
 
 # Project specific
-**/Tests/**/Environment/*
-!**/Tests/**/Environment/example.json
+**/tests/**/environment/*
+!**/tests/**/environment/example.json
