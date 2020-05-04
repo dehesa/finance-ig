@@ -19,7 +19,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 ## System
- - OS: [e.g. macOS 10.15.4, iOS 13.4, Ubuntu 20.04]
+ - OS: [e.g. macOS 10.15.4, iOS 13.4]
  - IG: [e.g. 0.8.1]
 
 ## Additional context

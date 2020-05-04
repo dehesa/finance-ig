@@ -2,7 +2,7 @@
 SDKROOT = macosx
 
 // Packaging
-INFOPLIST_FILE = $(PROJECT_DIR)/Configuration/macOS/macOS.plist
+INFOPLIST_FILE = $(PROJECT_DIR)/configuration/macOS/macOS.plist
 
 // Signing
 CODE_SIGN_IDENTITY = -
