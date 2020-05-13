@@ -28,7 +28,7 @@ extension IG.API.Request.Price {
             guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.string(from: from)),
                  .init(name: "to", value: values.string(from: to)),
@@ -65,7 +65,7 @@ extension IG.API.Request.Price {
                     throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
 
-                let formatter = IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                let formatter = IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
                 return (page.size, page.number, formatter)
             }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.formatter.string(from: from)),
@@ -191,7 +191,7 @@ extension IG.API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.Formatter.iso8601Broad)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)
@@ -272,7 +272,7 @@ extension IG.API.Price {
             }
             
             guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                  let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                let date = IG.Formatter.humanReadableLong.date(from: dateString) else {
                 let message = "The date on the response header couldn't be processed"
                 throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: message)
             }
@@ -299,7 +299,7 @@ extension IG.API.Price: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("open", Self._represent(self.open))
         result.append("close", Self._represent(self.close))
         result.append("lowest", Self._represent(self.lowest))
@@ -318,7 +318,7 @@ extension IG.API.Price.Allowance: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("reset date", self.resetDate, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("reset date", self.resetDate, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("data points (remaining)", self.remaining)
         result.append("data points (total)", self.total)
         return result.generate()

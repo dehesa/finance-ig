@@ -1,25 +1,6 @@
 import Foundation
 
-/// UTC related variables.
-internal enum UTC {
-    /// The default date formatter locale for UTC dates.
-    internal static let locale = Locale(identifier: "en_US_POSIX")
-    /// The default timezone to be used in the API date formatters.
-    internal static let timezone = TimeZone(abbreviation: "UTC")!
-    /// The default calendar to be used in the API date formatters.
-    internal static let calendar = Calendar(identifier: .iso8601).set {
-        $0.timeZone = Self.timezone // The locale isn't set on purpose.
-    }
-}
-
 extension Date {
-    /// Convenience initializer for dates grounded in UTC.
-    internal init?(year: Int, month: Int, day: Int? = nil, hour: Int? = nil, minute: Int? = nil, second: Int? = nil, calendar: Calendar = IG.UTC.calendar, timezone: TimeZone = IG.UTC.timezone) {
-        let components = DateComponents(calendar: calendar, timeZone: timezone, year: year, month: month, day: day, hour: hour, minute: minute, second: second)
-        guard let date = components.date else { return nil }
-        self = date
-    }
-    
     /// Returns the date for the last day, hour, minute, and second of the month.
     internal var lastDayOfMonth: Date {
         let (calendar, timezone) = (IG.UTC.calendar, IG.UTC.timezone)
@@ -61,16 +42,6 @@ extension Date {
         }
         
         return mixed.date
-    }
-}
-
-// MARK: - Codable
-
-extension DateFormatter {
-    /// Debug error line to be used within the file's decoding functions.
-    /// - parameter date: The date that couldn't be parsed from String to Date format.
-    internal func parseErrorLine(date: String) -> String {
-        "Date '\(date)' couldn't be parsed with formatter '\(self.dateFormat!)'"
     }
 }
 
@@ -217,5 +188,15 @@ extension KeyedEncodingContainer {
     public mutating func encodeIfPresent(_ value: Date?, forKey key: KeyedEncodingContainer<K>.Key, with formatter: DateFormatter) throws {
         let dateString = value.map { formatter.string(from: $0) }
         try self.encodeIfPresent(dateString, forKey: key)
+    }
+}
+
+// MARK: - Codable
+
+extension DateFormatter {
+    /// Debug error line to be used within the file's decoding functions.
+    /// - parameter date: The date that couldn't be parsed from String to Date format.
+    func parseErrorLine(date: String) -> String {
+        "Date '\(date)' couldn't be parsed with formatter '\(self.dateFormat!)'"
     }
 }

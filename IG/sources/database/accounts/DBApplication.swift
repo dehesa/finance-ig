@@ -190,8 +190,8 @@ fileprivate extension IG.Database.Application {
         self.status = Self.Status(rawValue: sqlite3_column_int(s, indices.status))!
         self.permission = .init(statement: s, indices: indices.permission)
         self.allowance = .init(statement: s, indices: indices.allowance)
-        self.created = IG.Database.Formatter.date.date(from: String(cString: sqlite3_column_text(s, indices.created)))!
-        self.updated = IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.updated)))!
+        self.created = IG.Formatter.date.date(from: String(cString: sqlite3_column_text(s, indices.created)))!
+        self.updated = IG.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.updated)))!
     }
     
     func _bind(to statement: SQLite.Statement, indices: _Indices = (1, 2, 3, (4, 5), (6, (7, 8, 9), 10), 11, 12)) {
@@ -200,7 +200,7 @@ fileprivate extension IG.Database.Application {
         sqlite3_bind_int (statement, indices.status, status.rawValue)
         self.permission._bind(to: statement, indices: indices.permission)
         self.allowance._bind(to: statement, indices: indices.allowance)
-        sqlite3_bind_text(statement, indices.created, IG.Database.Formatter.date.string(from: self.created), -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.created, IG.Formatter.date.string(from: self.created), -1, SQLite.Destructor.transient)
     }   // Updated is not written for now.
 }
 
@@ -291,8 +291,8 @@ extension IG.Database.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
         }
-        result.append("created", self.created, formatter: IG.Database.Formatter.date)
-        result.append("updated", self.updated, formatter: IG.Database.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("created", self.created, formatter: IG.Formatter.date)
+        result.append("updated", self.updated, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         return result.generate()
     }
 }

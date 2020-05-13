@@ -73,7 +73,7 @@ extension IG.API {
             
             let container = try topContainer.nestedContainer(keyedBy: _CodingKeys.WorkingOrderKeys.self, forKey: .workingOrder)
             self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
-            self.date = try container.decode(Date.self, forKey: .date, with: IG.API.Formatter.iso8601Broad)
+            self.date = try container.decode(Date.self, forKey: .date, with: IG.Formatter.iso8601Broad)
             self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
             self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
             self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
@@ -86,7 +86,7 @@ extension IG.API {
             self.expiration = try {
                 switch $0 {
                 case Self.Expiration.CodingKeys.tillCancelled.rawValue: return .tillCancelled
-                case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: IG.API.Formatter.iso8601NoSeconds))
+                case Self.Expiration.CodingKeys.tillDate.rawValue: return .tillDate(try container.decode(Date.self, forKey: .expirationDate, with: IG.Formatter.iso8601NoSeconds))
                 default: throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "The working order expiration '\($0)' couldn't be processed")
                 }
             }(try container.decode(String.self, forKey: .expiration))
@@ -121,7 +121,7 @@ extension IG.API.WorkingOrder: IG.DebugDescriptable {
     internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
-        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
         
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.type))")
         result.append("deal ID", self.identifier)

@@ -106,7 +106,7 @@ extension IG.Streamer.Error {
         static var sessionExpired: Self { "The Streamer instance was not found" }
         static var noCredentials: Self  { "No credentials were found on the Streamer instance" }
         static var unknownParsing: Self { "An unknown error occur while parsing a subscription update" }
-        static func parsing(update error: IG.Streamer.Formatter.Update.Error) -> Self {
+        static func parsing(update error: IG.Streamer.Update.Error) -> Self {
             .init("An error was encountered when parsing the value '\(error.value)' from a '\(String.self)' to a '\(error.type)' type")
         }
     }

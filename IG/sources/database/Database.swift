@@ -76,7 +76,7 @@ extension IG.Database {
     
     /// The reverse DNS identifier for the `DB` instance.
     internal static var reverseDNS: String {
-        Bundle.IG.identifier + ".db"
+        Bundle.IG.identifier + ".database"
     }
 }
 

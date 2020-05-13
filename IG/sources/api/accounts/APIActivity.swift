@@ -26,7 +26,7 @@ extension IG.API.Request.Accounts {
                     throw IG.API.Error.invalidRequest("THE FIQL filter cannot be empty", suggestion: .readDocs)
                 }
                 
-                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/activity", version: 3, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -335,7 +335,7 @@ extension IG.API.Activity: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("date", self.date, formatter: formatter)
         result.append("title", self.title)
         result.append("type", self.type)

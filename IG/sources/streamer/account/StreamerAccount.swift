@@ -113,7 +113,7 @@ extension IG.Streamer {
                 self.funds = try .init(update: update)
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
-            } catch let error as IG.Streamer.Formatter.Update.Error {
+            } catch let error as IG.Streamer.Update.Error {
                 throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
             } catch let underlyingError {
                 throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
@@ -132,7 +132,7 @@ extension IG.Streamer.Account {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.value = try update[F.equity.rawValue]?.value.map(U.toDecimal)
             self.used = try update[F.equityUsed.rawValue]?.value.map(U.toDecimal)
@@ -152,7 +152,7 @@ extension IG.Streamer.Account {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.value = try update[F.funds.rawValue]?.value.map(U.toDecimal)
             self.cashAvailable = try update[F.cashAvailable.rawValue]?.value.map(U.toDecimal)
@@ -172,7 +172,7 @@ extension IG.Streamer.Account {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.value = try update[F.margin.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.marginLimitedRisk.rawValue]?.value.map(U.toDecimal)
@@ -191,7 +191,7 @@ extension IG.Streamer.Account {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.value = try update[F.profitLoss.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.profitLossLimitedRisk.rawValue]?.value.map(U.toDecimal)

@@ -132,7 +132,7 @@ fileprivate extension IG.API.Session._OAuth {
             
             if let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = IG.API.Formatter.humanReadableLong.date(from: dateString) {
+               let date = IG.Formatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(seconds)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: seconds)

@@ -24,7 +24,7 @@ extension IG.API.Request.Markets {
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
-                return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(values: true, date: true)).mapError(IG.API.Error.transform)
@@ -110,7 +110,7 @@ extension IG.API.Request.Markets {
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(IG.API.Error.Message.noCredentials, suggestion: IG.API.Error.Suggestion.logIn)
                 }
-                return IG.API.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
                 [.init(name: "filter", value: "ALL"),
                  .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
@@ -580,8 +580,8 @@ extension IG.API.Market.Instrument {
             default: throw DecodingError.dataCorruptedError(forKey: .sprintMax, in: container, debugDescription: "Sprint market has an invalid min/max range")
             }
 
-            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.API.Formatter.dateDenormalBroad)
-            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.API.Formatter.dateDenormalBroad)
+            self.minExpirationDate = try container.decode(Date.self, forKey: .sprintMin, with: IG.Formatter.dateDenormalBroad)
+            self.maxExpirationDate = try container.decode(Date.self, forKey: .sprintMax, with: IG.Formatter.dateDenormalBroad)
         }
 
         private enum _CodingKeys: String, CodingKey {
@@ -746,7 +746,7 @@ extension IG.API.Market {
                 let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The response date wasn't found on JSONDecoder 'userInfo'")
                 throw DecodingError.valueNotFound(Date.self, ctx)
             }
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.Formatter.time)
             
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) else {
                 throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
@@ -812,8 +812,8 @@ extension IG.API.Market: IG.DebugDescriptable {
         result.append("chart code", self.instrument.chartCode)
         result.append("news code", self.instrument.newsCode)
         
-        let dayMonthYear = IG.API.Formatter.date
-        let dateTime = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
+        let dayMonthYear = IG.Formatter.date
+        let dateTime = IG.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("instrument", self.instrument) {
             $0.append("type", $1.type)
             $0.append("unit", $1.unit)

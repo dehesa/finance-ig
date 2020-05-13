@@ -75,7 +75,7 @@ extension IG.Streamer {
             let decoder = JSONDecoder()
             do {
                 self.confirmation = try decoder.decode(IG.Confirmation.self, from: .init(confirmationString.utf8))
-            } catch let error as IG.Streamer.Formatter.Update.Error {
+            } catch let error as IG.Streamer.Update.Error {
                 throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
             } catch let underlyingError {
                 throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)

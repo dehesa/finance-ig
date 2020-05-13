@@ -93,7 +93,7 @@ extension IG.Streamer.Chart {
         
         internal init(epic: IG.Market.Epic, item: String, update: IG.Streamer.Packet) throws {
             typealias F = Self.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             typealias E = IG.Streamer.Error
             
             self.epic = epic
@@ -129,7 +129,7 @@ extension IG.Streamer.Chart.Tick {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Tick.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -145,7 +145,7 @@ extension IG.Streamer.Chart.Tick: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic))")
-        result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
+        result.append("date", self.date, formatter: IG.Formatter.londonTime)
         result.append("volume", self.volume)
         result.append("price (ask)", self.ask)
         result.append("price (bid)", self.bid)

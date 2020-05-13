@@ -81,7 +81,7 @@ extension IG.API {
             self.status = try container.decode(IG.API.Application.Status.self, forKey: .status)
             self.permission = try Self.Permission(from: decoder)
             self.allowance = try Self.Allowance(from: decoder)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.API.Formatter.date)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.Formatter.date)
         }
         
         internal enum CodingKeys: String, CodingKey {
@@ -189,7 +189,7 @@ extension IG.API.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.subscriptionsLimit)
         }
-        result.append("creation", self.creationDate, formatter: IG.API.Formatter.date)
+        result.append("creation", self.creationDate, formatter: IG.Formatter.date)
         return result.generate()
     }
 }
