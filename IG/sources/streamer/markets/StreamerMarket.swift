@@ -25,7 +25,7 @@ extension IG.Streamer.Request.Markets {
     public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Market,IG.Streamer.Error> {
         let item = "MARKET:\(epic.rawValue)"
         let properties = fields.map { $0.rawValue }
-        let timeFormatter = IG.Streamer.Formatter.time
+        let timeFormatter = IG.Formatter.londonTime
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
@@ -112,7 +112,7 @@ extension IG.Streamer {
         /// Designated initializer for a `Streamer` market update.
         fileprivate init(epic: IG.Market.Epic, item: String, update: IG.Streamer.Packet, timeFormatter: DateFormatter) throws {
             typealias F = Self.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             typealias E = IG.Streamer.Error
             
             self.epic = epic
@@ -165,7 +165,7 @@ extension IG.Streamer.Market {
         
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Market.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -182,7 +182,7 @@ extension IG.Streamer.Market: IG.DebugDescriptable {
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic.rawValue))")
         result.append("status", self.status)
-        result.append("date", self.date, formatter: IG.Streamer.Formatter.time)
+        result.append("date", self.date, formatter: IG.Formatter.londonTime)
         result.append("are prices delayed?", self.isDelayed)
         result.append("price (ask)", self.ask)
         result.append("price (bid)", self.bid)

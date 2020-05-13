@@ -16,7 +16,7 @@ extension IG.API.Request.Accounts {
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -59,7 +59,7 @@ extension IG.API.Request.Accounts {
                 guard page.number > 0 else {
                     throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
-                return IG.API.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -199,7 +199,7 @@ extension IG.API {
                 throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string '\(sizeString)' couldn't be parsed into a number")
             }
             
-            let openDate = try container.decode(Date.self, forKey: .openDate, with: IG.API.Formatter.iso8601Broad)
+            let openDate = try container.decode(Date.self, forKey: .openDate, with: IG.Formatter.iso8601Broad)
             let openString = try container.decode(String.self, forKey: .openLevel)
             if openString == "-" {
                 self.open = (openDate, nil)
@@ -209,7 +209,7 @@ extension IG.API {
                 throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level '\(openString)' couldn't be parsed into a number")
             }
             
-            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: IG.API.Formatter.iso8601Broad)
+            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: IG.Formatter.iso8601Broad)
             let closeString = try container.decode(String.self, forKey: .closeLevel)
             if let closeLevel = Decimal(string: closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
@@ -301,7 +301,7 @@ extension IG.API.Transaction: IG.DebugDescriptable {
         result.append("period", self.period.debugDescription)
         result.append("size", self.size.map { "\($0.direction) \($0.amount)" })
         
-        let formatter = IG.API.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
         result.append("open date", self.open.date, formatter: formatter)
         result.append("close date", self.close.date, formatter: formatter)
         let nilSym = IG.DebugDescription.Symbol.nil

@@ -183,7 +183,7 @@ extension IG.API.Request.WorkingOrders {
                 try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
                 try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: IG.API.Formatter.humanReadable)
+                try container.encode(date, forKey: .expirationDate, with: IG.Formatter.humanReadable)
             }
             try container.encodeIfPresent(self.reference, forKey: .reference)
         }
@@ -263,7 +263,7 @@ extension IG.API.Request.WorkingOrders {
                 try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillCancelled.rawValue, forKey: .expiration)
             case .tillDate(let date):
                 try container.encode(IG.API.WorkingOrder.Expiration.CodingKeys.tillDate.rawValue, forKey: .expiration)
-                try container.encode(date, forKey: .expirationDate, with: IG.API.Formatter.humanReadable)
+                try container.encode(date, forKey: .expirationDate, with: IG.Formatter.humanReadable)
             }
         }
         

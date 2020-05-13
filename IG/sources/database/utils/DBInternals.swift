@@ -29,3 +29,20 @@ extension IG.Database {
         }
     }
 }
+
+// MARK: - Conveniences
+
+extension Bool {
+    /// Returns a Boolean from a SQLite value.
+    internal init(_ value: Int32) {
+        self = value > 0
+    }
+}
+
+extension Int32 {
+    /// Returns the SQLite value for a boolean.
+    internal init(_ value: Bool) {
+        self = value ? 1 : 0
+    }
+}
+

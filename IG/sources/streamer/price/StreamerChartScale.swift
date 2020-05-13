@@ -157,7 +157,7 @@ extension IG.Streamer.Chart {
         
         internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: IG.Streamer.Packet) throws {
             typealias F = Self.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             typealias E = IG.Streamer.Error
             
             self.epic = epic
@@ -195,7 +195,7 @@ extension IG.Streamer.Chart.Aggregated {
 
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Aggregated.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
             
             self.date = try update[F.date.rawValue]?.value.map(U.toEpochDate)
             self.numTicks = try update[F.numTicks.rawValue]?.value.map(U.toInt)
@@ -248,7 +248,7 @@ extension IG.Streamer.Chart.Aggregated {
 
         fileprivate init(update: IG.Streamer.Packet) throws {
             typealias F = IG.Streamer.Chart.Aggregated.Field
-            typealias U = IG.Streamer.Formatter.Update
+            typealias U = IG.Streamer.Update
 
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -274,7 +274,7 @@ extension IG.Streamer.Chart.Aggregated: IG.DebugDescriptable {
         
         var result = IG.DebugDescription("\(Self.printableDomain) \(self.interval) (\(self.epic))")
         result.append("candle", self.candle) {
-            $0.append("date", $1.date, formatter: IG.Streamer.Formatter.time)
+            $0.append("date", $1.date, formatter: IG.Formatter.londonTime)
             $0.append("ticks", $1.numTicks)
             $0.append("is finished", $1.isFinished)
             $0.append("open", represent($1.open))

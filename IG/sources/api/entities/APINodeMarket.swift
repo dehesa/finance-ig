@@ -81,7 +81,7 @@ extension IG.API.Node.Market {
             guard let responseDate = decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] as? Date else {
                 throw DecodingError.valueNotFound(Date.self, .init(codingPath: container.codingPath, debugDescription: "The decoder was expected to have the response date in its userInfo dictionary"))
             }
-            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.API.Formatter.time)
+            let timeDate = try container.decode(Date.self, forKey: .lastUpdate, with: IG.Formatter.time)
             guard let update = responseDate.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: IG.UTC.calendar, timezone: IG.UTC.timezone) else {
                 throw DecodingError.dataCorruptedError(forKey: .lastUpdate, in: container, debugDescription: "The update time couldn't be inferred")
             }
@@ -123,7 +123,7 @@ extension IG.API.Node.Market: IG.DebugDescriptable {
             $0.append("OTC tradeable", $1.isOTCTradeable)
         }
         result.append("snapshot", self.snapshot) {
-            $0.append("date", $1.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
+            $0.append("date", $1.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
             $0.append("delay", $1.delay)
             $0.append("status", $1.status)
             $0.append("price", $1.price) {

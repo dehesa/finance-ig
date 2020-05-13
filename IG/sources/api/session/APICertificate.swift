@@ -213,7 +213,7 @@ fileprivate extension IG.API.Session._Certificate {
             // Default token duration (in seconds): 6 hours
             let timeInterval: TimeInterval = 6 * 60 * 60
             if let dateString = headerFields[Key.date.rawValue] as? String,
-                let date = IG.API.Formatter.humanReadableLong.date(from: dateString) {
+                let date = IG.Formatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(timeInterval)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: timeInterval)

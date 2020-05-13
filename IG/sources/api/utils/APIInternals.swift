@@ -38,7 +38,7 @@ extension IG.API {
                     }
                     if includeDate {
                         guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                              let date = IG.API.Formatter.humanReadableLong.date(from: dateString) else {
+                              let date = IG.Formatter.humanReadableLong.date(from: dateString) else {
                             let message = "The response date couldn't be extracted from the response header"
                             throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
                         }

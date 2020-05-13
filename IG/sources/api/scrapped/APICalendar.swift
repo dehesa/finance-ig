@@ -34,7 +34,7 @@ extension IG.API.Request.Scrapped {
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "ssoToken", value: scrappedCredentials.security),
-                 .init(name: "locale", value: Locale.ig.identifier),
+                 .init(name: "locale", value: Locale.london.identifier),
                  .init(name: "eventType", value: "ECONOMIC_CALENDAR")]
             }, headers: { (_, _) in
                 [.clientSessionToken: scrappedCredentials.cst,
@@ -104,7 +104,7 @@ extension IG.API.Calendar.Event: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.API.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("country", self.country.name)
         result.append("headline", self.headline)
         result.append("previous", self.previous?.debugDescription)
@@ -130,13 +130,13 @@ extension IG.API.Calendar.Event {
             
             let substrings = string.components(separatedBy: " - ")
             guard substrings.count != 2 else {
-                if let lowerBound = Decimal(string: String(substrings[0]), locale: .ig),
-                   let upperBound = Decimal(string: String(substrings[1]), locale: .ig) {
+                if let lowerBound = Decimal(string: String(substrings[0]), locale: Locale.london),
+                   let upperBound = Decimal(string: String(substrings[1]), locale: Locale.london) {
                     self = .range(.init(uncheckedBounds: (lowerBound, upperBound)))
                 } else { self = .unknown(string) }; return
             }
             
-            guard let number = Decimal(string: string, locale: .ig) else {
+            guard let number = Decimal(string: string, locale: Locale.london) else {
                 self = .unknown(string); return
             }
             

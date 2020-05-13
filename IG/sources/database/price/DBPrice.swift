@@ -39,19 +39,19 @@ extension IG.Database.Request.Price {
             // 2. Compile the SQL statement
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
-            let formatter = IG.Database.Formatter.timestamp
             switch (from, to) {
-            case (let from?, let to?):sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
-                                      sqlite3_bind_text(statement, 2, formatter.string(from: to),   -1, SQLite.Destructor.transient)
-            case (let from?, .none):  sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
-            case (.none, let to?):    sqlite3_bind_text(statement, 1, formatter.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+                                      sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+            case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
             case (.none, .none):      break
             }
             // 4. Retrieve data
+            let formatter = UTC.Timestamp()
             while true {
                 switch sqlite3_step(statement).result {
                 case .row:
-                    let date = IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
+                    let date = formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
                     result.append(date)
                 case .done: return result
                 case let c: throw IG.Database.Error.callFailed(.querying(IG.Database.Price.self), code: c)
@@ -71,9 +71,10 @@ extension IG.Database.Request.Price {
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MIN(date) FROM '\(tableName)'"
         }.read { (sqlite, statement, query, _) in
+            let formatter = UTC.Timestamp()
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             switch sqlite3_step(statement).result {
-            case .row:  return IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
+            case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
             case .done: return nil
             case let c: throw IG.Database.Error.callFailed(.querying(IG.Database.Price.self), code: c)
             }
@@ -90,9 +91,10 @@ extension IG.Database.Request.Price {
             let tableName = IG.Database.Price.tableNamePrefix.appending(epic.rawValue)
             return "SELECT MAX(date) FROM '\(tableName)'"
         }.read { (sqlite, statement, query, _) in
+            let formatter = UTC.Timestamp()
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             switch sqlite3_step(statement).result {
-            case .row:  return IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(statement!, 0)))!
+            case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
             case .done: return nil
             case let c: throw IG.Database.Error.callFailed(.querying(IG.Database.Price.self), code: c)
             }
@@ -104,8 +106,8 @@ extension IG.Database.Request.Price {
 extension IG.Database.Request.Price {
     /// Returns historical prices for a particular instrument.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - parameter from: The date from which to start the query.
-    /// - parameter to: The date from which to end the query.
+    /// - parameter from: The date from which to start the query. If `nil`, the retrieved data starts with the first ever recorded price.
+    /// - parameter to: The date from which to end the query. If `nil`, the retrieved data ends with the last recorded price.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
     public func get(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[IG.Database.Price],IG.Database.Error> {
         self._database.publisher { _ -> (tableName: String, query: String) in
@@ -128,18 +130,18 @@ extension IG.Database.Request.Price {
             // 2. Compile the SQL statement
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
-            let formatter = IG.Database.Formatter.timestamp
             switch (from, to) {
-            case (let from?, let to?):sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
-                                      sqlite3_bind_text(statement, 2, formatter.string(from: to),   -1, SQLite.Destructor.transient)
-            case (let from?, .none):  sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
-            case (.none, let to?):    sqlite3_bind_text(statement, 1, formatter.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+                                      sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+            case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
             case (.none, .none):      break
             }
             
+            let formatter = UTC.Timestamp()
             while true {
                 switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement!))
+                case .row:  result.append(.init(statement: statement!, formatter: formatter))
                 case .done: return result
                 case let c: throw IG.Database.Error.callFailed(.querying(IG.Database.Price.self), code: c)
                 }
@@ -182,14 +184,15 @@ extension IG.Database.Request.Price {
             // 1. Compile the SQL statement (there is no check for price table).
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             // 3. Add the variables to the statement
-            let formatter = IG.Database.Formatter.timestamp
-            sqlite3_bind_text(statement, 1, formatter.string(from: from), -1, SQLite.Destructor.transient)
+            sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
             if let to = to {
-                sqlite3_bind_text(statement, 2, formatter.string(from: to), -1, SQLite.Destructor.transient)
+                sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to), -1, SQLite.Destructor.transient)
             }
+            
+            let formatter = UTC.Timestamp()
             // 4. Retrieve data
             switch sqlite3_step(statement).result {
-            case .row:  return .init(statement: statement!)
+            case .row:  return .init(statement: statement!, formatter: formatter)
             case .done: return nil
             case let c: throw IG.Database.Error.callFailed(.querying(IG.Database.Price.self), code: c)
             }
@@ -319,9 +322,8 @@ extension IG.Database.Price {
     public struct Point: Decodable {
         /// Bid price (i.e. the price another trader is willing to sell a currency pair for).
         public let bid: Decimal
-        /// Ask price (i.e. the price another trade will buy a currency pair at).
+        /// Ask price (i.e. the price another trader will buy a currency pair at).
         public let ask: Decimal
-        
         /// The middle price between the *bid* and the *ask* price.
         public var mid: Decimal { self.bid + 0.5 * (self.ask - self.bid) }
     }
@@ -355,8 +357,8 @@ extension IG.Database.Price {
 fileprivate extension IG.Database.Price {
     typealias _Indices = (date: Int32, openBid: Int32, openAsk: Int32, closeBid: Int32, closeAsk: Int32, lowBid: Int32, lowAsk: Int32, highBid: Int32, highAsk: Int32, volume: Int32)
     
-    init(statement s: SQLite.Statement, indices: _Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
-        self.date = IG.Database.Formatter.timestamp.date(from: String(cString: sqlite3_column_text(s, indices.date)))!
+    init(statement s: SQLite.Statement, formatter: UTC.Timestamp, indices: _Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
+        self.date = formatter.date(from: String(cString: sqlite3_column_text(s, indices.date)))
         self.open = .init(statement: s, indices: (indices.openBid, indices.openAsk))
         self.close = .init(statement: s, indices: (indices.closeBid, indices.closeAsk))
         self.lowest = .init(statement: s, indices: (indices.lowBid, indices.lowAsk))
@@ -365,7 +367,7 @@ fileprivate extension IG.Database.Price {
     }
     
     func _bind(to statement: SQLite.Statement, indices: _Indices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
-        sqlite3_bind_text(statement, indices.date, IG.Database.Formatter.timestamp.string(from: self.date), -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.date, UTC.Timestamp.string(from: self.date), -1, SQLite.Destructor.transient)
         self.open.bind(to: statement, indices: (indices.openBid, indices.openAsk))
         self.close.bind(to: statement, indices: (indices.closeBid, indices.closeAsk))
         self.lowest.bind(to: statement, indices: (indices.lowBid, indices.lowAsk))
@@ -454,7 +456,7 @@ extension IG.Database.Price: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Database.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
         result.append("open/close", "\(self.open.mid) -> \(self.close.mid)")
         result.append("lowest/highest", "\(self.lowest.mid) -> \(self.highest.mid)")
         result.append("volume", self.volume)

@@ -21,7 +21,7 @@ extension IG.API.Request.Scrapped {
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "format", value: "json"),
-                .init(name: "locale", value: Locale.ig.identifier),
+                .init(name: "locale", value: Locale.london.identifier),
                 .init(name: "delay", value: "0")]
             }, headers: { (_, _) in
                 [.clientSessionToken: scrappedCredentials.cst,
@@ -58,7 +58,7 @@ extension IG.API.Request.Scrapped {
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "format", value: "json"),
-                 .init(name: "locale", value: Locale.ig.identifier)]
+                 .init(name: "locale", value: Locale.london.identifier)]
             }, headers: { (_, _) in
                 [.clientSessionToken: scrappedCredentials.cst,
                  .securityToken: scrappedCredentials.security,
