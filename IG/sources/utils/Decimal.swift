@@ -67,7 +67,7 @@ extension Decimal {
     ///
     /// The operation is: `Decimal(value) / (10^power)`
     /// - precondition: `power` must be zero or a positive number.
-    internal init<I>(_ value: I, divingByPowerOf10 power: Int) where I:BinaryInteger {
+    @inlinable internal init<I>(_ value: I, divingByPowerOf10 power: Int) where I:BinaryInteger {
         precondition(power > 0)
         let lhs: Decimal = Decimal(exactly: value)!
         let rhs: Decimal = pow(10 as Decimal, power)

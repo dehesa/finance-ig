@@ -13,7 +13,7 @@ public enum UTC {
 }
 
 extension UTC {
-    /// Date and time using the UTC calendar and timezone as `DateFormatter` base.
+    /// Date and time using the UTC calendar and timezone.
     /// - Example: `2019-09-09 11:43:09`
     internal final class Timestamp {
         private var _components = DateComponents()
@@ -54,17 +54,34 @@ extension UTC {
             
             var result = String()
             result.reserveCapacity(19)
+            
             result.append(String(components.year!))
             result.append("-")
-            result.append(String(components.month!))
+            
+            let month = components.month!
+            if month < 10 { result.append("0") }
+            result.append(String(month))
             result.append("-")
-            result.append(String(components.day!))
+            
+            let day = components.day!
+            if day < 10 { result.append("0") }
+            result.append(String(day))
             result.append(" ")
-            result.append(String(components.hour!))
+            
+            let hour = components.hour!
+            if hour < 10 { result.append("0") }
+            result.append(String(hour))
             result.append(":")
-            result.append(String(components.minute!))
+            
+            let minute = components.minute!
+            if minute < 10 { result.append("0") }
+            result.append(String(minute))
             result.append(":")
-            result.append(String(components.second!))
+            
+            let second = components.second!
+            if second < 10 { result.append("0") }
+            result.append(String(second))
+            
             return result
         }
     }
