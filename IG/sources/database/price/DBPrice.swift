@@ -155,7 +155,7 @@ extension IG.Database.Request.Price {
     /// Returns the first price starting from a given date to an optional end date (or the last stored price) which matches the buying or selling price.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
-    /// - parameter to: The date from which to end the query.
+    /// - parameter to: The date from which to end the query. If `nil`, all prices from `from` to the end available prices will be searched.
     /// - parameter buying: The buying price at which to match the price.
     /// - parameter selling: The selling price at which to match the price.
     /// - returns: A signal with price point matching the closure as value.
@@ -174,9 +174,9 @@ extension IG.Database.Request.Price {
             }
             
             let buyPrice = Int32(clamping: buying, multiplyingByPowerOf10: IG.Database.Price.Point.powerOf10)
-            query.append(" AND \(buyPrice) <= highBid")
+            query.append(" AND (\(buyPrice) <= highBid")
             let sellPrice = Int32(clamping: selling, multiplyingByPowerOf10: IG.Database.Price.Point.powerOf10)
-            query.append(" AND \(sellPrice) <= lowAsk")
+            query.append(" OR \(sellPrice) >= lowAsk)")
             
             query.append(" ORDER BY date ASC LIMIT 1")
             return (tableName, query)
@@ -320,9 +320,13 @@ extension IG.Database {
 extension IG.Database.Price {
     /// Price Snap.
     public struct Point: Decodable {
-        /// Bid price (i.e. the price another trader is willing to sell a currency pair for).
+        /// Bid price (i.e. the price another trader is willing to buy for).
+        ///
+        /// The _bid price_ is always lower than the _ask price_.
         public let bid: Decimal
-        /// Ask price (i.e. the price another trader will buy a currency pair at).
+        /// Ask price (i.e. the price another trader will sell at).
+        ///
+        /// The _ask price_ is always higher than the _bid price_.
         public let ask: Decimal
         /// The middle price between the *bid* and the *ask* price.
         public var mid: Decimal { self.bid + 0.5 * (self.ask - self.bid) }
