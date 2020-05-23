@@ -1,5 +1,3 @@
-import Foundation
-
 /// IG's account.
 public enum Account {
     /// Account identifier "number".
@@ -16,7 +14,7 @@ public enum Account {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -30,7 +28,7 @@ public enum Account {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -39,7 +37,7 @@ public enum Account {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
@@ -47,9 +45,13 @@ public enum Account {
 
 extension IG.Account.Identifier {
     /// Returns a Boolean indicating whether the raw value can represent an account identifier.
+    ///
+    /// For an identifier to be considered valid, it must only contain between 3 and 7 uppercase ASCII characters.
     private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 3...6
-        let allowedSet = CharacterSet.decimalDigits.set { $0.formUnion(CharacterSet.uppercaseANSI) }
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { allowedSet.contains($0) }
+        let count = value.count
+        guard count > 2, count < 7 else { return false }
+        
+        let allowedSet = Set.uppercaseANSI.union(Set.decimalDigits)
+        return value.allSatisfy { allowedSet.contains($0) }
     }
 }

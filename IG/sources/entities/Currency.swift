@@ -1,5 +1,3 @@
-import Foundation
-
 /// Base for all monetary units
 public protocol CurrencyType {
     /// Three letter code standardize by ISO 4217.
@@ -72,9 +70,7 @@ public enum Currency {
         case nzd = "NZD"
         
         public init(stringLiteral value: String) {
-            guard let currency = Self.init(rawValue: value) else {
-                fatalError("The given string '\(value)' couldn't be identified as a currency")
-            }
+            let currency = Self.init(rawValue: value) ?! fatalError("The given string '\(value)' couldn't be identified as a currency")
             self = currency
         }
         

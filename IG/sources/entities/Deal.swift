@@ -1,5 +1,3 @@
-import Foundation
-
 /// Namespace for commonly used value/class types related to deals.
 public enum Deal {
     /// Position's permanent identifier.
@@ -16,7 +14,7 @@ public enum Deal {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -30,7 +28,7 @@ public enum Deal {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -39,19 +37,22 @@ public enum Deal {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
+        }
+        
+        /// Tests the given argument/rawValue for a matching instance.
+        ///
+        /// For an identifier to be considered valid, it must only contain between 1 and 30 characters.
+        /// - parameter value: The future raw value of this instance.
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            return (count > 0) && (count < 31)
         }
     }
 }
 
-extension IG.Deal.Identifier {
-    /// Tests the given argument/rawValue for a matching instance.
-    /// - parameter value: The future raw value of this instance.
-    private static func _validate(_ value: String) -> Bool {
-        (1...30).contains(value.count)
-    }
-}
+// MARK: -
 
 extension IG.Deal {
     /// Transient deal identifier (for an unconfirmed trade).
@@ -68,7 +69,7 @@ extension IG.Deal {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -82,7 +83,7 @@ extension IG.Deal {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -91,29 +92,29 @@ extension IG.Deal {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
+        }
+        
+        /// Tests the given argument/rawValue for a matching instance.
+        ///
+        /// For an identifier to be considered valid, it must only contain between 1 and 30 characters.
+        /// - parameter value: The future raw value of this instance.
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            guard count > 0, count < 31 else { return false }
+            
+            let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
+                $0.formUnion(Set.lowercaseANSI)
+                $0.formUnion(Set.uppercaseANSI)
+                $0.formUnion(Set.decimalDigits)
+            }
+            return value.allSatisfy { allowedSet.contains($0) }
         }
     }
 }
 
-extension IG.Deal.Reference {
-    /// Tests the given argument/rawValue for a matching instance.
-    /// - parameter value: The future raw value of this instance.
-    private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 1...30
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
-    }
-    
-    /// The allowed character set used on validation.
-    private static let _allowedSet: CharacterSet = {
-        CharacterSet(arrayLiteral: "_", "-", #"\"#).set {
-            $0.formUnion(CharacterSet.lowercaseANSI)
-            $0.formUnion(CharacterSet.uppercaseANSI)
-            $0.formUnion(CharacterSet.decimalDigits)
-        }
-    }()
-}
+// MARK: -
 
 extension IG.Deal {
     /// Deal direction.
@@ -125,14 +126,16 @@ extension IG.Deal {
         
         /// Returns the opposite direction from the receiving direction.
         /// - returns: `.buy` if receiving is `.sell`, and `.sell` if receiving is `.buy`.
-        public var oppossite: Direction {
+        @_transparent public var oppossite: Direction {
             switch self {
             case .buy:  return .sell
             case .sell: return .buy
             }
         }
     }
-    
+}
+
+extension IG.Deal {
     /// Position status.
     public enum Status: Decodable, CustomDebugStringConvertible {
         case open
@@ -172,20 +175,23 @@ extension IG.Deal {
             }
         }
     }
-    
+}
+
+extension IG.Deal {
     /// Profit value and currency.
     public struct ProfitLoss: CustomStringConvertible {
         /// The actual profit value (it can be negative).
         public let value: Decimal
         /// The profit currency.
         public let currencyCode: IG.Currency.Code
+        
         /// Designated initializer
         internal init(value: Decimal, currency: IG.Currency.Code) {
             self.value = value
             self.currencyCode = currency
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             "\(self.currencyCode)\(self.value)"
         }
     }

@@ -1,4 +1,5 @@
 import Foundation
+#warning("Decimal64 change")
 
 extension IG.Deal {
     /// The level/price at which the user doesn't want to incur more lose.
@@ -316,11 +317,11 @@ extension KeyedDecodingContainer {
                 }
                 return .dynamic(.init(distance: d, increment: i))
             case (_, let d?, .none):
-                guard let key = trailingKey.distance else { fatalError() }
+                let key = trailingKey.distance ?! fatalError()
                 let msg = "A stop trailing distance was decoded '\(d), but a stop trailing increment was not found for key '\(key.stringValue)'. Both must be set or be nil at the same time"
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: msg)
             case (_, .none, let i?):
-                guard let key = trailingKey.increment else { fatalError() }
+                let key = trailingKey.increment ?! fatalError()
                 let msg = "A stop trailing increment was decoded '\(i)', but a stop trailing distance was not found for key '\(key.stringValue)'. Both must be set or be nil at the same time"
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: msg)
             case (false, let d?, let i?):
@@ -332,13 +333,13 @@ extension KeyedDecodingContainer {
         switch stop {
         case (.none, let distance?):
             guard let stop = S.distance(distance, risk: risk, trailing: trailing) else {
-                guard let key = distanceKey else { fatalError() }
+                let key = distanceKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop distance '\(distance)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
             }
             return stop
         case (let level?, .none):
             guard let stop = S.position(level: level, risk: risk, trailing: trailing) else {
-                guard let key = levelKey else { fatalError() }
+                let key = levelKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
             }
             return stop
@@ -357,7 +358,7 @@ extension KeyedDecodingContainer {
             }
             
             guard let stop = possibleStop else {
-                guard let key = levelKey else { fatalError() }
+                let key = levelKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' and/or the stop distance '\(distance)' decoded were invalid")
             }
             return stop

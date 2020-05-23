@@ -1,5 +1,3 @@
-import Foundation
-
 extension IG.API {
     /// API development key.
     public struct Key: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
@@ -29,7 +27,7 @@ extension IG.API {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -38,7 +36,7 @@ extension IG.API {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
@@ -47,13 +45,7 @@ extension IG.API {
 extension IG.API.Key {
     /// Returns a Boolean indicating whether the raw value can represent an API key.
     private static func _validate(_ value: String) -> Bool {
-        value.count == 40 && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
+        let allowedSet = Set.lowercaseANSI.union(Set.decimalDigits)
+        return (value.count == 40) && value.allSatisfy { allowedSet.contains($0) }
     }
-    
-    /// The allowed character set for the API key. It is used on validation.
-    private static let _allowedSet: CharacterSet = {
-        CharacterSet.decimalDigits.set {
-            $0.formUnion(CharacterSet.lowercaseANSI)
-        }
-    }()
 }

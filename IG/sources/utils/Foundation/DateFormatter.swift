@@ -15,8 +15,7 @@ internal enum Formatter {
     static let londonTime = DateFormatter().set {
         $0.dateFormat = "HH:mm:ss"
         $0.calendar = Calendar(identifier: .iso8601)
-        guard let zone = TimeZone(identifier: "Europe/London") else { fatalError() }
-        $0.timeZone = zone
+        $0.timeZone = TimeZone(identifier: "Europe/London") ?! fatalError()
     }
     
     /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.

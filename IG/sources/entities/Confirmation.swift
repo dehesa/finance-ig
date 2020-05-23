@@ -1,4 +1,5 @@
 import Foundation
+#warning("Decimal64 change")
 
 /// Confirmation data returned just after opening a position or a working order.
 public struct Confirmation: Decodable {

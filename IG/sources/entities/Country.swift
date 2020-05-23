@@ -1,5 +1,3 @@
-import Foundation
-
 /// List of all supported countries.
 public enum Country: Hashable, CaseIterable, Decodable {
     case canada

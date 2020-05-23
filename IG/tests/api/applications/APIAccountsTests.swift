@@ -7,6 +7,12 @@ final class APIAccountTests: XCTestCase {
     /// The test account being used for the tests in this class.
     private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
+}
+
+extension APIAccountTests {
     /// Tests Account information retrieval.
     func testAccounts() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)

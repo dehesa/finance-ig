@@ -538,11 +538,10 @@ extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
         self.storage = underlying.split(separator: Self._separator.elements).map {
             let strings = $0.split(separator: Self._separator.numbers)
             guard strings.count == 2 else {
-                let msg = "The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected"
-                fatalError(msg)
+                fatalError("The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected")
             }
-            guard let lowerBound = Decimal(string: String(strings[0])) else { fatalError() }
-            guard let factor = Decimal(string: String(strings[1])) else { fatalError() }
+            guard let lowerBound = Decimal(string: String(strings[0])),
+                  let factor = Decimal(string: String(strings[1])) else { fatalError() }
             return (lowerBound, factor)
         }
         

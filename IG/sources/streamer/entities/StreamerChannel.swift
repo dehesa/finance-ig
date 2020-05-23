@@ -57,7 +57,7 @@ extension IG.Streamer {
 internal extension IG.Streamer.Channel {
     /// Returns the current session status.
     @nonobjc var status: IG.Streamer.Session.Status {
-        return IG.Streamer.Session.Status(rawValue: self._client.status) ?! fatalError()
+        IG.Streamer.Session.Status(rawValue: self._client.status) ?! fatalError()
     }
     
     /// Subscribe to the status events and return the output in the given queue.
@@ -154,10 +154,7 @@ internal extension IG.Streamer.Channel {
 
 extension IG.Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
-        guard let receivedStatus = IG.Streamer.Session.Status(rawValue: status) else {
-            fatalError("Lightstreamer client status '\(status)' was not recognized")
-        }
-        
+        let receivedStatus = IG.Streamer.Session.Status(rawValue: status) ?! fatalError("Lightstreamer client status '\(status)' was not recognized")
         self._statusSubject.send(receivedStatus)
     }
     
