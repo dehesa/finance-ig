@@ -1,4 +1,6 @@
+import Decimals
 import Foundation
+#warning("Delete Foundation")
 
 extension Int {
     /// Convenience initializer to clamp a `Decimal` to an integer.
@@ -113,6 +115,25 @@ extension Decimal {
 
 // MARK: - Decoder
 
+fileprivate extension String {
+    ///
+    static func decodingErrorDescription(_ value: String) -> String {
+        "The decimal value '\(value)' couldn't be transformed into a Decimal"
+    }
+}
+
+extension Decimal64: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let string = try? container.decode(String.self) {
+            self = try Decimal64(string) ?> DecodingError.dataCorruptedError(in: container, debugDescription: "The String '\(string)' couldn't be transformed into a Decimal64 number")
+        } else {
+            let number = try container.decode(Double.self)
+            self = try Decimal64(number) ?> DecodingError.dataCorruptedError(in: container, debugDescription: "The Double '\(number)' couldn't be transformed into a Decimal64 number")
+        }
+    }
+}
+
 extension SingleValueDecodingContainer {
     /// Decodes a single value of the given type.
     /// - parameter type: The type to be decode as.
@@ -122,6 +143,11 @@ extension SingleValueDecodingContainer {
         let double = try self.decode(Double.self)
         return try Decimal(double) { .dataCorruptedError(in: self, debugDescription: $0) }
     }
+    
+//    internal func decode(_ type: Decimal64.Type) throws -> Decimal64 {
+//        let double = try self.decode(Double.self)
+//        return try Decimal64(double) ?> DecodingError.dataCorruptedError(in: self, debugDescription: double.decodingErrorDescription)
+//    }
 }
 
 extension UnkeyedDecodingContainer {

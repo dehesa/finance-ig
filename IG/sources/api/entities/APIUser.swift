@@ -1,5 +1,3 @@
-import Foundation
-
 extension IG.API {
     /// A user within the platform.
     public struct User: ExpressibleByArrayLiteral {
@@ -11,7 +9,7 @@ extension IG.API {
         /// Initializer providing already with fully formed sub-instances.
         /// - parameter name: The user's platform name.
         /// - parameter password: The user's password.
-        @inlinable public init(_ name: Self.Name, _ password: Self.Password) {
+        @_transparent public init(_ name: Self.Name, _ password: Self.Password) {
             self.name = name
             self.password = password
         }
@@ -20,14 +18,14 @@ extension IG.API {
         /// - parameter name: The user's platform name.
         /// - parameter password: The user's password.
         /// - returns: `nil` if the objects were malformed.
-        @inlinable public init?(name: String, passsword: String) {
+        @_transparent public init?(name: String, passsword: String) {
             guard let username = Self.Name(rawValue: name),
                   let password = Self.Password(rawValue: passsword) else { return nil }
             self.init(username, password)
         }
         
-        @inlinable public init(arrayLiteral elements: String...) {
-            guard elements.count == 2 else { fatalError("A '\(Self.self)' type can only be initialized with an array with two non-empty strings") }
+        @_transparent public init(arrayLiteral elements: String...) {
+            precondition(elements.count == 2, "A '\(API.self).\(Self.self)' type can only be initialized with an array with two non-empty strings")
             self.init(.init(stringLiteral: elements[0]), .init(stringLiteral: elements[1]))
         }
     }
@@ -39,7 +37,7 @@ extension IG.API.User {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self._validate(value) else { fatalError("The username '\(value)' is not in a valid format") }
+            precondition(Self._validate(value), "The username '\(value)' is not in a valid format")
             self.rawValue = value
         }
         
@@ -48,7 +46,7 @@ extension IG.API.User {
             self.rawValue = rawValue
         }
         
-        @inlinable public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -62,7 +60,7 @@ extension IG.API.User {
             self.rawValue = name
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -83,7 +81,7 @@ extension IG.API.User {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self._validate(value) else { fatalError("The password is not in a valid format") }
+            precondition(Self._validate(value), "The password is not in a valid format")
             self.rawValue = value
         }
         

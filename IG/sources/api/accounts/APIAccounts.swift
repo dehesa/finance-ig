@@ -5,10 +5,10 @@ extension IG.API.Request {
     /// List of endpoints related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: IG.API
+        @usableFromInline internal unowned let api: IG.API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        init(api: IG.API) { self.api = api }
+        @usableFromInline internal init(api: IG.API) { self.api = api }
     }
 }
 

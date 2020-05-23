@@ -19,7 +19,7 @@ extension IG.API {
 extension IG.API {
     /// Publisher sending downstream the receiving `API` instance. If the instance has been deallocated when the chain is activated, a failure is sent downstream.
     /// - returns: A Combine `Future` sending an `API` instance and completing immediately once it is activated.
-    internal var publisher: DeferredResult<IG.API.Transit.Instance<Void>,IG.API.Error> {
+    @_transparent internal var publisher: DeferredResult<IG.API.Transit.Instance<Void>,IG.API.Error> {
         .init { [weak self] in
             if let self = self {
                 return .success( (self,()) )

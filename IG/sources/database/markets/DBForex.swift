@@ -537,17 +537,13 @@ extension IG.Database.Market.Forex.DealingInformation.Margin.Bands {
     fileprivate init(underlying: String) {
         self.storage = underlying.split(separator: Self._separator.elements).map {
             let strings = $0.split(separator: Self._separator.numbers)
-            guard strings.count == 2 else {
-                fatalError("The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected")
-            }
+            precondition(strings.count == 2, "The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected")
             guard let lowerBound = Decimal(string: String(strings[0])),
                   let factor = Decimal(string: String(strings[1])) else { fatalError() }
             return (lowerBound, factor)
         }
         
-        guard !self.storage.isEmpty else {
-            fatalError("The given forex market since to have no margin bands. This behavior is not expected")
-        }
+        precondition(!self.storage.isEmpty, "The given forex market since to have no margin bands. This behavior is not expected")
     }
     
     /// Encodes the receiving margin bands into a single `String`.
