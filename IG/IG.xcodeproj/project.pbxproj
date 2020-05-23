@@ -11,6 +11,7 @@
 		8D0906A3236B4537005E7501 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0906A1236B4522005E7501 /* Date.swift */; };
 		8D286D272344C8D000D582AE /* StreamerMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarket.swift */; };
 		8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
+		8D2CC9E12477D45600B56599 /* Decimals in Frameworks */ = {isa = PBXBuildFile; productRef = 8D2CC9E02477D45600B56599 /* Decimals */; };
 		8D2EA92B233B4E030004A4C2 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
 		8D2EA92C233B4E070004A4C2 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA632149A6CE00344CBF /* APIError.swift */; };
 		8D2EA92D233B545E0004A4C2 /* APIUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0A232B22EB9600001853E7 /* APIUser.swift */; };
@@ -111,7 +112,6 @@
 		8D376DA3234C6300007D4A48 /* DBMigration+v1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */; };
 		8D376DA4234C6300007D4A48 /* DBApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F88F2317BF7200F1A2C0 /* DBApplication.swift */; };
 		8D376DA5234C634B007D4A48 /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */; };
-		8D376DA6234C6376007D4A48 /* PlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF75CDB2322A85100130229 /* PlaygroundTests.swift */; };
 		8D376DA7234C6379007D4A48 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD468D322F1C70100134B67 /* Test.swift */; };
 		8D376DA8234C637B007D4A48 /* TestFabric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEF08122F9994F005AB34C /* TestFabric.swift */; };
 		8D376DA9234C6387007D4A48 /* TestAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B971422F1C995002B267F /* TestAccount.swift */; };
@@ -191,7 +191,6 @@
 		8D80CFD52341FDC300E63411 /* TestAccountDecodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D80CFD42341FDC300E63411 /* TestAccountDecodable.swift */; };
 		8D80CFD623421B2D00E63411 /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
 		8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */; platformFilter = ios; };
-		8D84AB1C233A029600DFAFFF /* PlaygroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF75CDB2322A85100130229 /* PlaygroundTests.swift */; };
 		8D88F5F9246C79D900743B2B /* UTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D88F5F8246C79D900743B2B /* UTC.swift */; };
 		8D88F5FA246C79D900743B2B /* UTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D88F5F8246C79D900743B2B /* UTC.swift */; };
 		8D89C78B2343120C00FD0F3D /* APISentimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF93B9922E75C11001B9412 /* APISentimentTests.swift */; };
@@ -226,6 +225,8 @@
 		8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = 8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */; };
 		8DCD2CE42366C4D50099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
 		8DCD2CE52366C4DC0099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
+		8DDB43AB2479704800A65CA5 /* CharacterSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDB43AA2479704800A65CA5 /* CharacterSet.swift */; };
+		8DDB43AC2479704800A65CA5 /* CharacterSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDB43AA2479704800A65CA5 /* CharacterSet.swift */; };
 		8DDBE9FA23506F1E001773D2 /* DBPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */; };
 		8DDBE9FB23506F22001773D2 /* DBPriceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */; };
 		8DDBE9FC2350820A001773D2 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
@@ -373,7 +374,6 @@
 		8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerLowlevelTests.swift; sourceTree = "<group>"; };
 		8DB90A7E231E729F004204B8 /* DBMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarketTests.swift; sourceTree = "<group>"; };
 		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
-		8DC185592403D4BE00D2AD54 /* General.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = General.playground; path = "../../../../../../../../../Library/Autosave Information/General.playground"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_iOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_iOS_Client.framework; sourceTree = "<group>"; };
 		8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
 		8DC20A6F231AF3B000760FA4 /* DBNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNode.swift; sourceTree = "<group>"; };
@@ -444,6 +444,7 @@
 		8DC4CBFE2149AB1200344CBF /* environment */ = {isa = PBXFileReference; lastKnownFileType = folder; path = environment; sourceTree = "<group>"; };
 		8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPriceBatchTests.swift; sourceTree = "<group>"; };
 		8DD468D322F1C70100134B67 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
+		8DDB43AA2479704800A65CA5 /* CharacterSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterSet.swift; sourceTree = "<group>"; };
 		8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBPriceTests.swift; sourceTree = "<group>"; };
 		8DDBE9FE2350825F001773D2 /* ServicesError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesError.swift; sourceTree = "<group>"; };
 		8DE2C3DD22FC72E400BB6261 /* DealLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealLimit.swift; sourceTree = "<group>"; };
@@ -454,7 +455,6 @@
 		8DE50471245AD09C001BD304 /* UnfairLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnfairLock.swift; sourceTree = "<group>"; };
 		8DE8A1A52349E33200031B1E /* DBMigration+v1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBMigration+v1.swift"; sourceTree = "<group>"; };
 		8DF1233D2330D9C900312A30 /* DBForexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForexTests.swift; sourceTree = "<group>"; };
-		8DF75CDB2322A85100130229 /* PlaygroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundTests.swift; sourceTree = "<group>"; };
 		8DF85B1B22F046FA00F1C525 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		8DF93B9722E757B4001B9412 /* APISentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentiment.swift; sourceTree = "<group>"; };
 		8DF93B9922E75C11001B9412 /* APISentimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentimentTests.swift; sourceTree = "<group>"; };
@@ -477,6 +477,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D2CC9E12477D45600B56599 /* Decimals in Frameworks */,
 				8DC7FBF723E2F5D2002D7F5E /* Conbini in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -607,15 +608,6 @@
 				8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */,
 			);
 			path = session;
-			sourceTree = "<group>";
-		};
-		8D8B3AB82299E8D900611153 /* playground */ = {
-			isa = PBXGroup;
-			children = (
-				8DC185592403D4BE00D2AD54 /* General.playground */,
-				8DF75CDB2322A85100130229 /* PlaygroundTests.swift */,
-			);
-			path = playground;
 			sourceTree = "<group>";
 		};
 		8D94BA942316573900AFBA1E /* database */ = {
@@ -795,18 +787,16 @@
 		8DC4CA482149A6CE00344CBF /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA492149A6CE00344CBF /* Date.swift */,
-				8D9FB786231F943C00D76B6A /* DateFormatter.swift */,
-				8D88F5F8246C79D900743B2B /* UTC.swift */,
-				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
-				8D3C262422E9FA020080D3C1 /* Collections.swift */,
-				8D569217245FE63D00E9E621 /* c */,
-				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
-				8DE50471245AD09C001BD304 /* UnfairLock.swift */,
-				8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */,
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
 				8D19C51A2326459000F029B3 /* ErrorHelper.swift */,
 				8D30D082232566D900D83E0A /* ErrorCodable.swift */,
+				8D569217245FE63D00E9E621 /* c */,
+				8DDB43AA2479704800A65CA5 /* CharacterSet.swift */,
+				8D3C262422E9FA020080D3C1 /* Collections.swift */,
+				8DDB43AD2479982800A65CA5 /* Foundation */,
+				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
+				8DE50471245AD09C001BD304 /* UnfairLock.swift */,
+				8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -934,7 +924,6 @@
 		8DC4CA822149A6CE00344CBF /* tests */ = {
 			isa = PBXGroup;
 			children = (
-				8D8B3AB82299E8D900611153 /* playground */,
 				8DD468D322F1C70100134B67 /* Test.swift */,
 				8DAEF08122F9994F005AB34C /* TestFabric.swift */,
 				8DC4CAA62149A6CE00344CBF /* data */,
@@ -1071,6 +1060,17 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		8DDB43AD2479982800A65CA5 /* Foundation */ = {
+			isa = PBXGroup;
+			children = (
+				8DC4CA492149A6CE00344CBF /* Date.swift */,
+				8D9FB786231F943C00D76B6A /* DateFormatter.swift */,
+				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
+				8D88F5F8246C79D900743B2B /* UTC.swift */,
+			);
+			path = Foundation;
+			sourceTree = "<group>";
+		};
 		8DDBE9F923506F11001773D2 /* history */ = {
 			isa = PBXGroup;
 			children = (
@@ -1179,6 +1179,7 @@
 			name = "IG [macOS]";
 			packageProductDependencies = (
 				8DC7FBF623E2F5D2002D7F5E /* Conbini */,
+				8D2CC9E02477D45600B56599 /* Decimals */,
 			);
 			productName = IG;
 			productReference = 8DC4CBE12149A78700344CBF /* IG.framework */;
@@ -1212,7 +1213,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1100;
-				LastUpgradeCheck = 1140;
+				LastUpgradeCheck = 1150;
 				TargetAttributes = {
 					8DA398B62338E3EA007B918F = {
 						CreatedOnToolsVersion = 11.0;
@@ -1241,6 +1242,7 @@
 			mainGroup = 8DC4CA332149A60900344CBF;
 			packageReferences = (
 				8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */,
+				8D2CC9DF2477D45600B56599 /* XCRemoteSwiftPackageReference "Decimal64" */,
 			);
 			productRefGroup = 8DC4CBE22149A78700344CBF /* Products */;
 			projectDirPath = "";
@@ -1354,6 +1356,7 @@
 				8DE8A19F2349DE7E00031B1E /* Database.swift in Sources */,
 				8DE8A1A02349DE8200031B1E /* DBError.swift in Sources */,
 				8DE8A1A12349DF8D00031B1E /* DBChannel.swift in Sources */,
+				8DDB43AC2479704800A65CA5 /* CharacterSet.swift in Sources */,
 				8DE8A1A22349DF9100031B1E /* DBInternals.swift in Sources */,
 				8DE8A1A32349DF9600031B1E /* DBMigration.swift in Sources */,
 				8DE8A1A62349E33200031B1E /* DBMigration+v1.swift in Sources */,
@@ -1372,7 +1375,6 @@
 			files = (
 				8DF489DD234BA27A00DB85AA /* String.swift in Sources */,
 				8D0906A3236B4537005E7501 /* Date.swift in Sources */,
-				8D84AB1C233A029600DFAFFF /* PlaygroundTests.swift in Sources */,
 				8D80CFD02341E93000E63411 /* Test.swift in Sources */,
 				8D80CFD12341E93200E63411 /* TestFabric.swift in Sources */,
 				8D80CFCE2341E8D600E63411 /* TestAccount.swift in Sources */,
@@ -1489,6 +1491,7 @@
 				8D376D9F234C6300007D4A48 /* DBError.swift in Sources */,
 				8D376DA0234C6300007D4A48 /* DBChannel.swift in Sources */,
 				8D376DA1234C6300007D4A48 /* DBInternals.swift in Sources */,
+				8DDB43AB2479704800A65CA5 /* CharacterSet.swift in Sources */,
 				8D376D9D234C62F3007D4A48 /* Combine+DB.swift in Sources */,
 				8D376DA2234C6300007D4A48 /* DBMigration.swift in Sources */,
 				8D376DA3234C6300007D4A48 /* DBMigration+v1.swift in Sources */,
@@ -1507,7 +1510,6 @@
 			files = (
 				8D376DC4234C63D6007D4A48 /* String.swift in Sources */,
 				8D0906A2236B4533005E7501 /* Date.swift in Sources */,
-				8D376DA6234C6376007D4A48 /* PlaygroundTests.swift in Sources */,
 				8D376DA7234C6379007D4A48 /* Test.swift in Sources */,
 				8D376DA8234C637B007D4A48 /* TestFabric.swift in Sources */,
 				8D376DA9234C6387007D4A48 /* TestAccount.swift in Sources */,
@@ -1987,6 +1989,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8D2CC9DF2477D45600B56599 /* XCRemoteSwiftPackageReference "Decimal64" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:dehesa/Decimal64.git";
+			requirement = {
+				branch = develop;
+				kind = branch;
+			};
+		};
 		8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "git@github.com:dehesa/Conbini.git";
@@ -1998,6 +2008,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8D2CC9E02477D45600B56599 /* Decimals */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D2CC9DF2477D45600B56599 /* XCRemoteSwiftPackageReference "Decimal64" */;
+			productName = Decimals;
+		};
 		8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;

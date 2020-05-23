@@ -57,14 +57,6 @@ extension Set {
     }
 }
 
-extension CharacterSet {
-    /// Lowercase ANSI letters `a` to `z`.
-    internal static let lowercaseANSI = CharacterSet(charactersIn: "a"..."z")
-    /// The custom `CharacterSet`s used by this framework.
-    /// Uppercase ANSI letters `A` to `Z`.
-    internal static let uppercaseANSI = CharacterSet(charactersIn: "A"..."Z")
-}
-
 extension PartialRangeFrom: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result = String(describing: self.lowerBound)

@@ -97,7 +97,8 @@ extension IG.API.Account {
         public let trailingStops: Bool
         
         /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        @available(*, unavailable)
+        private init?() { fatalError() }
         
         private enum CodingKeys: String, CodingKey {
             case trailingStops = "trailingStopsEnabled"

@@ -187,8 +187,8 @@ extension IG.API {
         /// Indicates whether the watchlist can be deleted by the user.
         public let isDeleteable: Bool
 
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        @available(*, unavailable)
+        private init?() { fatalError() }
 
         private enum CodingKeys: String, CodingKey {
             case identifier = "id"

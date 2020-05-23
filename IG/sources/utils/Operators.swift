@@ -62,10 +62,9 @@ extension SettableReference {
 // MARK: Adopters
 
 extension Calendar: SettableValue {}
-extension CharacterSet: SettableValue {}
 extension DateComponents: SettableValue {}
 extension DateFormatter: SettableReference {}
 extension JSONDecoder: SettableReference {}
+extension Set: SettableValue {}
 extension URLRequest: SettableValue {}
-
 extension IG.API.Error: SettableValue {}

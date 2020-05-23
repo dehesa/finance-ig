@@ -1,5 +1,3 @@
-import Foundation
-
 /// IG's client.
 public enum Client {
     /// Client identifier "number".
@@ -16,7 +14,7 @@ public enum Client {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -30,7 +28,7 @@ public enum Client {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -39,7 +37,7 @@ public enum Client {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
@@ -47,9 +45,13 @@ public enum Client {
 
 extension IG.Client.Identifier {
     /// Returns a Boolean indicating whether the raw value can represent a client identifier.
+    ///
+    /// For an identifier to be considered valid, it must only contain between 8 and 10 decimal digits characters.
     private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 8...10
-        let allowedSet = CharacterSet.decimalDigits
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { allowedSet.contains($0) }
+        let count = value.count
+        guard count > 7, count < 11 else { return false }
+        
+        let allowedSet = Set.decimalDigits
+        return value.allSatisfy { allowedSet.contains($0) }
     }
 }

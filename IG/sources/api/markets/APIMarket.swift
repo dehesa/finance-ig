@@ -465,16 +465,18 @@ extension IG.API.Market.Instrument {
         public let exchangeRate: Decimal
         /// Is it the default currency?
         public let isDefault: Bool
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        
+        @available(*, unavailable)
+        private init?() { fatalError() }
     }
     
     /// Market open and close times.
     public struct HourRange: Decodable {
         public let open: String
         public let close: String
-        /// Do not call! The only way to initialize is through `Decodable`.
-        private init?() { fatalError("Unaccessible initializer") }
+        
+        @available(*, unavailable)
+        private init?() { fatalError() }
         
         private enum CodingKeys: String, CodingKey {
             case open = "openTime"
@@ -521,8 +523,9 @@ extension IG.API.Market.Instrument {
             public let minimum: Decimal
             /// Band maximum.
             public let maximum: Decimal?
-            /// Do not call! The only way to initialize is through `Decodable`.
-            private init?() { fatalError("Unaccessible initializer") }
+            
+            @available(*, unavailable)
+            private init?() { fatalError() }
             
             private enum CodingKeys: String, CodingKey {
                 case currencyCode = "currency"

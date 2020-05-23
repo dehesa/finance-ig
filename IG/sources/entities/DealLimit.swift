@@ -1,4 +1,5 @@
 import Foundation
+#warning("Decimal64 change")
 
 extension IG.Deal {
     /// The limit at which the user is taking profit.
@@ -57,7 +58,6 @@ extension IG.Deal.Limit {
 // MARK: - Functionality
 
 extension IG.Deal.Limit {
-    
     /// The `Decimal` value stored with the limit type (whether a relative distance or a level.
     internal var value: Decimal {
         switch self.type {
@@ -174,7 +174,7 @@ extension KeyedDecodingContainer {
             }
             
             guard let limit = possibleLimit else {
-                guard let key = levelKey else { fatalError() }
+                let key = levelKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The limit level '\(level)' and/or the limit distance '\(distance)' decoded were invalid")
             }
             return limit
@@ -184,11 +184,9 @@ extension KeyedDecodingContainer {
 
 extension IG.Deal.Limit: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var result = "Limit "
         switch self.type {
-        case .position(let level): result.append("position at \(level)")
-        case .distance(let dista): result.append("distance of \(dista) pips")
+        case .position(let level): return "Limit position at \(level)"
+        case .distance(let dista): return "Limit distance of \(dista) pips"
         }
-        return result
     }
 }

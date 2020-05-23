@@ -1,4 +1,5 @@
 import Foundation
+#warning("Decimal64 change")
 
 /// An amount of money in a given currency.
 public struct Money<C:IG.CurrencyType>: RawRepresentable, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByStringLiteral, LosslessStringConvertible, SignedNumeric, Hashable, Comparable {
@@ -8,7 +9,7 @@ public struct Money<C:IG.CurrencyType>: RawRepresentable, ExpressibleByIntegerLi
     
     /// Designated initializer used for already-validated values.
     /// - parameter value: A "finite" value.
-    private init(trusted value: Decimal) {
+    @_transparent private init(trusted value: Decimal) {
         self.rawValue = value
     }
     
@@ -29,7 +30,7 @@ public struct Money<C:IG.CurrencyType>: RawRepresentable, ExpressibleByIntegerLi
     /// - important: Swift floating-point literals are currently initialized using binary floating-point number type, which cannot precisely express certain values. As a workaround, monetary amounts initialized from a floating-point literal are rounded to the number of places of the minor currency unit. To express a smaller fractional monetary amount, initialize from a string literal or decimal value instead.
     /// - bug: See Swift bug [SR-920](https://bugs.swift.org/browse/SR-920).
     public init(floatLiteral value: Double) {
-        guard let result = Decimal(string: String(value)) else { fatalError("The float literal '\(value)' couldn't be transformed into '\(Self.self)'") }
+        let result = Decimal(string: String(value)) ?! fatalError("The float literal '\(value)' couldn't be transformed into '\(Self.self)'")
         self.init(trusted: result)
     }
     
@@ -42,7 +43,7 @@ public struct Money<C:IG.CurrencyType>: RawRepresentable, ExpressibleByIntegerLi
     }
     
     public init(stringLiteral value: String) {
-        guard let result = Decimal(string: value) else { fatalError("The string literal '\(value)' couldn't be transformed into '\(Self.self)") }
+        let result = Decimal(string: value) ?! fatalError("The string literal '\(value)' couldn't be transformed into '\(Self.self)")
         self.init(trusted: result)
     }
  
@@ -133,7 +134,7 @@ extension IG.Money {
     
     /// The product of a monetary amount and a scalar value.
     public static func *<I>(lhs: Self, rhs: I) -> Self where I:BinaryInteger {
-        guard let value = Decimal(exactly: rhs) else { fatalError("The binary integer '\(rhs)' couldn't be transformed into a Decimal number") }
+        let value = Decimal(exactly: rhs) ?! fatalError("The binary integer '\(rhs)' couldn't be transformed into a Decimal number")
         return lhs * value
     }
     
@@ -154,7 +155,7 @@ extension IG.Money {
     
     /// Multiplies a monetary amount by a scalar value.
     public static func *=<I>(lhs: inout Self, rhs: I) where I:BinaryInteger {
-        guard let value = Decimal(exactly: rhs) else { fatalError("The binary integer '\(rhs)' couldn't be transformed into a Decimal number") }
+        let value = Decimal(exactly: rhs) ?! fatalError("The binary integer '\(rhs)' couldn't be transformed into a Decimal number")
         lhs.rawValue *= value
     }
 }

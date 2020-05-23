@@ -134,23 +134,21 @@ extension IG.API.User: IG.DebugDescriptable {
 
 extension IG.API.User.Name {
     private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 1...30
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
+        let count = value.count
+        guard count > 0, count < 31 else { return false }
+        
+        let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
+            $0.formUnion(Set.lowercaseANSI)
+            $0.formUnion(Set.uppercaseANSI)
+            $0.formUnion(Set.decimalDigits)
+        }
+        return value.allSatisfy { allowedSet.contains($0) }
     }
-    
-    /// The allowed character set for username. It is used on validation.
-    private static let _allowedSet: CharacterSet = {
-        var result = CharacterSet(arrayLiteral: #"\"#, "-", "_")
-        result.formUnion(CharacterSet.lowercaseANSI)
-        result.formUnion(CharacterSet.uppercaseANSI)
-        result.formUnion(CharacterSet.decimalDigits)
-        return result
-    }()
 }
 
 extension IG.API.User.Password {
     private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 1...350
-        return allowedRange.contains(value.count)
+        let count = value.count
+        return (count > 0) && (count < 351)
     }
 }

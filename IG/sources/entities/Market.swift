@@ -1,5 +1,3 @@
-import Foundation
-
 /// Namespace for market information.
 public enum Market {
     /// An epic represents a unique tradeable market.
@@ -16,7 +14,7 @@ public enum Market {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -30,7 +28,7 @@ public enum Market {
             self.rawValue = rawValue
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
@@ -39,7 +37,7 @@ public enum Market {
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
@@ -47,19 +45,17 @@ public enum Market {
 
 extension IG.Market.Epic {
     /// Returns a Boolean indicating whether the raw value can represent a market epic.
-    private static func _validate(_ value: String) -> Bool {
-        let allowedRange = 6...30
-        return allowedRange.contains(value.count) && value.unicodeScalars.allSatisfy { _allowedSet.contains($0) }
-    }
-    
-    /// The allowed character set for epics.
     ///
-    /// It is used on validation.
-    private static let _allowedSet: CharacterSet = {
-        CharacterSet(arrayLiteral: ".", "_").set {
-            $0.formUnion(CharacterSet.lowercaseANSI)
-            $0.formUnion(CharacterSet.uppercaseANSI)
-            $0.formUnion(CharacterSet.decimalDigits)
+    /// For an identifier to be considered valid, it must only contain between 6 and 30 ASCII characters.
+    private static func _validate(_ value: String) -> Bool {
+        let count = value.count
+        guard count > 5, count < 31 else { return false }
+        
+        let allowedSet = Set<Character>(arrayLiteral: ".", "_").set {
+            $0.formUnion(Set.lowercaseANSI)
+            $0.formUnion(Set.uppercaseANSI)
+            $0.formUnion(Set.decimalDigits)
         }
-    }()
+        return value.allSatisfy { allowedSet.contains($0) }
+    }
 }
