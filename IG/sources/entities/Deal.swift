@@ -5,7 +5,7 @@ public enum Deal {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self._validate(value) else { fatalError("The deal identifier '\(value)' is not in a valid format") }
+            precondition(Self._validate(value), "The deal identifier '\(value)' is not in a valid format")
             self.rawValue = value
         }
         
@@ -60,7 +60,7 @@ extension IG.Deal {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self._validate(value) else { fatalError("The deal reference '\(value)' is not in a valid format") }
+            precondition(Self._validate(value), "The deal reference '\(value)' is not in a valid format")
             self.rawValue = value
         }
         

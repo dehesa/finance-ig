@@ -8,7 +8,7 @@ extension IG.API.Request {
         fileprivate unowned let _api: IG.API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
-        init(api: IG.API) { self._api = api }
+        @usableFromInline internal init(api: IG.API) { self._api = api }
     }
 }
 

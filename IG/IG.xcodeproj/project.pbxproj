@@ -793,6 +793,7 @@
 				8D569217245FE63D00E9E621 /* c */,
 				8DDB43AA2479704800A65CA5 /* CharacterSet.swift */,
 				8D3C262422E9FA020080D3C1 /* Collections.swift */,
+				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8DDB43AD2479982800A65CA5 /* Foundation */,
 				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
 				8DE50471245AD09C001BD304 /* UnfairLock.swift */,
@@ -1065,7 +1066,6 @@
 			children = (
 				8DC4CA492149A6CE00344CBF /* Date.swift */,
 				8D9FB786231F943C00D76B6A /* DateFormatter.swift */,
-				8D911F6422ECF4CA0038E899 /* Decimal.swift */,
 				8D88F5F8246C79D900743B2B /* UTC.swift */,
 			);
 			path = Foundation;

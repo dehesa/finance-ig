@@ -5,7 +5,7 @@ public enum Market {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            guard Self._validate(value) else { fatalError("The market epic '\(value)' is not in a valid format") }
+            precondition(Self._validate(value), "The market epic '\(value)' is not in a valid format")
             self.rawValue = value
         }
         

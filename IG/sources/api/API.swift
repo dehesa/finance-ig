@@ -14,23 +14,23 @@ public final class API {
     internal final let channel: IG.API.Channel
     
     /// Namespace for endpoints related to the current API session (e.g. log in/out, refresh token, etc.).
-    public final var session: IG.API.Request.Session { .init(api: self) }
+    @inlinable public final var session: IG.API.Request.Session { .init(api: self) }
     /// Namespace for endpoints related to the user's account/s (e.g. account info, transactions, activity, etc.).
-    public final var accounts: IG.API.Request.Accounts { .init(api: self) }
+    @inlinable public final var accounts: IG.API.Request.Accounts { .init(api: self) }
     /// Namespace for endpoints related to the IG markets (e.g. market info, snapshots, etc.).
-    public final var markets: IG.API.Request.Markets { .init(api: self) }
+    @inlinable public final var markets: IG.API.Request.Markets { .init(api: self) }
     /// Namespace for endpoints related to price data point retrieval (e.g. return all data points for EUR/USD market with resolution of 1 minute).
-    public final var price: IG.API.Request.Price { .init(api: self) }
+    @inlinable public final var price: IG.API.Request.Price { .init(api: self) }
     /// Namespace for endpoints related to open positions (e.g. create a position, tweak it, or close it).
-    public final var positions: IG.API.Request.Positions { .init(api: self) }
+    @inlinable public final var positions: IG.API.Request.Positions { .init(api: self) }
     /// Namespace for endpoints related to open working orders (e.g. create a working order, tweak it, or close it).
-    public final var workingOrders: IG.API.Request.WorkingOrders { .init(api: self) }
+    @inlinable public final var workingOrders: IG.API.Request.WorkingOrders { .init(api: self) }
     /// Namespace for endpoints related to IG nodes; that is what IG uses to navigate its tree of available markets.
-    public final var nodes: IG.API.Request.Nodes { .init(api: self) }
+    @inlinable public final var nodes: IG.API.Request.Nodes { .init(api: self) }
     /// Namespace for endpoints related to watchlist management (e.g. create/remove watchlist, add/remove markets to it, etc.).
-    public final var watchlists: IG.API.Request.Watchlists { .init(api: self) }
+    @inlinable public final var watchlists: IG.API.Request.Watchlists { .init(api: self) }
     /// Namespace for endpoints related to endpoints scrapped from IG website (e.g. economic calendar).
-    public final var scrapped: IG.API.Request.Scrapped { .init(api: self) }
+    @inlinable public final var scrapped: IG.API.Request.Scrapped { .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///

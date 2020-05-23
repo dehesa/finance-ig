@@ -7,10 +7,10 @@ extension IG.API {
         /// The `URLSession` instance performing the HTTPS requests.
         internal let session: URLSession
         
-        /// The credentials used to call API endpoints.
-        private var _credentials: IG.API.Credentials?
         /// The lock used to restrict access to the credentials.
         private let _lock: UnfairLock
+        /// The credentials used to call API endpoints.
+        private var _credentials: IG.API.Credentials?
         /// The processing queue for the status cancellable.
         private let _scheduler: DispatchQueue
         

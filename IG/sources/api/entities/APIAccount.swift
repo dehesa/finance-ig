@@ -1,4 +1,4 @@
-import Foundation
+import Decimals
 
 extension IG.API {
     /// Client account.
@@ -73,13 +73,13 @@ extension IG.API.Account {
     /// Account balances.
     public struct Balance: Decodable {
         /// Balance of funds in the account.
-        public let value: Decimal
+        public let value: Decimal64
         /// Minimum deposit amount required for margins.
-        public let deposit: Decimal
+        public let deposit: Decimal64
         /// Profit & Loss amount.
-        public let profitLoss: Decimal
+        public let profitLoss: Decimal64
         /// Amount available for trading.
-        public let available: Decimal
+        public let available: Decimal64
         
         private enum CodingKeys: String, CodingKey {
             case value = "balance"
@@ -88,7 +88,7 @@ extension IG.API.Account {
             case available
         }
     }
-
+    
     /// Account preferences.
     public struct Preferences: Decodable {
         /// Whether the user wants to be allowed to define trailing stop rules for his trade operations.

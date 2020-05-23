@@ -68,7 +68,7 @@ extension IG.API {
         }
         
         /// Returns `true` when the `expirationDate` is in the past.
-        public var isExpired: Bool {
+        @_transparent public var isExpired: Bool {
             self.expirationDate < Date()
         }
     }

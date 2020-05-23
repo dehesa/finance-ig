@@ -19,9 +19,7 @@ extension Test.Account: Decodable {
     /// - parameter environmentKey: Build variable key, which value gives the location of the account JSON file.
     /// - returns: Representation of the account file.
     convenience init(environmentKey: String) {
-        guard let accountPath = ProcessInfo.processInfo.environment[environmentKey] else {
-            fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
-        }
+        let accountPath = ProcessInfo.processInfo.environment[environmentKey] ?! fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
 
         let accountFileURL: URL
         do {

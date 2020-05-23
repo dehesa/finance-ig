@@ -28,7 +28,7 @@ internal protocol ErrorNameSpace: RawRepresentable, ExpressibleByStringLiteral w
 
 extension ErrorNameSpace {
     init(stringLiteral value: String) {
-        guard !value.isEmpty else { fatalError("Error strings cannot be empty") }
+        precondition(!value.isEmpty, "Error strings cannot be empty")
         self.init(value)
     }
     
