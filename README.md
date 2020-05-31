@@ -97,15 +97,13 @@ services.streamer.markets.subscribe(to: "CS.D.EURUSD.MINI.IP", fields: [.bid, .o
 The following is a list of 1st party and 3rd party library/framework dependencies:
 
 -   Foundation.
+-   [Decimals](https://github.com/dehesa/Decimal64).
 -   SQLite.
--   Combine (iOS 13.1+ & macOS 10.15).
+-   Combine (iOS 13.1+, macOS 10.15+).
 -   [Conbini](https://www.github.com/dehesa/Conbini).
 -   Lightstreamer binaries (prepackage within the framework under `/Frameworks`).
 
-I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. The SPM team seems to be on the "implementation" phase for such feature, though.
-
--   [SPM pitch for binary dependencies](https://forums.swift.org/t/pitch-support-for-binary-dependencies/27620).
--   [Importing Lightstreamer with SPM](https://forums.lightstreamer.com/showthread.php?8440-Importing-Lightstreamer-with-Swift-Package-Manager).
+I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. This feature will arrive with Swift 5.3.
 
 # Roadmap
 

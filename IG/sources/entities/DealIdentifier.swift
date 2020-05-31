@@ -1,10 +1,10 @@
-extension API {
-    /// API development key.
-    public struct Key: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
+extension Deal {
+    /// Position's permanent identifier.
+    public struct Identifier: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
         public let rawValue: String
         
         public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The API key provided is not in a valid format")
+            precondition(Self._validate(value), "The deal identifier '\(value)' is not in a valid format")
             self.rawValue = value
         }
         
@@ -13,7 +13,7 @@ extension API {
             self.rawValue = rawValue
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
@@ -27,12 +27,13 @@ extension API {
     }
 }
 
-extension API.Key: Codable {
+extension Deal.Identifier: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
+        
         guard Self._validate(rawValue) else {
-            let reason = "The API key being decoded doesn't conform to the validation function"
+            let reason = "The deal identifier being decoded '\(rawValue)' doesn't conform to the validation function"
             throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
         }
         self.rawValue = rawValue
@@ -44,10 +45,13 @@ extension API.Key: Codable {
     }
 }
 
-extension API.Key {
-    /// Returns a Boolean indicating whether the raw value can represent an API key.
+extension Deal.Identifier {
+    /// Tests the given argument/rawValue for a matching instance.
+    ///
+    /// For an identifier to be considered valid, it must only contain between 1 and 30 characters.
+    /// - parameter value: The future raw value of this instance.
     private static func _validate(_ value: String) -> Bool {
-        let allowedSet = Set.lowercaseANSI ∪ Set.decimalDigits
-        return (value.count == 40) && value.allSatisfy { allowedSet.contains($0) }
+        let count = value.count
+        return (count > 0) && (count < 31)
     }
 }

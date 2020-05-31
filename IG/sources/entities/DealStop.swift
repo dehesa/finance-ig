@@ -1,7 +1,6 @@
-import Foundation
-#warning("Decimal64 change")
+import Decimals
 
-extension IG.Deal {
+extension Deal {
     /// The level/price at which the user doesn't want to incur more lose.
     public struct Stop: Hashable {
         /// The type of stop (whether absolute level or relative distance).
@@ -24,29 +23,25 @@ extension IG.Deal {
     }
 }
 
-extension IG.Deal.Stop {
+extension Deal.Stop {
     /// Available types of stops.
     public enum Kind: Hashable {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
         /// - parameter level: The stop absolute level.
-        case position(level: Decimal)
+        case position(level: Decimal64)
         /// Relative stop over an undisclosed reference level.
-        case distance(Decimal)
+        case distance(Decimal64)
     }
-}
 
-extension IG.Deal.Stop {
     /// Defines the amount of risk being exposed while closing the stop loss.
     public enum Risk: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Hashable {
         /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
         /// - parameter premium: The number of pips that are being charged for your limited risk (i.e. guaranteed stop).
-        case limited(premium: Decimal? = nil)
+        case limited(premium: Decimal64? = nil)
         /// An exposed (or non-guaranteed) stop may expose the trade to slippage when exiting it.
         case exposed
     }
-}
 
-extension IG.Deal.Stop {
     /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
     public enum Trailing: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Hashable {
         /// A static (non-movable) stop.
@@ -54,33 +49,28 @@ extension IG.Deal.Stop {
         /// A dynamic (trailing) stop.
         case `dynamic`(Self.Settings? = nil)
         
-        
         /// The trailing settings (i.e. trailing distance and trailing increment/step).
         public struct Settings: Equatable, Hashable {
             /// The distance from the  market price.
-            public let distance: Decimal
+            public let distance: Decimal64
             /// The stop level increment step in pips.
-            public let increment: Decimal
-            /// Designated initializer.
-            fileprivate init(distance: Decimal, increment: Decimal) {
-                self.distance = distance
-                self.increment = increment
-            }
+            public let increment: Decimal64
+            
+            fileprivate init(distance: Decimal64, increment: Decimal64) { self.distance = distance; self.increment = increment }
         }
     }
 }
 
 // MARK: - Factories
 
-extension IG.Deal.Stop {
+extension Deal.Stop {
     /// Creates a stop level based on an absolute level value.
     ///
     /// A guaranteed stop pays an extra premium (indicated by the server).
     /// - parameter level: The absolute level value at which the stop will be.
     /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
-    public static func position(level: Decimal, isStopGuaranteed: Bool = false) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        return self.init(.position(level: level), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
+    public static func position(level: Decimal64, isStopGuaranteed: Bool = false) -> Self {
+        self.init(.position(level: level), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
     }
     
     /// Creates a stop level based on an absolute level value.
@@ -89,13 +79,10 @@ extension IG.Deal.Stop {
     /// - parameter level: The absolute level value at which the stop will be.
     /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
     /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
-    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        if case .limited(let premium?) = risk,
-            !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.position(level: level), risk: risk, trailing: .static)
+    internal static func position(level: Decimal64, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
+        if case .limited(let premium?) = risk, premium < 0 { return nil }
+        if case .dynamic(let settings?) = trailing, (settings.distance <= 0) || (settings.increment <= 0) { return nil }
+        return self.init(.position(level: level), risk: risk, trailing: trailing)
     }
     
     /// Creates a stop level based on an absolute level value.
@@ -106,13 +93,11 @@ extension IG.Deal.Stop {
     /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
-    internal static func position(level: Decimal, risk: Self.Risk, trailing: Self.Trailing, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
+    internal static func position(level: Decimal64, risk: Self.Risk, trailing: Self.Trailing, _ direction: Deal.Direction, from base: Decimal64) -> Self? {
         guard Self.isValid(level: level, direction, from: base) else { return nil }
-        if case .limited(let premium?) = risk,
-            !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.position(level: level), risk: risk, trailing: .static)
+        if case .limited(let premium?) = risk, premium < 0 { return nil }
+        if case .dynamic(let settings?) = trailing, (settings.distance <= 0) || (settings.increment <= 0) { return nil }
+        return self.init(.position(level: level), risk: risk, trailing: trailing)
     }
     
     /// Creates a stop level based on a relative distince from the base level (not specified here).
@@ -120,9 +105,8 @@ extension IG.Deal.Stop {
     /// A guaranteed stop pays an extra premium (indicated by the server).
     /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
     /// - parameter isStopGuaranteed: Indicates, when the stop is activited, whether the filling risk is limited or exposed.
-    public static func distance(_ distance: Decimal, isStopGuaranteed: Bool = false) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        return self.init(.distance(distance), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
+    public static func distance(_ distance: Decimal64, isStopGuaranteed: Bool = false) -> Self {
+        self.init(.distance(distance), risk: (isStopGuaranteed) ? .limited(premium: nil) : .exposed, trailing: .static)
     }
     
     /// Creates a stop level based on a relative distince from the base level (not specified here).
@@ -131,13 +115,10 @@ extension IG.Deal.Stop {
     /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
     /// - parameter risk: Indicates, when the stop is activitated, whether the filling risk is exposed or limited (with the exact risk premium).
     /// - parameter trailing: Indicates whether the stop should be dynamic (i.e. trailing) or static (i.e. not trailing).
-    internal static func distance(_ distance: Decimal, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        if case .limited(let premium?) = risk,
-            !Self.Risk.isValid(premium: premium) { return nil }
-        if case .dynamic(let settings?) = trailing,
-            !Self.Trailing.Settings.isValid(settings.distance) || !Self.Trailing.Settings.isValid(settings.increment) { return nil }
-        return self.init(.distance(distance), risk: risk, trailing: .static)
+    internal static func distance(_ distance: Decimal64, risk: Self.Risk, trailing: Self.Trailing) -> Self? {
+        if case .limited(let premium?) = risk, premium < 0 { return nil }
+        if case .dynamic(let settings?) = trailing, (settings.distance <= 0) || (settings.increment <= 0) { return nil }
+        return self.init(.distance(distance), risk: risk, trailing: trailing)
     }
     
     /// Creates a stop level based on a relative distince from the base level (not specified here).
@@ -146,48 +127,39 @@ extension IG.Deal.Stop {
     /// - parameter distance: A positive number which will get added or substracted from the base level depending on the direction of the deal.
     /// - parameter increment: The increment/steps taken everytime the deals go in your favor and the distance from the base level is smaller than `distance`.
     /// - parameter isStopGuaranteed: Indicates when at the stop activation time, the filling risk is limited or exposed.
-    public static func trailing(_ distance: Decimal, increment: Decimal) -> Self? {
-        typealias S = Self.Trailing.Settings
-        guard S.isValid(distance) && S.isValid(increment) else { return nil }
+    public static func trailing(_ distance: Decimal64, increment: Decimal64) -> Self? {
+        guard distance > 0, increment > 0 else { return nil }
         return self.init(.distance(distance), risk: .exposed, trailing: .dynamic(.init(distance: distance, increment: increment)))
     }
 }
 
-extension IG.Deal.Stop.Risk {
-    public init(nilLiteral: ()) {
+extension Deal.Stop.Risk {
+    @_transparent public init(nilLiteral: ()) {
         self = .exposed
     }
     
-    public init(booleanLiteral value: Bool) {
+    @_transparent public init(booleanLiteral value: Bool) {
         self = (value) ? .exposed : .limited(premium: nil)
     }
 }
 
-extension IG.Deal.Stop.Trailing {
-    public init(nilLiteral: ()) {
+extension Deal.Stop.Trailing {
+    @_transparent public init(nilLiteral: ()) {
         self = .static
     }
     
-    public init(booleanLiteral value: Bool) {
+    @_transparent public init(booleanLiteral value: Bool) {
         self = (value) ? .dynamic(nil) : .static
     }
 }
 
 // MARK: - Functionality
 
-extension IG.Deal.Stop {
-    /// The `Decimal` value stored with the stop type (whether a relative distance or a level.
-    internal var value: Decimal {
-        switch self.type {
-        case .position(let l): return l
-        case .distance(let d): return d
-        }
-    }
-    
+extension Deal.Stop: CustomDebugStringConvertible {
     /// Returns the absolute stop level.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
-    public func level(_ direction: IG.Deal.Direction, from base: Decimal) -> Decimal? {
+    public func level(_ direction: Deal.Direction, from base: Decimal64) -> Decimal64? {
         switch self.type {
         case .position(let level):
             guard Self.isValid(level: level, direction, from: base) else { return nil }
@@ -203,7 +175,7 @@ extension IG.Deal.Stop {
     /// Returns the distance from the base to the stop level.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
-    public func distance(_ direction: IG.Deal.Direction, from base: Decimal) -> Decimal? {
+    public func distance(_ direction: Deal.Direction, from base: Decimal64) -> Decimal64? {
         switch self.type {
         case .position(let level):
             guard Self.isValid(level: level, direction, from: base) else { return nil }
@@ -215,63 +187,41 @@ extension IG.Deal.Stop {
             return distance
         }
     }
-}
-
-// MARK: - Validation
-
-extension IG.Deal.Stop {
-    /// Check whether the receiving stop is valid in reference to the given base level and direction.
-    /// - parameter reference. The reference level and deal direction.
-    /// - returns: Boolean indicating whether the stop is in the right side of the deal and the number is valid.
-    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        switch self.type {
-        case .position(let l): return Self.isValid(level: l, direction, from: base)
-        case .distance: return true
-        }
-    }
-    
-    /// Checks that the absolute level is finite.
-    /// - parameter level: A number reflecting an absolute level.
-    /// - Boolean indicating whether the argument will work as a *position* level.
-    public static func isValid(level: Decimal) -> Bool {
-        level.isFinite
-    }
     
     /// Checks that the given level is finite and lower than the base level on a `.buy` direction and greater than the base level on a `.sell` direction.
     /// - parameter level: The stop level.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
-    public static func isValid(level: Decimal, _ direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        guard Self.isValid(level: level) && Self.isValid(level: base) else { return false }
+    private static func isValid(level: Decimal64, _ direction: Deal.Direction, from base: Decimal64) -> Bool {
         switch direction {
         case .buy:  return level < base
         case .sell: return level > base
         }
     }
     
-    /// Checks that the distance is not zero and it is a positive number.
-    /// - parameter distance: A number reflecting a relative distance.
-    /// - Boolean indicating whether the argument will work as a *distance* level.
-    public static func isValid(distance: Decimal) -> Bool {
-        distance.isFinite
+    public var debugDescription: String {
+        var result = "Stop "
+        
+        switch self.type {
+        case .position(let level): result.append("position at \(level)")
+        case .distance(let dista): result.append("distance of \(dista) pips")
+        }
+        
+        switch self.risk {
+        case .exposed: result.append(" exposed to closing risk")
+        case .limited(let premium?): result.append(" with limited closing risk exposure (premium: \(premium)")
+        case .limited(premium: nil): result.append(" with limited closing risk exposure")
+        }
+        
+        switch self.trailing {
+        case .static: result.append(".")
+        case .dynamic(let settings?): result.append(" and trailing (distance: \(settings.distance), increment: \(settings.increment))")
+        case .dynamic(nil): result.append(" and trailing")
+        }
+        
+        return result
     }
 }
-
-extension IG.Deal.Stop.Risk {
-    /// Check whether the given premium is valid.
-    internal static func isValid(premium: Decimal) -> Bool {
-        premium.isNormal && !premium.isSignMinus
-    }
-}
-
-extension IG.Deal.Stop.Trailing.Settings {
-    /// Check whether the given premium is valid.
-    internal static func isValid(_ measurement: Decimal) -> Bool {
-        measurement.isNormal && !measurement.isSignMinus
-    }
-}
-
-// MARK: Keyed Decoder
 
 extension KeyedDecodingContainer {
     /// Decodes a stop level value for the given keys, if present.
@@ -284,26 +234,24 @@ extension KeyedDecodingContainer {
     /// - parameter referencing: The deal direction and level given where the stop will apply.
     /// - returns: A decoded value of deal stop type, or `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
     /// - throws: `DecodingError` exclusively.
-    internal func decodeIfPresent(_ type: IG.Deal.Stop.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?,
+    internal func decodeIfPresent(_ type: Deal.Stop.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?,
                                   riskKey: (isGuaranteed: KeyedDecodingContainer<K>.Key, premium: KeyedDecodingContainer<K>.Key?),
-                                  trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?)) throws -> IG.Deal.Stop? {
-        typealias S = IG.Deal.Stop
-        
-        let stop: (level: Decimal?, distance: Decimal?) = (
-            try levelKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) },
-            try distanceKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
-        )
+                                  trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?)) throws -> Deal.Stop? {
+        let stop: (level: Decimal64?, distance: Decimal64?) = (
+             try levelKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) },
+             try distanceKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
+            )
         if case (.none, .none) = stop { return nil }
-        
-        let risk: S.Risk = try {
+
+        let risk: Deal.Stop.Risk = try {
             guard try self.decode(Bool.self, forKey: riskKey.isGuaranteed) else { return .exposed }
-            let premium = try riskKey.premium.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
+            let premium = try riskKey.premium.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
             return .limited(premium: premium)
         }()
-        
-        let trailing: S.Trailing = try {
-            let distance  = try trailingKey.distance.flatMap  { try self.decodeIfPresent(Decimal.self, forKey: $0) }
-            let increment = try trailingKey.increment.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
+
+        let trailing: Deal.Stop.Trailing = try {
+            let distance  = try trailingKey.distance.flatMap  { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
+            let increment = try trailingKey.increment.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
             let existance = try trailingKey.isActive.flatMap  { try self.decodeIfPresent(Bool.self, forKey: $0) } ?? (distance != nil && increment != nil)
             switch (existance, distance, increment) {
             case (false, .none, .none):
@@ -329,66 +277,31 @@ extension KeyedDecodingContainer {
                 throw DecodingError.dataCorrupted(.init(codingPath: self.codingPath, debugDescription: msg))
             }
         }()
-        
+
         switch stop {
         case (.none, let distance?):
-            guard let stop = S.distance(distance, risk: risk, trailing: trailing) else {
+            guard let stop = Deal.Stop.distance(distance, risk: risk, trailing: trailing) else {
                 let key = distanceKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop distance '\(distance)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
             }
             return stop
         case (let level?, .none):
-            guard let stop = S.position(level: level, risk: risk, trailing: trailing) else {
+            guard let stop = Deal.Stop.position(level: level, risk: risk, trailing: trailing) else {
                 let key = levelKey ?! fatalError()
                 throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' decoded is not valid with the decoded risk '\(risk)' and trailing '\(trailing)'")
             }
             return stop
         case (let level?, let distance?):
-            var possibleStop: S? = nil
-            // Whole numbers are prefered as distances.
-            if let stop = S.distance(distance, risk: risk, trailing: trailing) {
-                if distance.isWhole {
-                    return stop
-                }
+            var possibleStop: Deal.Stop? = nil
+            if let stop = Deal.Stop.distance(distance, risk: risk, trailing: trailing) {
+                if distance.decomposed().fractional.isZero { return stop }
                 possibleStop = stop
             }
-            
-            if let stop = S.position(level: level, risk: risk, trailing: trailing) {
-                return stop
-            }
-            
-            guard let stop = possibleStop else {
-                let key = levelKey ?! fatalError()
-                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The stop level '\(level)' and/or the stop distance '\(distance)' decoded were invalid")
-            }
-            return stop
+
+            if let stop = Deal.Stop.position(level: level, risk: risk, trailing: trailing) { return stop }
+            return try possibleStop ?> DecodingError.dataCorruptedError(forKey: levelKey ?! fatalError(), in: self, debugDescription: "The stop level '\(level)' and/or the stop distance '\(distance)' decoded were invalid")
         case (.none, .none):
             return nil
         }
-    }
-}
-
-extension IG.Deal.Stop: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        var result = "Stop "
-        
-        switch self.type {
-        case .position(let level): result.append("position at \(level)")
-        case .distance(let dista): result.append("distance of \(dista) pips")
-        }
-        
-        switch self.risk {
-        case .exposed: result.append(" exposed to closing risk")
-        case .limited(let premium?): result.append(" with limited closing risk exposure (premium: \(premium)")
-        case .limited(premium: nil): result.append(" with limited closing risk exposure")
-        }
-        
-        switch self.trailing {
-        case .static: result.append(".")
-        case .dynamic(let settings?): result.append(" and trailing (distance: \(settings.distance), increment: \(settings.increment))")
-        case .dynamic(nil): result.append(" and trailing")
-        }
-        
-        return result
     }
 }

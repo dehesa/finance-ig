@@ -3,7 +3,7 @@ import Foundation
 extension Date {
     /// Returns the date for the last day, hour, minute, and second of the month.
     internal var lastDayOfMonth: Date {
-        let (calendar, timezone) = (IG.UTC.calendar, IG.UTC.timezone)
+        let (calendar, timezone) = (UTC.calendar, UTC.timezone)
         
         var components = calendar.dateComponents(in: timezone, from: self)
         components.timeZone = timezone
@@ -17,7 +17,7 @@ extension Date {
     
     /// Checks whether the receiving date is the last day of the month.
     internal var isLastDayOfMonth: Bool {
-        let calendar = IG.UTC.calendar
+        let calendar = UTC.calendar
         let selfDay = calendar.component(.day, from: self)
         let lastDay = calendar.component(.day, from: self.lastDayOfMonth)
         return selfDay == lastDay

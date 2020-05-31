@@ -138,7 +138,7 @@ internal struct DebugDescription {
             let abbreviation: String
             if timeZone == .current {
                 abbreviation = timeZone.abbreviation(for: date) ?? "local"
-            } else if timeZone == IG.UTC.timezone {
+            } else if timeZone == UTC.timezone {
                 abbreviation = "UTC"
             } else if timeZone.identifier == "Europe/London" {
                 if let suffix = timeZone.abbreviation(for: date) {

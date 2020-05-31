@@ -1,20 +1,21 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.API.Request {
+extension API.Request {
     /// List of endpoints scrapped from the website.
     ///
     /// This endpoints require specific usage and won't work with the API key settings.
     public struct Scrapped {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: IG.API
+        internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        @usableFromInline internal init(api: IG.API) { self.api = api }
+        @usableFromInline internal init(api: API) { self.api = api }
     }
 }
 
-extension IG.API.Request.Scrapped {
+extension API.Request.Scrapped {
     
     // MARK: GET /chartscalendar/events
     
@@ -23,9 +24,9 @@ extension IG.API.Request.Scrapped {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: *Future* forwarding all user's applications.
-    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[IG.API.Calendar.Event],IG.API.Error> {
+    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Calendar.Event],API.Error> {
         self.api.publisher { _ throws -> (from: Int, to: Int) in
-                guard from <= to else { throw IG.API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
+                guard from <= to else { throw API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
                 let fromInterval = Int(from.timeIntervalSince1970) * 1000
                 let toInterval = Int(to.timeIntervalSince1970) * 1000
                 return (fromInterval, toInterval)
@@ -43,12 +44,12 @@ extension IG.API.Request.Scrapped {
                  .cacheControl: "no-cache"]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
-extension IG.API {
+extension API {
     /// Economic calendar with economic *happenings*.
     public enum Calendar {
         /// An economic event that has heppened or is targeted to happen.
@@ -99,12 +100,12 @@ extension IG.API {
 
 // MARK: - Functionality
 
-extension IG.API.Calendar.Event: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Calendar.Event: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
         result.append("country", self.country.name)
         result.append("headline", self.headline)
         result.append("previous", self.previous?.debugDescription)
@@ -114,13 +115,13 @@ extension IG.API.Calendar.Event: IG.DebugDescriptable {
     }
 }
 
-extension IG.API.Calendar.Event {
+extension API.Calendar.Event {
     /// A calendar event value (usually representing a previous, expected, and actual value).
     public enum Value: Decodable, CustomDebugStringConvertible {
         /// A simple number value.
-        case number(Decimal)
+        case number(Decimal64)
         /// A closed range of values.
-        case range(ClosedRange<Decimal>)
+        case range(ClosedRange<Decimal64>)
         /// A non-supported values.
         case unknown(String)
 
@@ -130,13 +131,13 @@ extension IG.API.Calendar.Event {
             
             let substrings = string.components(separatedBy: " - ")
             guard substrings.count != 2 else {
-                if let lowerBound = Decimal(string: String(substrings[0]), locale: Locale.london),
-                   let upperBound = Decimal(string: String(substrings[1]), locale: Locale.london) {
+                if let lowerBound = Decimal64(substrings[0]),
+                   let upperBound = Decimal64(substrings[1]) {
                     self = .range(.init(uncheckedBounds: (lowerBound, upperBound)))
                 } else { self = .unknown(string) }; return
             }
             
-            guard let number = Decimal(string: string, locale: Locale.london) else {
+            guard let number = Decimal64(string) else {
                 self = .unknown(string); return
             }
             

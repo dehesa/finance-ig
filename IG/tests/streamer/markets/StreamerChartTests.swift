@@ -74,7 +74,7 @@ final class StreamerChartTests: XCTestCase {
         
         let expectation = self.expectation(description: "3 full minutes for all markets")
         let cancellable = Self.epics.publisher
-            .setFailureType(to: IG.Streamer.Error.self)
+            .setFailureType(to: Streamer.Error.self)
             .flatMap {
                 streamer.price.subscribe(epic: $0, interval: .minute, fields: [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk], snapshot: true)
                     .retry(2)

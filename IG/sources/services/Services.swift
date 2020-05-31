@@ -7,11 +7,11 @@ public final class Services {
     /// Queue handling all children low-level services.
     public let queue: DispatchQueue
     /// Instance letting you query any API endpoint.
-    public let api: IG.API
+    public let api: API
     /// Instance letting you subscribe to lightsreamer events.
-    public let streamer: IG.Streamer
+    public let streamer: Streamer
     /// Instance letting you query a databse for caching purposes.
-    public let database: IG.Database
+    public let database: Database
     
     /// Designated initializer specifying every single service.
     ///
@@ -20,7 +20,7 @@ public final class Services {
     /// - parameter api: The HTTP API manager.
     /// - parameter streamer: The Lightstreamer event manager.
     /// - parameter database: The Database manager.
-    public init(queue: DispatchQueue, api: IG.API, streamer: IG.Streamer, database: IG.Database) {
+    public init(queue: DispatchQueue, api: API, streamer: Streamer, database: Database) {
         self.queue = queue
         self.api = api
         self.streamer = streamer
@@ -35,9 +35,9 @@ public final class Services {
     /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.Services,IG.Services.Error> {
+    public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, user: API.User) -> AnyPublisher<Services,Services.Error> {
         let queue = _makeQueue(targetQueue: nil)
-        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
+        let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         return api.session.login(type: .certificate, key: apiKey, user: user)
             .mapError(Self.Error.api)
             .flatMap { _ in _make(with: api, queue: queue, location: databaseLocation) }
@@ -52,16 +52,16 @@ public final class Services {
     /// - parameter apiKey: [API key](https://labs.ig.com/gettingstarted) given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
-    public static func make(withDatabase databaseLocation: IG.Database.Location, serverURL: URL = IG.API.rootURL, apiKey: IG.API.Key, token: IG.API.Token) -> AnyPublisher<IG.Services,IG.Services.Error> {
+    public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, token: API.Token) -> AnyPublisher<Services,Services.Error> {
         let queue = _makeQueue(targetQueue: nil)
-        let api = IG.API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
+        let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
-        let signal: (_ token: IG.API.Token) -> Publishers.FlatMap<AnyPublisher<IG.Services,IG.Services.Error>,Publishers.MapError<AnyPublisher<IG.API.Session,IG.API.Error>,IG.Services.Error>> = { (token) in
+        let signal: (_ token: API.Token) -> Publishers.FlatMap<AnyPublisher<Services,Services.Error>,Publishers.MapError<AnyPublisher<API.Session,API.Error>,Services.Error>> = { (token) in
             return api.session.get(key: apiKey, token: token)
                 .mapError(Self.Error.api)
-                .flatMap { (session) -> AnyPublisher<IG.Services,IG.Services.Error> in
+                .flatMap { (session) -> AnyPublisher<Services,Services.Error> in
                     api.channel.credentials = .init(client: session.client, account: session.account, key: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
                     return _make(with: api, queue: queue, location: databaseLocation)
                 }
@@ -85,7 +85,7 @@ public final class Services {
     }
 }
 
-private extension IG.Services {
+private extension Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
     static func _makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
@@ -97,7 +97,7 @@ private extension IG.Services {
     /// - parameter queue: Concurrent queue used to synchronize all IG's events.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - requires: Valid (not expired) credentials on the given `API` instance or an error event will be sent.
-    static func _make(with api: IG.API, queue: DispatchQueue, location: IG.Database.Location) -> AnyPublisher<IG.Services,IG.Services.Error> {
+    static func _make(with api: API, queue: DispatchQueue, location: Database.Location) -> AnyPublisher<Services,Services.Error> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
             return Fail(error: .api(error: .invalidRequest(.noCredentials, suggestion: .logIn)))
@@ -109,20 +109,20 @@ private extension IG.Services {
                 .eraseToAnyPublisher()
         }
         
-        let subServicesGenerator: ()->Result<IG.Services,IG.Services.Error> = {
+        let subServicesGenerator: ()->Result<Services,Services.Error> = {
             do {
-                let secret = try IG.Streamer.Credentials(credentials: apiCredentials)
-                let database = try IG.Database(location: location, targetQueue: queue)
-                let streamer = IG.Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, targetQueue: queue)
+                let secret = try Streamer.Credentials(credentials: apiCredentials)
+                let database = try Database(location: location, targetQueue: queue)
+                let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, targetQueue: queue)
                 return .success(.init(queue: queue, api: api, streamer: streamer, database: database))
-            } catch let error as IG.Database.Error {
+            } catch let error as Database.Error {
                 return .failure(.database(error: error))
-            } catch let error as IG.Streamer.Error {
+            } catch let error as Streamer.Error {
                 return .failure(.streamer(error: error))
-            } catch let error as IG.API.Error {
+            } catch let error as API.Error {
                 return .failure(.api(error: error))
             } catch let underlyingError {
-                var error: IG.Streamer.Error = .invalidRequest(.init("An unknown error appeared while creating the \(IG.Streamer.self) and \(IG.Database.self) instance"), suggestion: .fileBug)
+                var error: Streamer.Error = .invalidRequest(.init("An unknown error appeared while creating the \(Streamer.self) and \(Database.self) instance"), suggestion: .fileBug)
                 error.underlyingError = underlyingError
                 return .failure(.streamer(error: error))
             }
@@ -131,8 +131,8 @@ private extension IG.Services {
         switch apiCredentials.token.value {
         case .oauth:
             return api.session.refreshCertificate()
-                .mapError { Self.Error.api(error: IG.API.Error.transform($0)) }
-                .flatMap { (token) -> Result<IG.Services,IG.Services.Error>.Publisher in
+                .mapError { Self.Error.api(error: API.Error.transform($0)) }
+                .flatMap { (token) -> Result<Services,Services.Error>.Publisher in
                     apiCredentials.token = token
                     return .init(subServicesGenerator())
                 }.eraseToAnyPublisher()
@@ -144,14 +144,14 @@ private extension IG.Services {
 }
 
 
-extension IG.Services {
+extension Services {
     /// The reverse DNS identifier for the `API` instance.
     internal static var reverseDNS: String {
         Bundle.IG.identifier + ".services"
     }
 }
 
-extension IG.Services: IG.DebugDescriptable {
+extension Services: IG.DebugDescriptable {
     internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public var debugDescription: String {

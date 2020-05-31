@@ -1,20 +1,20 @@
 import Combine
 import Foundation
 
-extension IG.API.Request {
+extension API.Request {
     /// Contains all functionality and variables related to the running API session.
     public struct Session {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        @usableFromInline internal unowned let api: IG.API
+        internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        @usableFromInline internal init(api: IG.API) { self.api = api }
+        @usableFromInline internal init(api: API) { self.api = api }
     }
 }
 
-extension IG.API.Request.Session {
+extension API.Request.Session {
     /// The credentials for the current session (at the time of call).
-    public var credentials: IG.API.Credentials? {
+    public var credentials: API.Credentials? {
         self.api.channel.credentials
     }
     
@@ -27,14 +27,14 @@ extension IG.API.Request.Session {
     }
     
     /// The credentials status for the receiving API instance.
-    public var status: IG.API.Session.Status {
+    public var status: API.Session.Status {
         self.api.channel.status
     }
     
     /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
     /// - remark: The subject never fails and only completes successfully when the `API` instance gets deinitialized.
     /// - returns: Publisher emitting unique status values.
-    public var statusStream: AnyPublisher<IG.API.Session.Status,Never> {
+    public var statusStream: AnyPublisher<API.Session.Status,Never> {
         self.api.channel.statusStream(on: self.api.queue)
             .eraseToAnyPublisher()
     }
@@ -48,24 +48,24 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: *Future* indicating a login success with a successful complete event. If the login is of `.certificate` type, extra information on the session settings is forwarded as a value. The `.oauth` login type will simply complete successfully for successful operations (without forwarding any value).
-    public func login(type: Self.Kind, key: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.API.Session.Settings,IG.API.Error> {
+    public func login(type: Self.Kind, key: API.Key, user: API.User) -> AnyPublisher<API.Session.Settings,API.Error> {
         switch type {
         case .certificate:
             return self.loginCertificate(key: key, user: user, encryptPassword: false)
                 .tryMap { [weak weakAPI = self.api] (credentials, settings) in
-                    guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                    guard let api = weakAPI else { throw API.Error.sessionExpired() }
                     api.channel.credentials = credentials
                     return settings
-                }.mapError(IG.API.Error.transform)
+                }.mapError(API.Error.transform)
                 .eraseToAnyPublisher()
         case .oauth:
             return self.loginOAuth(key: key, user: user)
                 .tryMap { [weak weakAPI = self.api] (credentials) in
-                    guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                    guard let api = weakAPI else { throw API.Error.sessionExpired() }
                     api.channel.credentials = credentials
                 }.flatMap(maxPublishers: .max(1), { _ in
                     Empty(completeImmediately: true)
-                }).mapError(IG.API.Error.transform)
+                }).mapError(API.Error.transform)
                 .eraseToAnyPublisher()
         }
     }
@@ -75,28 +75,28 @@ extension IG.API.Request.Session {
     /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials).
     /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while certificate refresh should happen infrequently (every 3 to 4 hours).
     /// - returns: *Future* indicating a successful token refresh with a successful complete.
-    public func refresh() -> AnyPublisher<Never,IG.API.Error> {
-        self.api.publisher { (api) -> IG.API.Credentials in
-                try api.channel.credentials ?> IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+    public func refresh() -> AnyPublisher<Never,API.Error> {
+        self.api.publisher { (api) -> API.Credentials in
+                try api.channel.credentials ?> API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
             }.mapError{
                 $0 as Swift.Error
-            }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<IG.API.Token,Swift.Error> in
+            }.flatMap(maxPublishers: .max(1)) { (api, credentials) -> AnyPublisher<API.Token,Swift.Error> in
                 switch credentials.token.value {
                 case .certificate: return api.session.refreshCertificate()
                 case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
                 }
             }.tryMap { [weak weakAPI = self.api] (token) -> Void in
-                guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+                guard let api = weakAPI else { throw API.Error.sessionExpired() }
                 try api.channel.setCredentials { (oldCredentials) in
                     guard var newCredentials = oldCredentials else {
                         let suggestion = "You seem to have log out during the execution of this endpoint. Please, remain logged in next time"
-                        throw IG.API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
+                        throw API.Error.sessionExpired(message: .noCredentials, suggestion: .init(suggestion))
                     }
                     newCredentials.token = token
                     return newCredentials
                 }
             }.ignoreOutput()
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -104,12 +104,12 @@ extension IG.API.Request.Session {
 
     /// Returns the user's session details.
     /// - returns: *Future* forwarding the user's session details.
-    public func get() -> AnyPublisher<IG.API.Session,IG.API.Error> {
+    public func get() -> AnyPublisher<API.Session,API.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -118,10 +118,10 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding information about the current user's session.
-    public func get(key: IG.API.Key, token: IG.API.Token) -> AnyPublisher<IG.API.Session,IG.API.Error> {
+    public func get(key: API.Key, token: API.Token) -> AnyPublisher<API.Session,API.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, headers: {
-                var result = [IG.API.HTTP.Header.Key.apiKey: key.rawValue]
+                var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -132,7 +132,7 @@ extension IG.API.Request.Session {
                 return result
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -145,23 +145,23 @@ extension IG.API.Request.Session {
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
     /// - returns: *Future* indicating a successful account switch with a successful complete.
-    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> AnyPublisher<IG.API.Session.Settings,IG.API.Error> {
+    public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> AnyPublisher<API.Session.Settings,API.Error> {
         self.api.publisher
             .makeRequest(.put, "session", version: 1, credentials: true, body: {
                 let payload = _PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: IG.API.Session.Settings, call) throws in
-                guard let api = weakAPI else { throw IG.API.Error.sessionExpired() }
+            .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings, call) throws in
+                guard let api = weakAPI else { throw API.Error.sessionExpired() }
                 try api.channel.setCredentials { (oldCredentials) in
                     guard var newCredentials = oldCredentials else {
-                        throw IG.API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession)
+                        throw API.Error.invalidResponse(message: .noCredentials, request: call.request, response: call.response, suggestion: .keepSession)
                     }
                     newCredentials.account = accountId
                     return newCredentials
                 }
                 return sessionSwitch
-            }.mapError(IG.API.Error.transform)
+            }.mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -172,20 +172,20 @@ extension IG.API.Request.Session {
     /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
     /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
     /// - returns: *Future* indicating a succesful logout operation with a sucessful complete.
-    public func logout() -> AnyPublisher<Never,IG.API.Error> {
+    public func logout() -> AnyPublisher<Never,API.Error> {
         self.api.publisher
             .makeRequest(.delete, "session", version: 1, credentials: true)
             .send(statusCode: 204)
             .map { [weak weakAPI = self.api] _ in weakAPI?.channel.credentials = nil }
             .ignoreOutput()
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension IG.API.Request.Session {
+extension API.Request.Session {
     /// Type of sessions available
     public enum Kind {
         /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
@@ -201,7 +201,7 @@ extension IG.API.Request.Session {
     }
 }
 
-extension IG.API {
+extension API {
     /// Representation of a dealing session.
     public struct Session: Decodable {
         /// Client identifier.
@@ -215,7 +215,7 @@ extension IG.API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currencyCode: IG.Currency.Code
+        public let currencyCode: Currency.Code
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: _CodingKeys.self)
@@ -226,7 +226,7 @@ extension IG.API {
                 ?> DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure")
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
+            self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
         }
         
         private enum _CodingKeys: String, CodingKey {
@@ -239,7 +239,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Session {
+extension API.Session {
     /// The session status.
     public enum Status: Equatable {
         /// There are no credentials within the current session.
@@ -271,8 +271,8 @@ extension IG.API.Session {
 
 // MARK: - Functionality
 
-extension IG.API.Session: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Session: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -286,8 +286,8 @@ extension IG.API.Session: IG.DebugDescriptable {
     }
 }
 
-extension IG.API.Session.Settings: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.Session.printableDomain).\(Self.self)" }
+extension API.Session.Settings: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.Session.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)

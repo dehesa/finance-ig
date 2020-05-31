@@ -1,4 +1,5 @@
 import IG
+import Decimals
 import ConbiniForTesting
 import XCTest
 
@@ -17,13 +18,13 @@ final class APIWorkingOrderTests: XCTestCase {
         let currency = market.instrument.currencies[0].code
         let direction: IG.Deal.Direction = .buy
         let type: API.WorkingOrder.Kind = .limit
-        let size: Decimal = 1
+        let size: Decimal64 = 1
         let level = market.snapshot.price!.lowest - (0.0001 * 30)
-        let limitDistance: Decimal = 10
-        let stopDistance: Decimal = 20
+        let limitDistance: Decimal64 = 10
+        let stopDistance: Decimal64 = 20
         let forceOpen: Bool = true
         let expiration: API.WorkingOrder.Expiration = .tillDate(Date().addingTimeInterval(60 * 60 * 2))
-        //let scalingFactor: Decimal = 10000
+        //let scalingFactor: Decimal64 = 10000
         
         let reference = api.workingOrders.create(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: .distance(limitDistance), stop: (.distance(stopDistance), .exposed), forceOpen: forceOpen, expiration: expiration, reference: nil)
             .expectsOne(timeout: 2, on: self)

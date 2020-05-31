@@ -1,10 +1,10 @@
 import Foundation
 
-extension IG.API {
+extension API {
     /// Credentials used within the API session.
     public struct Credentials: Equatable, Codable {
         /// API key given by the IG platform identifying the usage of the IG endpoints.
-        public let key: IG.API.Key
+        public let key: API.Key
         /// Client identifier.
         public let client: IG.Client.Identifier
         /// Active account identifier.
@@ -14,10 +14,10 @@ extension IG.API {
         /// Timezone of the active account.
         public let timezone: TimeZone
         /// The actual token values/headers.
-        public internal(set) var token: IG.API.Token
+        public internal(set) var token: API.Token
         
         /// Creates a credentials structure from hardcoded data.
-        public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: IG.API.Key, token: IG.API.Token, streamerURL: URL, timezone: TimeZone) {
+        public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: API.Key, token: API.Token, streamerURL: URL, timezone: TimeZone) {
             self.client = client
             self.account = account
             self.streamerURL = streamerURL
@@ -28,8 +28,8 @@ extension IG.API {
         
         /// Key-value pairs to be added to the request headers.
         /// - returns: The key-value pairs of the underlying credentials.
-        internal var requestHeaders: [IG.API.HTTP.Header.Key:String] {
-            var result: [IG.API.HTTP.Header.Key:String] = [.apiKey: self.key.rawValue]
+        internal var requestHeaders: [API.HTTP.Header.Key:String] {
+            var result: [API.HTTP.Header.Key:String] = [.apiKey: self.key.rawValue]
             switch self.token.value {
             case .certificate(let access, let security):
                 result[.clientSessionToken] = access
@@ -43,7 +43,7 @@ extension IG.API {
     }
 }
 
-extension IG.API {
+extension API {
     /// Storage for one of the login types supported by the servers.
     public struct Token: Equatable, Codable {
         /// Expiration date for the underlying token (only references the access token).
@@ -54,7 +54,7 @@ extension IG.API {
         /// Initializes a token with hardcoded values.
         /// - parameter value: The type of token used in the credentials (whether certificate or OAuth).
         /// - parameter expirationDate: When is the provided token expiring.
-        public init(_ value: Self.Kind, expirationDate: Date) {
+        @_transparent public init(_ value: Self.Kind, expirationDate: Date) {
             self.expirationDate = expirationDate
             self.value = value
         }
@@ -62,7 +62,7 @@ extension IG.API {
         /// Initializes a token with hardcoded values (and a expiration date offset).
         /// - parameter value: The type of token used in the credentials (whether certificate or OAuth).
         /// - parameter seconds: The amount of seconds this token will expires in.
-        public init(_ value: Self.Kind, expiresIn seconds: TimeInterval) {
+        @_transparent public init(_ value: Self.Kind, expiresIn seconds: TimeInterval) {
             self.expirationDate = Date(timeIntervalSinceNow: seconds)
             self.value = value
         }
@@ -74,7 +74,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Token {
+extension API.Token {
     /// The type of token stored.
     public enum Kind: Equatable, Codable {
         /// Session token (v2) with a CST and Security tokens.
@@ -119,8 +119,8 @@ extension IG.API.Token {
 
 // MARK: - Debug helpers
 
-extension IG.API.Credentials: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Credentials: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -145,10 +145,10 @@ extension IG.API.Credentials: IG.DebugDescriptable {
     }
 }
 
-extension IG.API.Token.Kind: CustomDebugStringConvertible {
+extension API.Token.Kind: CustomDebugStringConvertible {
     public var debugDescription: String {
         var result: IG.DebugDescription
-        let title = "\(IG.API.Credentials.printableDomain).Token"
+        let title = "\(API.Credentials.printableDomain).Token"
         switch self {
         case .certificate(let access, let security):
             result = .init(title + " - Certificate")

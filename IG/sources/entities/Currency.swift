@@ -1,7 +1,7 @@
 /// Base for all monetary units
 public protocol CurrencyType {
     /// Three letter code standardize by ISO 4217.
-    static var code: IG.Currency.Code { get }
+    static var code: Currency.Code { get }
     /// The standard name for the currency.
     static var name: String { get }
     /// The number of decimal places used to express any minor units for the currency.
@@ -109,15 +109,15 @@ public enum Currency {
             }
         }
         
-        public init?(_ description: String) {
+        @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
-        public static func < (lhs: Self, rhs: Self) -> Bool {
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
@@ -125,218 +125,218 @@ public enum Currency {
 
 // MARK: - Currency List
 
-extension IG.Currency {
+extension Currency {
     /// Canadian Dollar.
-    public enum CAD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .cad }
+    public enum CAD: CurrencyType {
+        public static var code: Currency.Code { .cad }
         public static var name: String { "Canadian Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Canada" }
     }
     
     /// United States Dollar.
-    public enum USD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .usd }
+    public enum USD: CurrencyType {
+        public static var code: Currency.Code { .usd }
         public static var name: String { "US Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "United States" }
     }
     
     /// Mexican Peso.
-    public enum MXN: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .mxn }
+    public enum MXN: CurrencyType {
+        public static var code: Currency.Code { .mxn }
         public static var name: String { "Mexican Peso" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Mexico" }
     }
     
     /// Brazilian Real.
-    public enum BRL: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .brl }
+    public enum BRL: CurrencyType {
+        public static var code: Currency.Code { .brl }
         public static var name: String { "Brazilian Real" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Brazil" }
     }
     
     /// British Pound Sterling.
-    public enum GBP: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .gbp }
+    public enum GBP: CurrencyType {
+        public static var code: Currency.Code { .gbp }
         public static var name: String { "Pound Sterling" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Great Britian" }
     }
     
     /// Norwegian Krone.
-    public enum NOK: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .nok }
+    public enum NOK: CurrencyType {
+        public static var code: Currency.Code { .nok }
         public static var name: String { "Norwegian Krone" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Norway" }
     }
     
     /// Swedish Krona.
-    public enum SEK: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .sek }
+    public enum SEK: CurrencyType {
+        public static var code: Currency.Code { .sek }
         public static var name: String { "Swedish Krona" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Sweden" }
     }
     
     /// Danish Krone.
-    public enum DKK: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .dkk }
+    public enum DKK: CurrencyType {
+        public static var code: Currency.Code { .dkk }
         public static var name: String { "Danish Krone" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Denmark" }
     }
     
     /// European Union Euro.
-    public enum EUR: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .eur }
+    public enum EUR: CurrencyType {
+        public static var code: Currency.Code { .eur }
         public static var name: String { "Euro" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Europe" }
     }
     
     /// Swiss Franc.
-    public enum CHF: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .chf }
+    public enum CHF: CurrencyType {
+        public static var code: Currency.Code { .chf }
         public static var name: String { "Swiss Franc" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Switzerland" }
     }
     
     /// Czech Koruna.
-    public enum CZK: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .czk }
+    public enum CZK: CurrencyType {
+        public static var code: Currency.Code { .czk }
         public static var name: String { "Czech Koruna" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Czech Republic" }
     }
     
     /// Hungarian Forint.
-    public enum HUF: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .huf }
+    public enum HUF: CurrencyType {
+        public static var code: Currency.Code { .huf }
         public static var name: String { "Forint" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Hungary" }
     }
     
     /// Polish Zloty.
-    public enum PLN: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .pln }
+    public enum PLN: CurrencyType {
+        public static var code: Currency.Code { .pln }
         public static var name: String { "Zloty" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Poland" }
     }
     
     /// Russian Ruble.
-    public enum RUB: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .rub }
+    public enum RUB: CurrencyType {
+        public static var code: Currency.Code { .rub }
         public static var name: String { "Russian Ruble" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Russia" }
     }
     
     /// Turkish Lira.
-    public enum TRY: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .try }
+    public enum TRY: CurrencyType {
+        public static var code: Currency.Code { .try }
         public static var name: String { "Turkish Lira" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Turkey" }
     }
     
     /// South African Rand.
-    public enum ZAR: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .zar }
+    public enum ZAR: CurrencyType {
+        public static var code: Currency.Code { .zar }
         public static var name: String { "Rand" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "South Africa" }
     }
     
     /// Indian Rupee.
-    public enum INR: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .inr }
+    public enum INR: CurrencyType {
+        public static var code: Currency.Code { .inr }
         public static var name: String { "Indian Rupee" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "India" }
     }
     
     /// Singapore Dollar.
-    public enum SGD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .sgd }
+    public enum SGD: CurrencyType {
+        public static var code: Currency.Code { .sgd }
         public static var name: String { "Singapore Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Singapore" }
     }
     
     /// Chinese Yuan Renminbi
-    public enum CNY: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .cny }
+    public enum CNY: CurrencyType {
+        public static var code: Currency.Code { .cny }
         public static var name: String { "Yuan Renminbi" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "China" }
     }
     
     /// Hong Kong Dollar
-    public enum HKD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .hkd }
+    public enum HKD: CurrencyType {
+        public static var code: Currency.Code { .hkd }
         public static var name: String { "Hong Kong Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "China" }
     }
     
     /// New Taiwan Dollar.
-    public enum TWD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .twd }
+    public enum TWD: CurrencyType {
+        public static var code: Currency.Code { .twd }
         public static var name: String { "New Taiwan Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "New Taiwan" }
     }
     
     /// South Korean Won.
-    public enum KRW: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .krw }
+    public enum KRW: CurrencyType {
+        public static var code: Currency.Code { .krw }
         public static var name: String { "Won" }
         public static var minorUnit: Int { 0 }
         public static var country: String { "Korea" }
     }
     
     /// Japanese Yen.
-    public enum JPY: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .jpy }
+    public enum JPY: CurrencyType {
+        public static var code: Currency.Code { .jpy }
         public static var name: String { "Yen" }
         public static var minorUnit: Int { 0 }
         public static var country: String { "Japan" }
     }
     
     /// Philippine Piso.
-    public enum PHP: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .php }
+    public enum PHP: CurrencyType {
+        public static var code: Currency.Code { .php }
         public static var name: String { "Philippine Piso" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Philippines" }
     }
     
     /// Indonesian Rupiah.
-    public enum IDR: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .idr }
+    public enum IDR: CurrencyType {
+        public static var code: Currency.Code { .idr }
         public static var name: String { "Rupiah" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Indonesia" }
     }
     
     /// Australian Dollar.
-    public enum AUD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .aud }
+    public enum AUD: CurrencyType {
+        public static var code: Currency.Code { .aud }
         public static var name: String { "Australian Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "Australia" }
     }
     
     /// New Zealand Dollar.
-    public enum NZD: IG.CurrencyType {
-        public static var code: IG.Currency.Code { .nzd }
+    public enum NZD: CurrencyType {
+        public static var code: Currency.Code { .nzd }
         public static var name: String { "New Zealand Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "New Zealand" }

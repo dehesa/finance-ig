@@ -1,4 +1,5 @@
 import IG
+import Decimals
 import ConbiniForTesting
 import XCTest
 
@@ -12,11 +13,11 @@ final class APIPositionTests: XCTestCase {
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
         let expiry: IG.Market.Expiry = nil
-        let currency: IG.Currency.Code = "USD"
+        let currency: Currency.Code = "USD"
         let direction: IG.Deal.Direction = .sell
         let order: API.Position.Order = .market
         let strategy: API.Position.Order.Strategy = .execute
-        let size: Decimal = 1
+        let size: Decimal64 = 1
         let limit: IG.Deal.Limit = .distance(10)!
         let stop: IG.Deal.Stop = .trailing(20, increment: 5)!
         //let scalingFactor: Double = 10000

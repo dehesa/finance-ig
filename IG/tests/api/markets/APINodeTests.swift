@@ -10,8 +10,7 @@ final class APINavigationNodeTests: XCTestCase {
     func testNavigationRootNodes() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none)
-            .expectsOne(timeout: 2, on: self)
+        let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none).expectsOne(timeout: 2, on: self)
         XCTAssertNil(rootNode.identifier)
         XCTAssertEqual(rootNode.name, "Root")
         
@@ -26,8 +25,7 @@ final class APINavigationNodeTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("264134", "Major FX")
-        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none)
-            .expectsOne(timeout: 2, on: self)
+        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none).expectsOne(timeout: 2, on: self)
         XCTAssertEqual(node.identifier, target.identifier)
         XCTAssertEqual(node.name, target.name)
         XCTAssertNotNil(node.subnodes)
@@ -41,8 +39,7 @@ final class APINavigationNodeTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let target: (identifier: String, name: String) = ("195235", "FX")
-        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all)
-            .expectsOne(timeout: 8, on: self)
+        let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all).expectsOne(timeout: 8, on: self)
         XCTAssertEqual(node.identifier, target.identifier)
         XCTAssertEqual(node.name, target.name)
         XCTAssertNotNil(node.subnodes)
@@ -54,8 +51,7 @@ final class APINavigationNodeTests: XCTestCase {
     func testMarketTermSearch() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
 
-        let markets = api.nodes.getMarkets(matching: "NZD")
-            .expectsOne(timeout: 2, on: self)
+        let markets = api.nodes.getMarkets(matching: "NZD").expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)
         
         let now = Date()

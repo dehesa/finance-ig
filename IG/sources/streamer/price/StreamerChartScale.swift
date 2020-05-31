@@ -1,18 +1,19 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.Streamer.Request {
+extension Streamer.Request {
     /// Contains all functionality related to Streamer charts.
     public struct Price {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: IG.Streamer
+        internal unowned let streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) { self.streamer = streamer }
+        @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }
     }
 }
 
-extension IG.Streamer.Request.Price {
+extension Streamer.Request.Price {
     
     // MARK: CHART:EPIC:SCALE
     
@@ -24,7 +25,7 @@ extension IG.Streamer.Request.Price {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epic: IG.Market.Epic, interval: IG.Streamer.Chart.Aggregated.Interval, fields: Set<IG.Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Chart.Aggregated,IG.Streamer.Error> {
+    public func subscribe(epic: IG.Market.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Aggregated,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):\(interval.rawValue)"
         let properties = fields.map { $0.rawValue }
         
@@ -33,21 +34,21 @@ extension IG.Streamer.Request.Price {
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, interval: interval, item: item, update: update)
-                } catch var error as IG.Streamer.Error {
+                } catch var error as Streamer.Error {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     throw error
                 } catch let underlyingError {
-                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                    throw Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
                 }
-            }.mapError(IG.Streamer.Error.transform)
+            }.mapError(Streamer.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension IG.Streamer.Chart.Aggregated {
+extension Streamer.Chart.Aggregated {
     /// The time interval used for aggregation.
     public enum Interval: String {
         case second = "SECOND"
@@ -66,7 +67,7 @@ extension IG.Streamer.Chart.Aggregated {
     }
 }
 
-extension IG.Streamer.Chart.Aggregated {
+extension Streamer.Chart.Aggregated {
     /// Possible fields to subscribe to when querying market candle data.
     public enum Field: String, CaseIterable {
         /// Update time.
@@ -117,33 +118,33 @@ extension IG.Streamer.Chart.Aggregated {
     }
 }
 
-extension Set where Element == IG.Streamer.Chart.Aggregated.Field {
+extension Set where Element == Streamer.Chart.Aggregated.Field {
     /// Returns a set with all the candle related fields.
-    public static var candle: Self {
+    @_transparent public static var candle: Self {
         Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
                           .lowestBid, .lowestAsk, .highestBid, .highestAsk,
                           .isFinished, .numTicks, .volume])
     }
     
     /// Returns a set with all the dayly related fields.
-    public static var day: Self {
+    @_transparent public static var day: Self {
         Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
     
     /// Returns all queryable fields.
-    public static var all: Self {
+    @_transparent public static var all: Self {
         .init(Element.allCases)
     }
 }
 
 // MARK: Response Entities
 
-extension IG.Streamer {
+extension Streamer {
     /// Namespace for all Streamer chart functionality.
     public enum Chart {}
 }
 
-extension IG.Streamer.Chart {
+extension Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Aggregated {
         /// The market epic identifier.
@@ -155,10 +156,10 @@ extension IG.Streamer.Chart {
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: IG.Streamer.Packet) throws {
+        internal init(epic: IG.Market.Epic, interval: Self.Interval, item: String, update: Streamer.Packet) throws {
             typealias F = Self.Field
-            typealias U = IG.Streamer.Update
-            typealias E = IG.Streamer.Error
+            typealias U = Streamer.Update
+            typealias E = Streamer.Error
             
             self.epic = epic
             self.interval = interval
@@ -175,7 +176,7 @@ extension IG.Streamer.Chart {
     }
 }
 
-extension IG.Streamer.Chart.Aggregated {
+extension Streamer.Chart.Aggregated {
     /// Buy/Sell prices at a point in time.
     public struct Candle {
         /// The date of the information.
@@ -193,9 +194,9 @@ extension IG.Streamer.Chart.Aggregated {
         /// The highest bid/ask price for the receiving candle.
         public let highest: Self.Point
 
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Chart.Aggregated.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Chart.Aggregated.Field
+            typealias U = Streamer.Update
             
             self.date = try update[F.date.rawValue]?.value.map(U.toEpochDate)
             self.numTicks = try update[F.numTicks.rawValue]?.value.map(U.toInt)
@@ -221,12 +222,12 @@ extension IG.Streamer.Chart.Aggregated {
         /// The representation of a price point.
         public struct Point {
             /// The bid price.
-            public let bid: Decimal?
+            public let bid: Decimal64?
             /// The ask/offer price.
-            public let ask: Decimal?
+            public let ask: Decimal64?
             
             /// Hidden designated initializer.
-            fileprivate init(bid: Decimal?, ask: Decimal?) {
+            fileprivate init(bid: Decimal64?, ask: Decimal64?) {
                 self.bid = bid
                 self.ask = ask
             }
@@ -236,19 +237,19 @@ extension IG.Streamer.Chart.Aggregated {
     /// Dayly statistics.
     public struct Day {
         /// The lowest price of the day.
-        public let lowest: Decimal?
+        public let lowest: Decimal64?
         /// The mid price of the day.
-        public let mid: Decimal?
+        public let mid: Decimal64?
         /// The highest price of the day
-        public let highest: Decimal?
+        public let highest: Decimal64?
         /// Net change from open price to current.
-        public let changeNet: Decimal?
+        public let changeNet: Decimal64?
         /// Daily percentage change.
-        public let changePercentage: Decimal?
+        public let changePercentage: Decimal64?
 
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Chart.Aggregated.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Chart.Aggregated.Field
+            typealias U = Streamer.Update
 
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -259,8 +260,8 @@ extension IG.Streamer.Chart.Aggregated {
     }
 }
 
-extension IG.Streamer.Chart.Aggregated: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)" }
+extension Streamer.Chart.Aggregated: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Chart.self).\(Self.self)" }
     
     public var debugDescription: String {
         let represent: (Self.Candle.Point)->String = {
@@ -274,7 +275,7 @@ extension IG.Streamer.Chart.Aggregated: IG.DebugDescriptable {
         
         var result = IG.DebugDescription("\(Self.printableDomain) \(self.interval) (\(self.epic))")
         result.append("candle", self.candle) {
-            $0.append("date", $1.date, formatter: IG.Formatter.londonTime)
+            $0.append("date", $1.date, formatter: DateFormatter.londonTime)
             $0.append("ticks", $1.numTicks)
             $0.append("is finished", $1.isFinished)
             $0.append("open", represent($1.open))

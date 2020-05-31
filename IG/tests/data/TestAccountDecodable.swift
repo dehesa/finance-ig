@@ -79,14 +79,14 @@ extension Test.Account.APIData: Decodable {
     convenience init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _CodingKeys.self)
         let rootURL = try Test.Account._parse(path: try container.decode(String.self, forKey: .rootURL))
-        let key = try container.decode(IG.API.Key.self, forKey: .key)
+        let key = try container.decode(API.Key.self, forKey: .key)
 
-        var user: IG.API.User? = nil
+        var user: API.User? = nil
         if container.contains(.user) {
             let nested = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .user)
-            let username = try nested.decode(IG.API.User.Name.self, forKey: .name)
+            let username = try nested.decode(API.User.Name.self, forKey: .name)
             let password = try nested.decode(String.self, forKey: .password)
-            user = IG.API.User(username, .init(stringLiteral: password))
+            user = API.User(username, .init(stringLiteral: password))
         }
 
         var certificate: TokenCertificate? = nil
@@ -135,7 +135,7 @@ extension Test.Account.StreamerData: Decodable {
                 let nestedContainer = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .password)
                 let access = try nestedContainer.decode(String.self, forKey: .access)
                 let security = try nestedContainer.decode(String.self, forKey: .security)
-                password = try IG.Streamer.Credentials.password(fromCST: access, security: security)
+                password = try Streamer.Credentials.password(fromCST: access, security: security)
                     ?> DecodingError.dataCorrupted(.init(codingPath: nestedContainer.codingPath, debugDescription: "The streamer password couldnt' be formed"))
             }
         }

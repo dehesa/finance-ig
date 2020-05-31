@@ -73,7 +73,7 @@ final class DBForexTests: XCTestCase {
             .expectsOne(timeout: 0.5, on: self)
             .sorted { $0.epic < $1.epic }
         
-        var dict: [IG.Currency.Code:Int] = .init()
+        var dict: [Currency.Code:Int] = .init()
         for market in dbForex {
             for currency in [market.currencies.base, market.currencies.counter] {
                 dict[currency] = dict[currency].map { $0 + 1 } ?? 1

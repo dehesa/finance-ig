@@ -1,6 +1,6 @@
 import Foundation
 
-extension OperationQueue {
+internal extension OperationQueue {
     /// Convenience initializer for a simple operation queue.
     /// - parameter name: The given queue name.
     /// - parameter maxConcurrentOperationCount: Maximum concurrent operations.

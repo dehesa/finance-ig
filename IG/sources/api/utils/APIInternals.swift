@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.API {
+extension API {
     /// Domain namespace retaining anything related to API requests.
     public enum Request {}
 
@@ -31,18 +31,18 @@ extension IG.API {
                 case .default(let includeValues, let includeResponse, let includeDate):
                     let decoder = JSONDecoder()
                     if includeResponse {
-                        decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] = response
+                        decoder.userInfo[API.JSON.DecoderKey.responseHeader] = response
                     }
                     if includeValues {
-                        decoder.userInfo[IG.API.JSON.DecoderKey.computedValues] = values
+                        decoder.userInfo[API.JSON.DecoderKey.computedValues] = values
                     }
                     if includeDate {
-                        guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                              let date = IG.Formatter.humanReadableLong.date(from: dateString) else {
+                        guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                              let date = DateFormatter.humanReadableLong.date(from: dateString) else {
                             let message = "The response date couldn't be extracted from the response header"
-                            throw IG.API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                            throw API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
                         }
-                        decoder.userInfo[IG.API.JSON.DecoderKey.responseDate] = date
+                        decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
                     }
                     return decoder
                 case .custom(let closure):

@@ -15,29 +15,25 @@ final class APISessionTests: XCTestCase {
             return XCTFail("Session tests can't be performed without username and password")
         }
 
-        api.session.login(type: .oauth, key: self._acc.api.key, user: user)
-            .expectsCompletion(timeout: 1.2, on: self)
+        api.session.login(type: .oauth, key: self._acc.api.key, user: user).expectsCompletion(timeout: 1.2, on: self)
         XCTAssertNotNil(api.channel.credentials)
         
         let credentials = api.channel.credentials!
         XCTAssertEqual(self._acc.api.key, credentials.key)
         XCTAssertEqual(self._acc.api.rootURL, api.rootURL)
         
-        let session = api.session.get()
-            .expectsOne(timeout: 2, on: self)
+        let session = api.session.get().expectsOne(timeout: 2, on: self)
         let now = Date()
         XCTAssertEqual(session.account, credentials.account)
         XCTAssertEqual(session.client, credentials.client)
         XCTAssertEqual(session.streamerURL, credentials.streamerURL)
         XCTAssertEqual(session.timezone.secondsFromGMT(for: now), credentials.timezone.secondsFromGMT(for: now))
         
-        api.session.refresh()
-            .expectsCompletion(timeout: 1.2, on: self)
+        api.session.refresh().expectsCompletion(timeout: 1.2, on: self)
         XCTAssertNotNil(api.channel.credentials)
         XCTAssertGreaterThanOrEqual(api.channel.credentials!.token.expirationDate, credentials.token.expirationDate)
         
-        api.session.logout()
-            .expectsCompletion(timeout: 1, on: self)
+        api.session.logout().expectsCompletion(timeout: 1, on: self)
     }
     
     /// Tests the static status events.
@@ -63,11 +59,10 @@ final class APISessionTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
         guard let user = self._acc.api.user else { return XCTFail("Session tests can't be performed without username and password") }
         
-        var statuses: [IG.API.Session.Status] = [api.session.status]
+        var statuses: [API.Session.Status] = [api.session.status]
         let cancellable = api.session.statusStream.sink { statuses.append($0) }
         
-        api.session.login(type: .oauth, key: self._acc.api.key, user: user)
-            .expectsCompletion(timeout: 3, on: self)
+        api.session.login(type: .oauth, key: self._acc.api.key, user: user).expectsCompletion(timeout: 3, on: self)
         
         guard case .ready(let limit) = api.session.status, limit > Date() else { return XCTFail() }
         self.wait(seconds: limit.timeIntervalSinceNow + 2)

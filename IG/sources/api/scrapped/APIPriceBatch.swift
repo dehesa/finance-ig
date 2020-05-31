@@ -1,7 +1,8 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.API.Request.Scrapped {
+extension API.Request.Scrapped {
     
     // MARK: GET /chart/snapshot
     
@@ -13,7 +14,7 @@ extension IG.API.Request.Scrapped {
     /// - parameter numDataPoints: The number of data points to receive on the prices array result.
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    public func getPriceSnapshot(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, numDataPoints: Int, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<IG.API.PriceSnapshot,IG.API.Error> {
+    public func getPriceSnapshot(epic: IG.Market.Epic, resolution: API.Price.Resolution, numDataPoints: Int, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<API.PriceSnapshot,API.Error> {
         self.api.publisher
             .makeScrappedRequest(.get, url: { (_, _) in
                 let interval = resolution._components
@@ -30,7 +31,7 @@ extension IG.API.Request.Scrapped {
                 .cacheControl: "no-cache"]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -45,9 +46,9 @@ extension IG.API.Request.Scrapped {
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    public func getPrices(epic: IG.Market.Epic, resolution: IG.API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal, rootURL: URL = IG.API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[IG.API.Price],IG.API.Error> {
+    public func getPrices(epic: IG.Market.Epic, resolution: API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal64, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Price],API.Error> {
         self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
-                guard from <= to else { throw IG.API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
+                guard from <= to else { throw API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
                 let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
                 let toComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: to)
                 return (fromComponents, toComponents)
@@ -65,14 +66,14 @@ extension IG.API.Request.Scrapped {
                  .pragma: "no-cache",
                  .cacheControl: "no-cache"]
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .custom({ (_, _, _) in JSONDecoder().set { $0.userInfo[._scalingFactor] = scalingFactor } })) { (response: IG.API.Market._ScrappedBatch, _) in
+            .decodeJSON(decoder: .custom({ (_, _, _) in JSONDecoder().set { $0.userInfo[._scalingFactor] = scalingFactor } })) { (response: API.Market._ScrappedBatch, _) in
                 response.prices
-            }.mapError(IG.API.Error.transform)
+            }.mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
-extension IG.API {
+extension API {
     /// Market snapshot retrieved from a scrapped endpoint.
     public struct PriceSnapshot: Decodable {
         /// The epic identifying the market.
@@ -82,9 +83,9 @@ extension IG.API {
         /// The locale used to express numbers.
         public let locale: Locale
         /// Number of decimal positions for pip representation.
-        public let decimalPlaces: Decimal
+        public let decimalPlaces: Decimal64
         /// Multiplying factor to determine actual pip value for the levels used by the instrument.
-        public let scalingFactor: Decimal
+        public let scalingFactor: Decimal64
         /// Boolean indicating whether the price data point values has been scaled.
         ///
         /// The prices displayed by this structure are "real" and don't require any further processing; however, this boolean indicates whether other scrapped endpoints returned scaled values.
@@ -98,7 +99,7 @@ extension IG.API {
         /// The available prices always end at the previous hour ends. For example, if at API endpoint call time  is 10:20 UTC, the last available price will be 09:59 UTC.
         public let availableBatchPrices: DateInterval
         /// The prices brought with the snapshot (already ordered by the server).
-        public let prices: [IG.API.Price]
+        public let prices: [API.Price]
         
         public init(from decoder: Decoder) throws {
             let topContainer = try decoder.container(keyedBy: _CodingKeys.self)
@@ -107,8 +108,8 @@ extension IG.API {
             self.epic = try instrumentContainer.decode(IG.Market.Epic.self, forKey: .epic)
             self.name = try instrumentContainer.decode(String.self, forKey: .name)
             self.locale = Locale(identifier: try instrumentContainer.decode(String.self, forKey: .locale))
-            self.scalingFactor = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .scalingFactor)) ?> DecodingError.dataCorruptedError(forKey: .scalingFactor, in: instrumentContainer, debugDescription: "The 'scaling factor' value cannot be transformed into a numeric value")
-            self.decimalPlaces = try Decimal(string: try instrumentContainer.decode(String.self, forKey: .decimalPlaces)) ?> DecodingError.dataCorruptedError(forKey: .decimalPlaces, in: instrumentContainer, debugDescription: "The 'decimal places' value cannot be transformed into a numeric value")
+            self.scalingFactor = try Decimal64(try instrumentContainer.decode(String.self, forKey: .scalingFactor)) ?> DecodingError.dataCorruptedError(forKey: .scalingFactor, in: instrumentContainer, debugDescription: "The 'scaling factor' value cannot be transformed into a numeric value")
+            self.decimalPlaces = try Decimal64(try instrumentContainer.decode(String.self, forKey: .decimalPlaces)) ?> DecodingError.dataCorruptedError(forKey: .decimalPlaces, in: instrumentContainer, debugDescription: "The 'decimal places' value cannot be transformed into a numeric value")
             self.isScaled = try instrumentContainer.decode(Bool.self, forKey: .isScaled)
             self.delay = try instrumentContainer.decode(Int.self, forKey: .delay)
             
@@ -122,7 +123,7 @@ extension IG.API {
             let storageContainer = try topContainer.nestedContainer(keyedBy: _CodingKeys.StorageKeys.self, forKey: .storage)
             //let offset: TimeInterval = (try storageContainer.decode(Bool.self, forKey: .isConsolidated)) ? try intervalContainer.decode(TimeInterval.self, forKey: .consolidationTimezoneOffset) : 0
             
-            let scalingFactor = (self.isScaled) ? self.scalingFactor : Decimal(1)
+            let scalingFactor = (self.isScaled) ? self.scalingFactor : Decimal64(1)
             let elementsContainer = try storageContainer.nestedUnkeyedContainer(forKey: .elements)
             self.prices = try Self._decode(scrappedDataPoints: elementsContainer, scalingFactor: scalingFactor)
         }
@@ -151,7 +152,7 @@ extension IG.API {
     }
 }
 
-fileprivate extension IG.API.Market {
+fileprivate extension API.Market {
     /// A batch of data prices.
     struct _ScrappedBatch: Decodable {
         /// ???
@@ -159,7 +160,7 @@ fileprivate extension IG.API.Market {
         /// The identifier for the given transaction.
         let transactionIdentifier: String
         /// All the data prices.
-        let prices: [IG.API.Price]
+        let prices: [API.Price]
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self._CodingKeys.self)
@@ -167,8 +168,8 @@ fileprivate extension IG.API.Market {
             self.transactionIdentifier = try container.decode(String.self, forKey: .transactionIdentifier)
             
             let unkeyedContainer = try container.nestedUnkeyedContainer(forKey: .prices)
-            let scalingFactor = try (decoder.userInfo[._scalingFactor] as? Decimal) ?> DecodingError.valueNotFound(Decimal.self, .init(codingPath: container.codingPath, debugDescription: "The userInfo value under key '\(CodingUserInfoKey._scalingFactor)' wasn't found or it was invalid"))
-            self.prices = try IG.API.PriceSnapshot._decode(scrappedDataPoints: unkeyedContainer, scalingFactor: scalingFactor)
+            let scalingFactor = try (decoder.userInfo[._scalingFactor] as? Decimal64) ?> DecodingError.valueNotFound(Decimal64.self, .init(codingPath: container.codingPath, debugDescription: "The userInfo value under key '\(CodingUserInfoKey._scalingFactor)' wasn't found or it was invalid"))
+            self.prices = try API.PriceSnapshot._decode(scrappedDataPoints: unkeyedContainer, scalingFactor: scalingFactor)
         }
         
         private enum _CodingKeys: String, CodingKey {
@@ -179,15 +180,15 @@ fileprivate extension IG.API.Market {
     }
 }
 
-fileprivate extension IG.API.PriceSnapshot {
+fileprivate extension API.PriceSnapshot {
     /// Extracted functionality decoding all price data points under a given unkeyed decoding container.
-    static func _decode(scrappedDataPoints: UnkeyedDecodingContainer, scalingFactor: Decimal) throws -> [IG.API.Price] {
-        var prices: [IG.API.Price] = []
+    static func _decode(scrappedDataPoints: UnkeyedDecodingContainer, scalingFactor: Decimal64) throws -> [API.Price] {
+        var prices: [API.Price] = []
         
         let decodePoint: (KeyedDecodingContainer<_ElementKeys.DataPointKeys>, _ElementKeys.DataPointKeys) throws -> API.Price.Point = {
             let pointContainer = try $0.nestedContainer(keyedBy: _ElementKeys.DataPointKeys.PriceKeys.self, forKey: $1)
-            let bid = try pointContainer.decode(Decimal.self, forKey: .bid) / scalingFactor
-            let ask = try pointContainer.decode(Decimal.self, forKey: .ask) / scalingFactor
+            let bid = try pointContainer.decode(Decimal64.self, forKey: .bid) / scalingFactor
+            let ask = try pointContainer.decode(Decimal64.self, forKey: .ask) / scalingFactor
             return .init(bid: bid, ask: ask, lastTraded: nil)
         }
         
@@ -245,7 +246,7 @@ fileprivate extension CodingUserInfoKey {
     static var _scalingFactor: CodingUserInfoKey { CodingUserInfoKey(rawValue: "IG_APIScrappedScaling")! }
 }
 
-fileprivate extension IG.API.Price.Resolution {
+fileprivate extension API.Price.Resolution {
     /// The components identifying the receiving resolution.
     var _components: (number: Int, identifier: String) {
         switch self {

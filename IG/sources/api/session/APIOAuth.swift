@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.API.Request.Session {
+extension API.Request.Session {
 
     // MARK: POST /session
 
@@ -10,14 +10,14 @@ extension IG.API.Request.Session {
     /// - parameter key: API key given by the platform identifying the endpoint usage.
     /// - parameter user: User name and password to log in into an account.
     /// - returns: `Future` related type forwarding the platform credentials if the login was successful.
-    internal func loginOAuth(key: IG.API.Key, user: IG.API.User) -> AnyPublisher<IG.API.Credentials,Swift.Error> {
+    internal func loginOAuth(key: API.Key, user: API.User) -> AnyPublisher<API.Credentials,Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
                 let payload = _PayloadOAuth(user: user)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session._OAuth, _) -> IG.API.Credentials in
-                let token = IG.API.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
+            .decodeJSON(decoder: .default(response: true)) { (r: API.Session._OAuth, _) -> API.Credentials in
+                let token = API.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
                 return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
             }.eraseToAnyPublisher()
     }
@@ -29,15 +29,15 @@ extension IG.API.Request.Session {
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
-    internal func refreshOAuth(token: String, key: IG.API.Key) -> AnyPublisher<IG.API.Token,Swift.Error> {
+    internal func refreshOAuth(token: String, key: API.Key) -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher { _ -> _TemporaryRefresh in
-                guard !token.isEmpty else { throw IG.API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
+                guard !token.isEmpty else { throw API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
                 return _TemporaryRefresh(refreshToken: token, apiKey: key)
             }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(response: true)) { (r: IG.API.Session._OAuth._Token, _) in
+            .decodeJSON(decoder: .default(response: true)) { (r: API.Session._OAuth._Token, _) in
                 .init(.oauth(access: r.accessToken, refresh: r.refreshToken, scope: r.scope, type: r.type), expirationDate: r.expirationDate)
             }.eraseToAnyPublisher()
     }
@@ -45,9 +45,9 @@ extension IG.API.Request.Session {
 
 // MARK: - Entities
 
-private extension IG.API.Request.Session {
+private extension API.Request.Session {
     struct _PayloadOAuth: Encodable {
-        let user: IG.API.User
+        let user: API.User
         
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: _CodingKeys.self)
@@ -62,13 +62,13 @@ private extension IG.API.Request.Session {
     
     struct _TemporaryRefresh {
         let refreshToken: String
-        let apiKey: IG.API.Key
+        let apiKey: API.Key
     }
 }
 
 // MARK: Response Entities
 
-fileprivate extension IG.API.Session {
+fileprivate extension API.Session {
     /// Oauth credentials used to access the IG platform.
     struct _OAuth: Decodable {
         /// Client identifier.
@@ -91,7 +91,7 @@ fileprivate extension IG.API.Session {
             let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset) + 1
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?> DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             
-            self.tokens = try container.decode(IG.API.Session._OAuth._Token.self, forKey: .tokens)
+            self.tokens = try container.decode(API.Session._OAuth._Token.self, forKey: .tokens)
         }
         
         private enum _CodingKeys: String, CodingKey {
@@ -104,7 +104,7 @@ fileprivate extension IG.API.Session {
     }
 }
 
-fileprivate extension IG.API.Session._OAuth {
+fileprivate extension API.Session._OAuth {
     /// OAuth token with metadata information such as expiration date or refresh token.
     struct _Token: Decodable {
         /// Acess token expiration date.
@@ -130,9 +130,9 @@ fileprivate extension IG.API.Session._OAuth {
             let seconds = try TimeInterval(secondsString)
                 ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The '\(_CodingKeys.expireInSeconds)' value (i.e. \(secondsString) could not be transformed into a number")
             
-            if let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
-               let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-               let date = IG.Formatter.humanReadableLong.date(from: dateString) {
+            if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
+               let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+               let date = DateFormatter.humanReadableLong.date(from: dateString) {
                 self.expirationDate = date.addingTimeInterval(seconds)
             } else {
                 self.expirationDate = Date(timeIntervalSinceNow: seconds)

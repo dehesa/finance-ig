@@ -1,7 +1,8 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.Streamer.Request.Price {
+extension Streamer.Request.Price {
     
     // MARK: CHART:EPIC:TICK
     
@@ -10,7 +11,7 @@ extension IG.Streamer.Request.Price {
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<IG.Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Chart.Tick,IG.Streamer.Error> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Tick,Streamer.Error> {
         let item = "CHART:\(epic.rawValue):TICK"
         let properties = fields.map { $0.rawValue }
         
@@ -19,14 +20,14 @@ extension IG.Streamer.Request.Price {
             .tryMap { (update) in
                 do {
                     return try .init(epic: epic, item: item, update: update)
-                } catch var error as IG.Streamer.Error {
+                } catch var error as Streamer.Error {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     throw error
                 } catch let underlyingError {
-                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                    throw Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
                 }
-            }.mapError(IG.Streamer.Error.transform)
+            }.mapError(Streamer.Error.transform)
             .eraseToAnyPublisher()
     }
 }
@@ -35,7 +36,7 @@ extension IG.Streamer.Request.Price {
 
 // MARK: Request Entities
 
-extension IG.Streamer.Chart.Tick {
+extension Streamer.Chart.Tick {
     /// Possible fields to subscribe to when querying market data.
     public enum Field: String, CaseIterable {
         /// Update time.
@@ -63,19 +64,19 @@ extension IG.Streamer.Chart.Tick {
     }
 }
 
-extension Set where Element == IG.Streamer.Chart.Tick.Field {
+extension Set where Element == Streamer.Chart.Tick.Field {
     /// Returns a set with all the dayly related fields.
-    public static var day: Self {
+    @_transparent public static var day: Self {
         Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
     }
     
     /// Returns all queryable fields.
-    public static var all: Self {
+    @_transparent public static var all: Self {
         .init(Element.allCases)
     }
 }
 
-extension IG.Streamer.Chart {
+extension Streamer.Chart {
     /// Chart data aggregated by a given time interval.
     public struct Tick {
         /// The market epic identifier.
@@ -83,18 +84,18 @@ extension IG.Streamer.Chart {
         /// The date of the information.
         public let date: Date?
         /// The tick bid price.
-        public let bid: Decimal?
+        public let bid: Decimal64?
         /// The tick ask/offer price.
-        public let ask: Decimal?
+        public let ask: Decimal64?
         /// Last traded volume.
-        public let volume: Decimal?
+        public let volume: Decimal64?
         /// Aggregate data for the current day.
         public let day: Self.Day
         
-        internal init(epic: IG.Market.Epic, item: String, update: IG.Streamer.Packet) throws {
+        internal init(epic: IG.Market.Epic, item: String, update: Streamer.Packet) throws {
             typealias F = Self.Field
-            typealias U = IG.Streamer.Update
-            typealias E = IG.Streamer.Error
+            typealias U = Streamer.Update
+            typealias E = Streamer.Error
             
             self.epic = epic
             
@@ -113,23 +114,23 @@ extension IG.Streamer.Chart {
     }
 }
 
-extension IG.Streamer.Chart.Tick {
+extension Streamer.Chart.Tick {
     /// Dayly statistics.
     public struct Day {
         /// The lowest price of the day.
-        public let lowest: Decimal?
+        public let lowest: Decimal64?
         /// The mid price of the day.
-        public let mid: Decimal?
+        public let mid: Decimal64?
         /// The highest price of the day
-        public let highest: Decimal?
+        public let highest: Decimal64?
         /// Net change from open price to current.
-        public let changeNet: Decimal?
+        public let changeNet: Decimal64?
         /// Daily percentage change.
-        public let changePercentage: Decimal?
+        public let changePercentage: Decimal64?
         
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Chart.Tick.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Chart.Tick.Field
+            typealias U = Streamer.Update
             
             self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
             self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
@@ -140,12 +141,12 @@ extension IG.Streamer.Chart.Tick {
     }
 }
 
-extension IG.Streamer.Chart.Tick: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Chart.self).\(Self.self)" }
+extension Streamer.Chart.Tick: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Chart.self).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic))")
-        result.append("date", self.date, formatter: IG.Formatter.londonTime)
+        result.append("date", self.date, formatter: DateFormatter.londonTime)
         result.append("volume", self.volume)
         result.append("price (ask)", self.ask)
         result.append("price (bid)", self.bid)

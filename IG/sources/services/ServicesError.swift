@@ -1,22 +1,22 @@
-extension IG.Services {
+extension Services {
     /// Wrapper for errors generated in one of the IG services.
     public enum Error: Swift.Error {
         /// Error produced by the HTTP API subservice.
-        case api(error: IG.API.Error)
+        case api(error: API.Error)
         /// Error produced by the Lightstreamer subservice.
-        case streamer(error: IG.Streamer.Error)
+        case streamer(error: Streamer.Error)
         /// Error produced by the Database subservice.
-        case database(error: IG.Database.Error)
+        case database(error: Database.Error)
         /// Error produced by the framework user.
         case user(String, suggestion: String, context: [IG.Error.Item] = [])
         
-        /// Transform the given `IG.Error` conforming type into a `IG.Services.Error`.
-        /// - warning: This function will crash if the error type is not one of the supported by `IG.Services.Error`
+        /// Transform the given `IG.Error` conforming type into a `Services.Error`.
+        /// - warning: This function will crash if the error type is not one of the supported by `Services.Error`
         public init<E>(error: E) where E:IG.Error {
             switch error {
-            case let e as IG.API.Error: self = .api(error: e)
-            case let e as IG.Streamer.Error: self = .streamer(error: e)
-            case let e as IG.Database.Error: self = .database(error: e)
+            case let e as API.Error: self = .api(error: e)
+            case let e as Streamer.Error: self = .streamer(error: e)
+            case let e as Database.Error: self = .database(error: e)
             default: fatalError()
             }
         }
@@ -51,8 +51,8 @@ extension IG.Services {
     }
 }
 
-extension IG.Services.Error: IG.ErrorPrintable {
-    static var printableDomain: String { "\(IG.Services.printableDomain).\(Self.self)" }
+extension Services.Error: IG.ErrorPrintable {
+    static var printableDomain: String { "\(Services.printableDomain).\(Self.self)" }
     
     var printableType: String {
         switch self {

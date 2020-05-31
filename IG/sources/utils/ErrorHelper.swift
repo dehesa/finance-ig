@@ -1,4 +1,5 @@
 import Foundation
+import Decimals
 
 /// List of functionality helping to translate errors into `String`s.
 internal enum ErrorHelper {
@@ -38,10 +39,10 @@ internal enum ErrorHelper {
             switch value {
             case let string as String:
                 result.append(IG.ErrorHelper.representation(of: string, prefixCount: beginning.count, maxCharacters: maxCharacters))
-            case let decimal as Decimal:
-                result.append(String(describing: decimal))
+            case let decimal as Decimal64:
+                result.append(decimal.description)
             case let date as Date:
-                result.append(IG.Formatter.timestamp.string(from: date))
+                result.append(DateFormatter.timestamp.string(from: date))
             case let request as URLRequest:
                 var stringValue = String()
                 if let method = request.httpMethod { stringValue.append("\(method) ") }
@@ -50,7 +51,7 @@ internal enum ErrorHelper {
             case let response as URLResponse:
                 result.append(IG.ErrorHelper.representation(of: response, prefixCount: beginning.count, maxCharacters: maxCharacters))
             case let limit as IG.Deal.Limit:
-                result.append(Self._representation(of: limit.type))
+                result.append(Self._representation(of: limit))
             case let stop as IG.Deal.Stop:
                 result.append(Self._representation(of: stop.type))
                 result.append(", ")
@@ -82,19 +83,19 @@ internal enum ErrorHelper {
                         result.append(" distance '\(s.distance)', increment '\(s.increment)'")
                     }
                 }
-            case let code as IG.SQLite.Result:
+            case let code as SQLite.Result:
                 result.append("\(code.rawValue) -> \(code.description)")
-            case let errors as [IG.Streamer.Error]:
+            case let errors as [Streamer.Error]:
                 let string = errors.map {
                     var s = $0.printableType
                     if let item = $0.item { s.append(" for \(item)") }
                     return s
                 }.joined(separator: ", ")
                 result.append("[\(string)]")
-            case let statuses as [IG.Streamer.Session.Status]:
+            case let statuses as [Streamer.Session.Status]:
                 let string = statuses.map { $0.rawValue }.joined(separator: ", ")
                 result.append("[\(string)]")
-            case let updates as IG.Streamer.Packet:
+            case let updates as Streamer.Packet:
                 let string = updates.map { "\($0): \($1.value ?? "nil")" }.joined(separator: ", ")
                 result.append("[\(string)]")
             default:
@@ -108,7 +109,7 @@ internal enum ErrorHelper {
     /// Returns a `String` representation of a deal limit type.
     /// - parameter limitType: A type of limit for a given deal.
     /// - returns: A representation for a deal's limit.
-    private static func _representation(of limitType: IG.Deal.Limit.Kind) -> String {
+    private static func _representation(of limitType: IG.Deal.Limit) -> String {
         switch limitType {
         case .distance(let distance): return "distance '\(distance)'"
         case .position(let level):    return "level '\(level)'"
