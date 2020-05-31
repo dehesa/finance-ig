@@ -9,7 +9,7 @@ extension Test {
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
     /// - returns: A fully initialized `API` instance.
     /// - todo: Support API & Streamer File tests
-    static func makeAPI(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> IG.API {
+    static func makeAPI(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> API {
         switch Test.Account.SupportedScheme(url: rootURL) {
         case .https:
             return .init(rootURL: rootURL, credentials: credentials, targetQueue: targetQueue, qos: targetQueue?.qos ?? .default)
@@ -30,8 +30,8 @@ extension Test {
     /// - parameter credentials: The credentials to use to authenticate on the server.
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - parameter autoconnect: Whether the connection shall be performed automatically within this function.
-    static func makeStreamer(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> IG.Streamer {
-        let streamer: IG.Streamer
+    static func makeStreamer(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> Streamer {
+        let streamer: Streamer
 
         switch Self.Account.SupportedScheme(url: rootURL) {
         case .https:
@@ -66,7 +66,7 @@ extension Test {
     /// - parameter rootURL: The file location or nil for “in memory” storage.
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
     /// - returns: A fully ready database.
-    static func makeDatabase(rootURL: URL?, targetQueue: DispatchQueue?) -> IG.Database {
+    static func makeDatabase(rootURL: URL?, targetQueue: DispatchQueue?) -> Database {
         do {
             return try .init(location: rootURL.map { .file(url: $0, expectsExistance: nil) } ?? .inMemory, targetQueue: targetQueue)
         } catch let error {

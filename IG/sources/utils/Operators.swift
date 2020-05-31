@@ -1,13 +1,14 @@
 infix operator ?>
 infix operator ?!
+infix operator ∪: ComparisonPrecedence
 
-internal extension Optional {
+extension Optional {
     /// Checks whether the value exists. If so, it returns it; if not, it throws the given error.
     /// - parameter lhs: Optional value to check for existance.
     /// - parameter rhs: Swift error to throw in case of no value.
     /// - returns: The value (non-optional) passed as parameter.
     /// - throws: The Swift error returned on the right hand-side autoclosure.
-    @_transparent static func ?>(lhs: Self, rhs: @autoclosure ()->Swift.Error) throws -> Wrapped {
+    @inlinable @_transparent public static func ?> (lhs: Self, rhs: @autoclosure ()->Swift.Error) throws -> Wrapped {
         switch lhs {
         case .some(let v): return v
         case .none: throw rhs()
@@ -18,7 +19,7 @@ internal extension Optional {
     /// - parameter lhs: Optional value to check for existance.
     /// - parameter rhs: Closure halting the program execution.
     /// - returns: The value (non-optional) passed as parameter.
-    @_transparent static func ?!(lhs: Self, rhs: @autoclosure ()->Never) -> Wrapped {
+    @inlinable @_transparent public static func ?! (lhs: Self, rhs: @autoclosure ()->Never) -> Wrapped {
         guard let result = lhs else { rhs() }
         return result
     }
@@ -32,34 +33,38 @@ internal extension Optional {
     }
 }
 
+// MARK: - Euler
+
+/// Creates a union of both passed collections.
+public func ∪ <T>(lhs: Set<T>, rhs: Set<T>) -> Set<T> {
+    lhs.union(rhs)
+}
+
 // MARK: - Set Up
 
-internal protocol SettableValue {}
+public protocol SettableValue {}
+public protocol SettableReference: class {}
 
-extension SettableValue {
+public extension SettableValue {
     /// Makes the receiving value accessible within the passed block parameter and ends up returning the modified value.
     /// - parameter block: Closure executing a given task on the receiving function value.
     /// - returns: The modified value.
-    @_transparent internal func set(with block: (inout Self) throws -> Void) rethrows -> Self {
+    @_transparent func set(with block: (inout Self) throws -> Void) rethrows -> Self {
         var copy = self
         try block(&copy)
         return copy
     }
 }
 
-internal protocol SettableReference: class {}
-
-extension SettableReference {
+public extension SettableReference {
     /// Makes the receiving reference accessible within the argument closure so it can be tweaked, before returning it again.
     /// - parameter block: Closure executing a given task on the receiving function value.
     /// - returns: The pre-set reference.
-    @discardableResult @_transparent internal func set(with block: (Self) throws -> Void) rethrows -> Self {
+    @discardableResult @_transparent func set(with block: (Self) throws -> Void) rethrows -> Self {
         try block(self)
         return self
     }
 }
-
-// MARK: Adopters
 
 extension Calendar: SettableValue {}
 extension DateComponents: SettableValue {}
@@ -67,4 +72,4 @@ extension DateFormatter: SettableReference {}
 extension JSONDecoder: SettableReference {}
 extension Set: SettableValue {}
 extension URLRequest: SettableValue {}
-extension IG.API.Error: SettableValue {}
+extension API.Error: SettableValue {}

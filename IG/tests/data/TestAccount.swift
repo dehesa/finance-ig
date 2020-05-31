@@ -42,15 +42,15 @@ extension Test.Account {
         /// ```
         let rootURL: URL
         /// The API key used to identify the developer.
-        let key: IG.API.Key
+        let key: API.Key
         /// The actual user name and password used for this test account.
-        let user: IG.API.User?
+        let user: API.User?
         /// The certificate token being appended to all API endpoints.
         let certificate: TokenCertificate?
         /// The OAuth token being appended to all API endpoints.
         let oauth: TokenOAuth?
         
-        init(url: URL, key: IG.API.Key, user: IG.API.User? = nil, certificate: TokenCertificate? = nil, oauth: TokenOAuth? = nil) {
+        init(url: URL, key: API.Key, user: API.User? = nil, certificate: TokenCertificate? = nil, oauth: TokenOAuth? = nil) {
             self.rootURL = url
             self.key = key
             self.user = user
@@ -149,22 +149,18 @@ extension XCTestCase {
         let api: API = .init(rootURL: data.rootURL, credentials: data._cached, targetQueue: nil, qos: .default)
         let result: API.Credentials
         if case .some = api.channel.credentials {
-            api.session.refresh()
-                .expectsCompletion(timeout: 1.5, on: self)
+            api.session.refresh().expectsCompletion(timeout: 1.5, on: self)
             result = api.channel.credentials!
         } else if let cer = data.certificate {
-            let token = IG.API.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
-            let s = api.session.get(key: data.key, token: token)
-                .expectsOne(timeout: 2, on: self)
+            let token = API.Token(.certificate(access: cer.access, security: cer.security), expiresIn: 6 * 60 * 60)
+            let s = api.session.get(key: data.key, token: token).expectsOne(timeout: 2, on: self)
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
         } else if let oau = data.oauth {
-            let token: IG.API.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
-            let s = api.session.get(key: data.key, token: token)
-                .expectsOne(timeout: 2, on: self)
+            let token: API.Token = .init(.oauth(access: oau.access, refresh: oau.refresh, scope: oau.scope, type: oau.type), expiresIn: 59)
+            let s = api.session.get(key: data.key, token: token).expectsOne(timeout: 2, on: self)
             result = .init(client: s.client, account: s.account, key: data.key, token: token, streamerURL: s.streamerURL, timezone: s.timezone)
         } else if let user = data.user {
-            api.session.login(type: .certificate, key: data.key, user: user)
-                .expectsCompletion(timeout: 1.5, on: self)
+            api.session.login(type: .certificate, key: data.key, user: user).expectsCompletion(timeout: 1.5, on: self)
             result = api.channel.credentials!
         } else {
             fatalError("Some type of information must be provided to retrieve the API credentials")

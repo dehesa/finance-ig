@@ -1,4 +1,4 @@
-@testable import IG
+//@testable import IG
 //
 /// Mocked URL Session that will pick responses from the bundle's file system.
 //final class APIFileProtocol: URLProtocol {

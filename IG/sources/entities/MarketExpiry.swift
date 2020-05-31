@@ -1,6 +1,6 @@
 import Foundation
 
-extension IG.Market {
+extension Market {
     /// The point when a trading position automatically closes is known as the expiry date (or expiration date).
     ///
     /// Expiry dates can vary from product to product. Spread bets, for example, always have a fixed expiry date. CFDs do not, unless they are on futures, digital 100s or options.
@@ -14,7 +14,7 @@ extension IG.Market {
         /// No expiration date required.
         case none
         
-        public init(nilLiteral: ()) {
+        @_transparent public init(nilLiteral: ()) {
             self = .none
         }
         
@@ -22,29 +22,28 @@ extension IG.Market {
             switch self {
             case .none: return IG.DebugDescription.Symbol.nil
             case .dailyFunded: return "Daily funded"
-            case .forward(let date): return IG.Formatter.timestampBroad.string(from: date)
+            case .forward(let date): return DateFormatter.timestampBroad.string(from: date)
             }
         }
     }
 }
 
-extension IG.Market.Expiry: Codable {
+extension Market.Expiry: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         guard !container.decodeNil() else { self = .none; return }
         
-        let string = try container.decode(String.self)
-        switch string {
+        switch try container.decode(String.self) {
         case _CodingKeys.none.rawValue:
             self = .none
         case _CodingKeys.dfb.rawValue, _CodingKeys.dfb.rawValue.lowercased():
             self = .dailyFunded
-        default:
-            if let date = IG.Formatter.dateDenormal.date(from: string) {
+        case let string:
+            if let date = DateFormatter.dateDenormal.date(from: string) {
                 self = .forward(date)
-            } else if let date = IG.Formatter.dateDenormalBroad.date(from: string) {
+            } else if let date = DateFormatter.dateDenormalBroad.date(from: string) {
                 self = .forward(date.lastDayOfMonth)
-            } else if let date = IG.Formatter.iso8601Broad.date(from: string) {
+            } else if let date = DateFormatter.iso8601Broad.date(from: string) {
                 self = .forward(date)
             } else {
                 throw DecodingError.dataCorruptedError(in: container, debugDescription: "Market expiry couldn't be inferred from date: \(string)")
@@ -60,7 +59,7 @@ extension IG.Market.Expiry: Codable {
         case .dailyFunded:
             try container.encode(_CodingKeys.dfb.rawValue)
         case .forward(let date):
-            let formatter = (date.isLastDayOfMonth) ? IG.Formatter.dateDenormalBroad : IG.Formatter.dateDenormal
+            let formatter = (date.isLastDayOfMonth) ? DateFormatter.dateDenormalBroad : DateFormatter.dateDenormal
             try container.encode(formatter.string(from: date))
         }
     }
@@ -70,4 +69,3 @@ extension IG.Market.Expiry: Codable {
         case none = "-"
     }
 }
-

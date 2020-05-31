@@ -40,7 +40,7 @@ final class StreamerSessionTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        var statuses: [IG.Streamer.Session.Status] = [streamer.session.status]
+        var statuses: [Streamer.Session.Status] = [streamer.session.status]
         let cancellable = streamer.session.statusStream.sink { statuses.append($0) }
         
         streamer.session.connect().expectsOne(timeout: 2, on: self)

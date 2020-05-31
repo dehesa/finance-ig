@@ -11,26 +11,26 @@ public final class API {
     /// The queue processing and delivering server values.
     internal final let queue: DispatchQueue
     /// The URL Session instance for performing HTTPS requests.
-    internal final let channel: IG.API.Channel
+    internal final let channel: API.Channel
     
     /// Namespace for endpoints related to the current API session (e.g. log in/out, refresh token, etc.).
-    @inlinable public final var session: IG.API.Request.Session { .init(api: self) }
+    @inlinable public final var session: API.Request.Session { .init(api: self) }
     /// Namespace for endpoints related to the user's account/s (e.g. account info, transactions, activity, etc.).
-    @inlinable public final var accounts: IG.API.Request.Accounts { .init(api: self) }
+    @inlinable public final var accounts: API.Request.Accounts { .init(api: self) }
     /// Namespace for endpoints related to the IG markets (e.g. market info, snapshots, etc.).
-    @inlinable public final var markets: IG.API.Request.Markets { .init(api: self) }
+    @inlinable public final var markets: API.Request.Markets { .init(api: self) }
     /// Namespace for endpoints related to price data point retrieval (e.g. return all data points for EUR/USD market with resolution of 1 minute).
-    @inlinable public final var price: IG.API.Request.Price { .init(api: self) }
+    @inlinable public final var price: API.Request.Price { .init(api: self) }
     /// Namespace for endpoints related to open positions (e.g. create a position, tweak it, or close it).
-    @inlinable public final var positions: IG.API.Request.Positions { .init(api: self) }
+    @inlinable public final var positions: API.Request.Positions { .init(api: self) }
     /// Namespace for endpoints related to open working orders (e.g. create a working order, tweak it, or close it).
-    @inlinable public final var workingOrders: IG.API.Request.WorkingOrders { .init(api: self) }
+    @inlinable public final var workingOrders: API.Request.WorkingOrders { .init(api: self) }
     /// Namespace for endpoints related to IG nodes; that is what IG uses to navigate its tree of available markets.
-    @inlinable public final var nodes: IG.API.Request.Nodes { .init(api: self) }
+    @inlinable public final var nodes: API.Request.Nodes { .init(api: self) }
     /// Namespace for endpoints related to watchlist management (e.g. create/remove watchlist, add/remove markets to it, etc.).
-    @inlinable public final var watchlists: IG.API.Request.Watchlists { .init(api: self) }
+    @inlinable public final var watchlists: API.Request.Watchlists { .init(api: self) }
     /// Namespace for endpoints related to endpoints scrapped from IG website (e.g. economic calendar).
-    @inlinable public final var scrapped: IG.API.Request.Scrapped { .init(api: self) }
+    @inlinable public final var scrapped: API.Request.Scrapped { .init(api: self) }
     
     /// Initializer for an API instance, giving you the default options.
     ///
@@ -39,11 +39,11 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
     /// - parameter qos: The Quality of Service for the API processing queue.
-    public convenience init(rootURL: URL, credentials: IG.API.Credentials?, targetQueue: DispatchQueue?, qos: DispatchQoS) {
+    public convenience init(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, qos: DispatchQoS) {
         // - warning: If the `URLSession` is ever to have a delegate, `processingQueue` must be serial. Otherwise, the delegate message wouldn't be ordered.
         let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
         let operationQueue = OperationQueue(name: Self.reverseDNS + ".operationQueue", underlyingQueue: processingQueue)
-        let session = URLSession(configuration: IG.API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
+        let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
         self.init(rootURL: rootURL, credentials: credentials, queue: processingQueue, session: session)
     }
     
@@ -52,14 +52,14 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter session: The URL session used to call the real (or mocked) endpoints.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
-    internal init(rootURL: URL, credentials: IG.API.Credentials?, queue: DispatchQueue, session: URLSession) {
+    internal init(rootURL: URL, credentials: API.Credentials?, queue: DispatchQueue, session: URLSession) {
         self.rootURL = rootURL
         self.queue = queue
         self.channel = .init(session: session, credentials: credentials, scheduler: queue)
     }
 }
 
-extension IG.API {
+extension API {
     /// The root address for the publicly accessible endpoints.
     public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
     /// The root URL for the hidden endpoints.
@@ -68,7 +68,7 @@ extension IG.API {
     internal static var reverseDNS: String { Bundle.IG.identifier + ".api" }
 }
 
-extension IG.API: IG.DebugDescriptable {
+extension API: IG.DebugDescriptable {
     internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public final var debugDescription: String {

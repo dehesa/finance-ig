@@ -30,7 +30,7 @@ final class DBPriceTests: XCTestCase {
         XCTAssertTrue(db.price.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self).isEmpty)
         
         let apiPrices = api.price.getContinuously(epic: epic, from: from, to: to)
-            .map { (prices, _) -> [IG.API.Price] in prices }
+            .map { (prices, _) -> [API.Price] in prices }
             .expectsAll(timeout: 4, on: self)
             .flatMap { $0 }
         XCTAssertTrue(apiPrices.isSorted { $0.date < $1.date })

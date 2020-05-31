@@ -11,8 +11,7 @@ final class APIMarketTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let epics: Set<IG.Market.Epic> = ["CS.D.EURGBP.MINI.IP", "CS.D.EURUSD.MINI.IP", "CO.D.DX.FCS1.IP", "KA.D.VOD.CASH.IP"]
-        let markets = api.markets.get(epics: epics)
-            .expectsOne(timeout: 2, on: self)
+        let markets = api.markets.get(epics: epics).expectsOne(timeout: 2, on: self)
         XCTAssertEqual(markets.count, epics.count)
         XCTAssertEqual(epics.sorted {$0.rawValue > $1.rawValue}, markets.map {$0.instrument.epic}.sorted {$0.rawValue > $1.rawValue})
     }
@@ -33,8 +32,7 @@ final class APIMarketTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
         let epic: IG.Market.Epic = "CS.D.EURUSD.MINI.IP"
-        let market = api.markets.get(epic: epic)
-            .expectsOne(timeout: 2, on: self)
+        let market = api.markets.get(epic: epic).expectsOne(timeout: 2, on: self)
         XCTAssertEqual(market.instrument.epic, epic)
     }
 }

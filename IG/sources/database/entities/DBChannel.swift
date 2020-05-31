@@ -1,7 +1,7 @@
 import Foundation
 import SQLite3
 
-extension IG.Database {
+extension Database {
     /// Contains the low-level functionality related to the SQLite database.
     internal final class Channel {
         /// The queue handling all database accesses.
@@ -16,9 +16,9 @@ extension IG.Database {
         /// Designated initializer creating/opening the SQLite database indicated by the `rootURL`.
         /// - parameter location: The location of the database (whether "in-memory" or file system).
         /// - parameter targetQueue: The target queue on which the database serializer will depend on.
-        init(location: IG.Database.Location, targetQueue: DispatchQueue?) throws {
+        init(location: Database.Location, targetQueue: DispatchQueue?) throws {
             // Research: attributes: .concurrent
-            self._queue = DispatchQueue(label: IG.Database.reverseDNS + ".queue.channel", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
+            self._queue = DispatchQueue(label: Database.reverseDNS + ".queue.channel", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
             (self.rootURL, self._database) = try Self._make(location: location, queue: _queue)
         }
         
@@ -28,7 +28,7 @@ extension IG.Database {
     }
 }
 
-extension IG.Database.Channel {
+extension Database.Channel {
     /// Reads and/or writes from the database directly (without any transaction).
     ///
     /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
@@ -101,7 +101,7 @@ extension IG.Database.Channel {
     }
 }
 
-extension IG.Database.Channel {
+extension Database.Channel {
     /// Reads from the database in a transaction that is executed asynchronously.
     ///
     /// This is a parallel access, meaning that other read access may be performed in parallel.
@@ -110,7 +110,7 @@ extension IG.Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    internal func readAsync<T>(promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    internal func readAsync<T>(promise: @escaping (Result<T,Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
     }
@@ -123,7 +123,7 @@ extension IG.Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    internal func writeAsync<T>(promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    internal func writeAsync<T>(promise: @escaping (Result<T,Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
     }
@@ -136,7 +136,7 @@ extension IG.Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    private func _asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,IG.Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    private func _asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,Database.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         self._queue.async(flags: flags) {
             if let errorCode = sqlite3_exec(self._database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
                 return receptionQueue.async {
@@ -168,13 +168,13 @@ extension IG.Database.Channel {
     }
 }
 
-private extension IG.Database.Channel {
+private extension Database.Channel {
     /// Opens or creates a SQLite database and returns the pointer handler to it.
     /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter queue: The queue serializing access to the database.
-    /// - throws: `IG.Database.Error` exclusively.
-    static func _make(location: IG.Database.Location, queue: DispatchQueue) throws -> (rootURL: URL?, database: SQLite.Database) {
+    /// - throws: `Database.Error` exclusively.
+    static func _make(location: Database.Location, queue: DispatchQueue) throws -> (rootURL: URL?, database: SQLite.Database) {
         let (rootURL, path): (URL?, String)
         
         // 1. Define file path (or in-memory keyword)
@@ -185,7 +185,7 @@ private extension IG.Database.Channel {
             (rootURL, path) = (url, url.path)
             // Check the URL is valid
             guard url.isFileURL else {
-                var error = IG.Database.Error.invalidRequest("The database location provided is not a valid file URL", suggestion: "Make sure the URL is of 'file://' domain")
+                var error = Database.Error.invalidRequest("The database location provided is not a valid file URL", suggestion: "Make sure the URL is of 'file://' domain")
                 error.context.append(("Root URL", url))
                 throw error
             }
@@ -193,11 +193,11 @@ private extension IG.Database.Channel {
             switch expectsExistance {
             case .some(true):
                 guard FileManager.default.fileExists(atPath: path) else {
-                    throw IG.Database.Error.invalidRequest("The database location didn't contain any SQLite database", suggestion: .init("Make sure the database is in location '\(path)'"))
+                    throw Database.Error.invalidRequest("The database location didn't contain any SQLite database", suggestion: .init("Make sure the database is in location '\(path)'"))
                 }
             case .some(false):
                 guard !FileManager.default.fileExists(atPath: path) else {
-                    throw IG.Database.Error.invalidRequest("There is file in the given location", suggestion: .init("Delete any previous file in location \(path) or change the database configuration"))
+                    throw Database.Error.invalidRequest("There is file in the given location", suggestion: .init("Delete any previous file in location \(path) or change the database configuration"))
                 }
                 fallthrough
             case .none:
@@ -206,7 +206,7 @@ private extension IG.Database.Channel {
                     do {
                         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
                     } catch let error {
-                        throw IG.Database.Error.invalidRequest("When creating a database, the URL path couldn't be recreated", underlying: error, suggestion: "Make sure the rootURL and/or create all subfolders in between")
+                        throw Database.Error.invalidRequest("When creating a database, the URL path couldn't be recreated", underlying: error, suggestion: "Make sure the rootURL and/or create all subfolders in between")
                     }
                 }
             }
@@ -214,12 +214,12 @@ private extension IG.Database.Channel {
         
         // 2. Open/Create the database connection
         var db: SQLite.Database? = nil
-        var error: IG.Database.Error? = nil
+        var error: Database.Error? = nil
         
         queue.sync {
             let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX  /* SQLITE_OPEN_FULLMUTEX */
             if let errorCode = sqlite3_open_v2(path, &db, openFlags, nil).enforce(.ok) {
-                error = IG.Database.Error.callFailed("The SQLite database couldn't be opened", code: errorCode)
+                error = Database.Error.callFailed("The SQLite database couldn't be opened", code: errorCode)
                 if let channel = db {
                     let message = String(cString: sqlite3_errmsg(channel))
                     if message != errorCode.description {

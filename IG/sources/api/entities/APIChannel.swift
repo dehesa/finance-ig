@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-extension IG.API {
+extension API {
     /// Contains the low-level functionality related to the `URLSession` and credentials management.
     internal final class Channel {
         /// The `URLSession` instance performing the HTTPS requests.
@@ -10,15 +10,15 @@ extension IG.API {
         /// The lock used to restrict access to the credentials.
         private let _lock: UnfairLock
         /// The credentials used to call API endpoints.
-        private var _credentials: IG.API.Credentials?
+        private var _credentials: API.Credentials?
         /// The processing queue for the status cancellable.
         private let _scheduler: DispatchQueue
         
         /// The current session status.
-        private var _status: IG.API.Session.Status
+        private var _status: API.Session.Status
         /// A subject subscribing to the API credentials status (it doesn't send duplicates).
         /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
-        private let _statusSubject: PassthroughSubject<IG.API.Session.Status,Never>
+        private let _statusSubject: PassthroughSubject<API.Session.Status,Never>
         /// The status scheduler announcing when a token has expired.
         private var _statusTimer: DispatchSourceTimer?
         
@@ -26,7 +26,7 @@ extension IG.API {
         /// - parameter session: Real or mock URL session calling the endpoints.
         /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
         /// - parameter scheduler: Queue used to schedule status changes (e.g. from valid token to expired).
-        internal init(session: URLSession, credentials: IG.API.Credentials?, scheduler: DispatchQueue) {
+        internal init(session: URLSession, credentials: API.Credentials?, scheduler: DispatchQueue) {
             self.session = session
             self._credentials = nil
             self._lock = UnfairLock()
@@ -56,7 +56,7 @@ extension IG.API {
         }
         
         /// The current status for the API credentials.
-        var status: IG.API.Session.Status {
+        var status: API.Session.Status {
             return self._lock.execute { self._status }
         }
         
@@ -70,7 +70,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Channel {
+extension API.Channel {
     /// Default configuration for the underlying URLSession
     internal static var defaultSessionConfigurations: URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
@@ -90,7 +90,7 @@ extension IG.API.Channel {
     /// Retrieve and modify the channel's credentials.
     /// - parameter closure: The closure provides the current credentials as they are at the time of closure execution, and returns the new credentials (or throw an error, in which cases the credentials are not modified).
     /// - parameter credentials: The current API credentials (or `nil` if there are none).
-    internal func setCredentials(synchronizing closure: (_ credentials: IG.API.Credentials?) throws -> IG.API.Credentials?) rethrows {
+    internal func setCredentials(synchronizing closure: (_ credentials: API.Credentials?) throws -> API.Credentials?) rethrows {
         // 1. Execute the closure within a lock.
         self._lock.lock()
         let newCredentials: API.Credentials?
@@ -132,7 +132,7 @@ extension IG.API.Channel {
     }
 }
 
-private extension IG.API.Channel {
+private extension API.Channel {
     /// Creates and schedules a timer for token/credentials expiration.
     /// - attention: This function mst be called within a lock.
     func _scheduleTimer(deadline: DispatchTime) {

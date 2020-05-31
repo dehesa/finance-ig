@@ -178,7 +178,7 @@ private protocol _CountryType {
     static var numeric: Int { get }
 }
 
-extension IG.Country {
+extension Country {
     /// Canada.
     private struct Canada: _CountryType {
         static var name: String { "Canada" }

@@ -1,7 +1,8 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.API.Request.Accounts {
+extension API.Request.Accounts {
     
     // MARK: GET /history/transactions
     
@@ -11,12 +12,12 @@ extension IG.API.Request.Accounts {
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> AnyPublisher<[IG.API.Transaction],IG.API.Error> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> AnyPublisher<[API.Transaction],API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -33,7 +34,7 @@ extension IG.API.Request.Accounts {
                 return queries
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -48,18 +49,18 @@ extension IG.API.Request.Accounts {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received. `page.size` references the amount of transactions forward per value.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of transactions.
-    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<[IG.API.Transaction],IG.API.Error> {
+    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<[API.Transaction],API.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {
-                    throw IG.API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
+                    throw API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
                 }
                 guard page.number > 0 else {
-                    throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
+                    throw API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
-                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
 
@@ -87,15 +88,15 @@ extension IG.API.Request.Accounts {
                 publisher.send(expecting: .json, statusCode: 200)
                     .decodeJSON(decoder: .default()) { (response: _PagedTransactions, _) in
                         (response.metadata.page, response.transactions)
-                    }.mapError(IG.API.Error.transform)
-            }).mapError(IG.API.Error.transform)
+                    }.mapError(API.Error.transform)
+            }).mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension IG.API.Request.Accounts {
+extension API.Request.Accounts {
     /// Transaction type.
     public enum Transaction: String {
         case all = "ALL"
@@ -103,7 +104,7 @@ extension IG.API.Request.Accounts {
         case deposit = "DEPOSIT"
         case withdrawal = "WITHDRAWAL"
         
-        public init(_ type: IG.API.Transaction.Kind) {
+        public init(_ type: API.Transaction.Kind) {
             switch type {
             case .deal: self = .deal
             case .deposit: self = .deposit
@@ -113,10 +114,10 @@ extension IG.API.Request.Accounts {
     }
 }
 
-extension IG.API.Request.Accounts {
+extension API.Request.Accounts {
     /// A single Page of transactions request.
     private struct _PagedTransactions: Decodable {
-        let transactions: [IG.API.Transaction]
+        let transactions: [API.Transaction]
         let metadata: Self.Metadata
         
         struct Metadata: Decodable {
@@ -154,7 +155,7 @@ extension IG.API.Request.Accounts {
     }
 }
 
-extension IG.API {
+extension API {
     /// A financial transaction between accounts.
     public struct Transaction: Decodable {
         /// The type of transaction.
@@ -169,11 +170,11 @@ extension IG.API {
         /// Instrument expiry period.
         public let period: IG.Market.Expiry
         /// Formatted order size, including the direction (`+` for buy, `-` for sell).
-        public let size: (direction: IG.Deal.Direction, amount: Decimal)?
+        public let size: (direction: IG.Deal.Direction, amount: Decimal64)?
         /// Open position level/price and date.
-        public let open: (date: Date, level: Decimal?)
+        public let open: (date: Date, level: Decimal64?)
         /// Close position level/price and date.
-        public let close: (date: Date, level: Decimal?)
+        public let close: (date: Date, level: Decimal64?)
         /// Realised profit and loss is the amount of money you have made or lost on a bet once the bet has been closed. Realised profit or loss will add or subtract from your cash balance.
         public let profitLoss: IG.Deal.ProfitLoss
         /// Boolean indicating whether this was a cash transaction.
@@ -190,7 +191,7 @@ extension IG.API {
             let sizeString = try container.decode(String.self, forKey: .size)
             if sizeString == "-" {
                 self.size = nil
-            } else if let size = Decimal(string: sizeString) {
+            } else if let size = Decimal64(sizeString) {
                 switch size.sign {
                 case .plus:  self.size = (.buy, size)
                 case .minus: self.size = (.sell, size.magnitude)
@@ -199,19 +200,19 @@ extension IG.API {
                 throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string '\(sizeString)' couldn't be parsed into a number")
             }
             
-            let openDate = try container.decode(Date.self, forKey: .openDate, with: IG.Formatter.iso8601Broad)
+            let openDate = try container.decode(Date.self, forKey: .openDate, with: DateFormatter.iso8601Broad)
             let openString = try container.decode(String.self, forKey: .openLevel)
             if openString == "-" {
                 self.open = (openDate, nil)
-            } else if let openLevel = Decimal(string: openString) {
+            } else if let openLevel = Decimal64(openString) {
                 self.open = (openDate, openLevel)
             } else {
                 throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level '\(openString)' couldn't be parsed into a number")
             }
             
-            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: IG.Formatter.iso8601Broad)
+            let closeDate = try container.decode(Date.self, forKey: .closeDate, with: DateFormatter.iso8601Broad)
             let closeString = try container.decode(String.self, forKey: .closeLevel)
-            if let closeLevel = Decimal(string: closeString) {
+            if let closeLevel = Decimal64(closeString) {
                 self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
             } else {
                 throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level '\(closeString)' couldn't be parsed into a number")
@@ -229,7 +230,7 @@ extension IG.API {
             
             var processedString = String(profitString[currencyInitial.endIndex...])
             processedString.removeAll { $0 == "," }
-            guard let profitValue = Decimal(string: processedString) else {
+            guard let profitValue = Decimal64(processedString) else {
                 throw DecodingError.dataCorruptedError(forKey: .profitLoss, in: container, debugDescription: "The profit & loss string '\(profitString)' cannot be transformed to a decimal number")
             }
             
@@ -252,7 +253,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Transaction {
+extension API.Transaction {
     /// Transaction type.
     public enum Kind: String, Decodable {
         case deal = "DEAL"
@@ -262,7 +263,7 @@ extension IG.API.Transaction {
     
     /// Transform the currency initial given into  a proper ISO currency.
     /// - note: These are retrieved from `market.intrument.currencies.symbol`.
-    private static func _currency(from initial: String)-> IG.Currency.Code? {
+    private static func _currency(from initial: String)-> Currency.Code? {
         switch initial {
         case "E": return .eur
         case "$": return .usd
@@ -290,8 +291,8 @@ extension IG.API.Transaction {
 
 // MARK: - Functionality
 
-extension IG.API.Transaction: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Transaction: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -301,7 +302,7 @@ extension IG.API.Transaction: IG.DebugDescriptable {
         result.append("period", self.period.debugDescription)
         result.append("size", self.size.map { "\($0.direction) \($0.amount)" })
         
-        let formatter = IG.Formatter.timestamp.deepCopy(timeZone: .current)
+        let formatter = DateFormatter.timestamp.deepCopy(timeZone: .current)
         result.append("open date", self.open.date, formatter: formatter)
         result.append("close date", self.close.date, formatter: formatter)
         let nilSym = IG.DebugDescription.Symbol.nil

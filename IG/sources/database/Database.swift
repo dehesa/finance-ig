@@ -10,25 +10,25 @@ public final class Database {
     /// The queue processing and delivering database values.
     internal final let queue: DispatchQueue
     /// The underlying instance (whether real or mocked) actually storing/reading the information.
-    internal final let channel: IG.Database.Channel
+    internal final let channel: Database.Channel
     
     /// Namespace for functionality related to user accounts.
-    public final var accounts: IG.Database.Request.Accounts { .init(database: self) }
+    @inlinable public final var accounts: Database.Request.Accounts { .init(database: self) }
     /// Namespace for functionality related to IG's markets.
-    public final var markets: IG.Database.Request.Markets { .init(database: self) }
+    @inlinable public final var markets: Database.Request.Markets { .init(database: self) }
     /// Namespace for functionality related to price data points.
-    public final var price: IG.Database.Request.Price { .init(database: self) }
+    @inlinable public final var price: Database.Request.Price { .init(database: self) }
     
     /// The database version.
-    public final var version: Int { IG.Database.Migration.Version.latest.rawValue }
+    public final var version: Int { Database.Migration.Version.latest.rawValue }
     /// The version of SQLite being used.
     public final var sqliteVersion: String { SQLITE_VERSION }
     
     /// Creates a database instance fetching and storing values from/to the given location.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
-    /// - throws: `IG.Database.Error` exclusively.
-    public convenience init(location: IG.Database.Location, targetQueue: DispatchQueue?) throws {
+    /// - throws: `Database.Error` exclusively.
+    public convenience init(location: Database.Location, targetQueue: DispatchQueue?) throws {
         let processingQueue = targetQueue ??
             DispatchQueue(label: Self.reverseDNS + ".queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = try Self.Channel(location: location, targetQueue: targetQueue)
@@ -39,15 +39,15 @@ public final class Database {
     /// - parameter rootURL: The file URL where the databse file is or `nil` for "in memory" storage.
     /// - parameter channel: The SQLite opaque pointer to the database.
     /// - parameter queue: The queue on which to process the `Database` requests and responses.
-    /// - throws: `IG.Database.Error` exclusively.
-    internal init(channel: IG.Database.Channel, queue: DispatchQueue) throws {
+    /// - throws: `Database.Error` exclusively.
+    internal init(channel: Database.Channel, queue: DispatchQueue) throws {
         self.channel = channel
         self.queue = queue
         try self.migrateToLatestVersion()
     }
 }
 
-extension IG.Database {
+extension Database {
     /// The database location.
     public enum Location {
         /// The database will be created for this session in memory. At the end of the session it will be flushed.
@@ -64,7 +64,7 @@ extension IG.Database {
     }
     
     /// The root address for the underlying database file.
-    public static var rootURL: URL {
+    @_transparent public static var rootURL: URL {
         let result: URL
         do {
             result = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
@@ -80,7 +80,7 @@ extension IG.Database {
     }
 }
 
-extension IG.Database: DebugDescriptable {
+extension Database: DebugDescriptable {
     internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public final var debugDescription: String {
@@ -88,7 +88,7 @@ extension IG.Database: DebugDescriptable {
         result.append("root URL", self.rootURL.map { $0.path } ?? ":memory:")
         result.append("queue", self.queue.label)
         result.append("queue QoS", String(describing: self.queue.qos.qosClass))
-        result.append("version", IG.Database.Migration.Version.latest.rawValue)
+        result.append("version", Database.Migration.Version.latest.rawValue)
         result.append("SQLite", SQLITE_VERSION)
         return result.generate()
     }

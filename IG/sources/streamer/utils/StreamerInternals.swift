@@ -1,6 +1,8 @@
 import Combine
+import Foundation
+import Decimals
 
-extension IG.Streamer {
+extension Streamer {
     /// List of request data needed to make subscriptions.
     public enum Request {}
 
@@ -19,12 +21,12 @@ extension IG.Streamer {
 
 // MARK: - Convenience Formatter
 
-extension IG.Streamer {
+internal extension Streamer {
     /// Functionality related to updates brought by the `Streamer`.
-    internal enum Update {
+    enum Update {
         /// Transform a `String` representing a Boolean value into an actual `Bool` value.
         /// - parameter value: The `String` value representing the result.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
+        /// - throws: `Streamer.Update.Error` exclusively.
         static func toBoolean(_ value: String) throws -> Bool {
             switch value {
             case "0", "false": return false
@@ -34,23 +36,23 @@ extension IG.Streamer {
         }
         /// Transforms a `String` representing an integer into an actual `Int` value.
         /// - parameter value: The `String` value representing the result.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
+        /// - throws: `Streamer.Update.Error` exclusively.
         static func toInt(_ value: String) throws -> Int {
             try Int(value) ?> Self.Error(value: value, to: Int.self)
         }
-        /// Transforms a `String` representing a decimal number (could be a floating-point number) into an actual `Decimal` value.
+        /// Transforms a `String` representing a decimal number (could be a floating-point number) into an actual `Decimal64` value.
         /// - parameter value: The `String` value representing the result.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
-        static func toDecimal(_ value: String) throws -> Decimal {
-            try Decimal(string: value) ?> Self.Error(value: value, to: Decimal.self)
+        /// - throws: `Streamer.Update.Error` exclusively.
+        static func toDecimal(_ value: String) throws -> Decimal64 {
+            try Decimal64(value) ?> Self.Error(value: value, to: Decimal64.self)
         }
         /// Transforms a `String` representing the time (without any more "date" information into a `Date` instance.
         /// - parameter value: The `String` value representing the result.
         /// - returns: The time given in `value` of today.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
+        /// - throws: `Streamer.Update.Error` exclusively.
         static func toTime(_ value: String, timeFormatter: DateFormatter) throws -> Date {
             let now = Date()
-            let formatter = IG.Formatter.londonTime
+            let formatter = DateFormatter.londonTime
             guard let cal = formatter.calendar, let zone = formatter.timeZone,
                 let timeDate = formatter.date(from: value),
                 let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
@@ -64,14 +66,14 @@ extension IG.Streamer {
         /// Transforms a `String` representing an Epoch date into a `Date` instance.
         /// - parameter value: The `String` value representing the result.
         /// - returns: The time given in `value` of today.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
+        /// - throws: `Streamer.Update.Error` exclusively.
         static func toEpochDate(_ value: String) throws -> Date {
             let milliseconds = try TimeInterval(value) ?> Self.Error(value: value, to: Date.self)
             return Date(timeIntervalSince1970: milliseconds / 1000)
         }
         /// Transforms a `String` representing a raw value type.
         /// - parameter value: The `String` value representing the result.
-        /// - throws: `IG.Streamer.Update.Error` exclusively.
+        /// - throws: `Streamer.Update.Error` exclusively.
         static func toRawType<T>(_ value: String) throws -> T where T:RawRepresentable, T.RawValue == String {
             try T.init(rawValue: value) ?> Self.Error(value: value, to: T.self)
         }
@@ -91,7 +93,7 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Update.Error: IG.ErrorPrintable {
+extension Streamer.Update.Error: IG.ErrorPrintable {
     internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Update.self).\(Self.self)" }
     
     internal var printableType: String {

@@ -1,46 +1,37 @@
 import Foundation
-#warning("Decimal64 change")
+import Decimals
 
 /// Confirmation data returned just after opening a position or a working order.
 public struct Confirmation: Decodable {
     /// Date the position was created.
     public let date: Date
     /// Permanent deal reference for a confirmed trade.
-    public let dealIdentifier: IG.Deal.Identifier
+    public let dealIdentifier: Deal.Identifier
     /// Transient deal reference for an unconfirmed trade.
-    public let dealReference: IG.Deal.Reference
+    public let dealReference: Deal.Reference
     /// Instrument epic identifier.
-    public let epic: IG.Market.Epic
+    public let epic: Market.Epic
     /// Instrument expiration period.
-    public let expiry: IG.Market.Expiry
+    public let expiry: Market.Expiry
     /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
     public let status: Self.Status
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-        self.dealIdentifier = try container.decode(IG.Deal.Identifier.self, forKey: .dealIdentifier)
-        self.dealReference = try container.decode(IG.Deal.Reference.self, forKey: .dealReference)
-        self.date = try container.decode(Date.self, forKey: .date, with: IG.Formatter.iso8601)
+        self.dealIdentifier = try container.decode(Deal.Identifier.self, forKey: .dealIdentifier)
+        self.dealReference = try container.decode(Deal.Reference.self, forKey: .dealReference)
+        self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601)
         
-        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-        self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
+        self.epic = try container.decode(Market.Epic.self, forKey: .epic)
+        self.expiry = try container.decode(Market.Expiry.self, forKey: .expiry)
         
-        let status = try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status)
-        guard case .accepted = status else {
+        switch try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status) {
+        case .rejected:
             let reason = try container.decode(Self.RejectionReason.self, forKey: .reason)
             self.status = .rejected(reason: reason)
-            return
-        }
-        
-        let details = try Self.Details(from: decoder)
-        self.status = .accepted(details: details)
-    }
-    
-    /// Returns Boolean indicating whether the receiving confirmation has been accepted.
-    public var isAccepted: Bool {
-        switch self.status {
-        case .accepted: return true
-        case .rejected: return false
+        case .accepted:
+            let details = try Self.Details(from: decoder)
+            self.status = .accepted(details: details)
         }
     }
     
@@ -57,48 +48,57 @@ public struct Confirmation: Decodable {
             case rejected = "REJECTED"
         }
     }
-    
+}
+
+extension Confirmation {
     /// The operation confirmation status.
     public enum Status {
         /// The operation has been confirmed successfully.
-        case accepted(details: IG.Confirmation.Details)
+        case accepted(details: Confirmation.Details)
         /// The operation has been rejected due to the reason given as an associated value.
-        case rejected(reason: IG.Confirmation.RejectionReason)
+        case rejected(reason: Confirmation.RejectionReason)
     }
-}
-
-extension IG.Confirmation {
+    
+    /// Returns Boolean indicating whether the receiving confirmation has been accepted.
+    @_transparent public var isAccepted: Bool {
+        switch self.status {
+        case .accepted: return true
+        case .rejected: return false
+        }
+    }
+    
     /// The confirmation details if it has been accepted.
     public struct Details: Decodable {
         /// Deal status.
-        public let dealStatus: IG.Deal.Status
+        public let dealStatus: Deal.Status
         /// Affected deals.
-        public let affectedDeals: [IG.Confirmation.AffectedDeal]
+        public let affectedDeals: [Confirmation.AffectedDeal]
         /// Deal direction.
-        public let direction: IG.Deal.Direction
+        public let direction: Deal.Direction
         /// The deal size
-        public let size: Decimal
+        public let size: Decimal64
         /// Instrument price.
-        public let level: Decimal
+        public let level: Decimal64
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: IG.Deal.Limit?
+        public let limit: Deal.Limit?
         /// The level at which the user doesn't want to incur more losses.
-        public let stop: IG.Deal.Stop?
+        public let stop: Deal.Stop?
         /// Profit (value and currency).
-        public let profit: IG.Deal.ProfitLoss?
+        public let profit: Deal.ProfitLoss?
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: _CodingKeys.self)
-            self.dealStatus = try container.decode(IG.Deal.Status.self, forKey: .dealStatus)
-            self.affectedDeals = try container.decode([IG.Confirmation.AffectedDeal].self, forKey: .affectedDeals)
-            self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
-            self.size = try container.decode(Decimal.self, forKey: .size)
-            self.level = try container.decode(Decimal.self, forKey: .level)
-            self.limit = try container.decodeIfPresent(IG.Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance)
-            self.stop = try container.decodeIfPresent(IG.Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil))
+            self.dealStatus = try container.decode(Deal.Status.self, forKey: .dealStatus)
+            self.affectedDeals = try container.decode([Confirmation.AffectedDeal].self, forKey: .affectedDeals)
+            self.direction = try container.decode(Deal.Direction.self, forKey: .direction)
+            self.size = try container.decode(Decimal64.self, forKey: .size)
+            self.level = try container.decode(Decimal64.self, forKey: .level)
+            
+            self.limit = try container.decodeIfPresent(Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance)
+            self.stop = try container.decodeIfPresent(Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil))
             // Figure out P&L.
-            let profitValue = try container.decodeIfPresent(Decimal.self, forKey: .profitValue)
-            let profitCurrency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .profitCurrency)
+            let profitValue = try container.decodeIfPresent(Decimal64.self, forKey: .profitValue)
+            let profitCurrency = try container.decodeIfPresent(Currency.Code.self, forKey: .profitCurrency)
             switch (profitValue, profitCurrency) {
             case (let v?, let c?): self.profit = .init(value: v, currency: c)
             case (.none, .none):   self.profit = nil
@@ -125,7 +125,7 @@ extension IG.Confirmation {
         /// Deal identifier.
         public let identifier: String
         /// Deal current status.
-        public let status: IG.Deal.Status
+        public let status: Deal.Status
         
         private enum CodingKeys: String, CodingKey {
             case identifier = "dealId"
@@ -258,12 +258,12 @@ extension IG.Confirmation {
     }
 }
 
-extension IG.Confirmation: IG.DebugDescriptable {
+extension Confirmation: IG.DebugDescriptable {
     internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
         result.append("deal ID", self.dealIdentifier)
         result.append("deal reference", self.dealReference)
         result.append("epic", self.epic)

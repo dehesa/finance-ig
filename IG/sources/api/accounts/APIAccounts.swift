@@ -1,30 +1,30 @@
 import Combine
 import Foundation
 
-extension IG.API.Request {
+extension API.Request {
     /// List of endpoints related to user accounts.
     public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        @usableFromInline internal unowned let api: IG.API
+        @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        @usableFromInline internal init(api: IG.API) { self.api = api }
+        @usableFromInline internal init(api: API) { self.api = api }
     }
 }
 
-extension IG.API.Request.Accounts {
+extension API.Request.Accounts {
     
     // MARK:  GET /accounts
     
     /// Returns a list of accounts belonging to the logged-in client.
     /// - returns: *Future* forwarding a list of user's accounts.
-    public func getAll() -> AnyPublisher<[IG.API.Account],IG.API.Error> {
+    public func getAll() -> AnyPublisher<[API.Account],API.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in
                 w.accounts
-            }.mapError(IG.API.Error.transform)
+            }.mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -32,12 +32,12 @@ extension IG.API.Request.Accounts {
     
     /// Returns the targeted account preferences.
     /// - returns: *Future* forwarding the current account's pereferences.
-    public func getPreferences() -> AnyPublisher<IG.API.Account.Preferences,IG.API.Error> {
+    public func getPreferences() -> AnyPublisher<API.Account.Preferences,API.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -46,28 +46,28 @@ extension IG.API.Request.Accounts {
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: *Future* indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,IG.API.Error> {
+    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,API.Error> {
         self.api.publisher { _ -> _PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
             }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in
                 (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .ignoreOutput()
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-private extension IG.API.Request.Accounts {
+private extension API.Request.Accounts {
     struct _PayloadPreferences: Encodable {
         let trailingStopsEnabled: Bool
     }
 }
 
-private extension IG.API.Request.Accounts {
+private extension API.Request.Accounts {
     struct _WrapperList: Decodable {
-        let accounts: [IG.API.Account]
+        let accounts: [API.Account]
     }
 }

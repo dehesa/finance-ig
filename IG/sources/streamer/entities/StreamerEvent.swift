@@ -7,19 +7,19 @@ import Lightstreamer_iOS_Client
 #endif
 import Foundation
 
-extension IG.Streamer.Subscription {
+internal extension Streamer.Subscription {
     /// Events that can occur within a Streamer subscription.
-    internal enum Event: Equatable {
+    enum Event: Equatable {
         /// A successful subscription is established.
         case subscribed
         /// The subscription was shut down successfully.
         case unsubscribed
         /// An update has been received.
-        case updateReceived(IG.Streamer.Packet)
+        case updateReceived(Streamer.Packet)
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
         /// There was an error during the subscription/unsubscription process.
-        case error(IG.Streamer.Subscription.Error)
+        case error(Streamer.Subscription.Error)
         
         static func == (lhs: Self, rhs: Self) -> Bool {
             switch (lhs, rhs) {
@@ -35,12 +35,12 @@ extension IG.Streamer.Subscription {
     }
 }
 
-extension IG.Streamer {
+internal extension Streamer {
     /// A packet value that has arrived by lightstreamer.
-    internal typealias Packet = [String:IG.Streamer.Row]
+    typealias Packet = [String:Streamer.Row]
     
     /// A single field update.
-    internal struct Row {
+    struct Row {
         /// Whether the field has been updated since the last udpate.
         let isUpdated: Bool
         /// The latest value.
@@ -53,9 +53,9 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Subscription {
+internal extension Streamer.Subscription {
     /// Error that can occur during the lifetime of a subscription.
-    internal struct Error: Swift.Error, Equatable {
+    struct Error: Swift.Error, Equatable {
         /// The type of subscription error.
         let type: Self.Kind
         /// The integer error code.
@@ -75,8 +75,8 @@ extension IG.Streamer.Subscription {
     }
 }
 
-extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(IG.Streamer.Subscription.self).\(Self.self)" }
+extension Streamer.Subscription.Error: IG.ErrorPrintable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Subscription.self).\(Self.self)" }
     
     internal var printableType: String {
         switch self.type {
@@ -109,7 +109,7 @@ extension IG.Streamer.Subscription.Error: IG.ErrorPrintable {
     }
 }
 
-extension IG.Streamer.Subscription.Error {
+extension Streamer.Subscription.Error {
     /// The type of a subscription error.
     internal enum Kind: CustomDebugStringConvertible {
         /// Unknown error (check error code for more information.

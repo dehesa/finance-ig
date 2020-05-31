@@ -15,8 +15,7 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         // Log in through certificate credentials with the test account
-        let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: self._acc.api.key, user: user)
-            .expectsOne(timeout: 2, on: self)
+        let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: self._acc.api.key, user: user).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, self._acc.api.key)
         XCTAssertEqual(credentials.account, self._acc.identifier)
@@ -32,8 +31,7 @@ final class APICertificateTests: XCTestCase {
         XCTAssertEqual(headers[.securityToken], security)
         
         api.channel.credentials = credentials
-        api.session.logout()
-            .expectsCompletion(timeout: 1, on: self)
+        api.session.logout().expectsCompletion(timeout: 1, on: self)
         XCTAssertNil(api.channel.credentials)
     }
     
@@ -45,16 +43,14 @@ final class APICertificateTests: XCTestCase {
             return XCTFail("OAuth tests can't be performed without username and password")
         }
         // Log in through certificate credentials with the test account
-        let credentials = api.session.loginOAuth(key: self._acc.api.key, user: user)
-            .expectsOne(timeout: 2, on: self)
+        let credentials = api.session.loginOAuth(key: self._acc.api.key, user: user).expectsOne(timeout: 2, on: self)
         guard case .oauth = credentials.token.value else {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
         }
         XCTAssertFalse(credentials.token.isExpired)
         api.channel.credentials = credentials
         // Refresh the certificate token.
-        let token = api.session.refreshCertificate()
-            .expectsOne(timeout: 2, on: self)
+        let token = api.session.refreshCertificate().expectsOne(timeout: 2, on: self)
         guard case .certificate(let access, let security) = token.value else {
             return XCTFail("A certificate token hasn't been regenerated")
         }

@@ -1,6 +1,6 @@
 import Foundation
 
-//extension IG.Database.Node {
+//extension Database.Node {
 //    /// Associative table listing nodes and their owned markets.
 //    /// - A node can have none or many markets.
 //    /// - A market is owned by one or many nodes.
@@ -14,10 +14,10 @@ import Foundation
 //    }
 //}
 //
-//extension IG.Database.Node.AssociativeMarket {
+//extension Database.Node.AssociativeMarket {
 //    static func tableCreation(in db: GRDB.Database) throws {
-//        typealias N = IG.Database.Node
-//        typealias M = IG.Database.Market.Forex
+//        typealias N = Database.Node
+//        typealias M = Database.Market.Forex
 //
 //        try db.create(table: "nodesMarket", ifNotExists: false) { (t) in
 //            t.autoIncrementedPrimaryKey("id")
@@ -27,7 +27,7 @@ import Foundation
 //    }
 //}
 //
-//extension IG.Database.Node.AssociativeMarket: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
+//extension Database.Node.AssociativeMarket: GRDB.FetchableRecord, GRDB.MutablePersistableRecord {
 //    public init(row: GRDB.Row) {
 //        self.identifier = row[0]
 //        self.nodeIdentifier = row[1]
@@ -46,7 +46,7 @@ import Foundation
 //    }
 //}
 //
-//extension IG.Database.Node.AssociativeMarket: GRDB.TableRecord {
+//extension Database.Node.AssociativeMarket: GRDB.TableRecord {
 //    /// The table columns
 //    private enum Columns: String, GRDB.ColumnExpression {
 //        case identifier = "id"

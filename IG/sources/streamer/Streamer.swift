@@ -7,16 +7,16 @@ public final class Streamer {
     /// The queue managing all Streamer responses.
     internal final let queue: DispatchQueue
     /// The underlying instance (whether real or mocked) managing the streaming connections.
-    internal final let channel: IG.Streamer.Channel
+    internal final let channel: Streamer.Channel
     
     /// Namespace for the functionality related to managing a LightStreamer connection (e.g. open/close, status, reset, etc.).
-    public final var session: IG.Streamer.Request.Session { .init(streamer: self) }
+    @inlinable public final var session: Streamer.Request.Session { .init(streamer: self) }
     /// Namespace for subscriptions related to a user's account.
-    public final var accounts: IG.Streamer.Request.Accounts { .init(streamer: self) }
+    @inlinable public final var accounts: Streamer.Request.Accounts { .init(streamer: self) }
     /// Namespace for subscriptions related to market information.
-    public final var markets: IG.Streamer.Request.Markets { .init(streamer: self) }
+    @inlinable public final var markets: Streamer.Request.Markets { .init(streamer: self) }
     /// Namespace for subscriptions related to 
-    public final var price: IG.Streamer.Request.Price { .init(streamer: self) }
+    @inlinable public final var price: Streamer.Request.Price { .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
@@ -25,7 +25,7 @@ public final class Streamer {
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
-    public convenience init(rootURL: URL, credentials: IG.Streamer.Credentials, targetQueue: DispatchQueue?) {
+    public convenience init(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue?) {
         let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
@@ -35,21 +35,21 @@ public final class Streamer {
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter channel: The low-level streaming connection manager.
     /// - parameter queue: The queue on which to process the `Streamer` requests and responses.
-    internal init(rootURL: URL, channel: IG.Streamer.Channel, queue: DispatchQueue) {
+    internal init(rootURL: URL, channel: Streamer.Channel, queue: DispatchQueue) {
         self.rootURL = rootURL
         self.queue = queue
         self.channel = channel
     }
 }
 
-extension IG.Streamer {
+extension Streamer {
     /// The reverse DNS identifier for the `Streamer` instance.
     internal static var reverseDNS: String {
         Bundle.IG.identifier + ".streamer"
     }
 }
 
-extension IG.Streamer: IG.DebugDescriptable {
+extension Streamer: IG.DebugDescriptable {
     internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
     
     public final var debugDescription: String {
@@ -57,7 +57,7 @@ extension IG.Streamer: IG.DebugDescriptable {
         result.append("root URL", self.rootURL.absoluteString)
         result.append("processing queue", self.queue.label)
         result.append("processing queue QoS", String(describing: self.queue.qos.qosClass))
-        result.append("lightstreamer", IG.Streamer.Channel.lightstreamerVersion)
+        result.append("lightstreamer", Streamer.Channel.lightstreamerVersion)
         result.append("connection status", self.channel.status)
         return result.generate()
     }

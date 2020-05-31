@@ -1,18 +1,18 @@
 import Combine
-import Foundation
+import Decimals
 
-extension IG.Streamer.Request {
+extension Streamer.Request {
     /// Contains all functionality related to Streamer accounts.
     public struct Accounts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: IG.Streamer
+        internal unowned let streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) { self.streamer = streamer }
+        @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }
     }
 }
 
-extension IG.Streamer.Request.Accounts {
+extension Streamer.Request.Accounts {
     
     // MARK: ACCOUNT:ACCID
     
@@ -23,7 +23,7 @@ extension IG.Streamer.Request.Accounts {
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(account: IG.Account.Identifier, fields: Set<IG.Streamer.Account.Field>, snapshot: Bool = true) -> AnyPublisher<IG.Streamer.Account,IG.Streamer.Error> {
+    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Account,Streamer.Error> {
         let item = "ACCOUNT:".appending(account.rawValue)
         let properties = fields.map { $0.rawValue }
         
@@ -32,21 +32,21 @@ extension IG.Streamer.Request.Accounts {
             .tryMap { (update) in
                 do {
                     return try .init(identifier: account, item: item, update: update)
-                } catch var error as IG.Streamer.Error {
+                } catch var error as Streamer.Error {
                     if case .none = error.item { error.item = item }
                     if case .none = error.fields { error.fields = properties }
                     throw error
                 } catch let underlyingError {
-                    throw IG.Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+                    throw Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
                 }
-            }.mapError(IG.Streamer.Error.transform)
+            }.mapError(Streamer.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
     
-extension IG.Streamer.Account {
+extension Streamer.Account {
     /// Possible fields to subscribe to when querying account data.
     public enum Field: String, CaseIterable {
         /// Funds
@@ -81,16 +81,16 @@ extension IG.Streamer.Account {
     }
 }
 
-extension Set where Element == IG.Streamer.Account.Field {
+extension Set where Element == Streamer.Account.Field {
     /// Returns all queryable fields.
-    public static var all: Self {
+    @_transparent public static var all: Self {
         .init(Element.allCases)
     }
 }
 
 // MARK: Response Entities
 
-extension IG.Streamer {
+extension Streamer {
     /// Latest information from a user account.
     public struct Account {
         /// Account identifier.
@@ -104,8 +104,8 @@ extension IG.Streamer {
         /// Account Profit and Loss values.
         public let profitLoss: Self.ProfitLoss
         
-        internal init(identifier: IG.Account.Identifier, item: String, update: IG.Streamer.Packet) throws {
-            typealias E = IG.Streamer.Error
+        internal init(identifier: IG.Account.Identifier, item: String, update: Streamer.Packet) throws {
+            typealias E = Streamer.Error
             
             self.identifier = identifier
             do {
@@ -113,7 +113,7 @@ extension IG.Streamer {
                 self.funds = try .init(update: update)
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
-            } catch let error as IG.Streamer.Update.Error {
+            } catch let error as Streamer.Update.Error {
                 throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
             } catch let underlyingError {
                 throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
@@ -122,17 +122,17 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Account {
+extension Streamer.Account {
     /// Account equity.
     public struct Equity {
         /// The real account equity.
-        public let value: Decimal?
+        public let value: Decimal64?
         /// The equity used.
-        public let used: Decimal?
+        public let used: Decimal64?
         
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Account.Field
+            typealias U = Streamer.Update
             
             self.value = try update[F.equity.rawValue]?.value.map(U.toDecimal)
             self.used = try update[F.equityUsed.rawValue]?.value.map(U.toDecimal)
@@ -142,17 +142,17 @@ extension IG.Streamer.Account {
     /// Account funds.
     public struct Funds {
         /// Funds total value.
-        public let value: Decimal?
+        public let value: Decimal64?
         /// Amount of cash available to trade value, after account balance, profit and loss, and minimum deposit amount have been considered.
-        public let cashAvailable: Decimal?
+        public let cashAvailable: Decimal64?
         /// Amount of cash available to trade.
-        public let tradeAvailable: Decimal?
+        public let tradeAvailable: Decimal64?
         /// Account minimum deposit value required for margins.
-        public let deposit: Decimal?
+        public let deposit: Decimal64?
         
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Account.Field
+            typealias U = Streamer.Update
             
             self.value = try update[F.funds.rawValue]?.value.map(U.toDecimal)
             self.cashAvailable = try update[F.cashAvailable.rawValue]?.value.map(U.toDecimal)
@@ -164,15 +164,15 @@ extension IG.Streamer.Account {
     /// Account margins.
     public struct Margins {
         /// The account margin value.
-        public let value: Decimal?
+        public let value: Decimal64?
         /// Limited risk margin.
-        public let limitedRisk: Decimal?
+        public let limitedRisk: Decimal64?
         /// Non-limited risk margin.
-        public let nonLimitedRisk: Decimal?
+        public let nonLimitedRisk: Decimal64?
         
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Account.Field
+            typealias U = Streamer.Update
             
             self.value = try update[F.margin.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.marginLimitedRisk.rawValue]?.value.map(U.toDecimal)
@@ -183,15 +183,15 @@ extension IG.Streamer.Account {
     /// Profit and Loss values for the account.
     public struct ProfitLoss {
         /// Account PNL value.
-        public let value: Decimal?
+        public let value: Decimal64?
         /// Limited risk PNL value.
-        public let limitedRisk: Decimal?
+        public let limitedRisk: Decimal64?
         /// Non-limited risk PNL value.
-        public let nonLimitedRisk: Decimal?
+        public let nonLimitedRisk: Decimal64?
         
-        fileprivate init(update: IG.Streamer.Packet) throws {
-            typealias F = IG.Streamer.Account.Field
-            typealias U = IG.Streamer.Update
+        fileprivate init(update: Streamer.Packet) throws {
+            typealias F = Streamer.Account.Field
+            typealias U = Streamer.Update
             
             self.value = try update[F.profitLoss.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.profitLossLimitedRisk.rawValue]?.value.map(U.toDecimal)
@@ -200,8 +200,8 @@ extension IG.Streamer.Account {
     }
 }
 
-extension IG.Streamer.Account: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(Self.self)" }
+extension Streamer.Account: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.identifier))")

@@ -17,8 +17,7 @@ extension APIAccountTests {
     func testAccounts() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let accounts = api.accounts.getAll()
-            .expectsOne(timeout: 2, on: self)
+        let accounts = api.accounts.getAll().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(accounts.isEmpty)
         
         let account = accounts[0]
@@ -31,16 +30,12 @@ extension APIAccountTests {
     func testAccountPreferences() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let initial = api.accounts.getPreferences()
-            .expectsOne(timeout: 2, on: self)
+        let initial = api.accounts.getPreferences().expectsOne(timeout: 2, on: self)
+        api.accounts.updatePreferences(trailingStops: !initial.trailingStops).expectsCompletion(timeout: 1.5, on: self)
         
-        api.accounts.updatePreferences(trailingStops: !initial.trailingStops)
-            .expectsCompletion(timeout: 1.5, on: self)
-        let updated = api.accounts.getPreferences()
-            .expectsOne(timeout: 2, on: self)
+        let updated = api.accounts.getPreferences().expectsOne(timeout: 2, on: self)
         XCTAssertNotEqual(initial.trailingStops, updated.trailingStops)
         
-        api.accounts.updatePreferences(trailingStops: initial.trailingStops)
-            .expectsCompletion(timeout: 1.5, on: self)
+        api.accounts.updatePreferences(trailingStops: initial.trailingStops).expectsCompletion(timeout: 1.5, on: self)
     }
 }

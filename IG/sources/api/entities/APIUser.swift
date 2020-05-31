@@ -1,4 +1,4 @@
-extension IG.API {
+extension API {
     /// A user within the platform.
     public struct User: ExpressibleByArrayLiteral {
         /// Platform's username.
@@ -31,7 +31,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.User {
+extension API.User {
     /// The user identifier within the platform.
     public struct Name: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
         public let rawValue: String
@@ -64,7 +64,7 @@ extension IG.API.User {
             lhs.rawValue < rhs.rawValue
         }
         
-        public func encode(to encoder: Encoder) throws {
+        @_transparent public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
         }
@@ -75,7 +75,7 @@ extension IG.API.User {
     }
 }
 
-extension IG.API.User {
+extension API.User {
     /// The user's password within the platform.
     public struct Password: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
         public let rawValue: String
@@ -108,19 +108,19 @@ extension IG.API.User {
             lhs.rawValue < rhs.rawValue
         }
         
-        public func encode(to encoder: Encoder) throws {
+        @_transparent public func encode(to encoder: Encoder) throws {
             var container = encoder.singleValueContainer()
             try container.encode(self.rawValue)
         }
         
-        public var description: String {
+        @_transparent public var description: String {
             self.rawValue
         }
     }
 }
 
-extension IG.API.User: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.User: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -130,7 +130,7 @@ extension IG.API.User: IG.DebugDescriptable {
     }
 }
 
-extension IG.API.User.Name {
+extension API.User.Name {
     private static func _validate(_ value: String) -> Bool {
         let count = value.count
         guard count > 0, count < 31 else { return false }
@@ -144,7 +144,7 @@ extension IG.API.User.Name {
     }
 }
 
-extension IG.API.User.Password {
+extension API.User.Password {
     private static func _validate(_ value: String) -> Bool {
         let count = value.count
         return (count > 0) && (count < 351)

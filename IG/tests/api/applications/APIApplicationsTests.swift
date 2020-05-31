@@ -7,12 +7,15 @@ final class APIApplicationTests: XCTestCase {
     /// The test account being used for the tests in this class.
     private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
     
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
+    
     /// Tests the retrieval of all applications accessible by the given user.
     func testApplications() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let applications = api.accounts.getApplications()
-            .expectsOne(timeout: 2, on: self)
+        let applications = api.accounts.getApplications().expectsOne(timeout: 2, on: self)
         guard let app = applications.first else { return XCTFail("No applications were found") }
         XCTAssertEqual(app.key, self._acc.api.key)
         XCTAssertFalse(app.name.isEmpty)
@@ -33,8 +36,7 @@ final class APIApplicationTests: XCTestCase {
         let status: API.Application.Status = .enabled
         let allowance: (overall: UInt, trading: UInt) = (60, 100)
 
-        let app = api.accounts.updateApplication(key: self._acc.api.key, status: status, accountAllowance: allowance)
-            .expectsOne(timeout: 2, on: self)
+        let app = api.accounts.updateApplication(key: self._acc.api.key, status: status, accountAllowance: allowance).expectsOne(timeout: 2, on: self)
         XCTAssertEqual(app.key, self._acc.api.key)
         XCTAssertEqual(app.status, status)
         XCTAssertEqual(app.allowance.account.overallRequests, Int(allowance.overall))

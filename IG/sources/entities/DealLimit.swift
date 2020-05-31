@@ -1,147 +1,23 @@
-import Foundation
-#warning("Decimal64 change")
+import Decimals
 
-extension IG.Deal {
+extension Deal {
     /// The limit at which the user is taking profit.
-    public struct Limit: Hashable {
-        /// The type of limit being defined.
-        public let type: Self.Kind
-        
-        /// Designated initializer.
-        /// - parameter type: The type of limit being set.
-        /// - attention: No check are performed on this initializer.
-        private init(_ type: Self.Kind) {
-            self.type = type
-        }
-    }
-}
-
-extension IG.Deal.Limit {
-    /// The type of limit level.
-    public enum Kind: Hashable {
+    public enum Limit: Hashable, CustomDebugStringConvertible {
         /// Specifies the limit as a given absolute level.
         /// - parameter level: The absolute level where the limit will be set.
-        case position(level: Decimal)
+        case position(level: Decimal64)
         /// Relative limit over an undisclosed reference level.
         /// - parameter _: The relative value where the limit will be set.
-        case distance(Decimal)
-    }
-}
-
-// MARK: - Factories
-
-extension IG.Deal.Limit {
-    /// Factory function creating a limit of *position* type.
-    /// - parameter level: A finite number reflecting an absolute level.
-    public static func position(level: Decimal) -> Self? {
-        guard Self.isValid(level: level) else { return nil }
-        return .init(.position(level: level))
-    }
-    
-    /// Factory function creating a limit of *position* type.
-    /// - parameter level: A finite number reflecting an absolute level.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public static func position(level: Decimal, _ direction: IG.Deal.Direction, from base: Decimal) -> Self? {
-        guard Self.isValid(level: level, direction, from: base) else { return nil }
-        return .init(.position(level: level))
-    }
-    
-    /// Factory function creating a limit of *distance* type.
-    /// - parameter distance: A positive (non-zero) number reflecting a relative distance.
-    public static func distance(_ distance: Decimal) -> Self? {
-        guard Self.isValid(distance: distance) else { return nil }
-        return .init(.distance(distance))
-    }
-}
-
-// MARK: - Functionality
-
-extension IG.Deal.Limit {
-    /// The `Decimal` value stored with the limit type (whether a relative distance or a level.
-    internal var value: Decimal {
-        switch self.type {
-        case .position(let level): return level
-        case .distance(let distance): return distance
-        }
-    }
-    
-    /// Returns the absolute limit level.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public func level(_ direction: IG.Deal.Direction, from base: Decimal) -> Decimal? {
-        switch self.type {
-        case .position(let level):
-            guard Self.isValid(level: level, direction, from: base) else { return nil }
-            return level
-        case .distance(let distance):
-            switch direction {
-            case .buy:  return base + distance
-            case .sell: return base - distance
+        case distance(Decimal64)
+        
+        public var debugDescription: String {
+            switch self {
+            case .position(let level): return "Limit position at \(level)"
+            case .distance(let dista): return "Limit distance of \(dista) pips"
             }
         }
     }
-    
-    /// Returns the distance from the base to the limit level.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public func distance(_ direction: IG.Deal.Direction, from base: Decimal) -> Decimal? {
-        switch self.type {
-        case .position(let level):
-            guard Self.isValid(level: base) else { return nil }
-            switch direction {
-            case .buy:  return level - base
-            case .sell: return base - level
-            }
-        case .distance(let distance):
-            return distance
-        }
-    }
 }
-
-// MARK: - Validation
-
-extension IG.Deal.Limit {
-    /// Check whether the receiving limit is valid in reference to the given base level and direction.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public func isValid(on direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        switch self.type {
-        case .position(let level):
-            return Self.isValid(level: level, direction, from: base)
-        case .distance:
-            return true
-        }
-    }
-    
-    /// Checks that the absolute level is finite.
-    /// - parameter level: A number reflecting an absolute level.
-    /// - Boolean indicating whether the argument will work as a *position* level.
-    public static func isValid(level: Decimal) -> Bool {
-        level.isFinite
-    }
-    
-    /// Checks that the given level is finite and greater than the base level on a `.buy` direction and less than the base level on a `.sell` direction.
-    /// - parameter level: The limit level.
-    /// - parameter direction: The deal direction.
-    /// - parameter base: The deal/base level.
-    public static func isValid(level: Decimal, _ direction: IG.Deal.Direction, from base: Decimal) -> Bool {
-        guard Self.isValid(level: level) && Self.isValid(level: base) else { return false }
-        switch direction {
-        case .buy:  return level > base
-        case .sell: return level < base
-        }
-    }
-    
-    /// Checks that the distance is a valid number.
-    /// - parameter distance: A number reflecting a relative distance.
-    /// - Boolean indicating whether the argument will work as a *distance* level.
-    public static func isValid(distance: Decimal) -> Bool {
-        distance.isFinite
-    }
-}
-
-// MARK: Keyed Decoder
 
 extension KeyedDecodingContainer {
     /// Decodes a limit level value for the given keys, if present.
@@ -150,43 +26,19 @@ extension KeyedDecodingContainer {
     /// - parameter distanceKey: The key that the limit distance value is associated with.
     /// - returns: A decoded value of the deal limit type, or  `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
     /// - throws: `DecodingError` exclusively.
-    internal func decodeIfPresent(_ type: IG.Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?) throws -> IG.Deal.Limit? {
-        typealias L = IG.Deal.Limit
-        let level = try levelKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
-        let distance = try distanceKey.flatMap { try self.decodeIfPresent(Decimal.self, forKey: $0) }
+    internal func decodeIfPresent(_ type: Deal.Limit.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?) throws -> Deal.Limit? {
+        let level = try levelKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
+        let distance = try distanceKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
         
         switch (level, distance) {
         case (.none, .none):  return nil
         case (.none, let d?): return .distance(d)
         case (let l?, .none): return .position(level: l)
-        case (let level?, let distance?):
-            var possibleLimit: L? = nil
-            // Whole numbers are prefered as distances.
-            if let limit = L.distance(distance) {
-                if distance.isWhole {
-                    return limit
-                }
-                possibleLimit = limit
+        case (let level?, let distance?): // If both the level and distance are provided, choose the distance if there are no fractional parts; Otherwise choose the level.
+            switch distance.decomposed().fractional.isZero {
+            case true: return .distance(distance)
+            case false: return .position(level: level)
             }
-
-            if let limit = L.position(level: level) {
-                return limit
-            }
-            
-            guard let limit = possibleLimit else {
-                let key = levelKey ?! fatalError()
-                throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "The limit level '\(level)' and/or the limit distance '\(distance)' decoded were invalid")
-            }
-            return limit
-        }
-    }
-}
-
-extension IG.Deal.Limit: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        switch self.type {
-        case .position(let level): return "Limit position at \(level)"
-        case .distance(let dista): return "Limit distance of \(dista) pips"
         }
     }
 }

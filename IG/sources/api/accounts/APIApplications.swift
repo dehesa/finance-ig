@@ -1,18 +1,18 @@
 import Combine
 import Foundation
 
-extension IG.API.Request.Accounts {
+extension API.Request.Accounts {
     
     // MARK: GET /operations/application
 
     /// Returns a list of client-owned applications.
     /// - returns: *Future* forwarding all user's applications.
-    public func getApplications() -> AnyPublisher<[IG.API.Application],IG.API.Error> {
+    public func getApplications() -> AnyPublisher<[API.Application],API.Error> {
         self.api.publisher
             .makeRequest(.get, "operations/application", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 
@@ -23,28 +23,28 @@ extension IG.API.Request.Accounts {
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.
     /// - returns: *Future* forwarding the newly set targeted application values.
-    public func updateApplication(key: IG.API.Key? = nil, status: IG.API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<IG.API.Application,IG.API.Error> {
+    public func updateApplication(key: API.Key? = nil, status: API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<API.Application,API.Error> {
         self.api.publisher { (api) throws -> _PayloadUpdate in
-                let apiKey = try (key ?? api.channel.credentials?.key) ?> IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                let apiKey = try (key ?? api.channel.credentials?.key) ?> API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { (payload) in
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-private extension IG.API.Request.Accounts {
+private extension API.Request.Accounts {
     /// Let the user updates one parameter of its application.
     struct _PayloadUpdate: Encodable {
         ///.API key to be added to the request.
-        let key: IG.API.Key
+        let key: API.Key
         /// Desired application status.
-        let status: IG.API.Application.Status
+        let status: API.Application.Status
         /// Per account request per minute allowance.
         let overallAccountRequests: UInt
         /// Per account trading request per minute allowance.
@@ -58,11 +58,11 @@ private extension IG.API.Request.Accounts {
     }
 }
 
-extension IG.API {
+extension API {
     /// Client application.
     public struct Application: Decodable {
         /// Application API key identifying the application and the developer.
-        public let key: IG.API.Key
+        public let key: API.Key
         /// Application name given by the developer.
         public let name: String
         ///  Application status.
@@ -76,12 +76,12 @@ extension IG.API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.key = try container.decode(IG.API.Key.self, forKey: .key)
+            self.key = try container.decode(API.Key.self, forKey: .key)
             self.name = try container.decode(String.self, forKey: .name)
-            self.status = try container.decode(IG.API.Application.Status.self, forKey: .status)
+            self.status = try container.decode(API.Application.Status.self, forKey: .status)
             self.permission = try Self.Permission(from: decoder)
             self.allowance = try Self.Allowance(from: decoder)
-            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: IG.Formatter.date)
+            self.creationDate = try container.decode(Date.self, forKey: .creationDate, with: DateFormatter.date)
         }
         
         internal enum CodingKeys: String, CodingKey {
@@ -91,7 +91,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Application {
+extension API.Application {
     /// Application status in the platform.
     public enum Status: String, Codable {
         /// The application is enabled and thus ready to receive/send data.
@@ -103,7 +103,7 @@ extension IG.API.Application {
     }
 }
 
-extension IG.API.Application {
+extension API.Application {
     /// The platform allowance to the application's and account's allowances (e.g. requests per minute).
     public struct Permission: Decodable {
         /// Boolean indicating if access to equity prices is permitted.
@@ -124,7 +124,7 @@ extension IG.API.Application {
     }
 }
 
-extension IG.API.Application {
+extension API.Application {
     /// The limits constraining an API application.
     public struct Allowance: Decodable {
         /// Overal application request per minute allowance.
@@ -148,7 +148,7 @@ extension IG.API.Application {
     }
 }
 
-extension IG.API.Application.Allowance {
+extension API.Application.Allowance {
     /// Limit and allowances for the targeted account.
     public struct Account: Decodable {
         /// Per account request per minute allowance.
@@ -168,8 +168,8 @@ extension IG.API.Application.Allowance {
 
 // MARK: - Functionality
 
-extension IG.API.Application: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Application: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -189,7 +189,7 @@ extension IG.API.Application: IG.DebugDescriptable {
             }
             $0.append("concurrent subscription limit", $1.subscriptionsLimit)
         }
-        result.append("creation", self.creationDate, formatter: IG.Formatter.date)
+        result.append("creation", self.creationDate, formatter: DateFormatter.date)
         return result.generate()
     }
 }

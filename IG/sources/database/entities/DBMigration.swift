@@ -1,16 +1,16 @@
 import Foundation
 import SQLite3
 
-extension IG.Database {
+extension Database {
     /// Migrates the hosted database from its version to a targeted version.
     /// - parameter toVersion: The desired database version.
-    /// - throws: `IG.Database.Error` exclusively if the database is already on a higher version number or there were problems during migration.
-    internal final func migrate(to toVersion: IG.Database.Migration.Version) throws {
+    /// - throws: `Database.Error` exclusively if the database is already on a higher version number or there were problems during migration.
+    internal final func migrate(to toVersion: Database.Migration.Version) throws {
         var info = try self._migrationInfo()
         guard info.version != toVersion else { return }
         guard info.version < toVersion else {
             let message = "The current database is already on a greater version than the one provided for migration"
-            throw IG.Database.Error.invalidRequest(.init(message), suggestion: .reviewError)
+            throw Database.Error.invalidRequest(.init(message), suggestion: .reviewError)
         }
         
         repeat {
@@ -21,7 +21,7 @@ extension IG.Database {
     }
     
     /// Apply the needed migrations to reach the hosted database to the latest version.
-    /// - throws: `IG.Database.Error` exclusively.
+    /// - throws: `Database.Error` exclusively.
     internal final func migrateToLatestVersion() throws {
         var info = try self._migrationInfo()
         
@@ -32,38 +32,38 @@ extension IG.Database {
     }
     
     /// - precondition: The database version number is expected to be valid at this moment.
-    /// - throws: `IG.Database.Error` exclusively.
+    /// - throws: `Database.Error` exclusively.
     private final func _migrateToNextVersion() throws {
-        typealias M = IG.Database.Migration
+        typealias M = Database.Migration
         switch M.Version(rawValue: try self.channel.unrestrictedAccess(M.version))! {
         case .v0: try M.initialMigration(channel: self.channel)
         case .v1: break
         }
     }
     
-    /// - throws: `IG.Database.Error` exclusively.
-    private final func _migrationInfo() throws -> (applicationID: Int32, version: IG.Database.Migration.Version) {
+    /// - throws: `Database.Error` exclusively.
+    private final func _migrationInfo() throws -> (applicationID: Int32, version: Database.Migration.Version) {
         // Retrieve the current database version
-        let versionNumber = try self.channel.unrestrictedAccess(IG.Database.Migration.version)
-        guard let version = IG.Database.Migration.Version(rawValue: versionNumber) else {
-            if versionNumber > IG.Database.Migration.Version.latest.rawValue {
-                throw IG.Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is not supported by your current library"), suggestion: "Update the library to work with the database")
+        let versionNumber = try self.channel.unrestrictedAccess(Database.Migration.version)
+        guard let version = Database.Migration.Version(rawValue: versionNumber) else {
+            if versionNumber > Database.Migration.Version.latest.rawValue {
+                throw Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is not supported by your current library"), suggestion: "Update the library to work with the database")
             } else {
-                throw IG.Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is invalid"), suggestion: .fileBug)
+                throw Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is invalid"), suggestion: .fileBug)
             }
         }
         
         // Retrieve the SQLite's file application identifier.
-        let applicationID = try self.channel.unrestrictedAccess(IG.Database.Migration.applicationID)
-        guard applicationID == IG.Database.Migration.applicationID || (applicationID == 0 && versionNumber == 0) else {
-            throw IG.Database.Error.invalidRequest("The SQLite database file is not supported by this application", suggestion: "It seems you are trying to open a SQLite database belonging to another application")
+        let applicationID = try self.channel.unrestrictedAccess(Database.Migration.applicationID)
+        guard applicationID == Database.Migration.applicationID || (applicationID == 0 && versionNumber == 0) else {
+            throw Database.Error.invalidRequest("The SQLite database file is not supported by this application", suggestion: "It seems you are trying to open a SQLite database belonging to another application")
         }
         
         return (applicationID, version)
     }
 }
 
-extension IG.Database {
+extension Database {
     /// All migrations described in this database.
     internal enum Migration {
         /// Application ID "magic" number used to identify SQLite database files.
@@ -87,7 +87,7 @@ extension IG.Database {
     }
 }
 
-extension IG.Database.Migration {
+extension Database.Migration {
     /// Returns the SQLite's file application ID "magic" number.
     /// - precondition: This should only be called from the database queue.
     /// - parameter database: The SQLite database connection.

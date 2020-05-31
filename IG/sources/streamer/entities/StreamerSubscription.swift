@@ -7,7 +7,7 @@ import Lightstreamer_iOS_Client
 #endif
 import Combine
 
-extension IG.Streamer {
+extension Streamer {
     /// Holds information about an ongoing subscription.
     internal final class Subscription: NSObject {
         /// The item being subscribed to.
@@ -19,9 +19,9 @@ extension IG.Streamer {
         
         /// The current status for the receiving subscription.
         /// - attention: The `.updateReceived` event cached in this variable doesn't contain any actual data (empty array).
-        @nonobjc private var _statusValue: IG.Streamer.Subscription.Event
+        @nonobjc private var _statusValue: Streamer.Subscription.Event
         /// Returns a subject subscribing to the subscription status.
-        @nonobjc private let _statusSubject: PassthroughSubject<IG.Streamer.Subscription.Event,Never>
+        @nonobjc private let _statusSubject: PassthroughSubject<Streamer.Subscription.Event,Never>
         /// The lock used to restrict access to the credentials.
         @nonobjc private let _lock: UnfairLock
         
@@ -33,7 +33,7 @@ extension IG.Streamer {
         /// - parameter fields: The properties/fields of the item being targeted for subscription.
         /// - parameter snapshot: Boolean indicating whether we need snapshot data.
         /// - parameter queue: The parent/channel dispatch queue.
-        @nonobjc init(mode: IG.Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
+        @nonobjc init(mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) {
             self._lock = UnfairLock()
             self._statusValue = .unsubscribed
             self._statusSubject = .init()
@@ -53,7 +53,7 @@ extension IG.Streamer {
         }
         
 //        /// Returns the current subscription status.
-//        @nonobjc final var status: IG.Streamer.Subscription.Event {
+//        @nonobjc final var status: Streamer.Subscription.Event {
 //            self._lock.execute { self._statusValue }
 //        }
         
@@ -66,7 +66,7 @@ extension IG.Streamer {
         
         /// Receives the low-level events and send them (or not) depending on whether the event is duplicated.
         /// - parameter status: The new status receive from the low-level handling layers.
-        @nonobjc private final func _receive(_ status: IG.Streamer.Subscription.Event) {
+        @nonobjc private final func _receive(_ status: Streamer.Subscription.Event) {
             self._lock.lock()
             guard self._statusValue != status else { return self._lock.unlock() }
             self._statusValue = status
@@ -77,14 +77,14 @@ extension IG.Streamer {
     }
 }
 
-fileprivate extension Dictionary where Key==String, Value==IG.Streamer.Row {
+fileprivate extension Dictionary where Key==String, Value==Streamer.Row {
     /// An empty dictionary.
     static let empty = Self(minimumCapacity: 0)
 }
 
 // MARK: - Lightstreamer Delegate
 
-extension IG.Streamer.Subscription: LSSubscriptionDelegate {
+extension Streamer.Subscription: LSSubscriptionDelegate {
     @objc func didSubscribe(to subscription: LSSubscription) {
         self._receive(.subscribed)
     }
@@ -98,7 +98,7 @@ extension IG.Streamer.Subscription: LSSubscriptionDelegate {
     }
     
     @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
-        var result: IG.Streamer.Packet = .init(minimumCapacity: fields.count)
+        var result: Streamer.Packet = .init(minimumCapacity: fields.count)
         for field in self.fields {
             let value = itemUpdate.value(withFieldName: field)
             result[field] = .init(value, isUpdated: itemUpdate.isValueChanged(withFieldName: field))

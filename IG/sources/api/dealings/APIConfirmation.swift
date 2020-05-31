@@ -1,7 +1,6 @@
 import Combine
-import Foundation
 
-extension IG.API {
+extension API {
     
     // MARK: - GET /confirms/{dealReference}
     
@@ -13,12 +12,12 @@ extension IG.API {
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay.
     /// - note: the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: IG.Deal.Reference) -> AnyPublisher<IG.Confirmation,IG.API.Error> {
+    public func confirm(reference: IG.Deal.Reference) -> AnyPublisher<Confirmation,Error> {
         self.publisher
             .makeRequest(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(IG.API.Error.transform)
+            .mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }

@@ -17,13 +17,13 @@ extension Streamer {
         /// Creates the `Streamer` credentials from the received `API` credentials.
         /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
         /// - throws: `Streamer.Error.invalidRequest`
-        public init(credentials: IG.API.Credentials) throws {
+        public init(credentials: API.Credentials) throws {
             guard case .certificate(let access, let security) = credentials.token.value else {
-                throw IG.Streamer.Error.invalidRequest("No Certificate credentials were found", suggestion: "Set the API log in as 'certificate' type")
+                throw Streamer.Error.invalidRequest("No Certificate credentials were found", suggestion: "Set the API log in as 'certificate' type")
             }
             
-            guard let password = IG.Streamer.Credentials.password(fromCST: access, security: security) else {
-                throw IG.Streamer.Error.invalidRequest("The Streamer password couldn't be formed with the given credentials", suggestion: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer")
+            guard let password = Streamer.Credentials.password(fromCST: access, security: security) else {
+                throw Streamer.Error.invalidRequest("The Streamer password couldn't be formed with the given credentials", suggestion: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer")
             }
             
             self.init(identifier: credentials.account, password: password)
@@ -51,8 +51,8 @@ extension Streamer {
     }
 }
 
-extension IG.Streamer.Credentials: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(Self.self)" }
+extension Streamer.Credentials: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription("Streamer Credentials")

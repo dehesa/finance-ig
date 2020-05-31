@@ -1,18 +1,19 @@
 import Combine
 import Foundation
+import Decimals
 
-extension IG.API.Request {
+extension API.Request {
     /// List of endpoints related to a user's activity.
     public struct Price {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let _api: IG.API
+        fileprivate unowned let _api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
-        @usableFromInline internal init(api: IG.API) { self._api = api }
+        @usableFromInline internal init(api: API) { self._api = api }
     }
 }
 
-extension IG.API.Request.Price {
+extension API.Request.Price {
     
     // MARK: GET /prices/{epic}
     
@@ -23,12 +24,12 @@ extension IG.API.Request.Price {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute) -> AnyPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
-        _api.publisher { (api) -> DateFormatter in
+    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+        self._api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
-                return IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.string(from: from)),
                  .init(name: "to", value: values.string(from: to)),
@@ -38,7 +39,7 @@ extension IG.API.Request.Price {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                 (response.prices, response.metadata.allowance)
-            }.mapError(IG.API.Error.transform)
+            }.mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
     
@@ -53,19 +54,19 @@ extension IG.API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: IG.API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [IG.API.Price], allowance: IG.API.Price.Allowance),IG.API.Error> {
-        _api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
+    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+        self._api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
                 }
                 guard page.size > 0 else {
-                    throw IG.API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
+                    throw API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
                 }
                 guard page.number > 0 else {
-                    throw IG.API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
+                    throw API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
                 }
 
-                let formatter = IG.Formatter.iso8601Broad.deepCopy(timeZone: timezone)
+                let formatter = DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
                 return (page.size, page.number, formatter)
             }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.formatter.string(from: from)),
@@ -81,15 +82,15 @@ extension IG.API.Request.Price {
                 publisher.send(expecting: .json, statusCode: 200)
                     .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                         (response.metadata.page, (response.prices, response.metadata.allowance))
-                    }.mapError(IG.API.Error.transform)
-            }).mapError(IG.API.Error.transform)
+                    }.mapError(API.Error.transform)
+            }).mapError(API.Error.transform)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension IG.API.Price {
+extension API.Price {
     /// Resolution of requested prices.
     public enum Resolution: String, CaseIterable {
         case second = "SECOND"
@@ -136,15 +137,15 @@ extension IG.API.Price {
     }
 }
 
-extension IG.API.Request.Price {
+extension API.Request.Price {
     /// Single page of prices request.
     private struct _PagedPrices: Decodable {
-        let instrumentType: IG.API.Market.Instrument.Kind
-        let prices: [IG.API.Price]
+        let instrumentType: API.Market.Instrument.Kind
+        let prices: [API.Price]
         let metadata: Self.Metadata
         
         struct Metadata: Decodable {
-            let allowance: IG.API.Price.Allowance
+            let allowance: API.Price.Allowance
             let page: Self.Page
             /// The total amount of price points after all pages have been loaded.
             let totalCount: UInt
@@ -171,7 +172,7 @@ extension IG.API.Request.Price {
     }
 }
 
-extension IG.API {
+extension API {
     /// Historical market price snapshot.
     public struct Price: Decodable, Equatable {
         /// Snapshot date.
@@ -191,7 +192,7 @@ extension IG.API {
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.date = try container.decode(Date.self, forKey: .date, with: IG.Formatter.iso8601Broad)
+            self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601Broad)
             self.open = try container.decode(Self.Point.self, forKey: .open)
             self.close = try container.decode(Self.Point.self, forKey: .close)
             self.highest = try container.decode(Self.Point.self, forKey: .highest)
@@ -227,33 +228,33 @@ extension IG.API {
     }
 }
 
-extension IG.API.Price {
+extension API.Price {
     /// Price Snap.
     public struct Point: Decodable, Equatable {
         /// Bid price (i.e. the price being offered  to buy an asset).
-        public let bid: Decimal
+        public let bid: Decimal64
         /// Ask price (i.e. the price being asked to sell an asset).
-        public let ask: Decimal
+        public let ask: Decimal64
         /// Last traded price.
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
-        public let lastTraded: Decimal?
+        public let lastTraded: Decimal64?
         
         /// Designated initalizer.
-        internal init(bid: Decimal, ask: Decimal, lastTraded: Decimal? = nil) {
+        internal init(bid: Decimal64, ask: Decimal64, lastTraded: Decimal64? = nil) {
             self.bid = bid
             self.ask = ask
             self.lastTraded = lastTraded
         }
         
         /// The middle price between the *bid* and the *ask* price.
-        public var mid: Decimal {
-            self.bid + 0.5 * (self.ask - self.bid)
+        @_transparent public var mid: Decimal64 {
+            self.bid + Decimal64(5, power: -1)! * (self.ask - self.bid)
         }
     }
 }
 
-extension IG.API.Price {
+extension API.Price {
     /// Request allowance for prices.
     public struct Allowance: Decodable {
         /// The date in which the current allowance period will end and the remaining allowance field is reset.
@@ -266,13 +267,13 @@ extension IG.API.Price {
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: _CodingKeys.self)
             
-            guard let response = decoder.userInfo[IG.API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
+            guard let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse else {
                 let ctx = DecodingError.Context(codingPath: container.codingPath, debugDescription: "The request/response values stored in the JSONDecoder 'userInfo' couldn't be found")
                 throw DecodingError.valueNotFound(HTTPURLResponse.self, ctx)
             }
             
-            guard let dateString = response.allHeaderFields[IG.API.HTTP.Header.Key.date.rawValue] as? String,
-                let date = IG.Formatter.humanReadableLong.date(from: dateString) else {
+            guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
+                let date = DateFormatter.humanReadableLong.date(from: dateString) else {
                 let message = "The date on the response header couldn't be processed"
                 throw DecodingError.dataCorruptedError(forKey: .seconds, in: container, debugDescription: message)
             }
@@ -294,12 +295,12 @@ extension IG.API.Price {
 
 // MARK: - Functionality
 
-extension IG.API.Price: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Price: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
         result.append("open", Self._represent(self.open))
         result.append("close", Self._represent(self.close))
         result.append("lowest", Self._represent(self.lowest))
@@ -313,12 +314,12 @@ extension IG.API.Price: IG.DebugDescriptable {
     }
 }
 
-extension IG.API.Price.Allowance: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Price.Allowance: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
-        result.append("reset date", self.resetDate, formatter: IG.Formatter.timestamp.deepCopy(timeZone: .current))
+        result.append("reset date", self.resetDate, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
         result.append("data points (remaining)", self.remaining)
         result.append("data points (total)", self.total)
         return result.generate()

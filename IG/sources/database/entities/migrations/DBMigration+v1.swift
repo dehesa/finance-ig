@@ -1,16 +1,16 @@
 import Foundation
 import SQLite3
 
-extension IG.Database.Migration {
+extension Database.Migration {
     /// Where the actual migration happens.
     /// - parameter channel: The SQLite database connection.
-    /// - throws: `IG.Database.Error` exclusively.
-    internal static func initialMigration(channel: IG.Database.Channel) throws {
+    /// - throws: `Database.Error` exclusively.
+    internal static func initialMigration(channel: Database.Channel) throws {
         try channel.write { (database) throws -> Void in
             // Set the application identifier for the database
             try Self.setApplicationID(Self.applicationID, database: database)
             
-            let types: [(IG.DBTable & IG.DebugDescriptable).Type] = [IG.Database.Application.self, IG.Database.Market.self, IG.Database.Market.Forex.self]
+            let types: [(DBTable & DebugDescriptable).Type] = [Database.Application.self, Database.Market.self, Database.Market.Forex.self]
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {

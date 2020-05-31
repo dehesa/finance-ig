@@ -2,32 +2,32 @@ import Conbini
 import Combine
 import Foundation
 
-extension IG.Streamer.Request {
+extension Streamer.Request {
     /// Contains all functionality related to the Streamer session.
     public struct Session {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let _streamer: IG.Streamer
+        fileprivate unowned let _streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        init(streamer: IG.Streamer) { self._streamer = streamer }
+        @usableFromInline internal init(streamer: Streamer) { self._streamer = streamer }
     }
 }
 
-extension IG.Streamer.Request.Session {
+extension Streamer.Request.Session {
     /// The credentials being currently used on this streamer.
-    public var credentials: IG.Streamer.Credentials {
+    public var credentials: Streamer.Credentials {
         self._streamer.channel.credentials
     }
     
     /// Returns the current streamer status (e.g. whether connecting, connected, disconnected, etc.).
-    public var status: IG.Streamer.Session.Status {
+    public var status: Streamer.Session.Status {
         self._streamer.channel.status
     }
     
     /// Returns a publisher to subscribe to the streamer's statuses.
     /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
-    public var statusStream: AnyPublisher<IG.Streamer.Session.Status,Never> {
+    public var statusStream: AnyPublisher<Streamer.Session.Status,Never> {
         self._streamer.channel.statusStream(on: self._streamer.queue)
             .removeDuplicates()
             .eraseToAnyPublisher()
@@ -40,16 +40,16 @@ extension IG.Streamer.Request.Session {
     /// There is no timeout for this operation, if you want one, you should append the `timeout` operator. Also, if you want to disconnect the streamer on cancel, you need to add that operator yourself.
     /// - remark: If the holding streamer instance gets deinitialized, the returned publisher gets cancelled (no completion event is emitted).
     /// - returns: Forwards the connected status and then completes. If the connection isn't possible, an error is emitted.
-    public func connect() -> AnyPublisher<IG.Streamer.Session.Status,IG.Streamer.Error> {
+    public func connect() -> AnyPublisher<Streamer.Session.Status,Streamer.Error> {
         // 1. Subscribe to the channel statuses.
         return self._streamer.channel.statusStream(on: self._streamer.queue)
             .setFailureType(to: Swift.Error.self)
             // 2. If the status stream completes, it means the streamer got deinitialized, and therefore the connection failed.
-            .append( Fail(error: IG.Streamer.Error.sessionExpired() as Swift.Error) )
+            .append( Fail(error: Streamer.Error.sessionExpired() as Swift.Error) )
             // 3. Only connect to the channel, when a subscription has been made.
             .prepend( Deferred { [weak weakStreamer = self._streamer] in
                 Result.Publisher( Result {
-                    guard let streamer = weakStreamer else { throw IG.Streamer.Error.sessionExpired() }
+                    guard let streamer = weakStreamer else { throw Streamer.Error.sessionExpired() }
                     let status = try streamer.channel.connect()
                     return (status == .disconnected(isRetrying: false)) ? .connecting : status
                 } )
@@ -58,10 +58,10 @@ extension IG.Streamer.Request.Session {
                 switch $0 {
                 case .connected(.http), .connected(.websocket): return true
                 case .connected(.sensing), .connecting, .disconnected(isRetrying: true): return false
-                case .disconnected(isRetrying: false): throw IG.Streamer.Error(.invalidResponse, "The connection to the server couldn't be established", suggestion: "Check there is connection and try again.")
-                case .stalled: throw IG.Streamer.Error(.invalidResponse, "There is a connection established with the server, but it seems to be stalled", suggestion: "Manually disconnect and try again.")
+                case .disconnected(isRetrying: false): throw Streamer.Error(.invalidResponse, "The connection to the server couldn't be established", suggestion: "Check there is connection and try again.")
+                case .stalled: throw Streamer.Error(.invalidResponse, "There is a connection established with the server, but it seems to be stalled", suggestion: "Manually disconnect and try again.")
                 }
-            }).mapError { $0 as! IG.Streamer.Error }
+            }).mapError { $0 as! Streamer.Error }
             .eraseToAnyPublisher()
     }
     
@@ -77,11 +77,11 @@ extension IG.Streamer.Request.Session {
     /// There is no timeout for this operation, if you want one, you should append the `timeout` operator.
     /// - remark: If the holding streamer instance gets deinitialized, the returned publisher gets cancelled (no completion event is emitted).
     /// - returns: Forwards the disconnected status and then completes. If the connection isn't possible, an error is emitted.
-    public func disconnect() -> AnyPublisher<IG.Streamer.Session.Status,Never> {
+    public func disconnect() -> AnyPublisher<Streamer.Session.Status,Never> {
         // 1. Subscribe to the channel status.
         self._streamer.channel.statusStream(on: self._streamer.queue)
-            .prepend( Deferred { [weak weakStreamer = self._streamer] () -> Just<IG.Streamer.Session.Status> in
-                let status: IG.Streamer.Session.Status
+            .prepend( Deferred { [weak weakStreamer = self._streamer] () -> Just<Streamer.Session.Status> in
+                let status: Streamer.Session.Status
                 // 2. Unsubscribe all if needed and disconnect.
                 if let channel = weakStreamer?.channel {
                     channel.unsubscribeAll()
@@ -98,11 +98,11 @@ extension IG.Streamer.Request.Session {
 
 // MARK: - Entities
 
-extension IG.Streamer {
+extension Streamer {
     public enum Session {}
 }
 
-extension IG.Streamer.Session {
+extension Streamer.Session {
     /// The connection status.
     public enum Status: RawRepresentable, Equatable {
         /// A connection has been attempted. The client is waiting for a server answer.
@@ -145,7 +145,7 @@ extension IG.Streamer.Session {
         
         /// Boolean indicating a ready-to-receive-data status.
         /// - returns: `true` only when a connection is fully established (i.e. connection sensing is NOT considered "fully connected").
-        public var isReady: Bool {
+        @_transparent public var isReady: Bool {
             switch self {
             case .connected(.http), .connected(.websocket): return true
             default: return false
@@ -153,7 +153,7 @@ extension IG.Streamer.Session {
         }
         
         /// Boolean indicating a `.connecting` and `.connected(.sensing)` statuses.
-        public var isConnecting: Bool {
+        @_transparent public var isConnecting: Bool {
             switch self {
             case .connecting, .connected(.sensing): return true
             default: return false
@@ -175,7 +175,7 @@ extension IG.Streamer.Session {
     }
 }
 
-extension IG.Streamer.Session.Status {
+extension Streamer.Session.Status {
     /// The type of connection established between the client and server.
     public enum Connection: Equatable {
         /// The client has received a first response from the server and is evaluating if a streaming connection can be established.
@@ -192,7 +192,7 @@ extension IG.Streamer.Session.Status {
         /// Boolean indicating whether the connection is polling the server (undesirable) or streaming.
         ///
         /// Streaming connections are better and more responsive than polling connection.
-        public var isPolling: Bool {
+        @_transparent public var isPolling: Bool {
             switch self {
             case .sensing: return false
             case .http(let isPolling): return isPolling
@@ -202,7 +202,7 @@ extension IG.Streamer.Session.Status {
     }
 }
 
-extension IG.Streamer.Session.Status: CustomDebugStringConvertible {
+extension Streamer.Session.Status: CustomDebugStringConvertible {
     public var debugDescription: String {
         switch self {
         case .connecting: return "Connecting"

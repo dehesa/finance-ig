@@ -1,11 +1,11 @@
-import Foundation
+import Decimals
 
-extension IG.API {
+extension API {
     /// Namespace for commonly used value/class types related to deals.
     public enum Deal {}
 }
 
-extension IG.API.Position {
+extension API.Position {
     /// Describes how the user's order must be executed.
     public enum Order {
         /// A market order is an instruction to buy or sell at the best available price for the size of your order.
@@ -20,17 +20,17 @@ extension IG.API.Position {
         /// The entire order will be rejected if:
         /// - The market price is outside your specified limit (higher for buy orders, lower for sell orders).
         /// - There is insufficient volume available to satisfy the full order size.
-        case limit(level: Decimal)
+        case limit(level: Decimal64)
         /// Quote orders get executed at the specified level.
         ///
         /// The level has to be accompanied by a valid quote id (i.e. Lightstreamer price quote identifier).
         ///
         /// A quoteID is the two-way market price that we are making for a given instrument. Because it is two-way, you can 'buy' or 'sell', according to whether you think the price will rise or fall
         /// - note: This type is only available subject to agreement with IG.
-        case quote(id: String, level: Decimal)
+        case quote(id: String, level: Decimal64)
 
         /// Returns the level for the order if it is known.
-        var level: Decimal? {
+        var level: Decimal64? {
             switch self {
             case .market: return nil
             case .limit(let level): return level
@@ -48,7 +48,7 @@ extension IG.API.Position {
     }
 }
 
-extension IG.API.WorkingOrder {
+extension API.WorkingOrder {
     /// Working order type.
     public enum Kind: String, Codable {
         /// An instruction to deal if the price moves to a more favourable level.

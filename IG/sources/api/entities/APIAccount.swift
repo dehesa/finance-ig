@@ -1,6 +1,6 @@
 import Decimals
 
-extension IG.API {
+extension API {
     /// Client account.
     public struct Account: Decodable {
         /// Account identifier.
@@ -16,7 +16,7 @@ extension IG.API {
         /// Default/Preferred login account.
         public let isDefault: Bool
         /// Account currency.
-        public let currencyCode: IG.Currency.Code
+        public let currencyCode: Currency.Code
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
@@ -29,7 +29,7 @@ extension IG.API {
             self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
             self.status = try container.decode(Status.self, forKey: .status)
             self.isDefault = try container.decode(Bool.self, forKey: .preferred)
-            self.currencyCode = try container.decode(IG.Currency.Code.self, forKey: .currencyCode)
+            self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
             self.transfersAllowed = (
                 try container.decode(Bool.self, forKey: .transfersIn),
                 try container.decode(Bool.self, forKey: .transfersOut)
@@ -52,7 +52,7 @@ extension IG.API {
     }
 }
 
-extension IG.API.Account {
+extension API.Account {
     /// Account status
     public enum Status: String, Decodable {
         case disable = "DISABLED"
@@ -106,8 +106,8 @@ extension IG.API.Account {
     }
 }
 
-extension IG.API.Account: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(IG.API.printableDomain).\(Self.self)" }
+extension API.Account: IG.DebugDescriptable {
+    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
     
     public var debugDescription: String {
         var result = IG.DebugDescription(Self.printableDomain)
@@ -117,9 +117,9 @@ extension IG.API.Account: IG.DebugDescriptable {
         result.append("type", self.type)
         result.append("status", self.status)
         result.append("is default", self.isDefault)
-        result.append("currency code", self.currencyCode)
         result.append("inbound transfers allowed", self.transfersAllowed.in)
         result.append("outbound transfers allowed", self.transfersAllowed.out)
+        result.append("currency code", self.currencyCode)
         result.append("account balance", self.balance) {
             $0.append("funds", $1.value)
             $0.append("deposit", $1.deposit)

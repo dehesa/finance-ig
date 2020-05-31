@@ -1,6 +1,6 @@
 import Foundation
 
-extension IG.Streamer {
+extension Streamer {
     /// List of errors that can be generated throught the Streamer class.
     public struct Error: IG.Error {
         public let type: Self.Kind
@@ -31,7 +31,7 @@ extension IG.Streamer {
         
         /// Wrap the argument error in a `Streamer` error.
         /// - parameter error: Swift error to be wrapped.
-        static func transform(_ error: Swift.Error) -> Self {
+        internal static func transform(_ error: Swift.Error) -> Self {
             switch error {
             case let e as Self: return e
             case let e: return .unknown(message: "An unknown error has occurred", underlyingError: e, suggestion: .reviewError)
@@ -40,7 +40,7 @@ extension IG.Streamer {
     }
 }
 
-extension IG.Streamer.Error {
+extension Streamer.Error {
     /// The type of Streamer error raised.
     public enum Kind: CaseIterable {
         /// The streaming session has expired
@@ -82,7 +82,7 @@ extension IG.Streamer.Error {
     /// - parameter message: A brief explanation on what happened.
     /// - parameter error: The underlying error that is the source of the error being initialized.
     /// - parameter suggestion: A helpful suggestion on how to avoid the error.
-    internal static func invalidResponse(_ message: Self.Message, item: String, update: IG.Streamer.Packet, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
+    internal static func invalidResponse(_ message: Self.Message, item: String, update: Streamer.Packet, underlying error: Swift.Error? = nil, suggestion: Self.Suggestion) -> Self {
         let fields = update.keys.map { $0 }
         var error = self.init(.invalidResponse, message.rawValue, suggestion: suggestion.rawValue, item: item, fields: fields, underlying: error)
         error.context.append(("Update", update))
@@ -98,7 +98,7 @@ extension IG.Streamer.Error {
     }
 }
 
-extension IG.Streamer.Error {
+extension Streamer.Error {
     /// Namespace for messages reused over the framework.
     internal struct Message: IG.ErrorNameSpace {
         let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
@@ -106,7 +106,7 @@ extension IG.Streamer.Error {
         static var sessionExpired: Self { "The Streamer instance was not found" }
         static var noCredentials: Self  { "No credentials were found on the Streamer instance" }
         static var unknownParsing: Self { "An unknown error occur while parsing a subscription update" }
-        static func parsing(update error: IG.Streamer.Update.Error) -> Self {
+        static func parsing(update error: Streamer.Update.Error) -> Self {
             .init("An error was encountered when parsing the value '\(error.value)' from a '\(String.self)' to a '\(error.type)' type")
         }
     }
@@ -116,13 +116,13 @@ extension IG.Streamer.Error {
         let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
         
         static var keepSession: Self { "The Streamer functionality is asynchronous; keep around the Streamer instance while a response hasn't been received" }
-        static var reviewError: Self { .init(IG.API.Error.Suggestion.reviewError.rawValue) }
-        static var fileBug: Self     { .init(IG.API.Error.Suggestion.fileBug.rawValue) }
+        static var reviewError: Self { .init(API.Error.Suggestion.reviewError.rawValue) }
+        static var fileBug: Self     { .init(API.Error.Suggestion.fileBug.rawValue) }
     }
 }
 
-extension IG.Streamer.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String { "\(IG.Streamer.printableDomain).\(Self.self)" }
+extension Streamer.Error: IG.ErrorPrintable {
+    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Self.self)" }
     
     internal var printableType: String {
         switch self.type {
