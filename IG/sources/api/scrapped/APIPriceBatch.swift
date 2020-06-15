@@ -206,10 +206,10 @@ fileprivate extension API.PriceSnapshot {
                     let lowest = try decodePoint(container, .lowest)
                     let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
-                } catch let error {
-                    #if DEBUG
-                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
-                    #endif
+                } catch /*let error*/ {
+//                    #if DEBUG
+//                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
+//                    #endif
                     continue
                 }
             }

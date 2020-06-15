@@ -4,7 +4,7 @@ import SQLite3
 extension Database {
     /// Contains the low-level functionality related to the SQLite database.
     internal final class Channel {
-        /// The queue handling all database accesses.
+        /// Serial queue handling all database accesses.
         private let _queue: DispatchQueue
         /// The underlying SQLite instance (referencing the SQLite file).
         private let _database: SQLite.Database

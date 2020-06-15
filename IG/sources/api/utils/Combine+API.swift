@@ -59,10 +59,10 @@ internal extension Publisher {
     /// - parameter bodyGenerator: Optional body generator to include in the request.
     /// - returns: Each value event is transformed into a valid `URLRequest` and is passed along an `API` instance and some computed values.
     func makeRequest<T>(_ method: API.HTTP.Method, _ relativeURL: String, version: Int, credentials usingCredentials: Bool,
-                                 queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
-                                 headers headGenerator:  ((_ values: T) throws -> [API.HTTP.Header.Key:String])? = nil,
-                                 body    bodyGenerator:  ((_ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data))? = nil
-                                ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Self.Output==API.Transit.Instance<T> {
+                        queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
+                        headers headGenerator:  ((_ values: T) throws -> [API.HTTP.Header.Key:String])? = nil,
+                        body    bodyGenerator:  ((_ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data))? = nil
+                       ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Self.Output==API.Transit.Instance<T> {
         self.tryMap { (api, values) in
             var request = URLRequest(url: api.rootURL.appendingPathComponent(relativeURL))
             request.httpMethod = method.rawValue
@@ -98,11 +98,11 @@ internal extension Publisher {
     /// - parameter bodyGenerator: Optional body generator to include in the request.
     /// - returns: Each value event is transformed into a valid `URLRequest` and is passed along an `API` instance and some computed values.
     func makeScrappedRequest<T>(_ method: API.HTTP.Method,
-                                         url urlGenerator: @escaping (_ rootURL: URL, _ values: T) throws -> URL,
-                                         queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
-                                         headers headGenerator: @escaping (_ credentials: API.Credentials?, _ values: T) throws -> [API.HTTP.Header.Key:String],
-                                         body    bodyGenerator:  ((_ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data))? = nil
-                                        ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Self.Output==API.Transit.Instance<T> {
+                                url urlGenerator: @escaping (_ rootURL: URL, _ values: T) throws -> URL,
+                                queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
+                                headers headGenerator: @escaping (_ credentials: API.Credentials?, _ values: T) throws -> [API.HTTP.Header.Key:String],
+                                body    bodyGenerator:  ((_ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data))? = nil
+                               ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Self.Output==API.Transit.Instance<T> {
         self.tryMap { (api, values) in
             var request: URLRequest
             
@@ -141,39 +141,34 @@ internal extension Publisher {
     /// - parameter statusCodes: If not `nil`, the sequence indicates all *viable*/supported status codes.
     /// - returns: A `Future` related type forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) ->
-            Publishers.FlatMap<
-                Publishers.MapError<
-                    Publishers.TryMap< URLSession.DataTaskPublisher, API.Transit.Call<T> >,
-                    Swift.Error
-                >, Self
-            > where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
+    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) -> Publishers.FlatMap< Publishers.MapError< Publishers.TryMap<URLSession.DataTaskPublisher, API.Transit.Call<T>>, Swift.Error>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap { (api, request, values) in
-            api.channel.session.dataTaskPublisher(for: request).tryMap { (data, response) in
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    let message = "The response was not of HTTPURLResponse type"
-                    throw API.Error.callFailed(message: .init(message), request: request, response: nil, data: data, underlying: nil, suggestion: .fileBug)
+            api.channel.session.dataTaskPublisher(for: request)
+                .tryMap { (data, response) in
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        let message = "The response was not of HTTPURLResponse type"
+                        throw API.Error.callFailed(message: .init(message), request: request, response: nil, data: data, underlying: nil, suggestion: .fileBug)
+                    }
+                    
+                    if let expectedCodes = statusCodes, !expectedCodes.contains(httpResponse.statusCode) {
+                        let message = "The URL response code '\(httpResponse.statusCode)' was received, when only \(expectedCodes) codes were expected"
+                        throw API.Error.invalidResponse(message: .init(message), request: request, response: httpResponse, data: data, underlying: nil, suggestion: .reviewError)
+                    }
+                    
+                    return (request, httpResponse, data, values)
+                }.mapError {
+                    switch $0 {
+                    case var error as API.Error:
+                        if case .none = error.request { error.request = request }
+                        return error
+                    case let error as URLError:
+                        let message: API.Error.Message = "An internal session error occurred while calling the HTTP endpoint"
+                        return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
+                    case let error:
+                        let message: API.Error.Message = "An unknown error occurred while calling the HTTP endpoint"
+                        return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
+                    }
                 }
-                
-                if let expectedCodes = statusCodes, !expectedCodes.contains(httpResponse.statusCode) {
-                    let message = "The URL response code '\(httpResponse.statusCode)' was received, when only \(expectedCodes) codes were expected"
-                    throw API.Error.invalidResponse(message: .init(message), request: request, response: httpResponse, data: data, underlying: nil, suggestion: .reviewError)
-                }
-                
-                return (request, httpResponse, data, values)
-            }.mapError {
-                switch $0 {
-                case var error as API.Error:
-                    if case .none = error.request { error.request = request }
-                    return error
-                case let error as URLError:
-                    let message: API.Error.Message = "An internal session error occurred while calling the HTTP endpoint"
-                    return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
-                case let error:
-                    let message: API.Error.Message = "An unknown error occurred while calling the HTTP endpoint"
-                    return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
-                }
-            }
         }
     }
     
@@ -194,7 +189,8 @@ internal extension Publisher {
     /// - parameter pageCall: The actual combine pipeline sending the request and decoding the result. The values/errors will be forwarded to the returned publisher.
     /// - returns: A continuous publisher returning the values from `pageCall` as soon as they arrive. Only when `nil` is returned on the `pageRequestGenerator` closure, will the returned publisher complete.
     func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: API, _ initial: (request: URLRequest, values: T), _ previous: API.Transit.PreviousPage<M>?) throws -> URLRequest?,
-                                          call pageCall: @escaping (_ pageRequest: Result<API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==API.Error {
+                                 call pageCall: @escaping (_ pageRequest: Result<API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
+                                ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==API.Error {
         self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
             .init { (subject) in
                 typealias Iterator = (_ previous: API.Transit.PreviousPage<M>?) -> Void

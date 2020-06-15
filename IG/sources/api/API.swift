@@ -50,8 +50,8 @@ public final class API {
     /// Designated initializer used for both real and mocked usage.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter session: The URL session used to call the real (or mocked) endpoints.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
+    /// - parameter session: The URL session used to call the real (or mocked) endpoints. 
     internal init(rootURL: URL, credentials: API.Credentials?, queue: DispatchQueue, session: URLSession) {
         self.rootURL = rootURL
         self.queue = queue
