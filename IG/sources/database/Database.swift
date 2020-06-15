@@ -29,8 +29,7 @@ public final class Database {
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
     /// - throws: `Database.Error` exclusively.
     public convenience init(location: Database.Location, targetQueue: DispatchQueue?) throws {
-        let processingQueue = targetQueue ??
-            DispatchQueue(label: Self.reverseDNS + ".queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = targetQueue ?? DispatchQueue(label: Self.reverseDNS + ".queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = try Self.Channel(location: location, targetQueue: targetQueue)
         try self.init(channel: channel, queue: processingQueue)
     }

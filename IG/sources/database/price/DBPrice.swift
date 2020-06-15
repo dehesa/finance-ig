@@ -252,8 +252,8 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
     /// - warning: This operator doesn't check the market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
     /// - parameter database: Database where the price data will be stored.
     /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data received should be ignored or throw an error (an break the pipeline. Even with this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
-    public func updatePrice(database: Database, ignoringInvalidPrices: Bool) -> AnyPublisher<Database.PriceStreamed,Swift.Error> {
-        self.tryCompactMap { [weak database] (price) -> Database.Transit.Instance<(query: String, data: Database.PriceStreamed)>? in
+    public func updatePrice(database: Database, ignoringInvalidPrices: Bool) -> AnyPublisher<Database.PriceWrapper,Swift.Error> {
+        self.tryCompactMap { [weak database] (price) -> Database.Transit.Instance<(query: String, data: Database.PriceWrapper)>? in
             guard let db = database else { throw Database.Error.sessionExpired() }
             guard let date = price.candle.date,
                   let openBid = price.candle.open.bid,
@@ -270,14 +270,14 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
             }
             
             let query = Database.Request.Price._priceInsertionQuery(epic: price.epic).query
-            let streamPrice = Database.PriceStreamed(
+            let streamPrice = Database.PriceWrapper(
                     epic: price.epic, interval: price.interval,
                     price: .init(date: date, open: .init(bid: openBid, ask: openAsk),
                                 close: .init(bid: closeBid, ask: closeAsk),
                                 lowest: .init(bid: lowestBid, ask: lowestAsk),
                                 highest: .init(bid: highestBid, ask: highestAsk), volume: volume))
             return ( db, (query, streamPrice) )
-        }.write { (sqlite, statement, input, _) -> Database.PriceStreamed in
+        }.write { (sqlite, statement, input, _) -> Database.PriceWrapper in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
             input.data.price._bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { .callFailed(.storing(Database.Price.self), code: $0) }
@@ -308,7 +308,7 @@ extension Database {
     }
     
     /// Price proceeding from a `Streamer` session that has been processed by the database.
-    public struct PriceStreamed {
+    public struct PriceWrapper {
         /// The identifier for the sourcing market.
         public let epic: IG.Market.Epic
         /// The price resolution (e.g. one second, five minutes, etc.).

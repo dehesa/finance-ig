@@ -1,12 +1,12 @@
 import Foundation
 
-extension String {
+internal extension String {
     private static let _lowercaseASCII = "abcdefghijklmnopqrstuvwxyz"
     private static let _uppercaseASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     private static let _numbers = "0123456789"
     
     /// Randomize the letters and numbers of the receiving string, keeping the length of the string.
-    internal var randomize: String {
+    var randomize: String {
         guard self.count > 0 else { return "" }
         
         let sets = [Self._lowercaseASCII, Self._uppercaseASCII, Self._numbers]
@@ -22,7 +22,7 @@ extension String {
         return String(result)
     }
     
-    internal static func random(length: Int) -> String {
+    static func random(length: Int) -> String {
         let pool = _lowercaseASCII.appending(_uppercaseASCII)
         return .init((0..<length).map { _ in pool.randomElement()! })
     }
