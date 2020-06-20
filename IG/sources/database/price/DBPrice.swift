@@ -69,18 +69,18 @@ extension Database.Request.Price {
     /// - returns: The date furthest in the past stored in the database.
     public func getFirstDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,Database.Error> {
         self._database.publisher { _ -> String in
-            let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
-            return "SELECT MIN(date) FROM '\(tableName)'"
-        }.read { (sqlite, statement, query, _) in
-            let formatter = UTC.Timestamp()
-            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-            switch sqlite3_step(statement).result {
-            case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
-            case .done: return nil
-            case let c: throw Database.Error.callFailed(.querying(Database.Price.self), code: c)
-            }
-        }.mapError(Database.Error.transform)
-        .eraseToAnyPublisher()
+                let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+                return "SELECT MIN(date) FROM '\(tableName)'"
+            }.read { (sqlite, statement, query, _) in
+                let formatter = UTC.Timestamp()
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                switch sqlite3_step(statement).result {
+                case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
+                case .done: return nil
+                case let c: throw Database.Error.callFailed(.querying(Database.Price.self), code: c)
+                }
+            }.mapError(Database.Error.transform)
+            .eraseToAnyPublisher()
     }
     
     /// Returns the last available date for which there are prices stored in the database.
@@ -89,18 +89,55 @@ extension Database.Request.Price {
     /// - returns: The date from "newest" date stored in the database. If `nil`, no price points are for the given table.
     public func getLastDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,Database.Error> {
         self._database.publisher { _ -> String in
-            let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
-            return "SELECT MAX(date) FROM '\(tableName)'"
-        }.read { (sqlite, statement, query, _) in
-            let formatter = UTC.Timestamp()
-            try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
-            switch sqlite3_step(statement).result {
-            case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
-            case .done: return nil
-            case let c: throw Database.Error.callFailed(.querying(Database.Price.self), code: c)
-            }
-        }.mapError(Database.Error.transform)
-        .eraseToAnyPublisher()
+                let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+                return "SELECT MAX(date) FROM '\(tableName)'"
+            }.read { (sqlite, statement, query, _) in
+                let formatter = UTC.Timestamp()
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                switch sqlite3_step(statement).result {
+                case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
+                case .done: return nil
+                case let c: throw Database.Error.callFailed(.querying(Database.Price.self), code: c)
+                }
+            }.mapError(Database.Error.transform)
+            .eraseToAnyPublisher()
+    }
+    
+    /// Returns the number of price points for the given date interval.
+    /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
+    /// - parameter from: The date from which to start the query. If `nil`, the date at the beginning of the database is assumed.
+    /// - parameter to: The date from which to end the query. If `nil`, the date at the end of the database is assumed.
+    public func count(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<Int,Database.Error> {
+        self._database.publisher { _ -> String in
+                let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+                var query = "SELECT COUNT(*) FROM '\(tableName)'"
+                switch (from, to) {
+                case (let from?, let to?):
+                    guard from <= to else { throw Database.Error.invalidRequest("The 'from' date must indicate a date before the 'to' date", suggestion: .readDocs) }
+                    query.append(" WHERE date BETWEEN ?1 AND ?2")
+                case (.some, .none): query.append(" WHERE date >= ?1")
+                case (.none, .some): query.append(" WHERE date <= ?1")
+                case (.none, .none): break
+                }
+                query.append(" ORDER BY date ASC")
+                return query
+            }.read { (sqlite, statement, query, _) in
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { .callFailed(.compilingSQL, code: $0) }
+                // 3. Add the variables to the statement
+                switch (from, to) {
+                case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+                                          sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+                case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
+                case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+                case (.none, .none):      break
+                }
+                switch sqlite3_step(statement).result {
+                case .row:  return Int(sqlite3_column_int(statement!, 0))
+                case .done: fatalError()
+                case let c: throw Database.Error.callFailed(.querying(Database.Price.self), code: c)
+                }
+            }.mapError(Database.Error.transform)
+            .eraseToAnyPublisher()
     }
 }
 
