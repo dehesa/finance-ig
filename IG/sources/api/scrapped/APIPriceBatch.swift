@@ -14,7 +14,7 @@ extension API.Request.Scrapped {
     /// - parameter numDataPoints: The number of data points to receive on the prices array result.
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
-    public func getPriceSnapshot(epic: IG.Market.Epic, resolution: API.Price.Resolution, numDataPoints: Int, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<API.PriceSnapshot,API.Error> {
+    public func getPriceSnapshot(epic: IG.Market.Epic, resolution: API.Price.Resolution, numDataPoints: Int, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<API.PriceSnapshot,IG.Error> {
         self.api.publisher
             .makeScrappedRequest(.get, url: { (_, _) in
                 let interval = resolution._components
@@ -31,7 +31,7 @@ extension API.Request.Scrapped {
                 .cacheControl: "no-cache"]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -46,9 +46,9 @@ extension API.Request.Scrapped {
     /// - parameter rootURL: The URL used as the based for all scrapped endpoints.
     /// - parameter scrappedCredentials: The credentials used to called endpoints from the IG's website.
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
-    public func getPrices(epic: IG.Market.Epic, resolution: API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal64, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Price],API.Error> {
+    public func getPrices(epic: IG.Market.Epic, resolution: API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal64, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Price],IG.Error> {
         self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
-                guard from <= to else { throw API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
+                guard from <= to else { throw IG.Error(.api(.invalidRequest), "The 'from' date must occur before the 'to' date.", help: "Read the request documentation and be sure to follow all requirements.") }
                 let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
                 let toComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: to)
                 return (fromComponents, toComponents)
@@ -68,7 +68,7 @@ extension API.Request.Scrapped {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (_, _, _) in JSONDecoder().set { $0.userInfo[._scalingFactor] = scalingFactor } })) { (response: API.Market._ScrappedBatch, _) in
                 response.prices
-            }.mapError(API.Error.transform)
+            }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }
@@ -208,7 +208,7 @@ fileprivate extension API.PriceSnapshot {
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
                 } catch /*let error*/ {
 //                    #if DEBUG
-//                    print("\(API.Error.printableDomain) Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
+//                    print("Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
 //                    #endif
                     continue
                 }

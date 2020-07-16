@@ -25,36 +25,33 @@ public enum Client {
         @_transparent public var description: String {
             self.rawValue
         }
+        
+        /// Returns a Boolean indicating whether the raw value can represent a client identifier.
+        ///
+        /// For an identifier to be considered valid, it must only contain between 8 and 10 decimal digits characters.
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            guard count > 7, count < 11 else { return false }
+            
+            let allowedSet = Set.decimalDigits
+            return value.allSatisfy { allowedSet.contains($0) }
+        }
     }
 }
 
 extension Client.Identifier: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(String.self)
+        self.rawValue = try container.decode(String.self)
         
-        guard Self._validate(rawValue) else {
-            let reason = "The client identifier being decoded '\(rawValue)' doesn't conform to the validation function"
+        guard Self._validate(self.rawValue) else {
+            let reason = "The client identifier being decoded '\(self.rawValue)' doesn't conform to the validation function"
             throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
         }
-        self.rawValue = rawValue
     }
     
     @_transparent public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
-    }
-}
-
-extension Client.Identifier {
-    /// Returns a Boolean indicating whether the raw value can represent a client identifier.
-    ///
-    /// For an identifier to be considered valid, it must only contain between 8 and 10 decimal digits characters.
-    private static func _validate(_ value: String) -> Bool {
-        let count = value.count
-        guard count > 7, count < 11 else { return false }
-        
-        let allowedSet = Set.decimalDigits
-        return value.allSatisfy { allowedSet.contains($0) }
     }
 }

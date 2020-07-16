@@ -39,8 +39,7 @@ extension API {
                     if includeDate {
                         guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
                               let date = DateFormatter.humanReadableLong.date(from: dateString) else {
-                            let message = "The response date couldn't be extracted from the response header"
-                            throw API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                            throw IG.Error(.api(.invalidResponse), "The response date couldn't be extracted from the response header.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.")
                         }
                         decoder.userInfo[API.JSON.DecoderKey.responseDate] = date
                     }

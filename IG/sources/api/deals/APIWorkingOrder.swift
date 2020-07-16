@@ -2,29 +2,18 @@ import Combine
 import Foundation
 import Decimals
 
-extension API.Request {
-    /// List of endpoints related to API working orders.
-    public struct WorkingOrders {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoint.
-        @usableFromInline internal init(api: API) { self.api = api }
-    }
-}
-
-extension API.Request.WorkingOrders {
+extension API.Request.Deals {
     
     // MARK: GET /workingorders
     
     /// Returns all open working orders for the active account.
     /// - returns: *Future* forwarding all open working orders.
-    public func getAll() -> AnyPublisher<[API.WorkingOrder],API.Error> {
+    public func getAll() -> AnyPublisher<[API.WorkingOrder],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "workingorders", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(date: true)) { (w: _WrapperList, _) in w.workingOrders }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -32,7 +21,7 @@ extension API.Request.WorkingOrders {
 
 // MARK: - Entity
 
-private extension API.Request.WorkingOrders {
+private extension API.Request.Deals {
     struct _WrapperList: Decodable {
         let workingOrders: [API.WorkingOrder]
     }

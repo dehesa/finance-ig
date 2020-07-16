@@ -19,7 +19,7 @@ extension API.Request.Nodes {
     /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: *Future* forwarding the node identified by the parameters recursively filled with the subnodes and submarkets till the given `depth`.
-    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> AnyPublisher<API.Node,API.Error> {
+    public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> AnyPublisher<API.Node,IG.Error> {
         let layers = depth._value
         guard layers > 0 else {
             return Self._get(api: self._api, node: .init(identifier: identifier, name: name))
@@ -35,17 +35,16 @@ extension API.Request.Nodes {
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
     /// - returns: *Future* forwarding all markets matching the search term.
-    public func getMarkets(matching searchTerm: String) -> AnyPublisher<[API.Node.Market],API.Error> {
+    public func getMarkets(matching searchTerm: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
         self._api.publisher { (api) -> String in
                 guard !searchTerm.isEmpty else {
-                    let message = "Search for markets failed! The search term cannot be empty"
-                    throw API.Error.invalidRequest(.init(message), suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "Search for markets failed! The search term cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
                 return searchTerm
             }.makeRequest(.get, "markets", version: 1, credentials: true, queries: { [.init(name: "searchTerm", value: $0)] })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(date: true)) { (w: _WrapperSearch, _) in w.markets }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 
@@ -56,15 +55,14 @@ extension API.Request.Nodes {
     /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint..
     /// - parameter node: The entity targeting a specific node. Only the identifier is used.
     /// - returns: *Future* forwarding a *full* node.
-    private static func _get(api: API, node: API.Node) -> AnyPublisher<API.Node,API.Error> {
+    private static func _get(api: API, node: API.Node) -> AnyPublisher<API.Node,IG.Error> {
         api.publisher
             .makeRequest(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
                 guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
                       let date = DateFormatter.humanReadableLong.date(from: dateString) else {
-                    let message = "The response date couldn't be extracted from the response header"
-                    throw API.Error.invalidResponse(message: .init(message), request: request, response: response, suggestion: .fileBug)
+                        throw IG.Error(.api(.invalidResponse), "The response date couldn't be extracted from the response header.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request, "Response": response])
                 }
                 
                 return JSONDecoder().set {
@@ -77,8 +75,7 @@ extension API.Request.Nodes {
                         $0.userInfo[API.JSON.DecoderKey._nodeName] = name
                     }
                 }
-            }))
-            .mapError(API.Error.transform)
+            })).mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -86,9 +83,9 @@ extension API.Request.Nodes {
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
     /// - returns: *Future* forwarding the node given as an argument with complete subnodes and submarkets information.
-    private static func _iterate(api: API, node: API.Node, depth: Int) -> AnyPublisher<API.Node,API.Error> {
+    private static func _iterate(api: API, node: API.Node, depth: Int) -> AnyPublisher<API.Node,IG.Error> {
         // 1. Retrieve the targeted node.
-        return _get(api: api, node: node).flatMap { [weak weakAPI = api] (node) -> AnyPublisher<API.Node,API.Error> in
+        return _get(api: api, node: node).flatMap { [weak weakAPI = api] (node) -> AnyPublisher<API.Node,IG.Error> in
             let countdown = depth - 1
             // 2. If there aren't any more levels to drill down into or the target node doesn't have subnodes, send the targeted node.
             guard countdown >= 0, let subnodes = node.subnodes, !subnodes.isEmpty else {
@@ -96,11 +93,12 @@ extension API.Request.Nodes {
             }
             // 3. Check the API instance is still there.
             guard let api = weakAPI else {
-                return Fail<API.Node,API.Error>(error: .sessionExpired()).eraseToAnyPublisher()
+                return Fail<API.Node,IG.Error>(error: IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed."))
+                    .eraseToAnyPublisher()
             }
             
             /// The result of this combine pipeline.
-            let subject = PassthroughSubject<API.Node,API.Error>()
+            let subject = PassthroughSubject<API.Node,IG.Error>()
             /// The root node from which to look for subnodes.
             var parent = node
             /// This closure retrieves the child node at the `parent` index `childIndex` and calls itself recursively until there are no more children in `parent.subnodes`.
@@ -128,7 +126,7 @@ extension API.Request.Nodes {
                         }
                         // 8. If the API instance has been deallocated, forward an error downstream.
                         guard let api = weakAPI else {
-                            subject.send(completion: .failure(.sessionExpired()))
+                            subject.send(completion: .failure(IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")))
                             childrenFetchingCancellable?.cancel()
                             return
                         }

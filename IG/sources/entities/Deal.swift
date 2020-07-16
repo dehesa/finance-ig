@@ -33,16 +33,16 @@ extension Deal {
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
             switch value {
-            case _CodingKeys.openA.rawValue, _CodingKeys.openB.rawValue: self = .open
-            case _CodingKeys.amended.rawValue: self = .amended
-            case _CodingKeys.partiallyClosed.rawValue: self = .partiallyClosed
-            case _CodingKeys.closedA.rawValue, _CodingKeys.closedB.rawValue: self = .closed
-            case _CodingKeys.deleted.rawValue: self = .deleted
+            case _Keys.openA.rawValue, _Keys.openB.rawValue: self = .open
+            case _Keys.amended.rawValue: self = .amended
+            case _Keys.partiallyClosed.rawValue: self = .partiallyClosed
+            case _Keys.closedA.rawValue, _Keys.closedB.rawValue: self = .closed
+            case _Keys.deleted.rawValue: self = .deleted
             default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value '\(value)' couldn't be parsed")
             }
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case openA = "OPEN", openB = "OPENED"
             case amended = "AMENDED"
             case partiallyClosed = "PARTIALLY_CLOSED"

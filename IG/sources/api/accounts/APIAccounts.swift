@@ -18,13 +18,13 @@ extension API.Request.Accounts {
     
     /// Returns a list of accounts belonging to the logged-in client.
     /// - returns: *Future* forwarding a list of user's accounts.
-    public func getAll() -> AnyPublisher<[API.Account],API.Error> {
+    public func getAll() -> AnyPublisher<[API.Account],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in
                 w.accounts
-            }.mapError(API.Error.transform)
+            }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -32,12 +32,12 @@ extension API.Request.Accounts {
     
     /// Returns the targeted account preferences.
     /// - returns: *Future* forwarding the current account's pereferences.
-    public func getPreferences() -> AnyPublisher<API.Account.Preferences,API.Error> {
+    public func getPreferences() -> AnyPublisher<API.Account.Preferences,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts/preferences", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 
@@ -46,14 +46,14 @@ extension API.Request.Accounts {
     /// Updates the account preferences.
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: *Future* indicating the success of the operation.
-    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,API.Error> {
+    public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,IG.Error> {
         self.api.publisher { _ -> _PayloadPreferences in
                 .init(trailingStopsEnabled: trailingStops)
             }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in
                 (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .ignoreOutput()
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

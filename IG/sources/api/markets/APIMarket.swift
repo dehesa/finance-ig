@@ -20,15 +20,16 @@ extension API.Request.Markets {
     /// Returns the details of a given market.
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
-    public func get(epic: IG.Market.Epic) -> AnyPublisher<API.Market,API.Error> {
+    public func get(epic: IG.Market.Epic) -> AnyPublisher<API.Market,IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default(values: true, date: true)).mapError(API.Error.transform)
+            .decodeJSON(decoder: .default(values: true, date: true))
+            .mapError(errorCast)
             .eraseToAnyPublisher()
         
     }
@@ -39,7 +40,7 @@ extension API.Request.Markets {
     /// - attention: The array argument `epics` can't be bigger than 50.
     /// - parameter epics: The market epics to target onto.
     /// - returns: Extended information of all the requested markets.
-    public func get(epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],API.Error> {
+    public func get(epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],IG.Error> {
         Self._get(api: self.api, epics: epics)
     }
     
@@ -48,13 +49,13 @@ extension API.Request.Markets {
     /// This endpoint circumvents `get(epics:)` limitation of quering for 50 markets and publish the results as several values.
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
-    public func getContinuously(epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],API.Error> {
+    public func getContinuously(epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],IG.Error> {
         let maxEpicsPerChunk = 50
         guard epics.count > maxEpicsPerChunk else { return Self._get(api: api, epics: epics) }
         
         return self.api.publisher({ _ in epics.chunked(into: maxEpicsPerChunk) })
-            .flatMap { (api, chunks) -> PassthroughSubject<[API.Market],API.Error> in
-                let subject = PassthroughSubject<[API.Market],API.Error>()
+            .flatMap { (api, chunks) -> PassthroughSubject<[API.Market],IG.Error> in
+                let subject = PassthroughSubject<[API.Market],IG.Error>()
                 
                 /// Closure retrieving the chunk at the given index through the given API instance.
                 var fetchChunk: ((_ api: API, _ index: Int)->AnyCancellable?)! = nil
@@ -78,7 +79,7 @@ extension API.Request.Markets {
                             }
                             
                             guard let api = weakAPI else {
-                                subject.send(completion: .failure(.sessionExpired()))
+                                subject.send(completion: .failure(IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")))
                                 cancellable = nil
                                 return
                             }
@@ -95,7 +96,7 @@ extension API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
-    private static func _get(api: API, epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],API.Error> {
+    private static func _get(api: API, epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],IG.Error> {
         guard !epics.isEmpty else {
             return Result.Publisher([]).eraseToAnyPublisher()
         }
@@ -103,13 +104,13 @@ extension API.Request.Markets {
         return api.publisher { (api) -> DateFormatter in
                 let epicRange = 1...50
                 guard epicRange.contains(epics.count) else {
-                    let message = "Only between 1 to 50 markets can be queried at the same time"
-                    let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)"
-                    throw API.Error.invalidRequest(.init(message), suggestion: .init(suggestion))
+                    let message = "Only between 1 to 50 markets can be queried at the same time."
+                    let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
+                    throw IG.Error(.api(.invalidRequest), message, help: suggestion)
                 }
                 
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(API.Error.Message.noCredentials, suggestion: API.Error.Suggestion.logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
@@ -117,7 +118,7 @@ extension API.Request.Markets {
                  .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(values: true, date: true)) { (l: _WrapperList, _) in l.marketDetails }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

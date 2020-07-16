@@ -72,6 +72,18 @@ extension API.User {
         public var description: String {
             self.rawValue
         }
+        
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            guard count > 0, count < 31 else { return false }
+            
+            let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
+                $0.formUnion(Set.lowercaseANSI)
+                $0.formUnion(Set.uppercaseANSI)
+                $0.formUnion(Set.decimalDigits)
+            }
+            return value.allSatisfy { allowedSet.contains($0) }
+        }
     }
 }
 
@@ -116,26 +128,10 @@ extension API.User {
         @_transparent public var description: String {
             self.rawValue
         }
-    }
-}
-
-extension API.User.Name {
-    private static func _validate(_ value: String) -> Bool {
-        let count = value.count
-        guard count > 0, count < 31 else { return false }
         
-        let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
-            $0.formUnion(Set.lowercaseANSI)
-            $0.formUnion(Set.uppercaseANSI)
-            $0.formUnion(Set.decimalDigits)
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            return (count > 0) && (count < 351)
         }
-        return value.allSatisfy { allowedSet.contains($0) }
-    }
-}
-
-extension API.User.Password {
-    private static func _validate(_ value: String) -> Bool {
-        let count = value.count
-        return (count > 0) && (count < 351)
     }
 }

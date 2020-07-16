@@ -24,6 +24,12 @@ extension API {
         @_transparent public var description: String {
             self.rawValue
         }
+        
+        /// Returns a Boolean indicating whether the raw value can represent an API key.
+        private static func _validate(_ value: String) -> Bool {
+            let allowedSet = Set.lowercaseANSI ∪ Set.decimalDigits
+            return (value.count == 40) && value.allSatisfy { allowedSet.contains($0) }
+        }
     }
 }
 
@@ -41,13 +47,5 @@ extension API.Key: Codable {
     @_transparent public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
-    }
-}
-
-extension API.Key {
-    /// Returns a Boolean indicating whether the raw value can represent an API key.
-    private static func _validate(_ value: String) -> Bool {
-        let allowedSet = Set.lowercaseANSI ∪ Set.decimalDigits
-        return (value.count == 40) && value.allSatisfy { allowedSet.contains($0) }
     }
 }

@@ -17,14 +17,14 @@ extension API.Request.Accounts {
     /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value). The valid range is between 10 and 500; anything beyond that will be clamped.
     /// - todo: validate `FIQL`.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
-    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[API.Activity],API.Error> {
+    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[API.Activity],IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 
                 if let fiql = filterBy.FIQL, !fiql.isEmpty {
-                    throw API.Error.invalidRequest("THE FIQL filter cannot be empty", suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "THE FIQL filter cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
                 
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
@@ -61,14 +61,12 @@ extension API.Request.Accounts {
                 }
 
                 guard let queries = URLComponents(string: next)?.queryItems else {
-                    let message = "The paginated request for activities couldn't be processed because there were no 'next' queries"
-                    throw API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
+                    throw IG.Error(.api(.invalidRequest), "The paginated request for activities couldn't be processed because there were no 'next' queries.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": previous.request])
                 }
 
                 guard let from = queries.first(where: { $0.name == "from" }),
                       let to = queries.first(where: { $0.name == "to" }) else {
-                    let message = "The paginated request for activies couldn't be processed because the 'from' and/or 'to' queries couldn't be found"
-                    throw API.Error.invalidRequest(.init(message), request: previous.request, suggestion: .fileBug)
+                    throw IG.Error(.api(.invalidRequest), "The paginated request for activies couldn't be processed because the 'from' and/or 'to' queries couldn't be found.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": previous.request])
                 }
 
                 return try initial.request.set { try $0.addQueries([from, to])}
@@ -76,8 +74,8 @@ extension API.Request.Accounts {
                 publisher.send(expecting: .json, statusCode: 200)
                     .decodeJSON(decoder: .default(values: true)) { (response: _PagedActivities, _) in
                         (response.metadata.paging, response.activities)
-                    }.mapError(API.Error.transform)
-            }).mapError(API.Error.transform)
+                    }.mapError(errorCast)
+            }).mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

@@ -2,7 +2,7 @@ import Combine
 import Foundation
 import Decimals
 
-extension API.Request.WorkingOrders {
+extension API.Request.Deals {
     
     // MARK: POST /workingorders/otc
     
@@ -31,14 +31,14 @@ extension API.Request.WorkingOrders {
                        stop: (type: IG.Deal.Stop.Kind, risk: IG.Deal.Stop.Risk)?,
                        forceOpen: Bool = true,
                        expiration: API.WorkingOrder.Expiration,
-                       reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+                       reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -52,14 +52,14 @@ extension API.Request.WorkingOrders {
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
     /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func update(identifier: IG.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal64, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+    public func update(identifier: IG.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal64, limit: IG.Deal.Limit?, stop: IG.Deal.Stop.Kind?, expiration: API.WorkingOrder.Expiration) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.makeRequest(.put, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -68,12 +68,12 @@ extension API.Request.WorkingOrders {
     /// Deletes an OTC working order.
     /// - parameter identifier: A permanent deal reference for a confirmed working order.
     /// - returns: *Future* forwarding the deal reference.
-    public func delete(identifier: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+    public func delete(identifier: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher
             .makeRequest(.delete, "workingorders/otc/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -81,7 +81,7 @@ extension API.Request.WorkingOrders {
 
 // MARK: - Entities
 
-extension API.Request.WorkingOrders {
+extension API.Request.Deals {
     private struct _PayloadCreation: Encodable {
         let epic: IG.Market.Epic
         let expiry: IG.Market.Expiry
@@ -203,7 +203,7 @@ extension API.Request.WorkingOrders {
     }
 }
 
-extension API.Request.WorkingOrders {
+extension API.Request.Deals {
     private struct _PayloadUpdate: Encodable {
         let type: API.WorkingOrder.Kind
         let level: Decimal64
@@ -278,7 +278,7 @@ extension API.Request.WorkingOrders {
     }
 }
 
-extension API.Request.WorkingOrders {
+extension API.Request.Deals {
     private struct WrapperReference: Decodable {
         let dealReference: IG.Deal.Reference
     }

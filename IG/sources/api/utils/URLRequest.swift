@@ -3,20 +3,18 @@ import Foundation
 internal extension URLRequest {
     /// Convenience function to append the given URL queries to the receiving URL request.
     /// - parameter newQueries: URL queries to be appended at the end of the given URL.
-    /// - throws: `API.Error` of `.invalidRequest` type if the receiving request have no URL (or cannot be transformed into `URLComponents`) or the given queries cannot be appended to the receiving request URL.
+    /// - throws: `IG.Error` of `.api(.invalidRequest)` type if the receiving request have no URL (or cannot be transformed into `URLComponents`) or the given queries cannot be appended to the receiving request URL.
     mutating func addQueries(_ newQueries: [URLQueryItem]) throws {
         guard !newQueries.isEmpty else {
             return
         }
         
         guard let previousURL = self.url else {
-            let message = "New queries couldn't be appended to a receiving request, since the request URL was found empty"
-            throw API.Error.invalidRequest(.init(message), request: self, suggestion: .readDocs)
+            throw IG.Error(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL was found empty.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self])
         }
         
         guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
-            let message = "New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into '\(URLComponents.self)'"
-            throw API.Error.invalidRequest(.init(message), request: self, suggestion: .readDocs)
+            throw IG.Error(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into '\(URLComponents.self)'.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self])
         }
         
         if let previousQueries = components.queryItems {
@@ -33,12 +31,8 @@ internal extension URLRequest {
         }
         
         guard let url = components.url else {
-            let message = "A new URL from the previous request and the given queries couldn't be formed"
             let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
-            
-            var error: API.Error = .invalidRequest(.init(message), request: self, suggestion: .readDocs)
-            error.context.append(("Queries", representation))
-            throw error
+            throw IG.Error(.api(.invalidRequest), "A new URL from the previous request and the given queries couldn't be formed.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self, "Queries": representation])
         }
         self.url = url
     }

@@ -2,18 +2,7 @@ import Combine
 import Foundation
 import Decimals
 
-extension API.Request {
-    /// List of endpoints related to API positions.
-    public struct Positions {
-        /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
-        /// Hidden initializer passing the instance needed to perform the endpoint.
-        /// - parameter api: The instance calling the actual endpoint.
-        @usableFromInline internal init(api: API) { self.api = api }
-    }
-}
-
-extension API.Request.Positions {
+extension API.Request.Deals {
     
     // MARK: GET /positions
     
@@ -21,12 +10,12 @@ extension API.Request.Positions {
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
     /// - returns: *Future* forwarding a list of open positions.
-    public func getAll() -> AnyPublisher<[API.Position],API.Error> {
+    public func getAll() -> AnyPublisher<[API.Position],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "positions", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(date: true)) { (w: _WrapperList, _) in w.positions }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -35,19 +24,19 @@ extension API.Request.Positions {
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
     /// - returns: *Future* forwarding the targeted position.
-    public func get(identifier: IG.Deal.Identifier) -> AnyPublisher<API.Position,API.Error> {
+    public func get(identifier: IG.Deal.Identifier) -> AnyPublisher<API.Position,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "positions/\(identifier.rawValue)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(date: true))
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     private struct _WrapperList: Decodable {
         let positions: [API.Position]
     }

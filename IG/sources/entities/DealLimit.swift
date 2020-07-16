@@ -2,20 +2,13 @@ import Decimals
 
 extension Deal {
     /// The limit at which the user is taking profit.
-    public enum Limit: Hashable, CustomDebugStringConvertible {
+    public enum Limit: Hashable {
         /// Specifies the limit as a given absolute level.
         /// - parameter level: The absolute level where the limit will be set.
         case position(level: Decimal64)
         /// Relative limit over an undisclosed reference level.
         /// - parameter _: The relative value where the limit will be set.
         case distance(Decimal64)
-        
-        public var debugDescription: String {
-            switch self {
-            case .position(let level): return "Limit position at \(level)"
-            case .distance(let dista): return "Limit distance of \(dista) pips"
-            }
-        }
     }
 }
 
