@@ -56,14 +56,15 @@ extension API.Request.Positions {
 extension API {
     /// Open position data.
     public struct Position: Decodable {
+        /// Date the position was created.
+        public let date: Date
         /// Permanent deal reference for a confirmed trade.
         public let identifier: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
         public let reference: IG.Deal.Reference
-        /// Date the position was created.
-        public let date: Date
         /// Position currency ISO code.
         public let currencyCode: Currency.Code
+        #warning("Make currencyCode optional for epics which are not forex")
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Size of the contract.

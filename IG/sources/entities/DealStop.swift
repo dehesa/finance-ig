@@ -228,10 +228,8 @@ extension KeyedDecodingContainer {
     /// - parameter type: The type of value to decode.
     /// - parameter levelKey: The key that the stop level value is associated with.
     /// - parameter distanceKey: The key that the stop distance value is associated with.
-    /// - parameter isGuaranteedKey: The key that the guaranteed stop value is associated with.
-    /// - parameter trailingDistanceKey: The key that the trailing distance value is associated with.
-    /// - parameter trailingIncrementKey: The key that the trailing increment value is associated with.
-    /// - parameter referencing: The deal direction and level given where the stop will apply.
+    /// - parameter riskKey: Tuple comprised of a first key (`isGuaranteed`) pointing to a Boolean value indicating whether the stop is guaranteed or not; and a second optional key (`premium`) indicating the value of a guaranteed premium.
+    /// - parameter trailingKey: Tuple comprised of a first optional key (`isActive`) indicating if the trailing stop is enabled; and a second and third optional keys indicating the stop distance and increment.
     /// - returns: A decoded value of deal stop type, or `nil` if the `Decoder` does not have an entry associated with the given key, or if the value is a null value.
     /// - throws: `DecodingError` exclusively.
     internal func decodeIfPresent(_ type: Deal.Stop.Type, forLevelKey levelKey: KeyedDecodingContainer<K>.Key?, distanceKey: KeyedDecodingContainer<K>.Key?,
@@ -239,8 +237,7 @@ extension KeyedDecodingContainer {
                                   trailingKey: (isActive: KeyedDecodingContainer<K>.Key?, distance: KeyedDecodingContainer<K>.Key?, increment: KeyedDecodingContainer<K>.Key?)) throws -> Deal.Stop? {
         let stop: (level: Decimal64?, distance: Decimal64?) = (
              try levelKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) },
-             try distanceKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) }
-            )
+             try distanceKey.flatMap { try self.decodeIfPresent(Decimal64.self, forKey: $0) } )
         if case (.none, .none) = stop { return nil }
 
         let risk: Deal.Stop.Risk = try {

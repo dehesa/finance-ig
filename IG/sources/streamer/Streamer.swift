@@ -15,8 +15,10 @@ public final class Streamer {
     @inlinable public final var accounts: Streamer.Request.Accounts { .init(streamer: self) }
     /// Namespace for subscriptions related to market information.
     @inlinable public final var markets: Streamer.Request.Markets { .init(streamer: self) }
-    /// Namespace for subscriptions related to 
+    /// Namespace for subscriptions related to prices.
     @inlinable public final var price: Streamer.Request.Price { .init(streamer: self) }
+    /// Namespace for subscriptions related to trades/deals.
+    @inlinable public final var deals: Streamer.Request.Deals { .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
