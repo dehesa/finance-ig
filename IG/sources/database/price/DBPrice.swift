@@ -490,18 +490,3 @@ extension Database.Request.Price {
         }
     }
 }
-
-// MARK: Debugging
-
-extension Database.Price: IG.DebugDescriptable {
-    internal static var printableDomain: String { Database.printableDomain.appending(".\(Self.self)") }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("open/close", "\(self.open.mid) -> \(self.close.mid)")
-        result.append("lowest/highest", "\(self.lowest.mid) -> \(self.highest.mid)")
-        result.append("volume", self.volume)
-        return result.generate()
-    }
-}

@@ -28,7 +28,7 @@ public final class Streamer {
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
     public convenience init(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue?) {
-        let processingQueue = DispatchQueue(label: Self.reverseDNS + ".queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = DispatchQueue(label: Bundle.IG.identifier + ".streamer.queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
     }
@@ -41,26 +41,5 @@ public final class Streamer {
         self.rootURL = rootURL
         self.queue = queue
         self.channel = channel
-    }
-}
-
-extension Streamer {
-    /// The reverse DNS identifier for the `Streamer` instance.
-    internal static var reverseDNS: String {
-        Bundle.IG.identifier + ".streamer"
-    }
-}
-
-extension Streamer: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
-    
-    public final var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("root URL", self.rootURL.absoluteString)
-        result.append("processing queue", self.queue.label)
-        result.append("processing queue QoS", String(describing: self.queue.qos.qosClass))
-        result.append("lightstreamer", Streamer.Channel.lightstreamerVersion)
-        result.append("connection status", self.channel.status)
-        return result.generate()
     }
 }

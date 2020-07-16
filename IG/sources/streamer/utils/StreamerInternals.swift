@@ -92,20 +92,3 @@ internal extension Streamer {
         }
     }
 }
-
-extension Streamer.Update.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Update.self).\(Self.self)" }
-    
-    internal var printableType: String {
-        self.type
-    }
-    
-    internal func printableMultiline(level: Int) -> String {
-        let prefix = Self.debugPrefix(level: level+1)
-        
-        var result = Self.printableDomain
-        result.append("\(prefix)Updating to type: \(self.printableType)")
-        result.append("\(prefix)Value: \(self.value)")
-        return result
-    }
-}

@@ -257,31 +257,3 @@ extension Confirmation {
         // private static let success = "SUCCESS"
     }
 }
-
-extension Confirmation: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("deal ID", self.dealIdentifier)
-        result.append("deal reference", self.dealReference)
-        result.append("epic", self.epic)
-        result.append("expiry", self.expiry.debugDescription)
-
-        switch self.status {
-        case .rejected(let reason):
-            result.append("rejected", reason.rawValue)
-        case .accepted(let details):
-            result.append("deal status", details.dealStatus.debugDescription)
-            result.append("affected deals", details.affectedDeals.map { "\($0.identifier) \($0.status)" })
-            result.append("direction", details.direction)
-            result.append("size", details.size)
-            result.append("level", details.level)
-            result.append("limit", details.limit?.debugDescription)
-            result.append("stop", details.stop?.debugDescription)
-            result.append("profit", details.profit?.description)
-        }
-        return result.generate()
-    }
-}

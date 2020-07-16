@@ -288,27 +288,3 @@ extension API.Transaction {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.Transaction: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("type", self.type)
-        result.append("reference", self.reference)
-        result.append("title", self.title)
-        result.append("period", self.period.debugDescription)
-        result.append("size", self.size.map { "\($0.direction) \($0.amount)" })
-        
-        let formatter = DateFormatter.timestamp.deepCopy(timeZone: .current)
-        result.append("open date", self.open.date, formatter: formatter)
-        result.append("close date", self.close.date, formatter: formatter)
-        let nilSym = IG.DebugDescription.Symbol.nil
-        result.append("open/close levels", "\(self.open.level.map { String(describing: $0) } ?? nilSym)/\(self.close.level.map { String(describing: $0) } ?? nilSym)")
-        result.append("P&L", self.profitLoss.description)
-        result.append("cash", self.isCash)
-        return result.generate()
-    }
-}

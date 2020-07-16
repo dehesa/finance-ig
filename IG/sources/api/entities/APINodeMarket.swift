@@ -107,34 +107,3 @@ extension API.Node.Market {
         }
     }
 }
-
-extension API.Node.Market: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("instrument", self.instrument) {
-            $0.append("epic", $1.epic)
-            $0.append("exchange ID", $1.exchangeIdentifier)
-            $0.append("name", $1.name)
-            $0.append("type", $1.type)
-            $0.append("expiry", $1.expiry.debugDescription)
-            $0.append("lot size", $1.lotSize)
-            $0.append("available by streaming", $1.isAvailableByStreaming)
-            $0.append("OTC tradeable", $1.isOTCTradeable)
-        }
-        result.append("snapshot", self.snapshot) {
-            $0.append("date", $1.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-            $0.append("delay", $1.delay)
-            $0.append("status", $1.status)
-            $0.append("price", $1.price) {
-                $0.append("ask", $1.ask)
-                $0.append("bid", $1.bid)
-                $0.append("range", "\($1.lowest)...\($1.highest)")
-                $0.append("change", "\($1.change.net) (net) or \($1.change.percentage) %")
-            }
-            $0.append("scaling factor", $1.scalingFactor)
-        }
-        return result.generate()
-    }
-}

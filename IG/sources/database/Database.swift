@@ -29,7 +29,7 @@ public final class Database {
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
     /// - throws: `Database.Error` exclusively.
     public convenience init(location: Database.Location, targetQueue: DispatchQueue?) throws {
-        let processingQueue = targetQueue ?? DispatchQueue(label: Self.reverseDNS + ".queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let processingQueue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = try Self.Channel(location: location, targetQueue: targetQueue)
         try self.init(channel: channel, queue: processingQueue)
     }
@@ -71,24 +71,5 @@ extension Database {
             fatalError("The 'documents' folder in the user domain couldn't be retrieved in this system.\nUnderlying error: \(error)")
         }
         return result.appendingPathComponent("IG.sqlite")
-    }
-    
-    /// The reverse DNS identifier for the `DB` instance.
-    internal static var reverseDNS: String {
-        Bundle.IG.identifier + ".database"
-    }
-}
-
-extension Database: DebugDescriptable {
-    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
-    
-    public final var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("root URL", self.rootURL.map { $0.path } ?? ":memory:")
-        result.append("queue", self.queue.label)
-        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
-        result.append("version", Database.Migration.Version.latest.rawValue)
-        result.append("SQLite", SQLITE_VERSION)
-        return result.generate()
     }
 }

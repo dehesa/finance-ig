@@ -50,14 +50,3 @@ extension Streamer {
         }
     }
 }
-
-extension Streamer.Credentials: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription("Streamer Credentials")
-        result.append("identifier", self.identifier)
-        result.append("password", self.password)
-        return result.generate()
-    }
-}

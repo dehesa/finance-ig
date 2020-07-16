@@ -117,25 +117,3 @@ extension API {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.Position: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("deal ID", self.identifier)
-        result.append("deal reference", self.reference)
-        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("epic", self.market.instrument.epic)
-        result.append("currency", self.currencyCode)
-        result.append("direction", self.direction)
-        result.append("contract size", self.contractSize)
-        result.append("size", self.size)
-        result.append("level", self.level)
-        result.append("limit", self.limit?.debugDescription)
-        result.append("stop", self.stop?.debugDescription)
-        return result.generate()
-    }
-}

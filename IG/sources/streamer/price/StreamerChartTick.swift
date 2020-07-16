@@ -140,21 +140,3 @@ extension Streamer.Chart.Tick {
         }
     }
 }
-
-extension Streamer.Chart.Tick: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Chart.self).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.epic))")
-        result.append("date", self.date, formatter: DateFormatter.londonTime)
-        result.append("volume", self.volume)
-        result.append("price (ask)", self.ask)
-        result.append("price (bid)", self.bid)
-        result.append("range (high)", self.day.highest)
-        result.append("range (mid)", self.day.mid)
-        result.append("range (low)", self.day.lowest)
-        result.append("change (net)", self.day.changeNet)
-        result.append("change (%)", self.day.changePercentage)
-        return result.generate()
-    }
-}

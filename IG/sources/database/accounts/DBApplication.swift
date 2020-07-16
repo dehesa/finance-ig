@@ -261,38 +261,3 @@ fileprivate extension Database.Application.Status {
         }
     }
 }
-
-// MARK: Debugging
-
-extension Database.Application: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Database.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("key", self.key)
-        result.append("name", self.name)
-        let status: String
-        switch self.status {
-        case .enabled: status = "Enabled"
-        case .disabled: status = "Disabled"
-        case .revoked: status = "Revoked"
-        }
-        result.append("status", status)
-        result.append("permission", self.permission) {
-            $0.append("access to equities", $1.accessToEquityPrices)
-            $0.append("quote orders allowed", $1.areQuoteOrdersAllowed)
-        }
-        result.append("allowance", self.allowance) {
-            $0.append("overall requests", $1.overallRequests)
-            $0.append("account", $1.account) {
-                $0.append("overall requests", $1.overallRequests)
-                $0.append("trading requests", $1.tradingRequests)
-                $0.append("price requests", $1.historicalDataRequests)
-            }
-            $0.append("concurrent subscription limit", $1.concurrentSubscriptions)
-        }
-        result.append("created", self.created, formatter: DateFormatter.date)
-        result.append("updated", self.updated, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        return result.generate()
-    }
-}

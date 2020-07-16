@@ -209,17 +209,3 @@ fileprivate extension API.Error.Message {
 fileprivate extension API.Error.Suggestion {
     static var _emptyWatchlistIdentifier: Self { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
 }
-
-extension API.Watchlist: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("watchlist ID", self.identifier)
-        result.append("name", self.name)
-        result.append("owned by user", !self.isOwnedBySystem)
-        result.append("editable", self.isEditable)
-        result.append("deleteable", self.isDeleteable)
-        return result.generate()
-    }
-}

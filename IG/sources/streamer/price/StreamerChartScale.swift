@@ -259,37 +259,3 @@ extension Streamer.Chart.Aggregated {
         }
     }
 }
-
-extension Streamer.Chart.Aggregated: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Streamer.Chart.self).\(Self.self)" }
-    
-    public var debugDescription: String {
-        let represent: (Self.Candle.Point)->String = {
-            switch ($0.bid, $0.ask) {
-            case (nil, nil): return IG.DebugDescription.Symbol.nil
-            case (let bid?, let ask?): return "\(ask) ask, \(bid) bid"
-            case (let bid?, nil): return "\(IG.DebugDescription.Symbol.nil) ask, \(bid) bid"
-            case (nil, let ask?): return "\(ask) ask, \(IG.DebugDescription.Symbol.nil) bid"
-            }
-        }
-        
-        var result = IG.DebugDescription("\(Self.printableDomain) \(self.interval) (\(self.epic))")
-        result.append("candle", self.candle) {
-            $0.append("date", $1.date, formatter: DateFormatter.londonTime)
-            $0.append("ticks", $1.numTicks)
-            $0.append("is finished", $1.isFinished)
-            $0.append("open", represent($1.open))
-            $0.append("close", represent($1.close))
-            $0.append("lowest", represent($1.lowest))
-            $0.append("highest", represent($1.highest))
-        }
-        result.append("day", self.day) {
-            $0.append("range (high)", $1.highest)
-            $0.append("range (mid)", $1.mid)
-            $0.append("range (low)", $1.lowest)
-            $0.append("change (net)", $1.changeNet)
-            $0.append("change (%)", $1.changePercentage)
-        }
-        return result.generate()
-    }
-}

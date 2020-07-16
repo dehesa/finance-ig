@@ -292,36 +292,3 @@ extension API.Price {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.Price: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("open", Self._represent(self.open))
-        result.append("close", Self._represent(self.close))
-        result.append("lowest", Self._represent(self.lowest))
-        result.append("highest", Self._represent(self.highest))
-        result.append("volume", self.volume)
-        return result.generate()
-    }
-    
-    private static func _represent(_ point: Self.Point) -> String {
-        "\(point.ask) ask, \(point.bid) bid"
-    }
-}
-
-extension API.Price.Allowance: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("reset date", self.resetDate, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("data points (remaining)", self.remaining)
-        result.append("data points (total)", self.total)
-        return result.generate()
-    }
-}
