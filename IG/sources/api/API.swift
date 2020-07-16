@@ -20,11 +20,9 @@ public final class API {
     /// Namespace for endpoints related to the IG markets (e.g. market info, snapshots, etc.).
     @inlinable public final var markets: API.Request.Markets { .init(api: self) }
     /// Namespace for endpoints related to price data point retrieval (e.g. return all data points for EUR/USD market with resolution of 1 minute).
-    @inlinable public final var price: API.Request.Price { .init(api: self) }
-    /// Namespace for endpoints related to open positions (e.g. create a position, tweak it, or close it).
-    @inlinable public final var positions: API.Request.Positions { .init(api: self) }
-    /// Namespace for endpoints related to open working orders (e.g. create a working order, tweak it, or close it).
-    @inlinable public final var workingOrders: API.Request.WorkingOrders { .init(api: self) }
+    @inlinable public final var prices: API.Request.Prices { .init(api: self) }
+    /// Namespace for endpoints related to working orders, open positions, and trade confirmations.
+    @inlinable public final var deals: API.Request.Deals { .init(api: self) }
     /// Namespace for endpoints related to IG nodes; that is what IG uses to navigate its tree of available markets.
     @inlinable public final var nodes: API.Request.Nodes { .init(api: self) }
     /// Namespace for endpoints related to watchlist management (e.g. create/remove watchlist, add/remove markets to it, etc.).
@@ -32,29 +30,36 @@ public final class API {
     /// Namespace for endpoints related to endpoints scrapped from IG website (e.g. economic calendar).
     @inlinable public final var scrapped: API.Request.Scrapped { .init(api: self) }
     
-    /// Initializer for an API instance, giving you the default options.
+    /// Convenience initializer setting the root URL and initial credentials for the API instance.
     ///
-    /// Each API instance has its own serial `DispatchQueue`. The queue provided in this initializer is the target queue for the created instance's queue.
+    /// Alternatively, the initializer accepts the target queue and QoS in which the API responses will be processed.
+    ///
+    /// - precondition: `targetQueue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.  Also, the initializer cannot be called from within the `targetQueue` execution context.
+    ///
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter targetQueue: The target queue on which to process the `API` requests and responses.
+    /// - parameter targetQueue: The target queue on which to process the `API` requests and responses. If `nil`, the system the system will provide an appropriate queue.
     /// - parameter qos: The Quality of Service for the API processing queue.
-    public convenience init(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, qos: DispatchQoS) {
-        // - warning: If the `URLSession` is ever to have a delegate, `processingQueue` must be serial. Otherwise, the delegate message wouldn't be ordered.
-        let processingQueue = DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
-        let operationQueue = OperationQueue(name: Bundle.IG.identifier + ".api.queue.operations", underlyingQueue: processingQueue)
-        let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: operationQueue)
-        self.init(rootURL: rootURL, credentials: credentials, queue: processingQueue, session: session)
+    public convenience init(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue? = nil, qos: DispatchQoS = .default) {
+        if let targetQueue = targetQueue {
+            dispatchPrecondition(condition: .notOnQueue(targetQueue))
+            targetQueue.sync { dispatchPrecondition(condition: .notOnQueue(DispatchQueue.main)) }
+        }
+        let queue = DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
+        let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: OperationQueue(underlying: queue))
+        self.init(rootURL: rootURL, credentials: credentials, queue: queue, session: session)
     }
     
-    /// Designated initializer used for both real and mocked usage.
+    /// Designated initializer used for regular and mocked usage.
+    ///
+    /// - precondition: `queue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.
+    ///
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
     /// - parameter session: The URL session used to call the real (or mocked) endpoints. 
     internal init(rootURL: URL, credentials: API.Credentials?, queue: DispatchQueue, session: URLSession) {
-        self.rootURL = rootURL
-        self.queue = queue
+        (self.rootURL, self.queue) = (rootURL, queue)
         self.channel = .init(session: session, credentials: credentials, scheduler: queue)
     }
 }

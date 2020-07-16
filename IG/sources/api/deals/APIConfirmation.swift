@@ -1,6 +1,17 @@
 import Combine
 
-extension API {
+extension API.Request {
+    /// List of endpoints related to API positions.
+    public struct Deals {
+        /// Pointer to the actual API instance in charge of calling the endpoint.
+        internal unowned let api: API
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter api: The instance calling the actual endpoint.
+        @usableFromInline internal init(api: API) { self.api = api }
+    }
+}
+
+extension API.Request.Deals {
     
     // MARK: - GET /confirms/{dealReference}
     
@@ -12,12 +23,12 @@ extension API {
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay.
     /// - note: the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: IG.Deal.Reference) -> AnyPublisher<Confirmation,Error> {
-        self.publisher
+    public func confirm(reference: IG.Deal.Reference) -> AnyPublisher<Confirmation,IG.Error> {
+        self.api.publisher
             .makeRequest(.get, "confirms/\(reference.rawValue)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

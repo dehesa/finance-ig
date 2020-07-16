@@ -155,7 +155,7 @@ extension Deal.Stop.Trailing {
 
 // MARK: - Functionality
 
-extension Deal.Stop: CustomDebugStringConvertible {
+extension Deal.Stop {
     /// Returns the absolute stop level.
     /// - parameter direction: The deal direction.
     /// - parameter base: The deal/base level.
@@ -197,29 +197,6 @@ extension Deal.Stop: CustomDebugStringConvertible {
         case .buy:  return level < base
         case .sell: return level > base
         }
-    }
-    
-    public var debugDescription: String {
-        var result = "Stop "
-        
-        switch self.type {
-        case .position(let level): result.append("position at \(level)")
-        case .distance(let dista): result.append("distance of \(dista) pips")
-        }
-        
-        switch self.risk {
-        case .exposed: result.append(" exposed to closing risk")
-        case .limited(let premium?): result.append(" with limited closing risk exposure (premium: \(premium)")
-        case .limited(premium: nil): result.append(" with limited closing risk exposure")
-        }
-        
-        switch self.trailing {
-        case .static: result.append(".")
-        case .dynamic(let settings?): result.append(" and trailing (distance: \(settings.distance), increment: \(settings.increment))")
-        case .dynamic(nil): result.append(" and trailing")
-        }
-        
-        return result
     }
 }
 

@@ -1,4 +1,5 @@
 import Combine
+import Conbini
 import Foundation
 
 extension API.Request.Session {
@@ -45,7 +46,7 @@ extension API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
     /// - returns: *Future* forwarding a `API.Credentials.Token.certificate` if the process was successful.
-    internal func refreshCertificate(key: API.Key, token: API.Token) -> AnyPublisher<(API.Session,API.Token),API.Error> {
+    internal func refreshCertificate(key: API.Key, token: API.Token) -> AnyPublisher<(API.Session,API.Token),IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
                 var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
@@ -61,7 +62,7 @@ extension API.Request.Session {
             .decodeJSON(decoder: .default(response: true)) { (r: API.Session._WrapperCertificate, _) in
                 let token = API.Token(.certificate(access: r.token.accessToken, security: r.token.securityToken), expirationDate: r.token.expirationDate)
                 return (r.session, token)
-            }.mapError(API.Error.transform)
+            }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
 
@@ -77,12 +78,12 @@ extension API.Request.Session {
     /// - parameter key: The API key which the encryption key will be associated to.
     /// - returns: *Future* forwarding the session's encryption key with the key's timestamp.
     /// - todo: Use this to encrypt the password.
-    fileprivate func _generateEncryptionKey(key: API.Key) -> AnyPublisher<API.Session._EncryptionKey,API.Error> {
+    fileprivate func _generateEncryptionKey(key: API.Key) -> AnyPublisher<API.Session._EncryptionKey,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.rawValue] })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

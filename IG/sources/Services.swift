@@ -36,11 +36,11 @@ public final class Services {
     /// - parameter user: User name and password to log into an IG account.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, user: API.User) -> AnyPublisher<Services,Services.Error> {
-        let queue = _makeQueue(targetQueue: nil)
+        let queue = Self._makeQueue(targetQueue: nil)
         let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         return api.session.login(type: .certificate, key: apiKey, user: user)
             .mapError(Self.Error.api)
-            .flatMap { _ in _make(with: api, queue: queue, location: databaseLocation) }
+            .flatMap { _ in Self._make(with: api, queue: queue, location: databaseLocation) }
             .eraseToAnyPublisher()
     }
     
@@ -53,7 +53,7 @@ public final class Services {
     /// - parameter token: The API token (whether OAuth or certificate) to use to retrieve all user's data.
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, token: API.Token) -> AnyPublisher<Services,Services.Error> {
-        let queue = _makeQueue(targetQueue: nil)
+        let queue = Self._makeQueue(targetQueue: nil)
         let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
@@ -63,7 +63,7 @@ public final class Services {
                 .mapError(Self.Error.api)
                 .flatMap { (session) -> AnyPublisher<Services,Services.Error> in
                     api.channel.credentials = .init(client: session.client, account: session.account, key: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
-                    return _make(with: api, queue: queue, location: databaseLocation)
+                    return Self._make(with: api, queue: queue, location: databaseLocation)
                 }
         }
         

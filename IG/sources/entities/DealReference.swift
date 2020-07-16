@@ -24,41 +24,38 @@ extension Deal {
         @_transparent public var description: String {
             self.rawValue
         }
+        
+        /// Tests the given argument/rawValue for a matching instance.
+        ///
+        /// For an identifier to be considered valid, it must only contain between 1 and 30 characters.
+        /// - parameter value: The future raw value of this instance.
+        private static func _validate(_ value: String) -> Bool {
+            let count = value.count
+            guard count > 0, count < 31 else { return false }
+            
+            let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
+                $0.formUnion(Set.lowercaseANSI)
+                $0.formUnion(Set.uppercaseANSI)
+                $0.formUnion(Set.decimalDigits)
+            }
+            return value.allSatisfy { allowedSet.contains($0) }
+        }
     }
 }
 
 extension Deal.Reference: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        let rawValue = try container.decode(String.self)
+        self.rawValue = try container.decode(String.self)
         
-        guard Self._validate(rawValue) else {
-            let reason = "The deal reference being decoded '\(rawValue)' doesn't conform to the validation function"
+        guard Self._validate(self.rawValue) else {
+            let reason = "The deal reference being decoded '\(self.rawValue)' doesn't conform to the validation function"
             throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
         }
-        self.rawValue = rawValue
     }
     
     @_transparent public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
-    }
-}
-
-extension Deal.Reference {
-    /// Tests the given argument/rawValue for a matching instance.
-    ///
-    /// For an identifier to be considered valid, it must only contain between 1 and 30 characters.
-    /// - parameter value: The future raw value of this instance.
-    private static func _validate(_ value: String) -> Bool {
-        let count = value.count
-        guard count > 0, count < 31 else { return false }
-        
-        let allowedSet = Set<Character>(arrayLiteral: "-", "_", #"\"#).set {
-            $0.formUnion(Set.lowercaseANSI)
-            $0.formUnion(Set.uppercaseANSI)
-            $0.formUnion(Set.decimalDigits)
-        }
-        return value.allSatisfy { allowedSet.contains($0) }
     }
 }

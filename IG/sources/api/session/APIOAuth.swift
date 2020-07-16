@@ -1,4 +1,5 @@
 import Combine
+import Conbini
 import Foundation
 
 extension API.Request.Session {
@@ -31,7 +32,7 @@ extension API.Request.Session {
     /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
     internal func refreshOAuth(token: String, key: API.Key) -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher { _ -> _TemporaryRefresh in
-                guard !token.isEmpty else { throw API.Error.invalidRequest("The OAuth refresh token cannot be empty", suggestion: .readDocs) }
+                guard !token.isEmpty else { throw IG.Error(.api(.invalidRequest), "The OAuth refresh token cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.") }
                 return _TemporaryRefresh(refreshToken: token, apiKey: key)
             }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]

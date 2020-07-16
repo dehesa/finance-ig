@@ -12,10 +12,10 @@ extension API.Request.Accounts {
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
-    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> AnyPublisher<[API.Transaction],API.Error> {
+    public func getTransactions(from: Date, to: Date? = nil, type: Self.Transaction = .all) -> AnyPublisher<[API.Transaction],IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
@@ -34,7 +34,7 @@ extension API.Request.Accounts {
                 return queries
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -49,16 +49,16 @@ extension API.Request.Accounts {
     /// - parameter type: Filter for the transaction types being returned.
     /// - parameter page: Paging variables for the transactions page received. `page.size` references the amount of transactions forward per value.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of transactions.
-    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<[API.Transaction],API.Error> {
+    public func getTransactionsContinuously(from: Date, to: Date? = nil, type: Self.Transaction = .all, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<[API.Transaction],IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 guard page.size > 0 else {
-                    throw API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "The page size must be greater than zero; however, '\(page.size)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
                 guard page.number > 0 else {
-                    throw API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "The page number must be greater than zero; however, '\(page.number)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/transactions", version: 2, credentials: true, queries: { (dateFormatter) in
@@ -88,8 +88,8 @@ extension API.Request.Accounts {
                 publisher.send(expecting: .json, statusCode: 200)
                     .decodeJSON(decoder: .default()) { (response: _PagedTransactions, _) in
                         (response.metadata.page, response.transactions)
-                    }.mapError(API.Error.transform)
-            }).mapError(API.Error.transform)
+                    }.mapError(errorCast)
+            }).mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

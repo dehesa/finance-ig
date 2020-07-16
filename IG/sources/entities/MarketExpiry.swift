@@ -26,9 +26,9 @@ extension Market.Expiry: Codable {
         guard !container.decodeNil() else { self = .none; return }
         
         switch try container.decode(String.self) {
-        case _CodingKeys.none.rawValue:
+        case _Keys.none.rawValue:
             self = .none
-        case _CodingKeys.dfb.rawValue, _CodingKeys.dfb.rawValue.lowercased():
+        case _Keys.dfb.rawValue, _Keys.dfb.rawValue.lowercased():
             self = .dailyFunded
         case let string:
             if let date = DateFormatter.dateDenormal.date(from: string) {
@@ -47,16 +47,16 @@ extension Market.Expiry: Codable {
         var container = encoder.singleValueContainer()
         switch self {
         case .none:
-            try container.encode(_CodingKeys.none.rawValue)
+            try container.encode(_Keys.none.rawValue)
         case .dailyFunded:
-            try container.encode(_CodingKeys.dfb.rawValue)
+            try container.encode(_Keys.dfb.rawValue)
         case .forward(let date):
             let formatter = (date.isLastDayOfMonth) ? DateFormatter.dateDenormalBroad : DateFormatter.dateDenormal
             try container.encode(formatter.string(from: date))
         }
     }
     
-    private enum _CodingKeys: String, CodingKey {
+    private enum _Keys: String, CodingKey {
         case dfb = "DFB"
         case none = "-"
     }

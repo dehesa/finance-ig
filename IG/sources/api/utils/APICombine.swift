@@ -19,30 +19,26 @@ internal extension API {
 internal extension API {
     /// Publisher sending downstream the receiving `API` instance. If the instance has been deallocated when the chain is activated, a failure is sent downstream.
     /// - returns: A Combine `Future` sending an `API` instance and completing immediately once it is activated.
-    @_transparent var publisher: DeferredResult<API.Transit.Instance<Void>,API.Error> {
-        .init { [weak self] in
-            if let self = self {
-                return .success( (self,()) )
-            } else {
-                return .failure(.sessionExpired())
-            }
+    @_transparent var publisher: DeferredResult<API.Transit.Instance<Void>,IG.Error> {
+        DeferredResult { [weak self] in
+            guard let self = self else { return .failure( IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.") ) }
+            return .success( (self,()) )
         }
     }
     
     /// Publisher sending downstream the receiving `API` instance and some computed values. If the instance has been deallocated or the values cannot be generated, the publisher fails.
     /// - parameter valuesGenerator: Closure generating the values to be send downstream along with the `API` instance.
     /// - returns: A Combine `Future` sending an `API` instance along with some computed values and completing immediately once it is activated.
-    func publisher<T>(_ valuesGenerator: @escaping (_ api: API) throws -> T) -> DeferredResult<API.Transit.Instance<T>,API.Error> {
-        .init { [weak self] in
-            guard let self = self else { return .failure(.sessionExpired()) }
+    func publisher<T>(_ valuesGenerator: @escaping (_ api: API) throws -> T) -> DeferredResult<API.Transit.Instance<T>,IG.Error> {
+        DeferredResult { [weak self] in
+            guard let self = self else { return .failure( IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.") ) }
             do {
                 let values = try valuesGenerator(self)
                 return .success((self, values))
-            } catch let error as API.Error {
+            } catch let error as IG.Error {
                 return .failure(error)
             } catch let underlyingError {
-                let error = API.Error.invalidRequest("The precomputed values couldn't be generated", underlying: underlyingError, suggestion: .readDocs)
-                return .failure(error)
+                return .failure( IG.Error(.api(.invalidRequest), "The request precomputed values couldn't be generated.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError) )
             }
         }
     }
@@ -62,7 +58,7 @@ internal extension Publisher {
                         queries queryGenerator: ((_ values: T) throws -> [URLQueryItem])? = nil,
                         headers headGenerator:  ((_ values: T) throws -> [API.HTTP.Header.Key:String])? = nil,
                         body    bodyGenerator:  ((_ values: T) throws -> (contentType: API.HTTP.Header.Value.ContentType, data: Data))? = nil
-                       ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Self.Output==API.Transit.Instance<T> {
+                       ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Output==API.Transit.Instance<T> {
         self.tryMap { (api, values) in
             var request = URLRequest(url: api.rootURL.appendingPathComponent(relativeURL))
             request.httpMethod = method.rawValue
@@ -72,18 +68,17 @@ internal extension Publisher {
                     try request.addQueries(queries)
                 }
 
-                let credentials = (!usingCredentials) ? nil : try api.channel.credentials ?> API.Error.invalidRequest(.noCredentials, request: request, suggestion: .logIn)
+                let credentials = (!usingCredentials) ? nil : try api.channel.credentials ?> IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.", info: ["Request": request])
                 request.addHeaders(version: version, credentials: credentials, try headGenerator?(values))
 
                 if let body = try bodyGenerator?(values) {
                     request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
                     request.httpBody = body.data
                 }
-            } catch var error as API.Error {
-                if case .none = error.request { error.request = request }
+            } catch let error as IG.Error {
                 throw error
-            } catch let error {
-                throw API.Error.invalidRequest("The URL request couldn't be created", request: request, underlying: error, suggestion: .readDocs)
+            } catch let underlyingError {
+                throw IG.Error(.api(.invalidRequest), "The URL request couldn't be created.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError, info: ["Request": request])
             }
 
             return (api, request, values)
@@ -123,11 +118,10 @@ internal extension Publisher {
                     request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
                     request.httpBody = body.data
                 }
-            } catch var error as API.Error {
-                if case .none = error.request { error.request = request }
+            } catch let error as IG.Error {
                 throw error
-            } catch let error {
-                throw API.Error.invalidRequest("The URL request couldn't be created", request: request, underlying: error, suggestion: .readDocs)
+            } catch let underlyingError {
+                throw IG.Error(.api(.invalidRequest), "The URL request couldn't be created.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError, info: ["Request": request])
             }
 
             return (api, request, values)
@@ -141,33 +135,22 @@ internal extension Publisher {
     /// - parameter statusCodes: If not `nil`, the sequence indicates all *viable*/supported status codes.
     /// - returns: A `Future` related type forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) -> Publishers.FlatMap< Publishers.MapError< Publishers.TryMap<URLSession.DataTaskPublisher, API.Transit.Call<T>>, Swift.Error>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
+    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) -> Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap { (api, request, values) in
-            api.channel.session.dataTaskPublisher(for: request)
-                .tryMap { (data, response) in
+            api.channel.session
+                .dataTaskPublisher(for: request)
+                .mapError {
+                    IG.Error(.api(.callFailed), "An internal session error occurred while calling the HTTP endpoint.", help: "Review the underlying error and try to fix the problem.", underlying: $0, info: ["Request": request])
+                }.tryMap { (data, response) in
                     guard let httpResponse = response as? HTTPURLResponse else {
-                        let message = "The response was not of HTTPURLResponse type"
-                        throw API.Error.callFailed(message: .init(message), request: request, response: nil, data: data, underlying: nil, suggestion: .fileBug)
+                        throw IG.Error(.api(.callFailed), "The received URL response was not of 'HTTPURLResponse' type.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request, "Response": response, "Data": data])
                     }
                     
                     if let expectedCodes = statusCodes, !expectedCodes.contains(httpResponse.statusCode) {
-                        let message = "The URL response code '\(httpResponse.statusCode)' was received, when only \(expectedCodes) codes were expected"
-                        throw API.Error.invalidResponse(message: .init(message), request: request, response: httpResponse, data: data, underlying: nil, suggestion: .reviewError)
+                        throw IG.Error(.api(.invalidResponse), "The URL response code '\(httpResponse.statusCode)' was received, but only \(expectedCodes) codes were expected.", help: "Review the returned response and data, and try to fix the problem.", info: ["Request": request, "Response": httpResponse, "Data": data])
                     }
                     
                     return (request, httpResponse, data, values)
-                }.mapError {
-                    switch $0 {
-                    case var error as API.Error:
-                        if case .none = error.request { error.request = request }
-                        return error
-                    case let error as URLError:
-                        let message: API.Error.Message = "An internal session error occurred while calling the HTTP endpoint"
-                        return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
-                    case let error:
-                        let message: API.Error.Message = "An unknown error occurred while calling the HTTP endpoint"
-                        return API.Error.callFailed(message: message, request: request, response: nil, data: nil, underlying: error, suggestion: .reviewError)
-                    }
                 }
         }
     }
@@ -178,7 +161,7 @@ internal extension Publisher {
     /// - parameter type: The HTTP content type expected as a result.
     /// - parameter codes: List of HTTP status codes expected (i.e. the endpoint call is considered successful).
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    func send<T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCode codes: Int...) ->  Publishers.FlatMap<Publishers.MapError<Publishers.TryMap<URLSession.DataTaskPublisher,API.Transit.Call<T>>,Swift.Error>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error {
+    func send<T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCode codes: Int...) ->  Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error {
         self.send(expecting: type, statusCodes: codes)
     }
     
@@ -190,7 +173,7 @@ internal extension Publisher {
     /// - returns: A continuous publisher returning the values from `pageCall` as soon as they arrive. Only when `nil` is returned on the `pageRequestGenerator` closure, will the returned publisher complete.
     func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: API, _ initial: (request: URLRequest, values: T), _ previous: API.Transit.PreviousPage<M>?) throws -> URLRequest?,
                                  call pageCall: @escaping (_ pageRequest: Result<API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
-                                ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==API.Error {
+                                ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.Error {
         self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
             .init { (subject) in
                 typealias Iterator = (_ previous: API.Transit.PreviousPage<M>?) -> Void
@@ -200,7 +183,7 @@ internal extension Publisher {
                 var pageCancellable: AnyCancellable? = nil
                 /// Closure that must be called once the pagination process finishes, so the state can be cleaned.
                 let sendCompletion: (_ subject: PassthroughSubject<R,Swift.Error>,
-                                     _ completion: Subscribers.Completion<API.Error>,
+                                     _ completion: Subscribers.Completion<IG.Error>,
                                      _ previous: API.Transit.PreviousPage<M>?,
                                      _ pageCancellable: inout AnyCancellable?,
                                      _ iterator: inout Iterator?) -> Void = { (subject, completion, previous, pageCancellable, iterator) in
@@ -213,11 +196,10 @@ internal extension Publisher {
                     switch completion {
                     case .finished:
                         subject.send(completion: .finished)
-                    case .failure(let e):
-                        var error = e
+                    case .failure(let error):
                         if let previous = previous {
-                            error.context.append(("Last successful page request", previous.request))
-                            error.context.append(("Last successful page metadata", previous.metadata))
+                            error.errorUserInfo["Last successful page request"] = previous.request
+                            error.errorUserInfo["Last successful page metadata"] = previous.metadata
                         }
                         subject.send(completion: .failure(error))
                     }
@@ -226,16 +208,17 @@ internal extension Publisher {
                 iterator = { [weak weakAPI = api] (previous) in
                     // 1. Check whether the API instance is still available
                     guard let api = weakAPI else {
-                        return sendCompletion(subject, .failure(.sessionExpired()), previous, &pageCancellable, &iterator)
+                        let error = IG.Error(.api(.sessionExpired), "The API instance wasn't found.", help: "The API functionality is asynchronous. Keep around the API instance while a response is being processed.")
+                        return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                     }
                     // 2. Fetch the next page request
                     let nextRequest: URLRequest?
                     do {
                         nextRequest = try pageRequestGenerator(api, (initialRequest, values), previous)
-                    } catch let error as API.Error {
+                    } catch let error as IG.Error {
                         return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                     } catch let e {
-                        let error = API.Error.invalidRequest("The paginated request couldn't be created", request: initialRequest, underlying: e, suggestion: .fileBug)
+                        let error = IG.Error(.api(.invalidRequest), "The paginated request couldn't be created.", underlying: e, info: ["Request": initialRequest])
                         return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                     }
                     // 3. If there isn't a new request, it means we have successfully retrieved all pages
@@ -250,14 +233,15 @@ internal extension Publisher {
                         }
                         
                         guard let result = pageResult else {
-                            let error = API.Error.callFailed(message: "A page call returned empty", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .reviewError)
+                            let error = IG.Error(.api(.callFailed), "A page call returned empty.", help: "Review the returned error and try to fix the problem.", info: ["Request": pageRequest])
                             return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                         }
                         
                         subject.send(result.output)
                         
                         guard let next = iterator else {
-                            return sendCompletion(subject, .failure(.sessionExpired()), previous, &pageCancellable, &iterator)
+                            let error = IG.Error(.api(.sessionExpired), "The API instance wasn't found.", help: "The API functionality is asynchronous. Keep around the API instance while a response is being processed.")
+                            return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                         }
                         
                         pageCancellable = nil
@@ -265,11 +249,13 @@ internal extension Publisher {
                         return next((pageRequest, result.metadata))
                     }, receiveValue: { (metadata, output) in
                         if let previouslyStored = pageResult {
-                            var error = API.Error.callFailed(message: "A single page received two results", request: pageRequest, response: nil, data: nil, underlying: nil, suggestion: .fileBug)
-                            error.context.append(("Previous result metadata", previouslyStored.metadata))
-                            error.context.append(("Previous result output", previouslyStored.output))
-                            error.context.append(("Conflicting result metadata", metadata))
-                            error.context.append(("Conflicting result metadata", output))
+                            let error = IG.Error(.api(.callFailed), "A single page received two results", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: [
+                                "Request": pageRequest,
+                                "Previous result metadata": previouslyStored.metadata,
+                                "Previous result output": previouslyStored.output,
+                                "Conflicting result metadata": metadata,
+                                "Conflicting result metadata": output
+                            ])
                             pageResult = nil
                             return sendCompletion(subject, .failure(error), previous, &pageCancellable, &iterator)
                         }
@@ -289,20 +275,14 @@ internal extension Publisher {
         self.tryMap { (request, response, data, values) -> R in
             var decodingStage = true
             do {
-                let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values); decodingStage.toggle()
+                let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values)
+                decodingStage.toggle()
                 return try jsonDecoder.decode(R.self, from: data)
-            } catch var error as API.Error {
-                if case .none = error.request { error.request = request }
-                if case .none = error.response { error.response = response }
-                if case .none = error.responseData { error.responseData = data }
+            } catch let error as IG.Error {
                 throw error
             } catch let error {
-                let msg: String
-                switch decodingStage {
-                case true:  msg = "A JSON decoder couldn't be created"
-                case false: msg = "The response body could not be decoded as the expected type: '\(R.self)'"
-                }
-                throw API.Error.invalidResponse(message: .init(msg), request: request, response: response, data: data, underlying: error, suggestion: .reviewError)
+                let msg = (decodingStage) ? "A JSON decoder couldn't be created" : "The response body could not be decoded as the expected type: '\(R.self)'."
+                throw IG.Error(.api(.invalidResponse), msg, help: "Review the returned error and try to fix the problem.", underlying: error, info: ["Request": request, "Response": response, "Data": data])
             }
         }
     }
@@ -311,19 +291,14 @@ internal extension Publisher {
     /// - parameter decoder: Enum indicating how the `JSONDecoder` is created/obtained.
     /// - parameter transform: Transformation to be applied to the result of the JSON decoding.
     /// - returns: Each value event triggers a JSON decoding process. This publisher forwards the response of that process after being transformed by the closure.
-    func decodeJSON<T,R,W>(decoder: API.JSON.Decoder<T>,
-                                    transform: @escaping (_ decoded: R, _ call: (request: URLRequest, response: HTTPURLResponse)) throws -> W
-                                   ) -> Publishers.TryMap<Self,W> where Self.Output==API.Transit.Call<T>, R:Decodable {
+    func decodeJSON<T,R,W>(decoder: API.JSON.Decoder<T>, transform: @escaping (_ decoded: R, _ call: (request: URLRequest, response: HTTPURLResponse)) throws -> W) -> Publishers.TryMap<Self,W> where Self.Output==API.Transit.Call<T>, R:Decodable {
         self.tryMap { (request, response, data, values) -> W in
             var stage: Int = 0
             do {
                 let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values); stage += 1
                 let payload = try jsonDecoder.decode(R.self, from: data); stage += 1
                 return try transform(payload, (request, response))
-            } catch var error as API.Error {
-                if case .none = error.request { error.request = request }
-                if case .none = error.response { error.response = response }
-                if case .none = error.responseData { error.responseData = data }
+            } catch let error as IG.Error {
                 throw error
             } catch let error {
                 let msg: String
@@ -332,7 +307,7 @@ internal extension Publisher {
                 case 1: msg = "The response body could not be decoded as the expected type: '\(R.self)'"
                 default: msg = "The response body was decoded successfully from JSON, but it couldn't be transformed into the type: '\(W.self)'"
                 }
-                throw API.Error.invalidResponse(message: .init(msg), request: request, response: response, data: data, underlying: error, suggestion: .reviewError)
+                throw IG.Error(.api(.invalidResponse), msg, help: "", underlying: error, info: ["Request": request, "Response": response, "Data": data])
             }
         }
     }

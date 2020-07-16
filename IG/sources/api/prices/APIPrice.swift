@@ -4,7 +4,7 @@ import Decimals
 
 extension API.Request {
     /// List of endpoints related to a user's activity.
-    public struct Price {
+    public struct Prices {
         /// Pointer to the actual API instance in charge of calling the endpoints.
         fileprivate unowned let _api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
@@ -13,7 +13,7 @@ extension API.Request {
     }
 }
 
-extension API.Request.Price {
+extension API.Request.Prices {
     
     // MARK: GET /prices/{epic}
     
@@ -24,10 +24,10 @@ extension API.Request.Price {
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),IG.Error> {
         self._api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
@@ -39,7 +39,7 @@ extension API.Request.Price {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                 (response.prices, response.metadata.allowance)
-            }.mapError(API.Error.transform)
+            }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -54,16 +54,16 @@ extension API.Request.Price {
     /// - parameter resolution: It defines the resolution of requested prices.
     /// - parameter page: Paging variables for the transactions page received. For the `page.size` and `page.number` must be greater than zero, or the publisher will fail.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
-    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),API.Error> {
+    public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),IG.Error> {
         self._api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
                 guard let timezone = api.channel.credentials?.timezone else {
-                    throw API.Error.invalidRequest(.noCredentials, suggestion: .logIn)
+                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 guard page.size > 0 else {
-                    throw API.Error.invalidRequest(.init("The page size must be greater than zero; however, '\(page.size)' was provided instead"), suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "The page size must be greater than zero; however, '\(page.size)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
                 guard page.number > 0 else {
-                    throw API.Error.invalidRequest(.init("The page number must be greater than zero; however, '\(page.number)' was provided instead"), suggestion: .readDocs)
+                    throw IG.Error(.api(.invalidRequest), "The page number must be greater than zero; however, '\(page.number)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
                 }
 
                 let formatter = DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
@@ -82,8 +82,8 @@ extension API.Request.Price {
                 publisher.send(expecting: .json, statusCode: 200)
                     .decodeJSON(decoder: .default(response: true)) { (response: _PagedPrices, _) in
                         (response.metadata.page, (response.prices, response.metadata.allowance))
-                    }.mapError(API.Error.transform)
-            }).mapError(API.Error.transform)
+                    }.mapError(errorCast)
+            }).mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }
@@ -137,7 +137,7 @@ extension API.Price {
     }
 }
 
-extension API.Request.Price {
+extension API.Request.Prices {
     /// Single page of prices request.
     private struct _PagedPrices: Decodable {
         let instrumentType: API.Market.Instrument.Kind

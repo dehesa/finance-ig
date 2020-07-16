@@ -21,7 +21,7 @@ extension APIAccountTests {
         XCTAssertFalse(accounts.isEmpty)
         
         let account = accounts[0]
-        XCTAssertEqual(account.identifier, api.session.credentials!.account)
+        XCTAssertEqual(account.id, api.session.credentials!.account)
         XCTAssertFalse(account.name.isEmpty)
         XCTAssertEqual(account.status, .enabled)
     }

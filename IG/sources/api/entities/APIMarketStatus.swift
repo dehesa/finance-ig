@@ -40,8 +40,7 @@ extension API.Market {
                   case .some(let low) = lowest, case .some(let high) = highest else {
                     return nil
             }
-            self.lowest = low
-            self.highest = high
+            (self.lowest, self.highest) = (low, high)
             self.change = (try container.decode(Decimal64.self, forKey: .netChange),
                            try container.decode(Decimal64.self, forKey: .percentageChange))
         }

@@ -24,9 +24,9 @@ extension API.Request.Scrapped {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - returns: *Future* forwarding all user's applications.
-    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Calendar.Event],API.Error> {
+    public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Calendar.Event],IG.Error> {
         self.api.publisher { _ throws -> (from: Int, to: Int) in
-                guard from <= to else { throw API.Error.invalidRequest("The 'from' date must occur before the 'to' date", suggestion: .readDocs) }
+                guard from <= to else { throw IG.Error(.api(.invalidRequest), "The 'from' date must occur before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }
                 let fromInterval = Int(from.timeIntervalSince1970) * 1000
                 let toInterval = Int(to.timeIntervalSince1970) * 1000
                 return (fromInterval, toInterval)
@@ -44,7 +44,7 @@ extension API.Request.Scrapped {
                  .cacheControl: "no-cache"]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

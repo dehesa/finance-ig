@@ -72,4 +72,3 @@ extension DateFormatter: SettableReference {}
 extension JSONDecoder: SettableReference {}
 extension Set: SettableValue {}
 extension URLRequest: SettableValue {}
-extension API.Error: SettableValue {}

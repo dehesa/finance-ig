@@ -1,7 +1,7 @@
 import Combine
 import Decimals
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     
     // MARK: POST /positions/otc
     
@@ -29,12 +29,12 @@ extension API.Request.Positions {
     /// - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
     public func create(epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code, direction: IG.Deal.Direction,
                        order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal64, limit: IG.Deal.Limit?, stop: IG.Deal.Stop?,
-                       forceOpen: Bool = true, reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+                       forceOpen: Bool = true, reference: IG.Deal.Reference? = nil) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen, reference: reference) }
             .makeRequest(.post, "positions/otc", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
@@ -48,12 +48,12 @@ extension API.Request.Positions {
     /// - parameter stop: Passing values will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
     /// - note: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
-    public func update(identifier: IG.Deal.Identifier, limitLevel: Decimal64?, stop: (level: Decimal64, trailing: IG.Deal.Stop.Trailing)?) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+    public func update(identifier: IG.Deal.Identifier, limitLevel: Decimal64?, stop: (level: Decimal64, trailing: IG.Deal.Stop.Trailing)?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadUpdate(limit: limitLevel, stop: stop) }
             .makeRequest(.put, "positions/otc/\(identifier.rawValue)", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 
@@ -63,19 +63,19 @@ extension API.Request.Positions {
     /// Closes one or more positions.
     /// - parameter request: A filter to match the positions to be deleted.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
-    public func delete(matchedBy identification: Self.Identification, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal64) -> AnyPublisher<IG.Deal.Reference,API.Error> {
+    public func delete(matchedBy identification: Self.Identification, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal64) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size) }
             .makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: API.HTTP.Method.delete.rawValue] }, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
-            .mapError(API.Error.transform)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }
 
 // MARK: - Entities
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     private struct _PayloadCreation: Encodable {
         let epic: IG.Market.Epic
         let expiry: IG.Market.Expiry
@@ -227,7 +227,7 @@ extension API.Request.Positions {
     }
 }
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     private struct _PayloadUpdate: Encodable {
         let limit: Decimal64?
         let stop: (level: Decimal64, trailing: IG.Deal.Stop.Trailing)?
@@ -304,7 +304,7 @@ extension API.Request.Positions {
     }
 }
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     /// Identification mechanism at deletion time.
     public enum Identification {
         /// Permanent deal identifier for a confirmed trade.
@@ -314,15 +314,15 @@ extension API.Request.Positions {
     }
 }
 
-extension API.Request.Positions {
+extension API.Request.Deals {
     private struct _PayloadDeletion: Encodable {
-        let identification: API.Request.Positions.Identification
+        let identification: API.Request.Deals.Identification
         let direction: IG.Deal.Direction
         let order: API.Position.Order
         let strategy: API.Position.Order.Strategy
         let size: Decimal64
         
-        init(identification: API.Request.Positions.Identification, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal64) throws {
+        init(identification: API.Request.Deals.Identification, direction: IG.Deal.Direction, order: API.Position.Order, strategy: API.Position.Order.Strategy, size: Decimal64) throws {
             guard size > .zero else {
                 var error: API.Error = .invalidRequest("The position size number is invalid", suggestion: "The position size must be a positive valid number greater than zero")
                 error.context.append(("Position size", size))
@@ -384,7 +384,7 @@ fileprivate extension API.Position.Order {
     }
 }
 
-private extension API.Request.Positions {
+private extension API.Request.Deals {
     struct _WrapperReference: Decodable {
         let dealReference: IG.Deal.Reference
     }
