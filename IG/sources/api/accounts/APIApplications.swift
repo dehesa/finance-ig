@@ -165,31 +165,3 @@ extension API.Application.Allowance {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.Application: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("key", self.key)
-        result.append("name", self.name)
-        result.append("status", self.status)
-        result.append("permission", self.permission) {
-            $0.append("access to equities", $1.accessToEquityPrices)
-            $0.append("quote orders allowed", $1.areQuoteOrdersAllowed)
-        }
-        result.append("allowance", self.allowance) {
-            $0.append("overall requests", $1.overallRequests)
-            $0.append("account", $1.account) {
-                $0.append("overall requests", $1.overallRequests)
-                $0.append("trading requests", $1.tradingRequests)
-                $0.append("price requests", $1.historicalDataRequests)
-            }
-            $0.append("concurrent subscription limit", $1.subscriptionsLimit)
-        }
-        result.append("creation", self.creationDate, formatter: DateFormatter.date)
-        return result.generate()
-    }
-}

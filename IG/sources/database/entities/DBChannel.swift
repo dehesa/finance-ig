@@ -18,7 +18,7 @@ extension Database {
         /// - parameter targetQueue: The target queue on which the database serializer will depend on.
         init(location: Database.Location, targetQueue: DispatchQueue?) throws {
             // Research: attributes: .concurrent
-            self._queue = DispatchQueue(label: Database.reverseDNS + ".queue.channel", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
+            self._queue = DispatchQueue(label: Bundle.IG.identifier + ".database.queue.channel", qos: .default, autoreleaseFrequency: .inherit, target: targetQueue)
             (self.rootURL, self._database) = try Self._make(location: location, queue: _queue)
         }
         
@@ -282,7 +282,7 @@ private extension Database.Channel {
             if secondMessage != scheduleResult.description {
                 error.context.append(("Second closing message", secondMessage))
             }
-            fatalError(error.debugDescription)
+            fatalError(error.localizedDescription)
         }
     }
 }

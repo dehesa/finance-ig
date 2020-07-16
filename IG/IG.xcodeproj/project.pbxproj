@@ -33,7 +33,6 @@
 		8D33B8CF233967E1002B524B /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Operators.swift */; };
 		8D33B8D0233967E1002B524B /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
 		8D33B8D1233967E1002B524B /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB786231F943C00D76B6A /* DateFormatter.swift */; };
-		8D33B8D2233967E1002B524B /* DebugDescriptable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */; };
 		8D33B8D3233967E1002B524B /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF85B1B22F046FA00F1C525 /* Error.swift */; };
 		8D33B8D62339689E002B524B /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34022FB1E8400521759 /* Account.swift */; };
 		8D33B8D72339689E002B524B /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34222FB201000521759 /* Client.swift */; };
@@ -44,10 +43,7 @@
 		8D376D5B234C61EE007D4A48 /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4B2149A6CE00344CBF /* Operators.swift */; };
 		8D376D5C234C61EE007D4A48 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA492149A6CE00344CBF /* Date.swift */; };
 		8D376D5D234C61EE007D4A48 /* DateFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB786231F943C00D76B6A /* DateFormatter.swift */; };
-		8D376D5E234C61EE007D4A48 /* DebugDescriptable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */; };
 		8D376D5F234C61EE007D4A48 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF85B1B22F046FA00F1C525 /* Error.swift */; };
-		8D376D60234C61EE007D4A48 /* ErrorHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51A2326459000F029B3 /* ErrorHelper.swift */; };
-		8D376D61234C61EE007D4A48 /* ErrorCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D30D082232566D900D83E0A /* ErrorCodable.swift */; };
 		8D376D63234C6210007D4A48 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34022FB1E8400521759 /* Account.swift */; };
 		8D376D64234C6210007D4A48 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F34222FB201000521759 /* Client.swift */; };
 		8D376D65234C6210007D4A48 /* Market.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D47E0D623159C8900AD53A2 /* Market.swift */; };
@@ -157,8 +153,6 @@
 		8D452661233A55FC0034D577 /* Bundle.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D45265E233A55FC0034D577 /* Bundle.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8D452663233A55FC0034D577 /* Bundle.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D45265F233A55FC0034D577 /* Bundle.c */; };
 		8D452669233A67960034D577 /* Bundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D452667233A67960034D577 /* Bundle.swift */; };
-		8D45266A233A69390034D577 /* ErrorHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51A2326459000F029B3 /* ErrorHelper.swift */; };
-		8D45266B233A693C0034D577 /* ErrorCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D30D082232566D900D83E0A /* ErrorCodable.swift */; };
 		8D45266E233A6A740034D577 /* Market.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D47E0D623159C8900AD53A2 /* Market.swift */; };
 		8D452672233A6CC80034D577 /* DealIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3E122FC789B00BB6261 /* DealIdentifier.swift */; };
 		8D452673233A6CE50034D577 /* DealLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE2C3DD22FC72E400BB6261 /* DealLimit.swift */; };
@@ -325,7 +319,6 @@
 		8D0906A1236B4522005E7501 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
-		8D19C51A2326459000F029B3 /* ErrorHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHelper.swift; sourceTree = "<group>"; };
 		8D19C51E232694DC00F029B3 /* SQLite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLite.swift; sourceTree = "<group>"; };
 		8D1C8D552322D9E500841CA0 /* OperationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationQueue.swift; sourceTree = "<group>"; };
 		8D1C8D572322E53900841CA0 /* DBChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBChannel.swift; sourceTree = "<group>"; };
@@ -334,7 +327,6 @@
 		8D2EA939233B605C0004A4C2 /* APIAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIAccount.swift; sourceTree = "<group>"; };
 		8D2EA93B233B6C0C0004A4C2 /* Combine+API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Combine+API.swift"; sourceTree = "<group>"; };
 		8D30D08023240B0C00D83E0A /* SQLite+Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLite+Result.swift"; sourceTree = "<group>"; };
-		8D30D082232566D900D83E0A /* ErrorCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorCodable.swift; sourceTree = "<group>"; };
 		8D3872522361F21F005AD120 /* APICalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICalendar.swift; sourceTree = "<group>"; };
 		8D3872532361F25A005AD120 /* APIPriceBatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPriceBatch.swift; sourceTree = "<group>"; };
 		8D3C262222E9F66E0080D3C1 /* APIInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIInternals.swift; sourceTree = "<group>"; };
@@ -369,7 +361,6 @@
 		8D94BA9723165DB500AFBA1E /* DBError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBError.swift; sourceTree = "<group>"; };
 		8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSessionTests.swift; sourceTree = "<group>"; };
 		8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerAccountTests.swift; sourceTree = "<group>"; };
-		8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDescriptable.swift; sourceTree = "<group>"; };
 		8D9FB786231F943C00D76B6A /* DateFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatter.swift; sourceTree = "<group>"; };
 		8DA398B72338E3EA007B918F /* IG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = IG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DA398BA2338E3EA007B918F /* iOS.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = iOS.plist; sourceTree = "<group>"; };
@@ -816,8 +807,6 @@
 			isa = PBXGroup;
 			children = (
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
-				8D19C51A2326459000F029B3 /* ErrorHelper.swift */,
-				8D30D082232566D900D83E0A /* ErrorCodable.swift */,
 				8D569217245FE63D00E9E621 /* c */,
 				8DDB43AA2479704800A65CA5 /* CharacterSet.swift */,
 				8D3C262422E9FA020080D3C1 /* Collections.swift */,
@@ -825,7 +814,6 @@
 				8DDB43AD2479982800A65CA5 /* Foundation */,
 				8DC4CA4B2149A6CE00344CBF /* Operators.swift */,
 				8DE50471245AD09C001BD304 /* UnfairLock.swift */,
-				8D9FB784231EDA6900D76B6A /* DebugDescriptable.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -1315,10 +1303,7 @@
 				8D33B8CF233967E1002B524B /* Operators.swift in Sources */,
 				8D33B8D0233967E1002B524B /* Date.swift in Sources */,
 				8D33B8D1233967E1002B524B /* DateFormatter.swift in Sources */,
-				8D33B8D2233967E1002B524B /* DebugDescriptable.swift in Sources */,
 				8D33B8D3233967E1002B524B /* Error.swift in Sources */,
-				8D45266A233A69390034D577 /* ErrorHelper.swift in Sources */,
-				8D45266B233A693C0034D577 /* ErrorCodable.swift in Sources */,
 				8D33B8D62339689E002B524B /* Account.swift in Sources */,
 				8D33B8D72339689E002B524B /* Client.swift in Sources */,
 				8D45266E233A6A740034D577 /* Market.swift in Sources */,
@@ -1455,10 +1440,7 @@
 				8D376D5B234C61EE007D4A48 /* Operators.swift in Sources */,
 				8D376D5C234C61EE007D4A48 /* Date.swift in Sources */,
 				8D376D5D234C61EE007D4A48 /* DateFormatter.swift in Sources */,
-				8D376D5E234C61EE007D4A48 /* DebugDescriptable.swift in Sources */,
 				8D376D5F234C61EE007D4A48 /* Error.swift in Sources */,
-				8D376D60234C61EE007D4A48 /* ErrorHelper.swift in Sources */,
-				8D376D61234C61EE007D4A48 /* ErrorCodable.swift in Sources */,
 				8D376D63234C6210007D4A48 /* Account.swift in Sources */,
 				8D376D64234C6210007D4A48 /* Client.swift in Sources */,
 				8D376D65234C6210007D4A48 /* Market.swift in Sources */,

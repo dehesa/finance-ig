@@ -22,7 +22,7 @@ public enum Deal {
 
 extension Deal {
     /// Position status.
-    public enum Status: Decodable, CustomDebugStringConvertible {
+    public enum Status: Decodable {
         case open
         case amended
         case partiallyClosed
@@ -48,16 +48,6 @@ extension Deal {
             case partiallyClosed = "PARTIALLY_CLOSED"
             case closedA = "FULLY_CLOSED", closedB = "CLOSED"
             case deleted = "DELETED"
-        }
-        
-        public var debugDescription: String {
-            switch self {
-            case .open: return "opened"
-            case .amended: return "amended"
-            case .partiallyClosed: return "closed (partially)"
-            case .closed: return "closed (fully)"
-            case .deleted: return "deleted"
-            }
         }
     }
 }

@@ -82,10 +82,3 @@ extension Streamer {
         }
     }
 }
-
-//extension Streamer.Deal: CustomDebugStringConvertible {
-//    public var debugDescription: String {
-//        "\(self.account.rawValue) \(self.confirmation.debugDescription)"
-//    }
-//}
-//

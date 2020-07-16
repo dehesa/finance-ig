@@ -10,11 +10,11 @@ extension Database.Migration {
             // Set the application identifier for the database
             try Self.setApplicationID(Self.applicationID, database: database)
             
-            let types: [(DBTable & DebugDescriptable).Type] = [Database.Application.self, Database.Market.self, Database.Market.Forex.self]
+            let types: [DBTable.Type] = [Database.Application.self, Database.Market.self, Database.Market.Forex.self]
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {
-                    .callFailed(.init("The SQL statement to create a table for '\(type.printableDomain)' failed to execute"), code: $0)
+                    .callFailed(.init("The SQL statement to create a table for '\(type.self)' failed to execute"), code: $0)
                 }
             }
             

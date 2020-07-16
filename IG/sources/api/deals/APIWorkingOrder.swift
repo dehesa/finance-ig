@@ -115,30 +115,3 @@ extension API {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.WorkingOrder: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        let formatter = DateFormatter.timestamp.deepCopy(timeZone: .current)
-        
-        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.type))")
-        result.append("deal ID", self.identifier)
-        result.append("date", self.date, formatter: formatter)
-        result.append("epic", self.epic)
-        result.append("currency", self.currencyCode)
-        result.append("direction", self.direction)
-        result.append("size", self.size)
-        result.append("level", self.level)
-        result.append("limit", self.limit?.debugDescription)
-        result.append("stop", self.stop?.debugDescription)
-        switch self.expiration {
-        case .tillCancelled: result.append("expiration", "till cancelled")
-        case .tillDate(let d): result.append("expiration", d, formatter: formatter)
-        }
-        result.append("is directly accessing the market", self.isDirectlyAccessingMarket)
-        return result.generate()
-    }
-}

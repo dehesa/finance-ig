@@ -219,25 +219,3 @@ extension Database.Market.Kind: Equatable {
         static let indices:          Int32 = 2
     }
 }
-
-// MARK: Debugging
-
-extension Database.Market: IG.DebugDescriptable {
-    internal static var printableDomain: String { Database.printableDomain.appending(".\(Self.self)") }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("epic", self.epic.rawValue)
-        result.append("type", self.type.debugDescription)
-        return result.generate()
-    }
-}
-
-extension Database.Market.Kind {
-    public var debugDescription: String {
-        switch self {
-        case .currencies: return "currencies"
-        case .indices: return "indices"
-        }
-    }
-}

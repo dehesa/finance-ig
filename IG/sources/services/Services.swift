@@ -89,7 +89,7 @@ private extension Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
     static func _makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
-        DispatchQueue(label: Self.reverseDNS, qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        DispatchQueue(label: Bundle.IG.identifier + ".services", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
     }
 
     /// Creates a streamer from an API instance and package both in a `Services` structure.
@@ -140,27 +140,5 @@ private extension Services {
             return DeferredResult(closure: subServicesGenerator)
                 .eraseToAnyPublisher()
         }
-    }
-}
-
-
-extension Services {
-    /// The reverse DNS identifier for the `API` instance.
-    internal static var reverseDNS: String {
-        Bundle.IG.identifier + ".services"
-    }
-}
-
-extension Services: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Bundle.IG.name).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("queue", self.queue.label)
-        result.append("queue QoS", String(describing: self.queue.qos.qosClass))
-        result.append("api", self.api.rootURL.absoluteString)
-        result.append("streamer", self.streamer.rootURL.absoluteString)
-        result.append("databse", self.database.rootURL?.absoluteString ?? ":memory:")
-        return result.generate()
     }
 }

@@ -37,33 +37,3 @@ extension ErrorNameSpace {
         self.init(rawValue)
     }
 }
-
-// MARK: -
-
-internal protocol ErrorPrintable: IG.DebugDescriptable {
-    /// The human readable error type.
-    var printableType: String { get }
-    /// Multiple line of text representing the error,
-    func printableMultiline(level: Int) -> String
-}
-
-extension IG.ErrorPrintable {
-    public var debugDescription: String {
-        var result = Self.debugPrefix(level: 0)
-        result.append(self.printableMultiline(level: 0))
-        result.append("\n")
-        return result
-    }
-    
-    /// Maximum number of characters per debug line (suggestion).
-    internal static var maxCharsPerLine: Int { 180 }
-    /// Returns the prefixes to be appended to each debug line.
-    /// - parameter level: The prefix indentation level.
-    internal static func debugPrefix(level: Int) -> String {
-        guard level > 0 else { return "" }
-        var result = "\n"
-        result.append(String(repeating: "|   ", count: level-1))
-        result.append("|-- ")
-        return result
-    }
-}

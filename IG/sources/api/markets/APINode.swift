@@ -260,16 +260,3 @@ fileprivate extension API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node name will be stored.
     static let _nodeName = CodingUserInfoKey(rawValue: "IG_APINodeName")!
 }
-
-extension API.Node: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("node ID", self.identifier)
-        result.append("name", self.name)
-        result.append("subnodes IDs", self.subnodes?.map { $0.identifier ?? IG.DebugDescription.Symbol.nil })
-        result.append("markets", self.markets?.map { $0.instrument.epic } )
-        return result.generate()
-    }
-}

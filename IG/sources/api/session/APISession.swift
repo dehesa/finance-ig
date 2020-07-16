@@ -268,33 +268,3 @@ extension API.Session {
         }
     }
 }
-
-// MARK: - Functionality
-
-extension API.Session: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("client ID", self.client)
-        result.append("account ID", self.account)
-        result.append("streamer URL", self.streamerURL.absoluteString)
-        result.append("timezone", self.timezone.description)
-        result.append("locale", self.locale.description)
-        result.append("currency code", self.currencyCode)
-        return result.generate()
-    }
-}
-
-extension API.Session.Settings: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.Session.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("trailing stops", self.isTrailingStopEnabled)
-        result.append("dealing", self.isDealingEnabled)
-        result.append("active demo account", self.hasActiveDemoAccounts)
-        result.append("active live account", self.hasActiveLiveAccounts)
-        return result.generate()
-    }
-}

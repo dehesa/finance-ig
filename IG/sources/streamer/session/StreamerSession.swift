@@ -201,37 +201,3 @@ extension Streamer.Session.Status {
         }
     }
 }
-
-extension Streamer.Session.Status: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        switch self {
-        case .connecting: return "Connecting"
-        case .connected(let connection):
-            var (result, isPolling) = ("Connected ", false)
-            switch connection {
-            case .sensing:
-                result.append("(sensing)")
-                return result
-            case .websocket(let polling):
-                result.append("[WebSocket")
-                isPolling = polling
-            case .http(let polling):
-                result.append("[HTTP")
-                isPolling = polling
-            }
-            if (isPolling) {
-                result.append(" polling]")
-            } else {
-                result.append(" stream]")
-            }
-            return result
-        case .stalled:    return "Stalled!"
-        case .disconnected(let isRetrying):
-            var result = "Disconnected"
-            if (isRetrying) {
-                result.append(" (retrying)")
-            }
-            return result
-        }
-    }
-}

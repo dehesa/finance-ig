@@ -100,21 +100,6 @@ extension API {
 
 // MARK: - Functionality
 
-extension API.Calendar.Event: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("date", self.date, formatter: DateFormatter.timestamp.deepCopy(timeZone: .current))
-        result.append("country", self.country.name)
-        result.append("headline", self.headline)
-        result.append("previous", self.previous?.debugDescription)
-        result.append("expected", self.expected?.debugDescription)
-        result.append("actual", self.actual?.debugDescription)
-        return result.generate()
-    }
-}
-
 extension API.Calendar.Event {
     /// A calendar event value (usually representing a previous, expected, and actual value).
     public enum Value: Decodable, CustomDebugStringConvertible {

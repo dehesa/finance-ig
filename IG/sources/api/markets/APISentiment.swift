@@ -99,15 +99,3 @@ fileprivate extension API.Error.Message {
 fileprivate extension API.Error.Suggestion {
     static var _validMarketID: Self { "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier" }
 }
-
-extension API.Market.Sentiment: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.self).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("market ID", self.marketIdentifier)
-        result.append("longs", "\(self.longs) %")
-        result.append("shorts", "\(self.shorts) %")
-        return result.generate()
-    }
-}

@@ -190,33 +190,3 @@ extension Streamer.Account {
         }
     }
 }
-
-extension Streamer.Account: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(Streamer.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription("\(Self.printableDomain) (\(self.identifier))")
-        result.append("funds", self.funds)
-        
-        result.append("equity", self.equity) {
-            $0.append("value", $1.value)
-            $0.append("used", $1.used)
-            $0.append("cash available", $1.cashAvailable)
-            $0.append("trade available", $1.tradeAvailable)
-        }
-        
-        result.append("margins", self.margins) {
-            $0.append("value", $1.value)
-            $0.append("limited risk", $1.limitedRisk)
-            $0.append("non limited risk", $1.nonLimitedRisk)
-            $0.append("deposit", $1.deposit)
-        }
-        
-        result.append("P&L", self.profitLoss) {
-            $0.append("value", $1.value)
-            $0.append("limited risk", $1.limitedRisk)
-            $0.append("non limited risk", $1.nonLimitedRisk)
-        }
-        return result.generate()
-    }
-}

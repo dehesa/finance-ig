@@ -119,17 +119,6 @@ extension API.User {
     }
 }
 
-extension API.User: IG.DebugDescriptable {
-    internal static var printableDomain: String { "\(API.printableDomain).\(Self.self)" }
-    
-    public var debugDescription: String {
-        var result = IG.DebugDescription(Self.printableDomain)
-        result.append("name", self.name)
-        result.append("password", String(repeating: "*", count: self.password.rawValue.count))
-        return result.generate()
-    }
-}
-
 extension API.User.Name {
     private static func _validate(_ value: String) -> Bool {
         let count = value.count

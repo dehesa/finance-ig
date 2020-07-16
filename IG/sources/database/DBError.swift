@@ -97,11 +97,11 @@ extension Database.Error {
     internal struct Message: IG.ErrorNameSpace {
         let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
         
-        static var  sessionExpired: Self { .init("The \(Database.printableDomain) instance wasn't found") }
+        static var  sessionExpired: Self { .init("The database instance wasn't found") }
         static var  compilingSQL:   Self { .init("An error occurred trying to compile a SQL statement") }
         static var  bindingAttributes: Self { .init("An error occurred binding attributes to a SQL statement") }
-        static func querying(_ type: IG.DebugDescriptable.Type) -> Self { .init("An error occurred querying a table for '\(type.printableDomain)'") }
-        static func storing(_ type: IG.DebugDescriptable.Type) -> Self  { .init("An error occurred storing values on '\(type.printableDomain)' table") }
+        static func querying<T>(_ type: T.Type) -> Self { .init("An error occurred querying a table for '\(T.self)'") }
+        static func storing<T>(_ type: T.Type) -> Self  { .init("An error occurred storing values on '\(T.self)' table") }
         static var  valueNotFound:  Self { .init("The requested value couldn't be found") }
         static var  execCommand:  Self { .init("An error occurred execution a common SQLite") }
     }
@@ -110,60 +110,10 @@ extension Database.Error {
     internal struct Suggestion: IG.ErrorNameSpace {
         let rawValue: String; init(_ trustedValue: String) { self.rawValue = trustedValue }
         
-        static var keepSession: Self { .init("The \(Database.printableDomain) functionality is asynchronous; keep around the \(Database.self) instance while a response hasn't been received") }
+        static var keepSession: Self { .init("The database functionality is asynchronous; keep around the \(Database.self) instance while a response hasn't been received") }
         static var readDocs: Self    { .init("Read the request documentation and be sure to follow all requirements") }
         static var reviewError: Self { .init("Review the returned error and try to fix the problem") }
         static var fileBug: Self     { .init("A unexpected error was encountered. Please contact the repository maintainer and attach this debug print") }
         static var valueNotFound: Self { .init("The value is not in the database. Please introduce it, before trying to query it") }
-    }
-}
-
-extension Database.Error: IG.ErrorPrintable {
-    internal static var printableDomain: String { "\(Database.printableDomain).\(Database.Error.self)" }
-    
-    internal var printableType: String {
-        switch self.type {
-        case .sessionExpired:  return "Session expired"
-        case .invalidRequest:  return "Invalid request"
-        case .callFailed:      return "Database call failed"
-        case .invalidResponse: return "Invalid response"
-        case .unknown:         return "Unknown"
-        }
-    }
-    
-    internal func printableMultiline(level: Int) -> String {
-        let levelPrefix    = Self.debugPrefix(level: level+1)
-        let sublevelPrefix = Self.debugPrefix(level: level+2)
-        
-        var result = "\(Self.printableDomain) (\(self.printableType))"
-        result.append("\(levelPrefix)Error message: \(self.message)")
-        result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
-        
-        if let code = self.code {
-            result.append("\(levelPrefix)SQLite code: ")
-            if let name = code.name {
-                result.append(name)
-            } else {
-                result.append(String(describing: code.rawValue))
-            }
-            
-            let message = code.description
-            result.append("\(levelPrefix)SQLite message: \(message)")
-            if let documentation = code.verbose, documentation != message {
-                result.append("\(levelPrefix)SQLite documentation: \(documentation)")
-            }
-        }
-        
-        if !self.context.isEmpty {
-            result.append("\(levelPrefix)Error context: \(IG.ErrorHelper.representation(of: self.context, itemPrefix: sublevelPrefix, maxCharacters: Self.maxCharsPerLine))")
-        }
-        
-        let errorStr = "\(levelPrefix)Underlying error: "
-        if let errorRepresentation = IG.ErrorHelper.representation(of: self.underlyingError, level: level, prefixCount: errorStr.count, maxCharacters: Self.maxCharsPerLine) {
-            result.append(errorStr)
-            result.append(errorRepresentation)
-        }
-        
-        return result
     }
 }
