@@ -95,22 +95,24 @@ extension Streamer {
     public struct Account {
         /// Account identifier.
         public let identifier: IG.Account.Identifier
-        /// Account equity.
+        /// Total cash balance on your account (not accounting the running profit/losses).
+        public let funds: Decimal64?
+        /// Net value of your account (`funds` + running `profitLoss`).
         public let equity: Self.Equity
-        /// Account funds.
-        public let funds: Self.Funds
-        /// Account margins.
+        /// Minimum required Equity to maintain your position.
         public let margins: Self.Margins
-        /// Account Profit and Loss values.
+        /// Aggregate profit or loss of all open positions.
         public let profitLoss: Self.ProfitLoss
         
         internal init(identifier: IG.Account.Identifier, item: String, update: Streamer.Packet) throws {
             typealias E = Streamer.Error
+            typealias F = Streamer.Account.Field
+            typealias U = Streamer.Update
             
             self.identifier = identifier
             do {
+                self.funds = try update[F.funds.rawValue]?.value.map(U.toDecimal)
                 self.equity = try .init(update: update)
-                self.funds = try .init(update: update)
                 self.margins = try .init(update: update)
                 self.profitLoss = try .init(update: update)
             } catch let error as Streamer.Update.Error {
@@ -123,12 +125,18 @@ extension Streamer {
 }
 
 extension Streamer.Account {
-    /// Account equity.
+    /// Account equity calculating the funds plus the running profit/losses.
     public struct Equity {
-        /// The real account equity.
+        /// Net value of your account (`funds` + running `profitLoss`).
         public let value: Decimal64?
-        /// The equity used.
+        /// Percentage of `equity.value` used by the margin.
+        ///
+        /// Your positions could be automatically closed if this reaches 100%.
         public let used: Decimal64?
+        /// Amount of cash available to trade value, after account balance, profit and loss, and minimum deposit amount have been considered.
+        public let cashAvailable: Decimal64?
+        /// Amount of cash available to trade.
+        public let tradeAvailable: Decimal64?
         
         fileprivate init(update: Streamer.Packet) throws {
             typealias F = Streamer.Account.Field
@@ -136,28 +144,8 @@ extension Streamer.Account {
             
             self.value = try update[F.equity.rawValue]?.value.map(U.toDecimal)
             self.used = try update[F.equityUsed.rawValue]?.value.map(U.toDecimal)
-        }
-    }
-    
-    /// Account funds.
-    public struct Funds {
-        /// Funds total value.
-        public let value: Decimal64?
-        /// Amount of cash available to trade value, after account balance, profit and loss, and minimum deposit amount have been considered.
-        public let cashAvailable: Decimal64?
-        /// Amount of cash available to trade.
-        public let tradeAvailable: Decimal64?
-        /// Account minimum deposit value required for margins.
-        public let deposit: Decimal64?
-        
-        fileprivate init(update: Streamer.Packet) throws {
-            typealias F = Streamer.Account.Field
-            typealias U = Streamer.Update
-            
-            self.value = try update[F.funds.rawValue]?.value.map(U.toDecimal)
             self.cashAvailable = try update[F.cashAvailable.rawValue]?.value.map(U.toDecimal)
             self.tradeAvailable = try update[F.tradeAvailable.rawValue]?.value.map(U.toDecimal)
-            self.deposit = try update[F.deposit.rawValue]?.value.map(U.toDecimal)
         }
     }
     
@@ -169,6 +157,8 @@ extension Streamer.Account {
         public let limitedRisk: Decimal64?
         /// Non-limited risk margin.
         public let nonLimitedRisk: Decimal64?
+        /// Account minimum deposit value required for margins.
+        public let deposit: Decimal64?
         
         fileprivate init(update: Streamer.Packet) throws {
             typealias F = Streamer.Account.Field
@@ -177,6 +167,7 @@ extension Streamer.Account {
             self.value = try update[F.margin.rawValue]?.value.map(U.toDecimal)
             self.limitedRisk = try update[F.marginLimitedRisk.rawValue]?.value.map(U.toDecimal)
             self.nonLimitedRisk = try update[F.marginNonLimitedRisk.rawValue]?.value.map(U.toDecimal)
+            self.deposit = try update[F.deposit.rawValue]?.value.map(U.toDecimal)
         }
     }
     
@@ -205,22 +196,20 @@ extension Streamer.Account: IG.DebugDescriptable {
     
     public var debugDescription: String {
         var result = IG.DebugDescription("\(Self.printableDomain) (\(self.identifier))")
+        result.append("funds", self.funds)
+        
         result.append("equity", self.equity) {
             $0.append("value", $1.value)
             $0.append("used", $1.used)
-        }
-        
-        result.append("funds", self.funds) {
-            $0.append("value", $1.value)
             $0.append("cash available", $1.cashAvailable)
             $0.append("trade available", $1.tradeAvailable)
-            $0.append("deposit", $1.deposit)
         }
         
         result.append("margins", self.margins) {
             $0.append("value", $1.value)
             $0.append("limited risk", $1.limitedRisk)
             $0.append("non limited risk", $1.nonLimitedRisk)
+            $0.append("deposit", $1.deposit)
         }
         
         result.append("P&L", self.profitLoss) {
