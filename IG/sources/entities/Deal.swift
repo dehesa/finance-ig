@@ -3,71 +3,88 @@ import Decimals
 /// Namespace for commonly used value/class types related to deals.
 public enum Deal {
     /// Deal direction.
-    public enum Direction: String, Equatable, Codable {
+    public enum Direction: Equatable {
         /// Going "long"
-        case buy = "BUY"
+        case buy
         /// Going "short"
-        case sell = "SELL"
+        case sell
         
         /// Returns the opposite direction from the receiving direction.
         /// - returns: `.buy` if receiving is `.sell`, and `.sell` if receiving is `.buy`.
-        @_transparent public var oppossite: Direction {
+        public var oppossite: Direction {
             switch self {
             case .buy:  return .sell
             case .sell: return .buy
             }
         }
     }
-}
 
-extension Deal {
     /// Position status.
-    public enum Status: Decodable {
-        case open
+    public enum Status {
+        case opened
         case amended
-        case partiallyClosed
-        case closed
+        case closed(Self.Completion)
         case deleted
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            switch value {
-            case _Keys.openA.rawValue, _Keys.openB.rawValue: self = .open
-            case _Keys.amended.rawValue: self = .amended
-            case _Keys.partiallyClosed.rawValue: self = .partiallyClosed
-            case _Keys.closedA.rawValue, _Keys.closedB.rawValue: self = .closed
-            case _Keys.deleted.rawValue: self = .deleted
-            default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "The status value '\(value)' couldn't be parsed")
-            }
-        }
-        
-        private enum _Keys: String, CodingKey {
-            case openA = "OPEN", openB = "OPENED"
-            case amended = "AMENDED"
-            case partiallyClosed = "PARTIALLY_CLOSED"
-            case closedA = "FULLY_CLOSED", closedB = "CLOSED"
-            case deleted = "DELETED"
+        public enum Completion {
+            case partially
+            case fully
         }
     }
-}
 
-extension Deal {
     /// Profit value and currency.
-    public struct ProfitLoss: CustomStringConvertible {
+    public struct ProfitLoss {
         /// The actual profit value (it can be negative).
         public let value: Decimal64
         /// The profit currency.
-        public let currencyCode: Currency.Code
+        public let currency: Currency.Code
         
         /// Designated initializer
         internal init(value: Decimal64, currency: Currency.Code) {
             self.value = value
-            self.currencyCode = currency
+            self.currency = currency
         }
-        
-        @_transparent public var description: String {
-            "\(self.currencyCode)\(self.value)"
+    }
+}
+
+// MARK: -
+
+extension Deal.Direction: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        switch value {
+        case _Values.buy: self = .buy
+        case _Values.sell: self = .sell
+        default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid deal direction '\(value)'.")
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .buy: try container.encode(_Values.buy)
+        case .sell: try container.encode(_Values.sell)
+        }
+    }
+    
+    private enum _Values {
+        static var buy: String { "BUY" }
+        static var sell: String { "SELL"}
+    }
+}
+
+extension Deal.Status: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        switch value {
+        case "OPEN", "OPENED": self = .opened
+        case "AMENDED": self = .amended
+        case "PARTIALLY_CLOSED": self = .closed(.partially)
+        case "FULLY_CLOSED", "CLOSED": self = .closed(.fully)
+        case "DELETED": self = .deleted
+        default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid deal status '\(value)'.")
         }
     }
 }

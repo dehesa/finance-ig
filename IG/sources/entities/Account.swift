@@ -4,26 +4,26 @@ public enum Account {
     public struct Identifier: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
         public let rawValue: String
         
-        public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The account identifier '\(value)' is not in a valid format")
-            self.rawValue = value
-        }
-        
         public init?(rawValue: String) {
             guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
+        }
+        
+        public init(stringLiteral value: String) {
+            precondition(Self._validate(value), "Invalid account identifier '\(value)'.")
+            self.rawValue = value
         }
         
         @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
-        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-        
         @_transparent public var description: String {
             self.rawValue
+        }
+        
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
         }
         
         /// Returns a Boolean indicating whether the raw value can represent an account identifier.
@@ -39,14 +39,15 @@ public enum Account {
     }
 }
 
+// MARK: -
+
 extension Account.Identifier: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.rawValue = try container.decode(String.self)
         
         guard Self._validate(self.rawValue) else {
-            let reason = "The account identifier being decoded '\(self.rawValue)' doesn't conform to the validation function"
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid account identifier '\(self.rawValue)'.")
         }
     }
     

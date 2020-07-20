@@ -98,7 +98,7 @@ extension API {
     }
 }
 
-// MARK: - Functionality
+// MARK: -
 
 extension API.Calendar.Event {
     /// A calendar event value (usually representing a previous, expected, and actual value).

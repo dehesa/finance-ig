@@ -1,5 +1,5 @@
 /// List of all supported countries.
-public enum Country: Hashable, CaseIterable, Decodable {
+public enum Country: Hashable, CaseIterable {
     case canada
     case unitedStates
     case mexico
@@ -124,34 +124,6 @@ public enum Country: Hashable, CaseIterable, Decodable {
     public init?(numeric: Int) {
         guard let result = Self._matcher.first(where: { $0.value.numeric == numeric }) else { return nil }
         self = result.key
-    }
-    
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let closure: ((key: Country, value: _CountryType.Type)) -> Bool
-        
-        if let string = try? container.decode(String.self) {
-            switch string.count {
-            case 0: throw DecodingError.dataCorruptedError(in: container, debugDescription: "A country cannot be represented by an empty String")
-            case 2: closure = { $0.value.alphaCode2 == string }
-            case 3: closure = { $0.value.alphaCode3 == string }
-            default: closure = { $0.value.name == string }
-            }
-        } else if let number = try? container.decode(Int.self) {
-            closure = { $0.value.numeric == number }
-        } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The country value is not a String or an Integer")
-        }
-        
-        guard let result = Self._matcher.first(where: closure) else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The decoded value is not supported.")
-        }
-        
-        self = result.key
-    }
-    
-    private var _underlyingType: _CountryType.Type {
-        Self._matcher[self]!
     }
     
     /// The human readable name of the receiving country.
@@ -594,5 +566,37 @@ extension Country {
         static var alphaCode2: String { "NZ" }
         static var alphaCode3: String { "NZL" }
         static var numeric: Int { 554 }
+    }
+}
+
+// MARK: -
+
+extension Country: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let closure: ((key: Country, value: _CountryType.Type)) -> Bool
+        
+        if let string = try? container.decode(String.self) {
+            switch string.count {
+            case 0: throw DecodingError.dataCorruptedError(in: container, debugDescription: "A country cannot be represented by an empty String")
+            case 2: closure = { $0.value.alphaCode2 == string }
+            case 3: closure = { $0.value.alphaCode3 == string }
+            default: closure = { $0.value.name == string }
+            }
+        } else if let number = try? container.decode(Int.self) {
+            closure = { $0.value.numeric == number }
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The country value is not a String or an Integer")
+        }
+        
+        guard let result = Self._matcher.first(where: closure) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "The decoded value is not supported.")
+        }
+        
+        self = result.key
+    }
+    
+    private var _underlyingType: _CountryType.Type {
+        Self._matcher[self]!
     }
 }

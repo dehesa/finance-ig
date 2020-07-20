@@ -58,13 +58,15 @@ extension API.Request.Accounts {
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 private extension API.Request.Accounts {
     struct _PayloadPreferences: Encodable {
         let trailingStopsEnabled: Bool
     }
 }
+
+// MARK: Response Entities
 
 private extension API.Request.Accounts {
     struct _WrapperList: Decodable {

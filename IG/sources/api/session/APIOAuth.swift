@@ -44,7 +44,7 @@ extension API.Request.Session {
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 private extension API.Request.Session {
     struct _PayloadOAuth: Encodable {
