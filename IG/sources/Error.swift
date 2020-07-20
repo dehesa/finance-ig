@@ -1,6 +1,5 @@
 import Foundation
 
-#warning("Make sure there are no conflicts passing from value semantics to reference semantics")
 /// Errors thrown by the IG framework.
 public final class Error: LocalizedError, CustomNSError, CustomDebugStringConvertible {
     /// The internal error type.
@@ -62,9 +61,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     public var debugDescription: String {
         return self.localizedDescription
     }
-}
-
-internal extension Error {
+    
     /// IG error domains.
     enum Failure {
         case api(API.Failure)
@@ -73,11 +70,13 @@ internal extension Error {
     }
 }
 
+// MARK: -
+
 ///
 internal extension API {
     /// The list of possible failures occurring in the API.
     enum Failure: Int {
-        case unknown         = 100
+//        case unknown         = 100
         case sessionExpired  = 101
         case invalidRequest  = 102
         case callFailed      = 103
@@ -100,8 +99,6 @@ internal extension Database {
         case unknown = 300
     }
 }
-
-// MARK: -
 
 extension Error.Failure: RawRepresentable, CustomStringConvertible {
     init?(rawValue: Int) {
@@ -136,7 +133,7 @@ extension Error.Failure: RawRepresentable, CustomStringConvertible {
 extension API.Failure: CustomStringConvertible {
     var description: String {
         switch self {
-        case .unknown: return "Unknown error."
+//        case .unknown: return "Unknown error."
         case .sessionExpired: return "Session expired."
         case .invalidRequest: return "Invalid request."
         case .callFailed: return "Call failed."

@@ -13,113 +13,61 @@ public protocol CurrencyType {
 /// Namespace for currencies.
 public enum Currency {
     /// ISO 4217 currency codes.
-    public enum Code: String, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable, Codable {
+    public enum Code: ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
         /// Canadian Dollar.
-        case cad = "CAD"
+        case cad
         /// United States Dollar.
-        case usd = "USD"
+        case usd
         /// Mexican Peso.
-        case mxn = "MXN"
+        case mxn
         /// Brazilian Real.
-        case brl = "BRL"
+        case brl
         /// British Pound Sterling.
-        case gbp = "GBP"
+        case gbp
         /// Norwegian Krone.
-        case nok = "NOK"
+        case nok
         /// Swedish Krona.
-        case sek = "SEK"
+        case sek
         /// Danish Krone.
-        case dkk = "DKK"
+        case dkk
         /// European Union Euro.
-        case eur = "EUR"
+        case eur
         /// Swiss Franc.
-        case chf = "CHF"
+        case chf
         /// Czech Koruna.
-        case czk = "CZK"
+        case czk
         /// Hungarian Forint.
-        case huf = "HUF"
+        case huf
         /// Polish Zloty.
-        case pln = "PLN"
+        case pln
         /// Russian Ruble.
-        case rub = "RUB"
+        case rub
         /// Turkish Lira.
-        case `try` = "TRY"
+        case `try`
         /// South African Rand.
-        case zar = "ZAR"
+        case zar
         /// Indian Rupee.
-        case inr = "INR"
+        case inr
         /// Singapore Dollar.
-        case sgd = "SGD"
+        case sgd
         /// Chinese Yuan Renminbi
-        case cny = "CNY"
+        case cny
         /// Hong Kong Dollar
-        case hkd = "HKD"
+        case hkd
         /// New Taiwan Dollar.
-        case twd = "TWD"
+        case twd
         /// South Korean Won.
-        case krw = "KRW"
+        case krw
         /// Japanese Yen.
-        case jpy = "JPY"
+        case jpy
         /// Philippine Piso.
-        case php = "PHP"
+        case php
         /// Indonesian Rupiah.
-        case idr = "IDR"
+        case idr
         /// Australian Dollar.
-        case aud = "AUD"
+        case aud
         /// New Zealand Dollar.
-        case nzd = "NZD"
-        
-        public init(stringLiteral value: String) {
-            let currency = Self.init(rawValue: value) ?! fatalError("The given string '\(value)' couldn't be identified as a currency")
-            self = currency
-        }
-        
-        public init?(rawValue: String) {
-            guard rawValue.utf8.count == 3 else { return nil }
-            
-            switch rawValue {
-            case "CAD": self = .cad
-            case "USD": self = .usd
-            case "MXN": self = .mxn
-            case "BRL": self = .brl
-            case "GBP": self = .gbp
-            case "NOK": self = .nok
-            case "SEK": self = .sek
-            case "DKK": self = .dkk
-            case "EUR": self = .eur
-            case "CHF": self = .chf
-            case "CZK": self = .czk
-            case "HUF": self = .huf
-            case "PLN": self = .pln
-            case "RUB": self = .rub
-            case "TRY", "TRL": self = .try
-            case "ZAR": self = .zar
-            case "INR": self = .inr
-            case "SGD": self = .sgd
-            case "CNY", "CNH": self = .cny
-            case "HKD": self = .hkd
-            case "TWD": self = .twd
-            case "KRW": self = .krw
-            case "JPY": self = .jpy
-            case "PHP": self = .php
-            case "IDR": self = .idr
-            case "AUD": self = .aud
-            case "NZD": self = .nzd
-            default: return nil
-            }
-        }
-        
-        @_transparent public init?(_ description: String) {
-            self.init(rawValue: description)
-        }
-        
-        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-        
-        @_transparent public var description: String {
-            self.rawValue
-        }
+        case nzd
     }
 }
 
@@ -340,5 +288,129 @@ extension Currency {
         public static var name: String { "New Zealand Dollar" }
         public static var minorUnit: Int { 2 }
         public static var country: String { "New Zealand" }
+    }
+}
+
+// MARK: -
+
+/// ISO 4217 currency codes.
+extension Currency.Code: Codable {
+    public init?(_ description: String) {
+        guard description.utf8.count == 3 else { return nil }
+        
+        switch description {
+        case _Values.cad: self = .cad
+        case _Values.usd: self = .usd
+        case _Values.mxn: self = .mxn
+        case _Values.brl: self = .brl
+        case _Values.gbp: self = .gbp
+        case _Values.nok: self = .nok
+        case _Values.sek: self = .sek
+        case _Values.dkk: self = .dkk
+        case _Values.eur: self = .eur
+        case _Values.chf: self = .chf
+        case _Values.czk: self = .czk
+        case _Values.huf: self = .huf
+        case _Values.pln: self = .pln
+        case _Values.rub: self = .rub
+        case _Values.try, _Values.trl: self = .try
+        case _Values.zar: self = .zar
+        case _Values.inr: self = .inr
+        case _Values.sgd: self = .sgd
+        case _Values.cny, _Values.cnh: self = .cny
+        case _Values.hkd: self = .hkd
+        case _Values.twd: self = .twd
+        case _Values.krw: self = .krw
+        case _Values.jpy: self = .jpy
+        case _Values.php: self = .php
+        case _Values.idr: self = .idr
+        case _Values.aud: self = .aud
+        case _Values.nzd: self = .nzd
+        default: return nil
+        }
+    }
+    
+    public init(stringLiteral value: String) {
+        let currency = Self.init(value) ?! fatalError("Invalid currency code '\(value)'.")
+        self = currency
+    }
+    
+    public var description: String {
+        switch self {
+        case .cad: return _Values.cad
+        case .usd: return _Values.usd
+        case .mxn: return _Values.mxn
+        case .brl: return _Values.brl
+        case .gbp: return _Values.gbp
+        case .nok: return _Values.nok
+        case .sek: return _Values.sek
+        case .dkk: return _Values.dkk
+        case .eur: return _Values.eur
+        case .chf: return _Values.chf
+        case .czk: return _Values.czk
+        case .huf: return _Values.huf
+        case .pln: return _Values.pln
+        case .rub: return _Values.rub
+        case .try: return _Values.try
+        case .zar: return _Values.zar
+        case .inr: return _Values.inr
+        case .sgd: return _Values.sgd
+        case .cny: return _Values.cny
+        case .hkd: return _Values.hkd
+        case .twd: return _Values.twd
+        case .krw: return _Values.krw
+        case .jpy: return _Values.jpy
+        case .php: return _Values.php
+        case .idr: return _Values.idr
+        case .aud: return _Values.aud
+        case .nzd: return _Values.nzd
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        self = try Self.init(value) ?> DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid currency code '\(value)'.")
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.description)
+    }
+    
+    @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.description < rhs.description
+    }
+    
+    private enum _Values {
+        static var cad: String { "CAD" }
+        static var usd: String { "USD" }
+        static var mxn: String { "MXN" }
+        static var brl: String { "BRL" }
+        static var gbp: String { "GBP" }
+        static var nok: String { "NOK" }
+        static var sek: String { "SEK" }
+        static var dkk: String { "DKK" }
+        static var eur: String { "EUR" }
+        static var chf: String { "CHF" }
+        static var czk: String { "CZK" }
+        static var huf: String { "HUF" }
+        static var pln: String { "PLN" }
+        static var rub: String { "RUB" }
+        static var `try`: String { "TRY" }
+        static var trl: String { "TRL" }
+        static var zar: String { "ZAR" }
+        static var inr: String { "INR" }
+        static var sgd: String { "SGD" }
+        static var cny: String { "CNY" }
+        static var cnh: String { "CNH" }
+        static var hkd: String { "HKD" }
+        static var twd: String { "TWD" }
+        static var krw: String { "KRW" }
+        static var jpy: String { "JPY" }
+        static var php: String { "PHP" }
+        static var idr: String { "IDR" }
+        static var aud: String { "AUD" }
+        static var nzd: String { "NZD" }
     }
 }

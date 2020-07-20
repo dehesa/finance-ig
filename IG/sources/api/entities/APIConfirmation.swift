@@ -1,138 +1,174 @@
 import Foundation
 import Decimals
 
-/// Confirmation data returned just after opening a position or a working order.
-public struct Confirmation: Decodable {
-    /// Date the position was created.
-    public let date: Date
-    /// Permanent deal reference for a confirmed trade.
-    public let dealIdentifier: Deal.Identifier
-    /// Transient deal reference for an unconfirmed trade.
-    public let dealReference: Deal.Reference
-    /// Instrument epic identifier.
-    public let epic: Market.Epic
-    /// Instrument expiration period.
-    public let expiry: Market.Expiry
-    /// Indicates whether the operation has been successfully performed or whether there was a problem and the operation hasn't been performed.
-    public let status: Self.Status
-    
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-        self.dealIdentifier = try container.decode(Deal.Identifier.self, forKey: .dealIdentifier)
-        self.dealReference = try container.decode(Deal.Reference.self, forKey: .dealReference)
-        self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601)
-        
-        self.epic = try container.decode(Market.Epic.self, forKey: .epic)
-        self.expiry = try container.decode(Market.Expiry.self, forKey: .expiry)
-        
-        switch try container.decode(Self.CodingKeys.StatusKeys.self, forKey: .status) {
-        case .rejected:
-            let reason = try container.decode(Self.RejectionReason.self, forKey: .reason)
-            self.status = .rejected(reason: reason)
-        case .accepted:
-            let details = try Self.Details(from: decoder)
-            self.status = .accepted(details: details)
-        }
+extension API {
+    /// Confirmation data returned just after opening a position or a working order.
+    public struct Confirmation {
+        /// Transaction date.
+        public let date: Date
+        /// Transaction configuration values.
+        public let deal: Self.Deal
+        /// Position/WorkingOrder details.
+        public let details: Self.Details
     }
-    
-    private enum CodingKeys: String, CodingKey {
-        case date
-        case dealIdentifier = "dealId"
-        case dealReference = "dealReference"
-        case epic, expiry
-        case status = "dealStatus"
-        case reason
+}
+
+extension API.Confirmation {
+    /// Overarching deal configuration values.
+    public struct Deal: Identifiable {
+        /// Deal identifier.
+        public let id: IG.Deal.Identifier
+        /// Transient deal reference for an unconfirmed trade.
+        public let reference: IG.Deal.Reference
+        /// Deal status (whether the operation has been accepted or rejected).
+        public let status: Self.Status
+        /// Affected deals.
+        public let affectedDeals: [API.Confirmation.AffectedDeal]
+    }
+}
+
+extension API.Confirmation.Deal {
+    /// Overarching deal status.
+    public enum Status: Equatable {
+        case accepted
+        case rejected(reason: RejectionReason?)
         
-        enum StatusKeys: String, Decodable {
-            case accepted = "ACCEPTED"
-            case rejected = "REJECTED"
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+            case (.accepted, .accepted), (.rejected, .rejected): return true
+            default: return false
+            }
         }
     }
 }
 
-extension Confirmation {
-    /// The operation confirmation status.
-    public enum Status {
-        /// The operation has been confirmed successfully.
-        case accepted(details: Confirmation.Details)
-        /// The operation has been rejected due to the reason given as an associated value.
-        case rejected(reason: Confirmation.RejectionReason)
+extension API.Confirmation {
+    /// Deals affected by the overarching transaction.
+    public struct AffectedDeal: Identifiable {
+        /// Identifier for the affected deal.
+        public let id: IG.Deal.Identifier
+        /// Status for affected deal.
+        public let status: IG.Deal.Status
     }
-    
-    /// Returns Boolean indicating whether the receiving confirmation has been accepted.
-    @_transparent public var isAccepted: Bool {
-        switch self.status {
-        case .accepted: return true
-        case .rejected: return false
-        }
-    }
-    
-    /// The confirmation details if it has been accepted.
-    public struct Details: Decodable {
-        /// Deal status.
-        public let dealStatus: Deal.Status
-        /// Affected deals.
-        public let affectedDeals: [Confirmation.AffectedDeal]
+}
+
+extension API.Confirmation {
+    /// The confirmation details. Many of its property will be `nil` if the overarching deal hasn't been accepted.
+    public struct Details {
+        /// The position/workingOrder status.
+        public let status: IG.Deal.Status?
+        /// Instrument epic identifier.
+        public let epic: IG.Market.Epic
+        /// Instrument expiration period.
+        public let expiry: IG.Market.Expiry
         /// Deal direction.
-        public let direction: Deal.Direction
+        public let direction: IG.Deal.Direction
         /// The deal size
-        public let size: Decimal64
+        public let size: Decimal64?
         /// Instrument price.
-        public let level: Decimal64
+        public let level: Decimal64?
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limit: Deal.Limit?
+        public let limit: IG.Deal.Boundary?
         /// The level at which the user doesn't want to incur more losses.
-        public let stop: Deal.Stop?
+        public let stop: (type: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk, trailing: IG.Deal.Stop.Trailing)?
         /// Profit (value and currency).
-        public let profit: Deal.ProfitLoss?
+        public let profit: IG.Deal.ProfitLoss?
+    }
+}
+
+// MARK: -
+
+extension API.Confirmation: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _Keys.self)
+        self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601)
+        self.deal = try .init(from: decoder)
+        self.details = try .init(from: decoder)
+    }
+    
+    private enum _Keys: String, CodingKey {
+        case date
+    }
+}
+
+extension API.Confirmation.Deal: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _Keys.self)
+        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .id)
+        self.reference = try container.decode(IG.Deal.Reference.self, forKey: .reference)
+        switch try container.decode(String.self, forKey: .status) {
+        case "ACCEPTED": self.status = .accepted
+        case "REJECTED": self.status = .rejected(reason: try container.decodeIfPresent(Self.Status.RejectionReason.self, forKey: .reason))
+        case let value: throw DecodingError.dataCorruptedError(forKey: .status, in: container, debugDescription: "The confirmation deal status '\(value)' is not supported.")
+        }
+        self.affectedDeals = try container.decode([API.Confirmation.AffectedDeal].self, forKey: .affected)
+    }
+    
+    private enum _Keys: String, CodingKey {
+        case id = "dealId"
+        case reference = "dealReference"
+        case status = "dealStatus"
+        case reason
+        case affected = "affectedDeals"
+    }
+}
+
+extension API.Confirmation.AffectedDeal: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case id = "dealId", status
+    }
+}
+
+extension API.Confirmation.Details: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _Keys.self)
+        self.status = try container.decodeIfPresent(IG.Deal.Status.self, forKey: .status)
+        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+        self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
+        self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
+        self.size = try container.decodeIfPresent(Decimal64.self, forKey: .size)
+        self.level = try container.decodeIfPresent(Decimal64.self, forKey: .level)
         
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
-            self.dealStatus = try container.decode(Deal.Status.self, forKey: .dealStatus)
-            self.affectedDeals = try container.decode([Confirmation.AffectedDeal].self, forKey: .affectedDeals)
-            self.direction = try container.decode(Deal.Direction.self, forKey: .direction)
-            self.size = try container.decode(Decimal64.self, forKey: .size)
-            self.level = try container.decode(Decimal64.self, forKey: .level)
-            
-            self.limit = try container.decodeIfPresent(Deal.Limit.self, forLevelKey: .limitLevel, distanceKey: .limitDistance)
-            self.stop = try container.decodeIfPresent(Deal.Stop.self, forLevelKey: .stopLevel, distanceKey: .stopDistance, riskKey: (.isStopGuaranteed, nil), trailingKey: (.isStopTrailing, nil, nil))
-            // Figure out P&L.
-            let profitValue = try container.decodeIfPresent(Decimal64.self, forKey: .profitValue)
-            let profitCurrency = try container.decodeIfPresent(Currency.Code.self, forKey: .profitCurrency)
-            switch (profitValue, profitCurrency) {
-            case (let v?, let c?): self.profit = .init(value: v, currency: c)
-            case (.none, .none):   self.profit = nil
-            case (.none, .some), (.some, .none):
-                let description = "Both '\(_CodingKeys.profitValue.rawValue)' and '\(_CodingKeys.profitCurrency.rawValue)' must be set or be `nil` at the same time"
-                throw DecodingError.dataCorruptedError(forKey: .profitValue, in: container, debugDescription: description)
-            }
+        switch (try container.decodeIfPresent(Decimal64.self, forKey: .limitLevel), try container.decodeIfPresent(Decimal64.self, forKey: .limitDistance)) {
+        case (.none, .none): self.limit = nil
+        case (let l?, .none): self.limit = .level(l)
+        case (.none, let d?): self.limit = .distance(d)
+        default: throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Invalid limit.")
         }
         
-        private enum _CodingKeys: String, CodingKey {
-            case dealStatus = "status", affectedDeals
-            case direction, size, level
-            case limitLevel, limitDistance
-            case stopLevel, stopDistance
-            case isStopGuaranteed = "guaranteedStop"
-            case isStopTrailing = "trailingStop"
-            case profitValue = "profit"
-            case profitCurrency = "profitCurrency"
+        let stop: IG.Deal.Boundary?
+        switch (try container.decodeIfPresent(Decimal64.self, forKey: .stopLevel), try container.decodeIfPresent(Decimal64.self, forKey: .stopDistance)) {
+        case (.none, .none): stop = nil
+        case (let l?, .none): stop = .level(l)
+        case (.none, let d?): stop = .distance(d)
+        default: throw DecodingError.dataCorruptedError(forKey: .stopLevel, in: container, debugDescription: "Invalid stop.")
+        }
+        
+        if let stop = stop {
+            let risk: IG.Deal.Stop.Risk = (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed
+            let trailing: IG.Deal.Stop.Trailing = (try container.decode(Bool.self, forKey: .isStopTrailing)) ? .dynamic : .static
+            self.stop = (stop, risk, trailing)
+        } else { self.stop = nil }
+        
+        switch (try container.decodeIfPresent(Decimal64.self, forKey: .profitValue), try container.decodeIfPresent(Currency.Code.self, forKey: .profitCurrency)) {
+        case (let v?, let c?): self.profit = .init(value: v, currency: c)
+        case (.none, .none): self.profit = nil
+        case (.none, .some), (.some, .none): throw DecodingError.dataCorruptedError(forKey: .profitValue, in: container, debugDescription: "Invalid P&L. Both the value and currency must be set at the same time.")
         }
     }
     
-    /// A brief representation of a deal/position.
-    public struct AffectedDeal: Decodable {
-        /// Deal identifier.
-        public let identifier: String
-        /// Deal current status.
-        public let status: Deal.Status
-        
-        private enum CodingKeys: String, CodingKey {
-            case identifier = "dealId"
-            case status
-        }
+    private enum _Keys: String, CodingKey {
+        case status
+        case epic, expiry
+        case direction
+        case size, level
+        case limitLevel, limitDistance
+        case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop", isStopTrailing = "trailingStop"
+        case profitValue = "profit", profitCurrency = "profitCurrency"
     }
-    
+}
+
+extension API.Confirmation.Deal.Status {
     /// Description of trading operation error.
     public enum RejectionReason: String, Decodable {
         /// The operation resulted in an unknown result condition. Check transaction history or contact support for further information.

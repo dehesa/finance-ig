@@ -3,26 +3,26 @@ extension Deal {
     public struct Reference: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
         public let rawValue: String
         
-        public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The deal reference '\(value)' is not in a valid format")
-            self.rawValue = value
-        }
-        
         public init?(rawValue: String) {
             guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
+        }
+        
+        public init(stringLiteral value: String) {
+            precondition(Self._validate(value), "Invalid deal reference '\(value)'.")
+            self.rawValue = value
         }
         
         @_transparent public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
-        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-        
         @_transparent public var description: String {
             self.rawValue
+        }
+        
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
         }
         
         /// Tests the given argument/rawValue for a matching instance.
@@ -43,14 +43,15 @@ extension Deal {
     }
 }
 
+// MARK: -
+
 extension Deal.Reference: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.rawValue = try container.decode(String.self)
         
         guard Self._validate(self.rawValue) else {
-            let reason = "The deal reference being decoded '\(self.rawValue)' doesn't conform to the validation function"
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: reason)
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid deal reference '\(self.rawValue)'.")
         }
     }
     

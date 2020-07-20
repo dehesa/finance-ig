@@ -88,7 +88,7 @@ extension API.Request.Session {
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 private extension API.Request.Session {
     /// Log-in through certificate required payload.
@@ -108,6 +108,8 @@ private extension API.Request.Session {
         }
     }
 }
+
+// Response Entities
 
 fileprivate extension API.Session {
     /// CST credentials used to access the IG platform.
@@ -134,7 +136,7 @@ fileprivate extension API.Session {
     }
 }
 
-extension API.Session._Certificate {
+fileprivate extension API.Session._Certificate {
     /// Representation of a dealing session.
     struct _Session: Decodable {
         /// Client identifier.
@@ -147,7 +149,7 @@ extension API.Session._Certificate {
         let settings: API.Session.Settings
         
         public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
+            let container = try decoder.container(keyedBy: _Keys.self)
             
             self.client = try container.decode(IG.Client.Identifier.self, forKey: .client)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
@@ -156,7 +158,7 @@ extension API.Session._Certificate {
             self.settings = try .init(from: decoder)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case client = "clientId"
             case timezoneOffset
             case streamerURL = "lightstreamerEndpoint"
@@ -177,14 +179,14 @@ fileprivate extension API.Session._Certificate {
         let balance: API.Account.Balance
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
+            let container = try decoder.container(keyedBy: _Keys.self)
             self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .account)
             self.type = try container.decode(API.Account.Kind.self, forKey: .type)
             self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
             self.balance = try container.decode(API.Account.Balance.self, forKey: .balance)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case account = "currentAccountId"
             case type = "accountType"
             case currencyCode = "currencyIsoCode"
@@ -232,13 +234,13 @@ fileprivate extension API.Session {
         let timeStamp: Date
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
+            let container = try decoder.container(keyedBy: _Keys.self)
             self.encryptionKey = try container.decode(String.self, forKey: .encryptionKey)
             let epoch = try container.decode(TimeInterval.self, forKey: .timeStamp)
             self.timeStamp = Date(timeIntervalSince1970: epoch * 0.001)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case encryptionKey, timeStamp
         }
     }

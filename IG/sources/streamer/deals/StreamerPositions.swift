@@ -42,7 +42,6 @@ extension Streamer {
         /// The date at which the update has been generated/received.
         /// - attention: This is NOT the position creation date.
         public let date: Date
-        
         /// Values related to deal representing the open position (and its origin if any).
         public let deal: Self.Deal
         /// The market's instrument.

@@ -3,26 +3,26 @@ extension API {
     public struct Key: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
         public let rawValue: String
         
-        public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The API key provided is not in a valid format")
-            self.rawValue = value
-        }
-        
         public init?(rawValue: String) {
             guard Self._validate(rawValue) else { return nil }
             self.rawValue = rawValue
+        }
+        
+        public init(stringLiteral value: String) {
+            precondition(Self._validate(value), "The API key provided is not in a valid format")
+            self.rawValue = value
         }
         
         public init?(_ description: String) {
             self.init(rawValue: description)
         }
         
-        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-        
         @_transparent public var description: String {
             self.rawValue
+        }
+        
+        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.rawValue < rhs.rawValue
         }
         
         /// Returns a Boolean indicating whether the raw value can represent an API key.

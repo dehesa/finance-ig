@@ -2,7 +2,7 @@ import Foundation
 
 extension API {
     /// Credentials used within the API session.
-    public struct Credentials: Equatable, Codable {
+    public struct Credentials: Equatable {
         /// API key given by the IG platform identifying the usage of the IG endpoints.
         public let key: API.Key
         /// Client identifier.
@@ -18,11 +18,11 @@ extension API {
         
         /// Creates a credentials structure from hardcoded data.
         public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: API.Key, token: API.Token, streamerURL: URL, timezone: TimeZone) {
+            self.key = key
             self.client = client
             self.account = account
             self.streamerURL = streamerURL
             self.timezone = timezone
-            self.key = key
             self.token = token
         }
         
@@ -45,7 +45,7 @@ extension API {
 
 extension API {
     /// Storage for one of the login types supported by the servers.
-    public struct Token: Equatable, Codable {
+    public struct Token: Equatable {
         /// Expiration date for the underlying token (only references the access token).
         public let expirationDate: Date
         /// The actual token values.
@@ -76,43 +76,50 @@ extension API {
 
 extension API.Token {
     /// The type of token stored.
-    public enum Kind: Equatable, Codable {
+    public enum Kind: Equatable {
         /// Session token (v2) with a CST and Security tokens.
         case certificate(access: String, security: String)
         /// OAuth token (v3) with access and refresh tokens.
         case oauth(access: String, refresh: String, scope: String, type: String)
-        
-        public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
-            let access = try container.decode(String.self, forKey: .access)
-            if container.contains(.security) {
-                let security = try container.decode(String.self, forKey: .security)
-                self = .certificate(access: access, security: security)
-            } else {
-                let refresh = try container.decode(String.self, forKey: .refresh)
-                let scope = try container.decode(String.self, forKey: .scope)
-                let type = try container.decode(String.self, forKey: .type)
-                self = .oauth(access: access, refresh: refresh, scope: scope, type: type)
-            }
+    }
+}
+
+// MARK: -
+
+extension API.Credentials: Codable {}
+extension API.Token: Codable {}
+
+extension API.Token.Kind: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _Keys.self)
+        let access = try container.decode(String.self, forKey: .access)
+        if container.contains(.security) {
+            let security = try container.decode(String.self, forKey: .security)
+            self = .certificate(access: access, security: security)
+        } else {
+            let refresh = try container.decode(String.self, forKey: .refresh)
+            let scope = try container.decode(String.self, forKey: .scope)
+            let type = try container.decode(String.self, forKey: .type)
+            self = .oauth(access: access, refresh: refresh, scope: scope, type: type)
         }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: _CodingKeys.self)
-            switch self {
-            case .certificate(let access, let security):
-                try container.encode(access, forKey: .access)
-                try container.encode(security, forKey: .security)
-            case .oauth(let access, let refresh, let scope, let type):
-                try container.encode(access, forKey: .access)
-                try container.encode(refresh, forKey: .refresh)
-                try container.encode(scope, forKey: .scope)
-                try container.encode(type, forKey: .type)
-            }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: _Keys.self)
+        switch self {
+        case .certificate(let access, let security):
+            try container.encode(access, forKey: .access)
+            try container.encode(security, forKey: .security)
+        case .oauth(let access, let refresh, let scope, let type):
+            try container.encode(access, forKey: .access)
+            try container.encode(refresh, forKey: .refresh)
+            try container.encode(scope, forKey: .scope)
+            try container.encode(type, forKey: .type)
         }
-        
-        private enum _CodingKeys: String, CodingKey {
-            case access, security
-            case refresh, scope, type
-        }
+    }
+    
+    private enum _Keys: String, CodingKey {
+        case access, security
+        case refresh, scope, type
     }
 }

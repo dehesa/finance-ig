@@ -22,10 +22,10 @@ extension API.Request.Nodes {
     public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> AnyPublisher<API.Node,IG.Error> {
         let layers = depth._value
         guard layers > 0 else {
-            return Self._get(api: self._api, node: .init(identifier: identifier, name: name))
+            return Self._get(api: self._api, node: API.Node(id: identifier, name: name))
         }
         
-        return Self._iterate(api: self._api, node: .init(identifier: identifier, name: name), depth: layers)
+        return Self._iterate(api: self._api, node: API.Node(id: identifier, name: name), depth: layers)
     }
 
     // MARK: GET /markets/{searchTerm}
@@ -57,7 +57,7 @@ extension API.Request.Nodes {
     /// - returns: *Future* forwarding a *full* node.
     private static func _get(api: API, node: API.Node) -> AnyPublisher<API.Node,IG.Error> {
         api.publisher
-            .makeRequest(.get, "marketnavigation/\(node.identifier ?? "")", version: 1, credentials: true)
+            .makeRequest(.get, "marketnavigation/\(node.id ?? "")", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
                 guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
@@ -68,11 +68,11 @@ extension API.Request.Nodes {
                 return JSONDecoder().set {
                     $0.userInfo[API.JSON.DecoderKey.responseDate] = date
                     
-                    if let identifier = node.identifier {
-                        $0.userInfo[API.JSON.DecoderKey._nodeIdentifier] = identifier
+                    if let identifier = node.id {
+                        $0.userInfo[API.JSON.DecoderKey.nodeIdentifier] = identifier
                     }
                     if let name = node.name {
-                        $0.userInfo[API.JSON.DecoderKey._nodeName] = name
+                        $0.userInfo[API.JSON.DecoderKey.nodeName] = name
                     }
                 }
             })).mapError(errorCast)
@@ -142,7 +142,7 @@ extension API.Request.Nodes {
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 extension API.Request.Nodes {
     /// Express the depth of a computed tree.
@@ -183,78 +183,4 @@ extension API.Request.Nodes {
     private struct _WrapperSearch: Decodable {
         let markets: [API.Node.Market]
     }
-}
-
-extension API {
-    /// Node within the Broker platform markets organization.
-    public struct Node: Decodable {
-        /// Node identifier.
-        /// - note: The top of the tree will return `nil` for this property.
-        public let identifier: String?
-        /// Node name.
-        public var name: String?
-        /// The children nodes (subnodes) of `self`
-        ///
-        /// There can be three possible options:
-        /// - `nil`if there hasn't be a query to ask for this node's subnodes.
-        /// - Empty array if this node doesn't have any subnode.
-        /// - Non-empty array if the node has children.
-        public internal(set) var subnodes: [Self]?
-        /// The markets organized under `self`
-        ///
-        /// There can be three possible options:
-        /// - `nil`if there hasn't be a query to ask for this node's markets..
-        /// - Empty array if this node doesn't have any market..
-        /// - Non-empty array if the node has markets..
-        public internal(set) var markets: [Self.Market]?
-        
-        fileprivate init(identifier: String?, name: String?) {
-            self.identifier = identifier
-            self.name = name
-            self.subnodes = nil
-            self.markets = nil
-        }
-        
-        public init(from decoder: Decoder) throws {
-            self.identifier = decoder.userInfo[API.JSON.DecoderKey._nodeIdentifier] as? String
-            self.name = decoder.userInfo[API.JSON.DecoderKey._nodeName] as? String
-            
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
-            
-            var subnodes: [API.Node] = []
-            if container.contains(.nodes), try !container.decodeNil(forKey: .nodes) {
-                var array = try container.nestedUnkeyedContainer(forKey: .nodes)
-                while !array.isAtEnd {
-                    let nodeContainer = try array.nestedContainer(keyedBy: _CodingKeys._ChildKeys.self)
-                    let id = try nodeContainer.decode(String.self, forKey: .id)
-                    let name = try nodeContainer.decode(String.self, forKey: .name)
-                    subnodes.append(.init(identifier: id, name: name))
-                }
-            }
-            self.subnodes = subnodes
-            
-            if container.contains(.markets), try !container.decodeNil(forKey: .markets) {
-                self.markets = try container.decode(Array<Self.Market>.self, forKey: .markets)
-            } else {
-                self.markets = []
-            }
-        }
-        
-        private enum _CodingKeys: String, CodingKey {
-            case nodes, markets
-            
-            enum _ChildKeys: String, CodingKey {
-                case id, name
-            }
-        }
-    }
-}
-
-// MARK: - Functionality
-
-fileprivate extension API.JSON.DecoderKey {
-    /// Key for JSON decoders under which a node identifier will be stored.
-    static let _nodeIdentifier = CodingUserInfoKey(rawValue: "IG_APINodeId")!
-    /// Key for JSON decoders under which a node name will be stored.
-    static let _nodeName = CodingUserInfoKey(rawValue: "IG_APINodeName")!
 }
