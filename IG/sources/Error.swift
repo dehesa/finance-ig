@@ -72,27 +72,34 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
 
 // MARK: -
 
-///
 internal extension API {
     /// The list of possible failures occurring in the API.
     enum Failure: Int {
-//        case unknown         = 100
-        case sessionExpired  = 101
-        case invalidRequest  = 102
-        case callFailed      = 103
+        /// The streaming session has expired.
+        case sessionExpired = 101
+        /// The request parameters are invalid.
+        case invalidRequest = 102
+        /// The HTTP call failed.
+        case callFailed = 103
+        /// The received response was invalid.
         case invalidResponse = 104
     }
 }
 
-///
 internal extension Streamer {
     /// The list of possible failures occurring in the Streamer.
     enum Failure: Int {
-        case unknown = 200
+        /// The streaming session has expired.
+        case sessionExpired  = 201
+        /// The request parameters are invalid.
+        case invalidRequest  = 202
+        /// A URL request was executed, but an error was returned by low-level layers.
+        case subscriptionFailed = 203
+        /// The received response was invalid.
+        case invalidResponse = 204
     }
 }
 
-///
 internal extension Database {
     /// The list of possible failures occurring in the Database.
     enum Failure: Int {
@@ -133,7 +140,6 @@ extension Error.Failure: RawRepresentable, CustomStringConvertible {
 extension API.Failure: CustomStringConvertible {
     var description: String {
         switch self {
-//        case .unknown: return "Unknown error."
         case .sessionExpired: return "Session expired."
         case .invalidRequest: return "Invalid request."
         case .callFailed: return "Call failed."
@@ -145,7 +151,10 @@ extension API.Failure: CustomStringConvertible {
 extension Streamer.Failure: CustomStringConvertible {
     var description: String {
         switch self {
-        case .unknown: return "Unknown error."
+        case .sessionExpired: return "Session expired."
+        case .invalidRequest: return "Invalid request."
+        case .subscriptionFailed: return "Subscription failed."
+        case .invalidResponse: return "Invalid response."
         }
     }
 }

@@ -1,0 +1,143 @@
+import Combine
+import Foundation
+import Decimals
+
+extension Streamer.Request {
+    /// Contains all functionality related to Streamer charts.
+    public struct Prices {
+        /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
+        internal unowned let streamer: Streamer
+        /// Hidden initializer passing the instance needed to perform the endpoint.
+        /// - parameter streamer: The instance calling the actual subscriptions.
+        @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }
+    }
+}
+
+extension Streamer.Request.Prices {
+    
+    // MARK: CHART:EPIC:SCALE
+    
+    /// Subscribes to a given market and returns aggreagated chart data for a specific time interval.
+    ///
+    /// For example, if subscribed to EUR/USD on the 5-minute interval; the data received will be the one of the last 5-minute candle and some statistics of the day.
+    /// - parameter epic: The epic identifying the targeted market.
+    /// - parameter interval: The aggregation interval for the candle.
+    /// - parameter fields: The chart properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
+    /// - returns: Signal producer that can be started at any time.
+    public func subscribe(epic: IG.Market.Epic, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Aggregated,IG.Error> {
+        let item = "CHART:\(epic.rawValue):\(interval.description)"
+        let properties = fields.map { $0.rawValue }
+        
+        return self.streamer.channel
+            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .tryMap { try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0) }
+            .mapError {
+                switch $0 {
+                case let error as IG.Error:
+                    error.errorUserInfo["Item"] = item
+                    error.errorUserInfo["Fields"] = fields
+                    return error
+                case let error:
+                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
+                }
+            }.eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Entities
+
+extension Streamer.Chart.Aggregated {
+    /// The time interval used for aggregation.
+    public enum Interval: CustomStringConvertible {
+        case second, minute, minute5, hour
+        
+        public var description: String {
+            switch self {
+            case .second: return "SECOND"
+            case .minute: return "1MINUTE"
+            case .minute5: return "5MINUTE"
+            case .hour: return "HOUR"
+            }
+        }
+        
+        var seconds: TimeInterval {
+            switch self {
+            case .second: return 1
+            case .minute: return 60
+            case .minute5: return 300
+            case .hour: return 3600
+            }
+        }
+    }
+}
+
+extension Streamer.Chart.Aggregated {
+    /// Possible fields to subscribe to when querying market candle data.
+    public enum Field: String, CaseIterable {
+        /// Update time.
+        case date = "UTM"
+        
+        /// Candle bid open price.
+        case openBid = "BID_OPEN"
+        /// Candle offer open price.
+        case openAsk = "OFR_OPEN"
+        /// Candle bid close price.
+        case closeBid = "BID_CLOSE"
+        /// Candle offer close price.
+        case closeAsk = "OFR_CLOSE"
+        /// Candle bid low price.
+        case lowestBid = "BID_LOW"
+        /// Candle offer low price.
+        case lowestAsk = "OFR_LOW"
+        /// Candle bid high price.
+        case highestBid = "BID_HIGH"
+        /// Candle offer high price.
+        case highestAsk = "OFR_HIGH"
+        /// Whether the candle has ended (1 ends, 0 continues).
+        case isFinished = "CONS_END"
+        /// Number of ticks in candle.
+        case numTicks = "CONS_TICK_COUNT"
+        /// Last traded volume.
+        case volume = "LTV"
+        // /// Incremental trading volume.
+        // case incrementalVolume = "TTV"
+        // /// Candle open price (Last Traded Price)
+        // case lastTradedPriceOpen = "LTP_OPEN"
+        // /// Candle low price (Last Traded Price)
+        // case lastTradedPriceLow = "LTP_LOW"
+        // /// Candle high price (Last Traded Price)
+        // case lastTradedPriceHigh = "LTP_HIGH"
+        // /// Candle close price (Last Traded Price)
+        // case lastTradedPriceClose = "LTP_CLOSE"
+        /// Daily low price.
+        case dayLowest = "DAY_LOW"
+        /// Mid open price for the day.
+        case dayMid = "DAY_OPEN_MID"
+        /// Daily high price.
+        case dayHighest = "DAY_HIGH"
+        /// Change from open price to current.
+        case dayChangeNet = "DAY_NET_CHG_MID"
+        /// Daily percentage change.
+        case dayChangePercentage = "DAY_PERC_CHG_MID"
+    }
+}
+
+extension Set where Element == Streamer.Chart.Aggregated.Field {
+    /// Returns a set with all the candle related fields.
+    @_transparent public static var candle: Self {
+        Self.init([.date, .openBid, .openAsk, .closeBid, .closeAsk,
+                          .lowestBid, .lowestAsk, .highestBid, .highestAsk,
+                          .isFinished, .numTicks, .volume])
+    }
+    
+    /// Returns a set with all the dayly related fields.
+    @_transparent public static var day: Self {
+        Self.init([.dayLowest, .dayMid, .dayHighest, .dayChangeNet, .dayChangePercentage])
+    }
+    
+    /// Returns all queryable fields.
+    @_transparent public static var all: Self {
+        .init(Element.allCases)
+    }
+}

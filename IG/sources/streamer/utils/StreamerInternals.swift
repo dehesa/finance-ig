@@ -22,73 +22,84 @@ extension Streamer {
 // MARK: - Convenience Formatter
 
 internal extension Streamer {
-    /// Functionality related to updates brought by the `Streamer`.
-    enum Update {
-        /// Transform a `String` representing a Boolean value into an actual `Bool` value.
-        /// - parameter value: The `String` value representing the result.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toBoolean(_ value: String) throws -> Bool {
-            switch value {
-            case "0", "false": return false
-            case "1", "true":  return true
-            default: throw Self.Error(value: value, to: Bool.self)
-            }
+    /// A packet value that has arrived by lightstreamer.
+    typealias Packet = [String:Streamer.Row]
+    
+    /// A single field update.
+    struct Row {
+        /// Whether the field has been updated since the last udpate.
+        let isUpdated: Bool
+        /// The latest value.
+        let value: String?
+        /// Designated initializer.
+        init(_ value: String?, isUpdated: Bool) {
+            self.value = value
+            self.isUpdated = isUpdated
         }
-        /// Transforms a `String` representing an integer into an actual `Int` value.
-        /// - parameter value: The `String` value representing the result.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toInt(_ value: String) throws -> Int {
-            try Int(value) ?> Self.Error(value: value, to: Int.self)
+    }
+}
+
+internal extension Streamer.Packet {
+    /// Decodes a value of the given type for the given key.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: Bool.Type, forKey key: Field) throws -> Bool? where Field: RawRepresentable, Field.RawValue==String {
+        guard let value = self[key.rawValue]?.value else { return nil }
+        switch value {
+        case "0", "false": return false
+        case "1", "true":  return true
+        default: throw IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
         }
-        /// Transforms a `String` representing a decimal number (could be a floating-point number) into an actual `Decimal64` value.
-        /// - parameter value: The `String` value representing the result.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toDecimal(_ value: String) throws -> Decimal64 {
-            try Decimal64(value) ?> Self.Error(value: value, to: Decimal64.self)
-        }
-        /// Transforms a `String` representing the time (without any more "date" information into a `Date` instance.
-        /// - parameter value: The `String` value representing the result.
-        /// - returns: The time given in `value` of today.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toTime(_ value: String, timeFormatter: DateFormatter) throws -> Date {
-            let now = Date()
-            let formatter = DateFormatter.londonTime
-            guard let cal = formatter.calendar, let zone = formatter.timeZone,
-                let timeDate = formatter.date(from: value),
-                let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
-                    throw Self.Error(value: value, to: Date.self)
-            }
-            
-            guard mixDate > now else { return mixDate }
-            let newDate = try cal.date(byAdding: DateComponents(day: -1), to: mixDate) ?> Self.Error(value: value, to: Date.self)
-            return newDate
-        }
-        /// Transforms a `String` representing an Epoch date into a `Date` instance.
-        /// - parameter value: The `String` value representing the result.
-        /// - returns: The time given in `value` of today.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toEpochDate(_ value: String) throws -> Date {
-            let milliseconds = try TimeInterval(value) ?> Self.Error(value: value, to: Date.self)
-            return Date(timeIntervalSince1970: milliseconds / 1000)
-        }
-        /// Transforms a `String` representing a raw value type.
-        /// - parameter value: The `String` value representing the result.
-        /// - throws: `Streamer.Update.Error` exclusively.
-        static func toRawType<T>(_ value: String) throws -> T where T:RawRepresentable, T.RawValue == String {
-            try T.init(rawValue: value) ?> Self.Error(value: value, to: T.self)
+    }
+    
+    /// Decodes a value of the given type for the given key.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: Int.Type, forKey key: Field) throws -> Int? where Field: RawRepresentable, Field.RawValue==String {
+        guard let value = self[key.rawValue]?.value else { return nil }
+        return try Int(value) ?> IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
+    }
+    
+    /// Decodes a value of the given type for the given key.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: Decimal64.Type, forKey key: Field) throws -> Decimal64? where Field: RawRepresentable, Field.RawValue==String {
+        guard let value = self[key.rawValue]?.value else { return nil }
+        return try Decimal64(value) ?> IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value]) 
+    }
+    
+    /// Decodes a value of the given type for the given key.
+    ///
+    /// Transforms a value representing the time into a `Date` instance.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: Date.Type, with formatter: DateFormatter, forKey key: Field) throws -> Date? where Field: RawRepresentable, Field.RawValue==String {
+        guard let value = self[key.rawValue]?.value else { return nil }
+        
+        let now = Date()
+        guard let timeDate = formatter.date(from: value),
+              let cal = formatter.calendar,
+              let zone = formatter.timeZone,
+              let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
+            throw IG.Error(.streamer(.invalidResponse), "Invalid response date", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
         }
         
-        /// Represents an error that happen when transforming an updated value from a `String` to a type `T` representation.
-        internal struct Error: Swift.Error {
-            /// The value to be transformed from.
-            let value: String
-            /// The type of the result of the transformation.
-            let type: String
-            /// Designated initializer.
-            init<T>(value: String, to type: T.Type) {
-                self.value = value
-                self.type = String(describing: type)
-            }
-        }
+        return (mixDate <= now) ? mixDate : cal.date(byAdding: DateComponents(day: -1), to: mixDate)!
+    }
+    
+    /// Decodes a value of the given type for the given key.
+    ///
+    /// Transform a value representing an Epoch date into a `Date` instance.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: Date.Type, forKey key: Field) throws -> Date? where Field: RawRepresentable, Field.RawValue==String {
+        guard let value = self[key.rawValue]?.value else { return nil }
+        guard let milliseconds = TimeInterval(value) else { throw IG.Error(.streamer(.invalidResponse), "Invalid response date", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value]) }
+        return Date(timeIntervalSince1970: milliseconds / 1000)
     }
 }

@@ -23,24 +23,24 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,Streamer.Error> {
-        let (item, properties) = ("MARKET:\(epic.rawValue)", fields.map { $0.rawValue })
+    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,IG.Error> {
+        let item = "MARKET:\(epic.rawValue)"
+        let properties = fields.map { $0.rawValue }
         let timeFormatter = DateFormatter.londonTime
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
-            .tryMap { (update) in
-                do {
-                    return try .init(epic: epic, item: item, update: update, timeFormatter: timeFormatter)
-                } catch var error as Streamer.Error {
-                    if case .none = error.item { error.item = item }
-                    if case .none = error.fields { error.fields = properties }
-                    throw error
-                } catch let underlyingError {
-                    throw Streamer.Error.invalidResponse(.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: .reviewError)
+            .tryMap { try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter) }
+            .mapError {
+                switch $0 {
+                case let error as IG.Error:
+                    error.errorUserInfo["Item"] = item
+                    error.errorUserInfo["Fields"] = fields
+                    return error
+                case let error:
+                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
                 }
-            }.mapError(Streamer.Error.transform)
-            .eraseToAnyPublisher()
+            }.eraseToAnyPublisher()
     }
 }
 
@@ -83,95 +83,5 @@ extension Set where Element == Streamer.Market.Field {
     /// Returns all queryable fields.
     @_transparent public static var all: Self {
         .init(Element.allCases)
-    }
-}
-
-// MARK: Response Entities
-
-extension Streamer {
-    /// Displays the latests information from a given market.
-    public struct Market {
-        /// The market epic identifier.
-        public let epic: IG.Market.Epic
-        /// The current market status.
-        public let status: Self.Status?
-        
-        /// Publish time of last price update.
-        public let date: Date?
-        /// Boolean indicating whether prices are delayed.
-        public let isDelayed: Bool?
-        
-        /// The bid price.
-        public let bid: Decimal64?
-        /// The offer price.
-        public let ask: Decimal64?
-        
-        /// Aggregate data for the current day.
-        public let day: Self.Day
-        
-        /// Designated initializer for a `Streamer` market update.
-        fileprivate init(epic: IG.Market.Epic, item: String, update: Streamer.Packet, timeFormatter: DateFormatter) throws {
-            typealias F = Self.Field
-            typealias U = Streamer.Update
-            typealias E = Streamer.Error
-            
-            self.epic = epic
-            
-            do {
-                self.status = try update[F.status.rawValue]?.value.map(U.toRawType)
-                self.date = try update[F.date.rawValue]?.value.map { try U.toTime($0, timeFormatter: timeFormatter) }
-                self.isDelayed = try update[F.isDelayed.rawValue]?.value.map(U.toBoolean)
-                
-                self.bid = try update[F.bid.rawValue]?.value.map(U.toDecimal)
-                self.ask = try update[F.ask.rawValue]?.value.map(U.toDecimal)
-                
-                self.day = try .init(update: update)
-            } catch let error as U.Error {
-                throw E.invalidResponse(E.Message.parsing(update: error), item: item, update: update, underlying: error, suggestion: E.Suggestion.fileBug)
-            } catch let underlyingError {
-                throw E.invalidResponse(E.Message.unknownParsing, item: item, update: update, underlying: underlyingError, suggestion: E.Suggestion.reviewError)
-            }
-        }
-    }
-}
-
-extension Streamer.Market {
-    /// The current status of the market.
-    public enum Status: String, Codable {
-        /// The market is open for trading.
-        case tradeable = "TRADEABLE"
-        /// The market is closed for the moment. Look at the market's opening hours for further information.
-        case closed = "CLOSED"
-        case editsOnly = "EDIT"
-        case onAuction = "AUCTION"
-        case onAuctionNoEdits = "AUCTION_NO_EDIT"
-        case offline = "OFFLINE"
-        /// The market is suspended for trading temporarily.
-        case suspended = "SUSPENDED"
-    }
-    
-    /// Dayly statistics.
-    public struct Day {
-        /// The lowest price of the day.
-        public let lowest: Decimal64?
-        /// The mid price of the day.
-        public let mid: Decimal64?
-        /// The highest price of the day
-        public let highest: Decimal64?
-        /// Net change from open price to current.
-        public let changeNet: Decimal64?
-        /// Daily percentage change.
-        public let changePercentage: Decimal64?
-        
-        fileprivate init(update: Streamer.Packet) throws {
-            typealias F = Streamer.Market.Field
-            typealias U = Streamer.Update
-            
-            self.lowest = try update[F.dayLowest.rawValue]?.value.map(U.toDecimal)
-            self.mid = try update[F.dayMid.rawValue]?.value.map(U.toDecimal)
-            self.highest = try update[F.dayHighest.rawValue]?.value.map(U.toDecimal)
-            self.changeNet = try update[F.dayChangeNet.rawValue]?.value.map(U.toDecimal)
-            self.changePercentage = try update[F.dayChangePercentage.rawValue]?.value.map(U.toDecimal)
-        }
     }
 }

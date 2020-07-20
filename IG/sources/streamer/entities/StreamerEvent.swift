@@ -35,24 +35,6 @@ internal extension Streamer.Subscription {
     }
 }
 
-internal extension Streamer {
-    /// A packet value that has arrived by lightstreamer.
-    typealias Packet = [String:Streamer.Row]
-    
-    /// A single field update.
-    struct Row {
-        /// Whether the field has been updated since the last udpate.
-        let isUpdated: Bool
-        /// The latest value.
-        let value: String?
-        /// Designated initializer.
-        init(_ value: String?, isUpdated: Bool) {
-            self.value = value
-            self.isUpdated = isUpdated
-        }
-    }
-}
-
 internal extension Streamer.Subscription {
     /// Error that can occur during the lifetime of a subscription.
     struct Error: Swift.Error, Equatable {
