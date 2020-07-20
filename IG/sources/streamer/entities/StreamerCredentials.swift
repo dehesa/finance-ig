@@ -19,11 +19,11 @@ extension Streamer {
         /// - throws: `Streamer.Error.invalidRequest`
         public init(credentials: API.Credentials) throws {
             guard case .certificate(let access, let security) = credentials.token.value else {
-                throw Streamer.Error.invalidRequest("No Certificate credentials were found", suggestion: "Set the API log in as 'certificate' type")
+                throw IG.Error(.streamer(.invalidRequest), "Invalid API credentials.", help: "Log in to the API with 'certificate' credentials.")
             }
             
             guard let password = Streamer.Credentials.password(fromCST: access, security: security) else {
-                throw Streamer.Error.invalidRequest("The Streamer password couldn't be formed with the given credentials", suggestion: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer")
+                throw IG.Error(.streamer(.invalidRequest), "Invalid streamer password.", help: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer.")
             }
             
             self.init(identifier: credentials.account, password: password)

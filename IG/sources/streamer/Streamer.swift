@@ -16,18 +16,24 @@ public final class Streamer {
     /// Namespace for subscriptions related to market information.
     @inlinable public final var markets: Streamer.Request.Markets { .init(streamer: self) }
     /// Namespace for subscriptions related to prices.
-    @inlinable public final var price: Streamer.Request.Price { .init(streamer: self) }
+    @inlinable public final var prices: Streamer.Request.Prices { .init(streamer: self) }
     /// Namespace for subscriptions related to trades/deals.
     @inlinable public final var deals: Streamer.Request.Deals { .init(streamer: self) }
     
     /// Creates a `Streamer` instance with the provided credentails and start it right away.
     ///
-    /// If you set `autoconnect` to `false` you need to remember to call `connect` on the returned instance.
+    /// - precondition: `targetQueue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.  Also, the initializer cannot be called from within the `targetQueue` execution context.
+    ///
     /// - parameter rootURL: The URL where the streaming server is located.
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
     public convenience init(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue?) {
+        if let targetQueue = targetQueue {
+            dispatchPrecondition(condition: .notOnQueue(targetQueue))
+            targetQueue.sync { dispatchPrecondition(condition: .notOnQueue(DispatchQueue.main)) }
+        }
+        
         let processingQueue = DispatchQueue(label: Bundle.IG.identifier + ".streamer.queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, queue: processingQueue)
@@ -38,8 +44,7 @@ public final class Streamer {
     /// - parameter channel: The low-level streaming connection manager.
     /// - parameter queue: The queue on which to process the `Streamer` requests and responses.
     internal init(rootURL: URL, channel: Streamer.Channel, queue: DispatchQueue) {
-        self.rootURL = rootURL
-        self.queue = queue
+        (self.rootURL, self.queue) = (rootURL, queue)
         self.channel = channel
     }
 }

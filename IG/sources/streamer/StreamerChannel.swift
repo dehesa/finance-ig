@@ -75,13 +75,13 @@ internal extension Streamer.Channel {
     /// - If `.stalled`, an error will be thrown.
     /// - For any other case, the current status is returned and no work will be performed, since the supposition is made that a previous call has been made.
     /// 
-    /// - throws: `Streamer.Error.invalidRequest` exclusively when the status is `.stalled`.
+    /// - throws: `IG.Error` exclusively when the status is `.stalled`.
     /// - returns: The client status at the time of the call (right before the low-level client calls the underlying *connect*).
     @nonobjc @discardableResult func connect() throws -> Streamer.Session.Status {
         let currentStatus = self.status
         switch currentStatus {
         case .disconnected(isRetrying: false): self._client.connect()
-        case .stalled: throw Streamer.Error.invalidRequest("The Streamer is connected, but silent", suggestion: "Disconnect and connect again")
+        case .stalled: throw IG.Error(.streamer(.invalidRequest), "Stalled streamer connection.", help: "Disconnect and connect again.")
         case .connected, .connecting, .disconnected(isRetrying: true): break
         }
         return currentStatus
@@ -101,7 +101,7 @@ internal extension Streamer.Channel {
     
     /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
     ///
-    /// The returned publisher only fails with `Streamer.Error`. That information is left out for optimization purposes.
+    /// The returned publisher only fails with `IG.Error`. That information is left out for optimization purposes.
     /// - parameter queue: The queue on which value processing will take place.
     /// - parameter mode: The streamer subscription mode.
     /// - parameter item: The item identfier (e.g. "MARKET", "ACCOUNT", etc).
@@ -110,8 +110,8 @@ internal extension Streamer.Channel {
     /// - returns: A publisher forwarding updates as values. This publisher will only stop by not holding a reference to the signal, by interrupting it with a cancellable, or by calling `unsubscribeAll()`
     @nonobjc func subscribe(on queue: DispatchQueue, mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> AnyPublisher<Streamer.Packet,Swift.Error> {
         // 1. Prepare the subscription.
-        Deferred { [weak self, weak weakQueue = queue] () -> Result<(DispatchQueue,Streamer.Subscription),Streamer.Error>.Publisher in
-                guard case .some = self, let queue = weakQueue else { return .init(.failure(.sessionExpired())) }
+        Deferred { [weak self, weak weakQueue = queue] () -> Result<(DispatchQueue,Streamer.Subscription),IG.Error>.Publisher in
+                guard case .some = self, let queue = weakQueue else { return .init(.failure( IG.Error(.streamer(.sessionExpired), "The Streamer instance has been deallocated.", help: "The streamer functionality is asynchronous. Keep around the Streamer instance while a connection is in process.") )) }
                 let subscription = Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot)
                 return .init((queue, subscription))
             // 2. Subscribe to the subscription status.
@@ -123,7 +123,7 @@ internal extension Streamer.Channel {
                     .handleEvents(receiveSubscription: { (_) in client.subscribe(subscription.lowlevel) },
                                   receiveCompletion: { (_) in client.unsubscribe(subscription.lowlevel) },
                                   receiveCancel: { client.unsubscribe(subscription.lowlevel) })
-                    .setFailureType(to: Streamer.Error.self)
+                    .setFailureType(to: IG.Error.self)
             // 5. Map the subscription event, letting pass the updates, ignoring the lost packages, and throwing errors for any other case.
             }.tryCompactMap { (event) -> Streamer.Packet? in
                 switch event {
@@ -134,11 +134,9 @@ internal extension Streamer.Channel {
                 case .updateLost://(let count, let receivedItem): print("\(Streamer.printableDomain): Subscription to \(receivedItem ?? item) lost \(count) updates. Fields: [\(fields.joined(separator: ","))]")
                     return nil
                 case .error(let e):
-                    let message = "The subscription couldn't be established"
-                    throw Streamer.Error.subscriptionFailed(.init(message), item: item, fields: fields, underlying: e, suggestion: .reviewError)
+                    throw IG.Error(.streamer(.subscriptionFailed), "The subscription couldn't be established.", help: "Review the underlying error and try again.", underlying: e, info: ["Item": item, "Fields": fields])
                 case .unsubscribed:
-                    let message = "Unsubscribed event received from the underlying Lightstreamer layer"
-                    throw Streamer.Error.subscriptionFailed(.init(message), item: item, fields: fields, suggestion: .reviewError)
+                    throw IG.Error(.streamer(.subscriptionFailed), "Unsubscribed event received from the underlying Lightstreamer layer.", help: "Check internet connectivity and try again.", info: ["Item": item, "Fields": fields])
                 }
             }.eraseToAnyPublisher()
     }
