@@ -34,11 +34,11 @@ internal extension API {
             guard let self = self else { return .failure( IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.") ) }
             do {
                 let values = try valuesGenerator(self)
-                return .success((self, values))
+                return .success( (self, values) )
             } catch let error as IG.Error {
-                return .failure(error)
+                return .failure( error )
             } catch let underlyingError {
-                return .failure( IG.Error(.api(.invalidRequest), "The request precomputed values couldn't be generated.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError) )
+                return .failure( IG.Error(.api(.invalidRequest), "The precomputed request values couldn't be generated.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError) )
             }
         }
     }

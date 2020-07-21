@@ -90,9 +90,9 @@ internal extension Streamer {
     /// The list of possible failures occurring in the Streamer.
     enum Failure: Int {
         /// The streaming session has expired.
-        case sessionExpired  = 201
+        case sessionExpired = 201
         /// The request parameters are invalid.
-        case invalidRequest  = 202
+        case invalidRequest = 202
         /// A URL request was executed, but an error was returned by low-level layers.
         case subscriptionFailed = 203
         /// The received response was invalid.
@@ -103,7 +103,14 @@ internal extension Streamer {
 internal extension Database {
     /// The list of possible failures occurring in the Database.
     enum Failure: Int {
-        case unknown = 300
+        /// The Database instance couldn't be found.
+        case sessionExpired = 301
+        /// The request parameters given are invalid.
+        case invalidRequest = 302
+        /// A database request was executed, but an error was returned by low-level layers.
+        case callFailed = 303
+        /// The fetched response from the database is invalid.
+        case invalidResponse = 304
     }
 }
 
@@ -162,7 +169,10 @@ extension Streamer.Failure: CustomStringConvertible {
 extension Database.Failure: CustomStringConvertible {
     var description: String {
         switch self {
-        case .unknown: return "Unknown error."
+        case .sessionExpired: return "Session expired."
+        case .invalidRequest: return "Invalid request."
+        case .callFailed: return "Call failed."
+        case .invalidResponse: return "Invalid response."
         }
     }
 }

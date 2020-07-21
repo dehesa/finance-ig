@@ -8,10 +8,7 @@ extension Database {
     internal final func migrate(to toVersion: Database.Migration.Version) throws {
         var info = try self._migrationInfo()
         guard info.version != toVersion else { return }
-        guard info.version < toVersion else {
-            let message = "The current database is already on a greater version than the one provided for migration"
-            throw Database.Error.invalidRequest(.init(message), suggestion: .reviewError)
-        }
+        guard info.version < toVersion else { throw IG.Error(.database(.invalidRequest), "The current database is already on a greater version than the one provided for migration", help: "Review the returned error and try to fix the problem.") }
         
         repeat {
             let nextVersion = info.version.next!
@@ -47,16 +44,16 @@ extension Database {
         let versionNumber = try self.channel.unrestrictedAccess(Database.Migration.version)
         guard let version = Database.Migration.Version(rawValue: versionNumber) else {
             if versionNumber > Database.Migration.Version.latest.rawValue {
-                throw Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is not supported by your current library"), suggestion: "Update the library to work with the database")
+                throw IG.Error(.database(.invalidResponse), "The database version number '\(versionNumber)' is not supported by your current library.", help: "Update the library to work with the database.")
             } else {
-                throw Database.Error.invalidResponse(.init("The database version number '\(versionNumber)' is invalid"), suggestion: .fileBug)
+                throw IG.Error(.database(.invalidResponse), "The database version number '\(versionNumber)' is invalid", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.")
             }
         }
         
         // Retrieve the SQLite's file application identifier.
         let applicationID = try self.channel.unrestrictedAccess(Database.Migration.applicationID)
         guard applicationID == Database.Migration.applicationID || (applicationID == 0 && versionNumber == 0) else {
-            throw Database.Error.invalidRequest("The SQLite database file is not supported by this application", suggestion: "It seems you are trying to open a SQLite database belonging to another application")
+            throw IG.Error(.database(.invalidRequest), "The SQLite database file is not supported by this application", help: "It seems you are trying to open a SQLite database belonging to another application")
         }
         
         return (applicationID, version)
@@ -96,11 +93,11 @@ extension Database.Migration {
         defer { sqlite3_finalize(statement) }
         
         try sqlite3_prepare_v2(database, "PRAGMA application_id", -1, &statement, nil).expects(.ok) {
-            .callFailed("The database's user version retrieval statement couldn't be compiled", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version retrieval statement couldn't be compiled", info: ["Error code": $0])
         }
         
         try sqlite3_step(statement).expects(.row) {
-            .callFailed("The database's user version couldn't be retrieved", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version couldn't be retrieved", info: ["Error code": $0])
         }
         
         return sqlite3_column_int(statement, 0)
@@ -115,11 +112,11 @@ extension Database.Migration {
         defer { sqlite3_finalize(statement) }
         
         try sqlite3_prepare_v2(database, "PRAGMA user_version", -1, &statement, nil).expects(.ok) {
-            .callFailed("The database's user version retrieval statement couldn't be compiled", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version retrieval statement couldn't be compiled", info: ["Error code": $0])
         }
         
         try sqlite3_step(statement).expects(.row) {
-            .callFailed("The database's user version couldn't be retrieved", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version couldn't be retrieved", info: ["Error code": $0])
         }
         
         return Int(sqlite3_column_int(statement, 0))
@@ -131,7 +128,7 @@ extension Database.Migration {
     /// - parameter database: The SQLite database connection.
     internal static func setApplicationID(_ applicationID: Int32, database: SQLite.Database) throws {
         try sqlite3_exec(database, "PRAGMA application_id = \(applicationID)", nil, nil, nil).expects(.ok) {
-            .callFailed("The database's user version couldn't be stored", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version couldn't be stored", info: ["Error code": $0])
         }
     }
     
@@ -141,7 +138,7 @@ extension Database.Migration {
     /// - parameter database: The SQLite database connection.
     internal static func setVersion(_ version: Self.Version, database: SQLite.Database) throws {
         try sqlite3_exec(database, "PRAGMA user_version = \(version.rawValue)", nil, nil, nil).expects(.ok) {
-            .callFailed("The database's user version couldn't be stored", code: $0)
+            IG.Error(.database(.callFailed), "The database's user version couldn't be stored", info: ["Error code": $0])
         }
     }
 }
