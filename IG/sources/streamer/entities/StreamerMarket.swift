@@ -63,7 +63,7 @@ internal extension Streamer.Market {
     init(epic: IG.Market.Epic, update: Streamer.Packet, timeFormatter: DateFormatter) throws {
         self.epic = epic
         
-        if let status = update[F.status.rawValue]?.value {
+        if let status = update.decodeIfPresent(String.self, forKey: F.status) {
             switch status {
             case "TRADEABLE": self.status = .tradeable
             case "CLOSED": self.status = .closed

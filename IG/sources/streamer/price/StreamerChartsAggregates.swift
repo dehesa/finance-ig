@@ -32,20 +32,12 @@ extension Streamer.Request.Prices {
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0) }
-            .mapError {
-                switch $0 {
-                case let error as IG.Error:
-                    error.errorUserInfo["Item"] = item
-                    error.errorUserInfo["Fields"] = fields
-                    return error
-                case let error:
-                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
-                }
-            }.eraseToAnyPublisher()
+            .mapStreamError(item: item, fields: fields)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 extension Streamer.Chart.Aggregated {
     /// The time interval used for aggregation.

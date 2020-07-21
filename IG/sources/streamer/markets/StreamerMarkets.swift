@@ -31,20 +31,12 @@ extension Streamer.Request.Markets {
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter) }
-            .mapError {
-                switch $0 {
-                case let error as IG.Error:
-                    error.errorUserInfo["Item"] = item
-                    error.errorUserInfo["Fields"] = fields
-                    return error
-                case let error:
-                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
-                }
-            }.eraseToAnyPublisher()
+            .mapStreamError(item: item, fields: fields)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Entities
+// MARK: - Request Entities
 
 extension Streamer.Market {
     /// All available fields/properties to query data from a given market.

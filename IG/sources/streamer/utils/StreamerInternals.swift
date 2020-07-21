@@ -7,15 +7,24 @@ extension Streamer {
     public enum Request {}
 
     /// Possible Lightstreamer modes.
-    internal enum Mode: String {
+    internal enum Mode: CustomStringConvertible {
         /// Lightstreamer MERGE mode.
-        case merge = "MERGE"
+        case merge
         /// Lightstreamer DISTINCT mode.
-        case distinct = "DISTINCT"
+        case distinct
         /// Lightstreamer RAW mode.
-        case raw = "RAW"
+        case raw
         /// Lightstreamer COMMAND mode.
-        case command = "COMMAND"
+        case command
+        
+        public var description: String {
+            switch self {
+            case .merge: return "MERGE"
+            case .distinct: return "DISTINCT"
+            case .raw: return "RAW"
+            case .command: return "COMMAND"
+            }
+        }
     }
 }
 
@@ -40,6 +49,14 @@ internal extension Streamer {
 }
 
 internal extension Streamer.Packet {
+    /// Decodes a value of the given type for the given key.
+    /// - parameter type: The type of value to decode.
+    /// - parameter key: The key that the decoded value is associated with.
+    /// - throws: `IG.Error` exclusively.
+    func decodeIfPresent<Field>(_ type: String.Type, forKey key: Field) -> String? where Field: RawRepresentable, Field.RawValue==String {
+        return self[key.rawValue]?.value
+    }
+    
     /// Decodes a value of the given type for the given key.
     /// - parameter type: The type of value to decode.
     /// - parameter key: The key that the decoded value is associated with.

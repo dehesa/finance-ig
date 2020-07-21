@@ -30,16 +30,8 @@ extension Streamer.Request.Accounts {
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Account(id: account, update: $0) }
-            .mapError {
-                switch $0 {
-                case let error as IG.Error:
-                    error.errorUserInfo["Item"] = item
-                    error.errorUserInfo["Fields"] = fields
-                    return error
-                case let error:
-                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
-                }
-            }.eraseToAnyPublisher()
+            .mapStreamError(item: item, fields: fields)
+            .eraseToAnyPublisher()
     }
 }
 
