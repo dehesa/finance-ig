@@ -1,7 +1,7 @@
 import Foundation
 import Decimals
 
-extension API {
+extension Streamer {
     /// Confirmation data returned just after opening a position or a working order.
     public struct Confirmation {
         /// Transaction date.
@@ -13,7 +13,7 @@ extension API {
     }
 }
 
-extension API.Confirmation {
+extension Streamer.Confirmation {
     /// Overarching deal configuration values.
     public struct Deal: Identifiable {
         /// Deal identifier.
@@ -23,11 +23,11 @@ extension API.Confirmation {
         /// Deal status (whether the operation has been accepted or rejected).
         public let status: Self.Status
         /// Affected deals.
-        public let affectedDeals: [API.Confirmation.AffectedDeal]
+        public let affectedDeals: [Streamer.Confirmation.AffectedDeal]
     }
 }
 
-extension API.Confirmation.Deal {
+extension Streamer.Confirmation.Deal {
     /// Overarching deal status.
     public enum Status: Equatable {
         case accepted
@@ -42,7 +42,7 @@ extension API.Confirmation.Deal {
     }
 }
 
-extension API.Confirmation {
+extension Streamer.Confirmation {
     /// Deals affected by the overarching transaction.
     public struct AffectedDeal: Identifiable {
         /// Identifier for the affected deal.
@@ -52,7 +52,7 @@ extension API.Confirmation {
     }
 }
 
-extension API.Confirmation {
+extension Streamer.Confirmation {
     /// The confirmation details. Many of its property will be `nil` if the overarching deal hasn't been accepted.
     public struct Details {
         /// The position/workingOrder status.
@@ -73,12 +73,14 @@ extension API.Confirmation {
         public let stop: (type: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk, trailing: IG.Deal.Stop.Trailing)?
         /// Profit (value and currency).
         public let profit: IG.Deal.ProfitLoss?
+        /// User channel
+        public let channel: String
     }
 }
 
 // MARK: -
 
-extension API.Confirmation: Decodable {
+extension Streamer.Confirmation: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
         self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601)
@@ -91,35 +93,31 @@ extension API.Confirmation: Decodable {
     }
 }
 
-extension API.Confirmation.Deal: Decodable {
+extension Streamer.Confirmation.Deal: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
-        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .id)
-        self.reference = try container.decode(IG.Deal.Reference.self, forKey: .reference)
-        switch try container.decode(String.self, forKey: .status) {
+        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .dealId)
+        self.reference = try container.decode(IG.Deal.Reference.self, forKey: .dealReference)
+        switch try container.decode(String.self, forKey: .dealStatus) {
         case "ACCEPTED": self.status = .accepted
         case "REJECTED": self.status = .rejected(reason: try container.decodeIfPresent(Self.Status.RejectionReason.self, forKey: .reason))
-        case let value: throw DecodingError.dataCorruptedError(forKey: .status, in: container, debugDescription: "The confirmation deal status '\(value)' is not supported.")
+        case let value: throw DecodingError.dataCorruptedError(forKey: .dealStatus, in: container, debugDescription: "The confirmation deal status '\(value)' is not supported.")
         }
-        self.affectedDeals = try container.decode([API.Confirmation.AffectedDeal].self, forKey: .affected)
+        self.affectedDeals = try container.decode([Streamer.Confirmation.AffectedDeal].self, forKey: .affectedDeals)
     }
     
     private enum _Keys: String, CodingKey {
-        case id = "dealId"
-        case reference = "dealReference"
-        case status = "dealStatus"
-        case reason
-        case affected = "affectedDeals"
+        case dealId, dealReference, dealStatus, reason, affectedDeals
     }
 }
 
-extension API.Confirmation.AffectedDeal: Decodable {
+extension Streamer.Confirmation.AffectedDeal: Decodable {
     private enum CodingKeys: String, CodingKey {
         case id = "dealId", status
     }
 }
 
-extension API.Confirmation.Details: Decodable {
+extension Streamer.Confirmation.Details: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
         self.status = try container.decodeIfPresent(IG.Deal.Status.self, forKey: .status)
@@ -155,6 +153,8 @@ extension API.Confirmation.Details: Decodable {
         case (.none, .none): self.profit = nil
         case (.none, .some), (.some, .none): throw DecodingError.dataCorruptedError(forKey: .profitValue, in: container, debugDescription: "Invalid P&L. Both the value and currency must be set at the same time.")
         }
+        
+        self.channel = try container.decode(String.self, forKey: .channel)
     }
     
     private enum _Keys: String, CodingKey {
@@ -165,10 +165,11 @@ extension API.Confirmation.Details: Decodable {
         case limitLevel, limitDistance
         case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop", isStopTrailing = "trailingStop"
         case profitValue = "profit", profitCurrency = "profitCurrency"
+        case channel
     }
 }
 
-extension API.Confirmation.Deal.Status {
+extension Streamer.Confirmation.Deal.Status {
     /// Description of trading operation error.
     public enum RejectionReason: String, Decodable {
         /// The operation resulted in an unknown result condition. Check transaction history or contact support for further information.

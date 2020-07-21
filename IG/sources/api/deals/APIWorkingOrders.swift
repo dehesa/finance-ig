@@ -24,19 +24,18 @@ extension API.Request.Deals {
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
     /// - parameter currency: The currency code (3 letters).
-    /// - parameter direction: Deal direction (whether buy or sell).
     /// - parameter type: The working order type.
+    /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
+    /// - parameter direction: Deal direction (whether buy or sell).
     /// - parameter size: Deal size. Precision shall not be more than 12 decimal places.
     /// - parameter level: Price at which to execute the working order.
     /// - parameter limit: The limit level/distance at which the user will like to take profit once the working order has been transformed into a position.
     /// - parameter stop: The stop level/distance at which the user doesn't want to incur more losses once the working order has been transformed into a position. Trailing stops are not allowed on working orders.
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market.
-    /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func createWorkingOrder(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code,
-                       direction: IG.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal64,
-                       level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool = true,
-                       expiration: API.WorkingOrder.Expiration) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
+    public func createWorkingOrder(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration,
+                       direction: IG.Deal.Direction, size: Decimal64,
+                       level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
@@ -52,12 +51,12 @@ extension API.Request.Deals {
     /// Updates an OTC working order.
     /// - parameter id: A permanent deal reference for a confirmed working order.
     /// - parameter type: The working order type.
+    /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter level: Price at which to execute the working order.
     /// - parameter limit: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the working order.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
-    /// - parameter expiration: The time at which the working order deletes itself.
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func updateWorkingOrder(id: IG.Deal.Identifier, type: API.WorkingOrder.Kind, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?, expiration: API.WorkingOrder.Expiration) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
+    public func updateWorkingOrder(id: IG.Deal.Identifier, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
             }.makeRequest(.put, "workingorders/otc/\(id.rawValue)", version: 2, credentials: true, body: {
@@ -110,16 +109,16 @@ extension API.Request.Deals {
         let expiry: IG.Market.Expiry
         let currency: Currency.Code
         let direction: IG.Deal.Direction
-        let type: API.WorkingOrder.Kind
+        let type: IG.Deal.WorkingOrder
         let size: Decimal64
         let level: Decimal64
         let limit: IG.Deal.Boundary?
         let stop: API.Request.Deals.WorkingOrder.Stop?
         let forceOpen: Bool
-        let expiration: API.WorkingOrder.Expiration
+        let expiration: IG.Deal.WorkingOrder.Expiration
         let reference: IG.Deal.Reference?
         
-        init(epic: IG.Market.Epic, expiry: IG.Market.Expiry, currency: Currency.Code, direction: IG.Deal.Direction, type: API.WorkingOrder.Kind, size: Decimal64, level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool, expiration: API.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
+        init(epic: IG.Market.Epic, expiry: IG.Market.Expiry, currency: Currency.Code, direction: IG.Deal.Direction, type: IG.Deal.WorkingOrder, size: Decimal64, level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool, expiration: IG.Deal.WorkingOrder.Expiration, reference: IG.Deal.Reference?) throws {
             self.reference = reference
             self.epic = epic
             self.expiry = expiry
@@ -224,13 +223,13 @@ extension API.Request.Deals {
 
 extension API.Request.Deals {
     private struct _PayloadUpdate: Encodable {
-        let type: API.WorkingOrder.Kind
+        let type: IG.Deal.WorkingOrder
         let level: Decimal64
         let limit: IG.Deal.Boundary?
         let stop: IG.Deal.Boundary?
-        let expiration: API.WorkingOrder.Expiration
+        let expiration: IG.Deal.WorkingOrder.Expiration
         
-        init(type: API.WorkingOrder.Kind, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?, expiration: API.WorkingOrder.Expiration) throws {
+        init(type: IG.Deal.WorkingOrder, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?, expiration: IG.Deal.WorkingOrder.Expiration) throws {
             self.type = type
             self.level = level
             

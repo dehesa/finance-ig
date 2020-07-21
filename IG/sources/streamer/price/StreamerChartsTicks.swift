@@ -18,22 +18,12 @@ extension Streamer.Request.Prices {
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .distinct, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Chart.Tick(epic: epic, item: item, update: $0) }
-            .mapError {
-                switch $0 {
-                case let error as IG.Error:
-                    error.errorUserInfo["Item"] = item
-                    error.errorUserInfo["Fields"] = fields
-                    return error
-                case let error:
-                    return IG.Error(.streamer(.invalidResponse), "Unable to parse response.", help: "Review the error and contact the repo maintainer.", underlying: error, info: ["Item": item, "Fields": fields])
-                }
-            }.eraseToAnyPublisher()
+            .mapStreamError(item: item, fields: fields)
+            .eraseToAnyPublisher()
     }
 }
 
-// MARK: - Supporting Entities
-
-// MARK: Request Entities
+// MARK: - Request Entities
 
 extension Streamer.Chart.Tick {
     /// Possible fields to subscribe to when querying market data.

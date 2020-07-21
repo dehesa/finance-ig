@@ -88,7 +88,6 @@
 		8D376D96234C62DA007D4A48 /* StreamerChartsAggregates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5A2149A6CE00344CBF /* StreamerChartsAggregates.swift */; };
 		8D376D97234C62DA007D4A48 /* StreamerChartsTicks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA582149A6CE00344CBF /* StreamerChartsTicks.swift */; };
 		8D376D98234C62DA007D4A48 /* StreamerAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA602149A6CE00344CBF /* StreamerAccounts.swift */; };
-		8D376D99234C62DA007D4A48 /* StreamerConfirmations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA612149A6CE00344CBF /* StreamerConfirmations.swift */; };
 		8D376D9A234C62F3007D4A48 /* SQLite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D19C51E232694DC00F029B3 /* SQLite.swift */; };
 		8D376D9B234C62F3007D4A48 /* SQLite+Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D30D08023240B0C00D83E0A /* SQLite+Result.swift */; };
 		8D376D9D234C62F3007D4A48 /* DBCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2C214723313BFF006F8C41 /* DBCombine.swift */; };
@@ -151,9 +150,14 @@
 		8D45267C233AC0190034D577 /* MarketExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D45267A233AC0190034D577 /* MarketExpiry.swift */; };
 		8D490ACE23488DD70008ED18 /* StreamerAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA602149A6CE00344CBF /* StreamerAccounts.swift */; };
 		8D490ACF23488E920008ED18 /* StreamerAccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */; };
-		8D490AD0234892A50008ED18 /* StreamerConfirmations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA612149A6CE00344CBF /* StreamerConfirmations.swift */; };
 		8D490AD1234894D20008ED18 /* StreamerChartsAggregates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA5A2149A6CE00344CBF /* StreamerChartsAggregates.swift */; };
 		8D490AD2234894D60008ED18 /* StreamerChartsTicks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA582149A6CE00344CBF /* StreamerChartsTicks.swift */; };
+		8D6923A524C6C75B0037B919 /* StreamerCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923A424C6C75B0037B919 /* StreamerCombine.swift */; };
+		8D6923A624C6C75B0037B919 /* StreamerCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923A424C6C75B0037B919 /* StreamerCombine.swift */; };
+		8D6923A824C6CA420037B919 /* StreamerDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923A724C6CA420037B919 /* StreamerDeal.swift */; };
+		8D6923A924C6CA420037B919 /* StreamerDeal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923A724C6CA420037B919 /* StreamerDeal.swift */; };
+		8D6923AB24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923AA24C6E90F0037B919 /* StreamerConfirmation.swift */; };
+		8D6923AC24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6923AA24C6E90F0037B919 /* StreamerConfirmation.swift */; };
 		8D69B9E224C32F6E00E82034 /* APISession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D69B9E124C32F6E00E82034 /* APISession.swift */; };
 		8D69B9E424C3304000E82034 /* APIActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D69B9E324C3304000E82034 /* APIActivity.swift */; };
 		8D69B9E524C3304000E82034 /* APIActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D69B9E324C3304000E82034 /* APIActivity.swift */; };
@@ -229,8 +233,6 @@
 		8DCC341524C18761004229EF /* APIApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D75154024C17F7500F7327C /* APIApplication.swift */; };
 		8DCD2CE42366C4D50099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
 		8DCD2CE52366C4DC0099259B /* APIPriceBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */; };
-		8DD7406224C04E3900139C15 /* StreamerWorkingOrders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD7406124C04E3900139C15 /* StreamerWorkingOrders.swift */; };
-		8DD7406324C04E3900139C15 /* StreamerWorkingOrders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD7406124C04E3900139C15 /* StreamerWorkingOrders.swift */; };
 		8DD7406524C04F2F00139C15 /* StreamerDeals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD7406424C04F2F00139C15 /* StreamerDeals.swift */; };
 		8DD7406624C04F2F00139C15 /* StreamerDeals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD7406424C04F2F00139C15 /* StreamerDeals.swift */; };
 		8DDA54D424C595ED00E5D4C6 /* APINode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDA54D324C595ED00E5D4C6 /* APINode.swift */; };
@@ -261,8 +263,8 @@
 		8DDC808D234F1520004A7138 /* DBPrices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D520C0123326A4100BDF54D /* DBPrices.swift */; };
 		8DDC808E234F3676004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
 		8DDC808F234F367A004A7138 /* DBForexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF1233D2330D9C900312A30 /* DBForexTests.swift */; };
-		8DE06AF524BF8E8A00781836 /* StreamerPositions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE06AF424BF8E8A00781836 /* StreamerPositions.swift */; };
-		8DE06AF624BF8E8A00781836 /* StreamerPositions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE06AF424BF8E8A00781836 /* StreamerPositions.swift */; };
+		8DE06AF524BF8E8A00781836 /* StreamerUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE06AF424BF8E8A00781836 /* StreamerUpdate.swift */; };
+		8DE06AF624BF8E8A00781836 /* StreamerUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE06AF424BF8E8A00781836 /* StreamerUpdate.swift */; };
 		8DE50472245AD09C001BD304 /* UnfairLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE50471245AD09C001BD304 /* UnfairLock.swift */; };
 		8DE50473245AD09C001BD304 /* UnfairLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE50471245AD09C001BD304 /* UnfairLock.swift */; };
 		8DE8A19F2349DE7E00031B1E /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA952316575500AFBA1E /* Database.swift */; };
@@ -359,6 +361,9 @@
 		8D52F34022FB1E8400521759 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 		8D52F34222FB201000521759 /* Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Client.swift; sourceTree = "<group>"; };
 		8D5B3E1B232F855E0022959F /* TestEpics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestEpics.swift; sourceTree = "<group>"; };
+		8D6923A424C6C75B0037B919 /* StreamerCombine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerCombine.swift; sourceTree = "<group>"; };
+		8D6923A724C6CA420037B919 /* StreamerDeal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerDeal.swift; sourceTree = "<group>"; };
+		8D6923AA24C6E90F0037B919 /* StreamerConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerConfirmation.swift; sourceTree = "<group>"; };
 		8D69B9E124C32F6E00E82034 /* APISession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISession.swift; sourceTree = "<group>"; };
 		8D69B9E324C3304000E82034 /* APIActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIActivity.swift; sourceTree = "<group>"; };
 		8D69B9E624C331DE00E82034 /* APITransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITransaction.swift; sourceTree = "<group>"; };
@@ -419,7 +424,6 @@
 		8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerCredentials.swift; sourceTree = "<group>"; };
 		8DC4CA5C2149A6CE00344CBF /* Streamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Streamer.swift; sourceTree = "<group>"; };
 		8DC4CA602149A6CE00344CBF /* StreamerAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerAccounts.swift; sourceTree = "<group>"; };
-		8DC4CA612149A6CE00344CBF /* StreamerConfirmations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerConfirmations.swift; sourceTree = "<group>"; };
 		8DC4CA652149A6CE00344CBF /* APIWorkingOrders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIWorkingOrders.swift; sourceTree = "<group>"; };
 		8DC4CA662149A6CE00344CBF /* APIConfirmations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfirmations.swift; sourceTree = "<group>"; };
 		8DC4CA672149A6CE00344CBF /* APIPositions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPositions.swift; sourceTree = "<group>"; };
@@ -463,7 +467,6 @@
 		8DC4CBFE2149AB1200344CBF /* environment */ = {isa = PBXFileReference; lastKnownFileType = folder; path = environment; sourceTree = "<group>"; };
 		8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPriceBatchTests.swift; sourceTree = "<group>"; };
 		8DD468D322F1C70100134B67 /* Test.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Test.swift; sourceTree = "<group>"; };
-		8DD7406124C04E3900139C15 /* StreamerWorkingOrders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerWorkingOrders.swift; sourceTree = "<group>"; };
 		8DD7406424C04F2F00139C15 /* StreamerDeals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerDeals.swift; sourceTree = "<group>"; };
 		8DDA54D324C595ED00E5D4C6 /* APINode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINode.swift; sourceTree = "<group>"; };
 		8DDA54D624C5EC3B00E5D4C6 /* StreamerSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSession.swift; sourceTree = "<group>"; };
@@ -473,7 +476,7 @@
 		8DDA54E224C642F500E5D4C6 /* StreamerChartTick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTick.swift; sourceTree = "<group>"; };
 		8DDBCD8224C216FE00CC4130 /* APIPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPosition.swift; sourceTree = "<group>"; };
 		8DDBE9F823506E7A001773D2 /* DBPriceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBPriceTests.swift; sourceTree = "<group>"; };
-		8DE06AF424BF8E8A00781836 /* StreamerPositions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerPositions.swift; sourceTree = "<group>"; };
+		8DE06AF424BF8E8A00781836 /* StreamerUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerUpdate.swift; sourceTree = "<group>"; };
 		8DE2C3DF22FC72FE00BB6261 /* DealBoundary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealBoundary.swift; sourceTree = "<group>"; };
 		8DE2C3E122FC789B00BB6261 /* DealIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DealIdentifier.swift; sourceTree = "<group>"; };
 		8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINodeMarket.swift; sourceTree = "<group>"; };
@@ -597,9 +600,12 @@
 				8DDA54D924C604F200E5D4C6 /* StreamerAccount.swift */,
 				8DDA54DF24C63AF600E5D4C6 /* StreamerChartAggregate.swift */,
 				8DDA54E224C642F500E5D4C6 /* StreamerChartTick.swift */,
+				8D6923AA24C6E90F0037B919 /* StreamerConfirmation.swift */,
 				8DC4CA5B2149A6CE00344CBF /* StreamerCredentials.swift */,
+				8D6923A724C6CA420037B919 /* StreamerDeal.swift */,
 				8D6D959222F4390B00BD42C2 /* StreamerEvent.swift */,
 				8DDA54DC24C6125C00E5D4C6 /* StreamerMarket.swift */,
+				8DE06AF424BF8E8A00781836 /* StreamerUpdate.swift */,
 				8D6D959022F4073B00BD42C2 /* StreamerSubscription.swift */,
 				8DDA54D624C5EC3B00E5D4C6 /* StreamerSession.swift */,
 			);
@@ -727,9 +733,6 @@
 			isa = PBXGroup;
 			children = (
 				8DD7406424C04F2F00139C15 /* StreamerDeals.swift */,
-				8DC4CA612149A6CE00344CBF /* StreamerConfirmations.swift */,
-				8DE06AF424BF8E8A00781836 /* StreamerPositions.swift */,
-				8DD7406124C04E3900139C15 /* StreamerWorkingOrders.swift */,
 			);
 			path = deals;
 			sourceTree = "<group>";
@@ -867,6 +870,7 @@
 			isa = PBXGroup;
 			children = (
 				8D3C262622E9FAC20080D3C1 /* StreamerInternals.swift */,
+				8D6923A424C6C75B0037B919 /* StreamerCombine.swift */,
 			);
 			path = utils;
 			sourceTree = "<group>";
@@ -1321,6 +1325,7 @@
 				8D69B9EF24C3329A00E82034 /* APIWatchlist.swift in Sources */,
 				8D33B8CD233967E1002B524B /* Decimal.swift in Sources */,
 				8D33B8CE233967E1002B524B /* Collections.swift in Sources */,
+				8D6923A924C6CA420037B919 /* StreamerDeal.swift in Sources */,
 				8D33B8CF233967E1002B524B /* Operators.swift in Sources */,
 				8D33B8D0233967E1002B524B /* Date.swift in Sources */,
 				8D33B8D1233967E1002B524B /* DateFormatter.swift in Sources */,
@@ -1344,6 +1349,7 @@
 				8D2EA934233B57DD0004A4C2 /* OperationQueue.swift in Sources */,
 				8D2EA93D233BD11F0004A4C2 /* URLRequest.swift in Sources */,
 				8D2EA93C233B6C0C0004A4C2 /* APICombine.swift in Sources */,
+				8D6923A624C6C75B0037B919 /* StreamerCombine.swift in Sources */,
 				8D7430062350D88700277B45 /* APIChannel.swift in Sources */,
 				8D2EA92D233B545E0004A4C2 /* APIUser.swift in Sources */,
 				8DDBCD8424C216FE00CC4130 /* APIPosition.swift in Sources */,
@@ -1358,6 +1364,7 @@
 				8D2EA938233B5CBB0004A4C2 /* APIOAuth.swift in Sources */,
 				8DAC346D233D15A90082DB1C /* APIApplications.swift in Sources */,
 				8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */,
+				8D6923AC24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */,
 				8D7AB05C233F43AE00439CA1 /* APIActivities.swift in Sources */,
 				8DFEC5F1234078F7005906B3 /* APITransactions.swift in Sources */,
 				8D3CE540247A5DCB0097BED7 /* DealReference.swift in Sources */,
@@ -1370,7 +1377,7 @@
 				8DDA54E124C63AF600E5D4C6 /* StreamerChartAggregate.swift in Sources */,
 				8DDA54D824C5EC3B00E5D4C6 /* StreamerSession.swift in Sources */,
 				8DD7406624C04F2F00139C15 /* StreamerDeals.swift in Sources */,
-				8DE06AF624BF8E8A00781836 /* StreamerPositions.swift in Sources */,
+				8DE06AF624BF8E8A00781836 /* StreamerUpdate.swift in Sources */,
 				8DFEC5F72340E9DF005906B3 /* APIConfirmations.swift in Sources */,
 				8DDA54DB24C604F200E5D4C6 /* StreamerAccount.swift in Sources */,
 				8DFEC5FA2340F299005906B3 /* APIPositions.swift in Sources */,
@@ -1381,7 +1388,6 @@
 				8D69B9F224C332BD00E82034 /* APISentiment.swift in Sources */,
 				8D89C790234320FE00FD0F3D /* StreamerInternals.swift in Sources */,
 				8D89C791234320FE00FD0F3D /* StreamerCredentials.swift in Sources */,
-				8DD7406324C04E3900139C15 /* StreamerWorkingOrders.swift in Sources */,
 				8D89C792234320FF00FD0F3D /* StreamerSubscription.swift in Sources */,
 				8DDA54DE24C6125C00E5D4C6 /* StreamerMarket.swift in Sources */,
 				8D89C793234320FF00FD0F3D /* StreamerEvent.swift in Sources */,
@@ -1394,7 +1400,6 @@
 				8D69B9E524C3304000E82034 /* APIActivity.swift in Sources */,
 				8D490AD2234894D60008ED18 /* StreamerChartsTicks.swift in Sources */,
 				8D490ACE23488DD70008ED18 /* StreamerAccounts.swift in Sources */,
-				8D490AD0234892A50008ED18 /* StreamerConfirmations.swift in Sources */,
 				8D452657233A3D270034D577 /* SQLite.swift in Sources */,
 				8D452658233A3D280034D577 /* SQLite+Result.swift in Sources */,
 				8DF489DF234BB07A00DB85AA /* DBCombine.swift in Sources */,
@@ -1464,6 +1469,7 @@
 				8D69B9EE24C3329A00E82034 /* APIWatchlist.swift in Sources */,
 				8D376D5A234C61EE007D4A48 /* Collections.swift in Sources */,
 				8D376D59234C61EE007D4A48 /* Decimal.swift in Sources */,
+				8D6923A824C6CA420037B919 /* StreamerDeal.swift in Sources */,
 				8D376D5C234C61EE007D4A48 /* Date.swift in Sources */,
 				8D376D5D234C61EE007D4A48 /* DateFormatter.swift in Sources */,
 				8D88F5F9246C79D900743B2B /* UTC.swift in Sources */,
@@ -1487,6 +1493,7 @@
 				8D75154124C17F7500F7327C /* APIApplication.swift in Sources */,
 				8D376D6A234C6210007D4A48 /* APIConfirmation.swift in Sources */,
 				8D376D6F234C6236007D4A48 /* APIInternals.swift in Sources */,
+				8D6923A524C6C75B0037B919 /* StreamerCombine.swift in Sources */,
 				8D376D73234C623E007D4A48 /* APICombine.swift in Sources */,
 				8DDBCD8324C216FE00CC4130 /* APIPosition.swift in Sources */,
 				8D376D70234C623E007D4A48 /* OperationQueue.swift in Sources */,
@@ -1501,6 +1508,7 @@
 				8D376D7C234C6297007D4A48 /* APICertificate.swift in Sources */,
 				8D69B9E724C331DE00E82034 /* APITransaction.swift in Sources */,
 				8D376D7D234C6297007D4A48 /* APIOAuth.swift in Sources */,
+				8D6923AB24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */,
 				8D376D7E234C62A3007D4A48 /* APIApplications.swift in Sources */,
 				8D69B9E224C32F6E00E82034 /* APISession.swift in Sources */,
 				8D376D7F234C62A3007D4A48 /* APIAccounts.swift in Sources */,
@@ -1514,7 +1522,7 @@
 				8DDA54D724C5EC3B00E5D4C6 /* StreamerSession.swift in Sources */,
 				8D376D86234C62A3007D4A48 /* APISentiments.swift in Sources */,
 				8DD7406524C04F2F00139C15 /* StreamerDeals.swift in Sources */,
-				8DE06AF524BF8E8A00781836 /* StreamerPositions.swift in Sources */,
+				8DE06AF524BF8E8A00781836 /* StreamerUpdate.swift in Sources */,
 				8DDA54DA24C604F200E5D4C6 /* StreamerAccount.swift in Sources */,
 				8D376D87234C62A3007D4A48 /* APIConfirmations.swift in Sources */,
 				8D376D89234C62A3007D4A48 /* APIPositions.swift in Sources */,
@@ -1527,7 +1535,6 @@
 				8D376D8F234C62C1007D4A48 /* StreamerInternals.swift in Sources */,
 				8D376D90234C62DA007D4A48 /* StreamerCredentials.swift in Sources */,
 				8DDA54DD24C6125C00E5D4C6 /* StreamerMarket.swift in Sources */,
-				8DD7406224C04E3900139C15 /* StreamerWorkingOrders.swift in Sources */,
 				8D376D91234C62DA007D4A48 /* StreamerSubscription.swift in Sources */,
 				8D376D92234C62DA007D4A48 /* StreamerEvent.swift in Sources */,
 				8D69B9F424C332EA00E82034 /* APIPrice.swift in Sources */,
@@ -1537,7 +1544,6 @@
 				8D376D96234C62DA007D4A48 /* StreamerChartsAggregates.swift in Sources */,
 				8D376D97234C62DA007D4A48 /* StreamerChartsTicks.swift in Sources */,
 				8D376D98234C62DA007D4A48 /* StreamerAccounts.swift in Sources */,
-				8D376D99234C62DA007D4A48 /* StreamerConfirmations.swift in Sources */,
 				8D376D9A234C62F3007D4A48 /* SQLite.swift in Sources */,
 				8D376D9B234C62F3007D4A48 /* SQLite+Result.swift in Sources */,
 				8D376D9E234C6300007D4A48 /* Database.swift in Sources */,

@@ -40,7 +40,7 @@ extension Streamer {
             
             self.item = item
             self.fields = fields
-            self.lowlevel = LSSubscription(mode: mode.rawValue, item: item, fields: fields)
+            self.lowlevel = LSSubscription(mode: mode.description, item: item, fields: fields)
             self.lowlevel.requestedSnapshot = (snapshot) ? "yes" : "no"
             super.init()
             

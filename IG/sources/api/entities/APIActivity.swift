@@ -87,7 +87,7 @@ extension API.Activity {
         /// Working order expiration.
         ///
         /// If the activity doesn't reference a working order, this property will be `nil`.
-        public let workingOrderExpiration: API.WorkingOrder.Expiration?
+        public let workingOrderExpiration: IG.Deal.WorkingOrder.Expiration?
     }
 }
 
@@ -106,7 +106,7 @@ extension API.Activity {
             /// The action affects a position and its status has been modified to the one given here.
             case position(status: API.Activity.Action.PositionStatus)
             /// The action affects a working order and its status has been modified to the one given here.
-            case workingOrder(status: API.Activity.Action.WorkingOrderStatus, type: API.WorkingOrder.Kind?)
+            case workingOrder(status: API.Activity.Action.WorkingOrderStatus, type: IG.Deal.WorkingOrder?)
             /// A deal's stop and/or limit has been amended.
             case dealStopLimitAmended
             /// The action is of unknown character.
