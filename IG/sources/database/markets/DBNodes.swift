@@ -1,5 +1,5 @@
-//import Foundation
-//
+import Foundation
+
 //extension Database {
 //    /// Database representation of the IG's platform navigation node.
 //    public struct Node {

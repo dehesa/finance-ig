@@ -254,9 +254,9 @@
 		8DDBE9FC2350820A001773D2 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
 		8DDBE9FD2350820E001773D2 /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA432149A6CE00344CBF /* Services.swift */; };
 		8DDC8086234E4582004A7138 /* DBMarkets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D10BBEF2318E91700557960 /* DBMarkets.swift */; };
-		8DDC8087234E4582004A7138 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBForex.swift */; };
+		8DDC8087234E4582004A7138 /* DBMarketsForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBMarketsForex.swift */; };
 		8DDC8088234E4585004A7138 /* DBMarkets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D10BBEF2318E91700557960 /* DBMarkets.swift */; };
-		8DDC8089234E4585004A7138 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBForex.swift */; };
+		8DDC8089234E4585004A7138 /* DBMarketsForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F89623181E7200F1A2C0 /* DBMarketsForex.swift */; };
 		8DDC808A234E4596004A7138 /* DBMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A7E231E729F004204B8 /* DBMarketTests.swift */; };
 		8DDC808B234E459C004A7138 /* DBMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB90A7E231E729F004204B8 /* DBMarketTests.swift */; };
 		8DDC808C234F151C004A7138 /* DBPrices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D520C0123326A4100BDF54D /* DBPrices.swift */; };
@@ -277,6 +277,12 @@
 		8DF489DD234BA27A00DB85AA /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
 		8DF489DE234BA45200DB85AA /* DBApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */; };
 		8DF489DF234BB07A00DB85AA /* DBCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2C214723313BFF006F8C41 /* DBCombine.swift */; };
+		8DFDFF2724C736EA001424F9 /* DBApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2624C736EA001424F9 /* DBApplication.swift */; };
+		8DFDFF2824C736EA001424F9 /* DBApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2624C736EA001424F9 /* DBApplication.swift */; };
+		8DFDFF2A24C73B33001424F9 /* DBMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2924C73B33001424F9 /* DBMarket.swift */; };
+		8DFDFF2B24C73B33001424F9 /* DBMarket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2924C73B33001424F9 /* DBMarket.swift */; };
+		8DFDFF2D24C73E77001424F9 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2C24C73E77001424F9 /* DBForex.swift */; };
+		8DFDFF2E24C73E77001424F9 /* DBForex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFDFF2C24C73E77001424F9 /* DBForex.swift */; };
 		8DFEC5F1234078F7005906B3 /* APITransactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA772149A6CE00344CBF /* APITransactions.swift */; };
 		8DFEC5F2234080B7005906B3 /* APIPrices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA762149A6CE00344CBF /* APIPrices.swift */; };
 		8DFEC5F323408459005906B3 /* APIMarkets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA722149A6CE00344CBF /* APIMarkets.swift */; };
@@ -396,7 +402,7 @@
 		8DA40AB72362CF17004F596D /* Country.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Country.swift; sourceTree = "<group>"; };
 		8DA8F88F2317BF7200F1A2C0 /* DBApplications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplications.swift; sourceTree = "<group>"; };
 		8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMigration.swift; sourceTree = "<group>"; };
-		8DA8F89623181E7200F1A2C0 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
+		8DA8F89623181E7200F1A2C0 /* DBMarketsForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarketsForex.swift; sourceTree = "<group>"; };
 		8DAEF08122F9994F005AB34C /* TestFabric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFabric.swift; sourceTree = "<group>"; };
 		8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplicationTests.swift; sourceTree = "<group>"; };
 		8DB266B9234B419E00F168CE /* StreamerLowlevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerLowlevelTests.swift; sourceTree = "<group>"; };
@@ -486,6 +492,9 @@
 		8DF85B1B22F046FA00F1C525 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		8DF93B9722E757B4001B9412 /* APISentiments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentiments.swift; sourceTree = "<group>"; };
 		8DF93B9922E75C11001B9412 /* APISentimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentimentTests.swift; sourceTree = "<group>"; };
+		8DFDFF2624C736EA001424F9 /* DBApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBApplication.swift; sourceTree = "<group>"; };
+		8DFDFF2924C73B33001424F9 /* DBMarket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarket.swift; sourceTree = "<group>"; };
+		8DFDFF2C24C73E77001424F9 /* DBForex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForex.swift; sourceTree = "<group>"; };
 		8DFF587E23001580000B2777 /* TestAccountError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestAccountError.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -704,6 +713,9 @@
 			children = (
 				8DA8F8912317EAB100F1A2C0 /* DBMigration.swift */,
 				8DE8A1A42349E31900031B1E /* migrations */,
+				8DFDFF2624C736EA001424F9 /* DBApplication.swift */,
+				8DFDFF2924C73B33001424F9 /* DBMarket.swift */,
+				8DFDFF2C24C73E77001424F9 /* DBForex.swift */,
 			);
 			path = entities;
 			sourceTree = "<group>";
@@ -712,7 +724,7 @@
 			isa = PBXGroup;
 			children = (
 				8D10BBEF2318E91700557960 /* DBMarkets.swift */,
-				8DA8F89623181E7200F1A2C0 /* DBForex.swift */,
+				8DA8F89623181E7200F1A2C0 /* DBMarketsForex.swift */,
 				8DC20A6F231AF3B000760FA4 /* DBNodes.swift */,
 				8DC20A74231B08BC00760FA4 /* DBNodes+Market.swift */,
 				8DC20A77231B220A00760FA4 /* DBNodes+Node.swift */,
@@ -1327,6 +1339,7 @@
 				8D33B8CE233967E1002B524B /* Collections.swift in Sources */,
 				8D6923A924C6CA420037B919 /* StreamerDeal.swift in Sources */,
 				8D33B8CF233967E1002B524B /* Operators.swift in Sources */,
+				8DFDFF2824C736EA001424F9 /* DBApplication.swift in Sources */,
 				8D33B8D0233967E1002B524B /* Date.swift in Sources */,
 				8D33B8D1233967E1002B524B /* DateFormatter.swift in Sources */,
 				8D33B8D3233967E1002B524B /* Error.swift in Sources */,
@@ -1340,6 +1353,7 @@
 				8D88F5FA246C79D900743B2B /* UTC.swift in Sources */,
 				8D452674233A6CF00034D577 /* DealBoundary.swift in Sources */,
 				8D452677233A6F640034D577 /* APIConfirmation.swift in Sources */,
+				8DFDFF2B24C73B33001424F9 /* DBMarket.swift in Sources */,
 				8DA40AB82362D16A004F596D /* Country.swift in Sources */,
 				8D452659233A3ECF0034D577 /* Currency.swift in Sources */,
 				8D45265A233A3ECF0034D577 /* Money.swift in Sources */,
@@ -1405,13 +1419,14 @@
 				8DF489DF234BB07A00DB85AA /* DBCombine.swift in Sources */,
 				8DE8A19F2349DE7E00031B1E /* Database.swift in Sources */,
 				8D69B9E824C331DE00E82034 /* APITransaction.swift in Sources */,
+				8DFDFF2E24C73E77001424F9 /* DBForex.swift in Sources */,
 				8DE8A1A12349DF8D00031B1E /* DBChannel.swift in Sources */,
 				8DE8A1A22349DF9100031B1E /* DBInternals.swift in Sources */,
 				8DE8A1A32349DF9600031B1E /* DBMigration.swift in Sources */,
 				8DE8A1A62349E33200031B1E /* DBMigration+v1.swift in Sources */,
 				8DE8A1A72349E4E300031B1E /* DBApplications.swift in Sources */,
 				8DDC8088234E4585004A7138 /* DBMarkets.swift in Sources */,
-				8DDC8089234E4585004A7138 /* DBForex.swift in Sources */,
+				8DDC8089234E4585004A7138 /* DBMarketsForex.swift in Sources */,
 				8DDC808D234F1520004A7138 /* DBPrices.swift in Sources */,
 				8DDBE9FD2350820E001773D2 /* Services.swift in Sources */,
 			);
@@ -1471,6 +1486,7 @@
 				8D376D59234C61EE007D4A48 /* Decimal.swift in Sources */,
 				8D6923A824C6CA420037B919 /* StreamerDeal.swift in Sources */,
 				8D376D5C234C61EE007D4A48 /* Date.swift in Sources */,
+				8DFDFF2724C736EA001424F9 /* DBApplication.swift in Sources */,
 				8D376D5D234C61EE007D4A48 /* DateFormatter.swift in Sources */,
 				8D88F5F9246C79D900743B2B /* UTC.swift in Sources */,
 				8D376D5B234C61EE007D4A48 /* Operators.swift in Sources */,
@@ -1484,6 +1500,7 @@
 				8D3CE542247A5E3A0097BED7 /* Deal.swift in Sources */,
 				8D376D67234C6210007D4A48 /* DealIdentifier.swift in Sources */,
 				8D3CE53F247A5DCB0097BED7 /* DealReference.swift in Sources */,
+				8DFDFF2A24C73B33001424F9 /* DBMarket.swift in Sources */,
 				8D376D69234C6210007D4A48 /* DealBoundary.swift in Sources */,
 				8DA40AB92362D172004F596D /* Country.swift in Sources */,
 				8D376D6B234C6210007D4A48 /* Currency.swift in Sources */,
@@ -1549,13 +1566,14 @@
 				8D376D9E234C6300007D4A48 /* Database.swift in Sources */,
 				8D376DA0234C6300007D4A48 /* DBChannel.swift in Sources */,
 				8D376DA1234C6300007D4A48 /* DBInternals.swift in Sources */,
+				8DFDFF2D24C73E77001424F9 /* DBForex.swift in Sources */,
 				8D376D9D234C62F3007D4A48 /* DBCombine.swift in Sources */,
 				8D376DA2234C6300007D4A48 /* DBMigration.swift in Sources */,
 				8D376DA3234C6300007D4A48 /* DBMigration+v1.swift in Sources */,
 				8D376DA4234C6300007D4A48 /* DBApplications.swift in Sources */,
 				8D69B9E424C3304000E82034 /* APIActivity.swift in Sources */,
 				8DDC8086234E4582004A7138 /* DBMarkets.swift in Sources */,
-				8DDC8087234E4582004A7138 /* DBForex.swift in Sources */,
+				8DDC8087234E4582004A7138 /* DBMarketsForex.swift in Sources */,
 				8DDC808C234F151C004A7138 /* DBPrices.swift in Sources */,
 				8DDBE9FC2350820A001773D2 /* Services.swift in Sources */,
 			);

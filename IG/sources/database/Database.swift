@@ -25,13 +25,20 @@ public final class Database {
     public final var sqliteVersion: String { SQLITE_VERSION }
     
     /// Creates a database instance fetching and storing values from/to the given location.
+    ///
+    /// - precondition: `targetQueue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.  Also, the initializer cannot be called from within the `targetQueue` execution context.
+    ///
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
     /// - throws: `Database.Error` exclusively.
     public convenience init(location: Database.Location, targetQueue: DispatchQueue?) throws {
-        let processingQueue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
-        let channel = try Self.Channel(location: location, targetQueue: targetQueue)
-        try self.init(channel: channel, queue: processingQueue)
+        if let targetQueue = targetQueue {
+            dispatchPrecondition(condition: .notOnQueue(targetQueue))
+            targetQueue.sync { dispatchPrecondition(condition: .notOnQueue(DispatchQueue.main)) }
+        }
+        let queue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let channel = try Database.Channel(location: location, targetQueue: targetQueue)
+        try self.init(channel: channel, queue: queue)
     }
     
     /// Designated initializer for the database instance providing the database configuration.

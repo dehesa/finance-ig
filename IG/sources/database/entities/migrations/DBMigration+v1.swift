@@ -14,7 +14,7 @@ extension Database.Migration {
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {
-                    .callFailed(.init("The SQL statement to create a table for '\(type.self)' failed to execute"), code: $0)
+                    IG.Error(.database(.callFailed), "The SQL statement to create a table for '\(type.self)' failed to execute", info: ["Error code": $0])
                 }
             }
             
