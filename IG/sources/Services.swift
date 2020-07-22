@@ -60,7 +60,7 @@ public final class Services {
         let signal: (_ token: API.Token) -> Publishers.FlatMap<AnyPublisher<Services,IG.Error>,AnyPublisher<API.Session,IG.Error>> = { (token) in
             return api.session.get(key: apiKey, token: token)
                 .flatMap { (session) -> AnyPublisher<Services,IG.Error> in
-                    api.channel.credentials = .init(client: session.client, account: session.account, key: apiKey, token: token, streamerURL: session.streamerURL, timezone: session.timezone)
+                    api.channel.credentials = API.Credentials(key: apiKey, client: session.client, account: session.account, streamerURL: session.streamerURL, timezone: session.timezone, token: token)
                     return Self._make(with: api, queue: queue, location: databaseLocation)
                 }
         }

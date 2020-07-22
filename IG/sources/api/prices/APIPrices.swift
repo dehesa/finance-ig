@@ -30,7 +30,7 @@ extension API.Request.Prices {
                     throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
-            }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
+            }.makeRequest(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.string(from: from)),
                  .init(name: "to", value: values.string(from: to)),
                  .init(name: "resolution", value: resolution.rawValue),
@@ -68,7 +68,7 @@ extension API.Request.Prices {
 
                 let formatter = DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
                 return (page.size, page.number, formatter)
-            }.makeRequest(.get, "prices/\(epic.rawValue)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
+            }.makeRequest(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.formatter.string(from: from)),
                  .init(name: "to", value: values.formatter.string(from: to)),
                  .init(name: "resolution", value: resolution.rawValue),

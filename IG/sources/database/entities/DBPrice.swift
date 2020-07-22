@@ -111,7 +111,7 @@ internal extension Database.Request.Price {
     /// SQLite query to insert a `Database.Price` in the database.
     /// - parameter epic: The market epic being targeted.
     static func _priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {
-        let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+        let tableName = Database.Price.tableNamePrefix.appending(epic.description)
         let query = """
         INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
         ON CONFLICT(date) DO UPDATE SET
@@ -133,7 +133,7 @@ internal extension Database.Request.Price {
         
         let query = "SELECT 1 FROM \(Database.Market.tableName) WHERE epic=?1"
         try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
-        try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+        try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
         
         switch sqlite3_step(statement).result {
         case .row:  return true
@@ -152,7 +152,7 @@ internal extension Database.Request.Price {
         let query = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?1"
         try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
         
-        let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+        let tableName = Database.Price.tableNamePrefix.appending(epic.description)
         sqlite3_bind_text(statement, 1, tableName, -1, SQLite.Destructor.transient)
         
         switch sqlite3_step(statement).result {

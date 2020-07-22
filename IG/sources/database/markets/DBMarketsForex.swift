@@ -49,7 +49,7 @@ extension Database.Request.Markets.Forex {
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
                 
                 for (index, epic) in epics.enumerated() {
-                    try sqlite3_bind_text(statement, Int32(index + 1), epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                    try sqlite3_bind_text(statement, Int32(index + 1), epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
                 }
                 
                 loop: while true {
@@ -77,7 +77,7 @@ extension Database.Request.Markets.Forex {
             .read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
 
-                try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
 
                 switch sqlite3_step(statement).result {
                 case .row: return .init(statement: statement!)

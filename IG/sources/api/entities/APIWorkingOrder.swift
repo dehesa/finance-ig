@@ -10,7 +10,7 @@ extension API {
         /// Instrument epic identifier.
         public let epic: IG.Market.Epic
         /// Currency ISO code.
-        public let currencyCode: Currency.Code
+        public let currency: Currency.Code
         /// The working order type.
         public let type: IG.Deal.WorkingOrder
         /// Indicates when the working order expires if its triggers hasn't been met.
@@ -43,7 +43,7 @@ extension API.WorkingOrder: Decodable {
         self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
         self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601Broad)
         self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-        self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
+        self.currency = try container.decode(Currency.Code.self, forKey: .currency)
         self.type = try container.decode(IG.Deal.WorkingOrder.self, forKey: .type)
         
         switch try container.decode(String.self, forKey: .expiration) {
@@ -74,7 +74,9 @@ extension API.WorkingOrder: Decodable {
         enum _NestedKeys: String, CodingKey {
             case identifier = "dealId"
             case date = "createdDateUTC"
-            case epic, currencyCode, direction
+            case epic
+            case currency = "currencyCode"
+            case direction
             case type = "orderType"
             case size = "orderSize"
             case level = "orderLevel"

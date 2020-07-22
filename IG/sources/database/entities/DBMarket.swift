@@ -46,12 +46,12 @@ internal extension Database.Market {
     typealias Indices = (epic: Int32, type: Int32)
     
     init(statement s: SQLite.Statement, indices: Indices = (0, 1)) {
-        self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, indices.epic)))!
+        self.epic = IG.Market.Epic(String(cString: sqlite3_column_text(s, indices.epic)))!
         self.type = Self.Kind(rawValue: sqlite3_column_int(s, indices.type))    // Implicit SQLite conversion from `NULL` to `0`
     }
     
     func _bind(to statement: SQLite.Statement, indices: Indices = (1, 2)) {
-        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.epic, self.epic.description, -1, SQLite.Destructor.transient)
         self.type.unwrap( none: { sqlite3_bind_null(statement, indices.type) },
                           some: { sqlite3_bind_int (statement, indices.type, $0.rawValue) })
     }

@@ -13,7 +13,7 @@ final class APIMarketTests: XCTestCase {
         let epics: Set<IG.Market.Epic> = ["CS.D.EURGBP.MINI.IP", "CS.D.EURUSD.MINI.IP", "CO.D.DX.FCS1.IP", "KA.D.VOD.CASH.IP"]
         let markets = api.markets.get(epics: epics).expectsOne(timeout: 2, on: self)
         XCTAssertEqual(markets.count, epics.count)
-        XCTAssertEqual(epics.sorted {$0.rawValue > $1.rawValue}, markets.map {$0.instrument.epic}.sorted {$0.rawValue > $1.rawValue})
+        XCTAssertEqual(epics.sorted {$0 > $1}, markets.map {$0.instrument.epic}.sorted { $0 > $1 })
     }
     
     /// Tests the market retrieval (for big numbers).

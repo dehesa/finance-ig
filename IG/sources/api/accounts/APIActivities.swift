@@ -40,7 +40,7 @@ extension API.Request.Accounts {
                 }
 
                 if let dealIdentifier = filterBy.identifier {
-                    queries.append(.init(name: "dealId", value: dealIdentifier.rawValue))
+                    queries.append(.init(name: "dealId", value: dealIdentifier.description))
                 }
 
                 if let filter = filterBy.FIQL {

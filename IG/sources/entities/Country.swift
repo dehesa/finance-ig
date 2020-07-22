@@ -597,6 +597,6 @@ extension Country: Decodable {
     }
     
     private var _underlyingType: _CountryType.Type {
-        Self._matcher[self]!
+        Self._matcher[self].unsafelyUnwrapped
     }
 }

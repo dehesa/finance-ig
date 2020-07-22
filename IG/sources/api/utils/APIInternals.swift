@@ -10,11 +10,11 @@ extension API {
         /// Namesapce for JSON decoding keys.
         enum DecoderKey {
             /// Key for JSON decoders under which the URL response (`HTTPURLResponse`' will be stored.
-            static let responseHeader = CodingUserInfoKey(rawValue: "IG_APIResponseHeader")!
+            static let responseHeader = CodingUserInfoKey(rawValue: "IG_APIResponseHeader").unsafelyUnwrapped
             /// Key for JSON decoders under which the URL response date (`Date`) will be stored.
-            static let responseDate = CodingUserInfoKey(rawValue: "IG_APIResponseDate")!
+            static let responseDate = CodingUserInfoKey(rawValue: "IG_APIResponseDate").unsafelyUnwrapped
             /// Key for JSON decoders under which the pre-computed values will be stored.
-            static let computedValues = CodingUserInfoKey(rawValue: "IG_APIComputedValues")!
+            static let computedValues = CodingUserInfoKey(rawValue: "IG_APIComputedValues").unsafelyUnwrapped
         }
         /// Specifies a `JSONDecoder` to use in further operations.
         enum Decoder<T> {

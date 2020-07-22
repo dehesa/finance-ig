@@ -24,7 +24,7 @@ extension Streamer.Request.Markets {
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,IG.Error> {
-        let item = "MARKET:\(epic.rawValue)"
+        let item = "MARKET:\(epic)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = DateFormatter.londonTime
         

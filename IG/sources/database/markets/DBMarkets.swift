@@ -28,13 +28,13 @@ extension Database.Request.Markets {
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
                 
                 for (index, epic) in epics.enumerated() {
-                    try sqlite3_bind_text(statement, .init(index) + 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                    try sqlite3_bind_text(statement, .init(index) + 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
                 }
                 
                 var result: Set<IG.Market.Epic> = .init()
                 rowIterator: while true {
                     switch sqlite3_step(statement).result {
-                    case .row: result.insert( IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(statement!, 0)))! )
+                    case .row: result.insert( IG.Market.Epic(String(cString: sqlite3_column_text(statement.unsafelyUnwrapped, 0))).unsafelyUnwrapped )
                     case .done: break rowIterator
                     case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.self)'.", info: ["Error code": e])
                     }
@@ -56,7 +56,7 @@ extension Database.Request.Markets {
                 var result: [Database.Market] = .init()
                 while true {
                     switch sqlite3_step(statement).result {
-                    case .row:  result.append(.init(statement: statement!))
+                    case .row:  result.append(.init(statement: statement.unsafelyUnwrapped))
                     case .done: return result
                     case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.self)'.", info: ["Error code": e])
                     }
@@ -72,7 +72,7 @@ extension Database.Request.Markets {
         self._database.publisher { _ in "SELECT type FROM \(Database.Market.tableName) WHERE epic=?1" }
             .read { (sqlite, statement, query, _) -> Database.Market.Kind? in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
-                try sqlite3_bind_text(statement, 1, epic.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
                 
                 switch sqlite3_step(statement).result {
                 case .row:  return Database.Market.Kind(rawValue: sqlite3_column_int(statement, 0))
@@ -100,7 +100,7 @@ extension Database.Request.Markets {
                 
                 for apiMarket in markets {
                     let dbMarket = Database.Market(epic: apiMarket.instrument.epic, type: Database.Market.Kind(market: apiMarket))
-                    dbMarket._bind(to: statement!)
+                    dbMarket._bind(to: statement.unsafelyUnwrapped)
 
                     try sqlite3_step(statement).expects(.done) { IG.Error(.database(.callFailed), "An error occurred storing values on '\(Database.Market.self)'.", info: ["Error code": $0]) }
                     sqlite3_clear_bindings(statement)

@@ -14,7 +14,7 @@ extension API {
         /// The language locale to use on the platform
         public let locale: Locale
         /// The default currency used in this session.
-        public let currencyCode: Currency.Code
+        public let currency: Currency.Code
     }
 }
 
@@ -53,14 +53,14 @@ extension API.Session: Decodable {
         self.timezone = try TimeZone(secondsFromGMT: offset * 3600) ?> DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone couldn't be parsed into a Foundation TimeZone structure")
         self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
         self.locale = Locale(identifier: try container.decode(String.self, forKey: .locale))
-        self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
+        self.currency = try container.decode(Currency.Code.self, forKey: .currency)
     }
     
     private enum _Keys: String, CodingKey {
         case client = "clientId"
         case account = "accountId"
         case timezoneOffset, locale
-        case currencyCode = "currency"
+        case currency
         case streamerURL = "lightstreamerEndpoint"
     }
 }

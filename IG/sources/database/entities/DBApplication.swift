@@ -91,7 +91,7 @@ internal extension Database.Application {
     typealias Indices = (key: Int32, name: Int32, status: Int32, permission: Self.Permission.Indices, allowance: Self.Allowance.Indices, created: Int32, updated: Int32)
     
     init(statement s: SQLite.Statement, indices: Indices = (0, 1, 2, (3, 4), (5, (6, 7, 8), 9), 10, 11)) {
-        self.key = API.Key(rawValue: String(cString: sqlite3_column_text(s, indices.key)))!
+        self.key = API.Key(String(cString: sqlite3_column_text(s, indices.key)))!
         self.name = String(cString: sqlite3_column_text(s, indices.name))
         self.status = Self.Status(rawValue: sqlite3_column_int(s, indices.status))!
         self.permission = .init(statement: s, indices: indices.permission)
@@ -101,7 +101,7 @@ internal extension Database.Application {
     }
     
     func _bind(to statement: SQLite.Statement, indices: Indices = (1, 2, 3, (4, 5), (6, (7, 8, 9), 10), 11, 12)) {
-        sqlite3_bind_text(statement, indices.key,    self.key.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.key,    self.key.description, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.name,   self.name, -1, SQLite.Destructor.transient)
         sqlite3_bind_int (statement, indices.status, status.rawValue)
         self.permission._bind(to: statement, indices: indices.permission)

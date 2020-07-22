@@ -24,7 +24,7 @@ extension Streamer.Request.Accounts {
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
     /// - returns: Signal producer that can be started at any time.
     public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Account,IG.Error> {
-        let item = "ACCOUNT:".appending(account.rawValue)
+        let item = "ACCOUNT:\(account)"
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel

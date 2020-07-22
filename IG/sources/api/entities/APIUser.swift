@@ -42,7 +42,7 @@ extension API.User {
         }
         
         public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The username '\(value)' is not in a valid format")
+            precondition(Self._validate(value), "Invalid username '\(value)'.")
             self.rawValue = value
         }
         
@@ -83,7 +83,7 @@ extension API.User {
         }
         
         public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "The password is not in a valid format")
+            precondition(Self._validate(value), "Invalid user password format.")
             self.rawValue = value
         }
         

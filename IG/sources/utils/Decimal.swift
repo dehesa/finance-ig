@@ -10,6 +10,6 @@ extension Decimal64: Codable {
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(Double(self.description)!)
+        try container.encode(Double(self.description).unsafelyUnwrapped)
     }
 }

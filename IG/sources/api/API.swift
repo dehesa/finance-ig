@@ -66,7 +66,7 @@ public final class API {
 
 extension API {
     /// The root address for the publicly accessible endpoints.
-    public static let rootURL = URL(string: "https://api.ig.com/gateway/deal")!
+    public static let rootURL = URL(string: "https://api.ig.com/gateway/deal").unsafelyUnwrapped
     /// The root URL for the hidden endpoints.
-    public static let scrappedRootURL = URL(string: "https://deal.ig.com")!
+    public static let scrappedRootURL = URL(string: "https://deal.ig.com").unsafelyUnwrapped
 }

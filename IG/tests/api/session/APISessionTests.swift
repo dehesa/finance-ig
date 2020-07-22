@@ -70,4 +70,10 @@ final class APISessionTests: XCTestCase {
         XCTAssertEqual(statuses, [.logout, .ready(till: limit), .expired])
         cancellable.cancel()
     }
+    
+    func testPaquillo() {
+        let value = "a24209ef60976d82936e4649bc9dc775b9520611"
+        let key = API.Key(value)!
+        XCTAssertEqual(value, key.description)
+    }
 }

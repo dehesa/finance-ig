@@ -179,7 +179,7 @@ extension API.Market.Instrument {
         
         public struct Band {
             /// The currency for this currency band factor calculation.
-            public let currencyCode: IG.Currency.Code
+            public let currency: IG.Currency.Code
             /// Margin percentage.
             public let margin: Decimal64
             /// Band minimum.
@@ -324,7 +324,7 @@ extension API.Market {
         /// The middle price between the *bid* and the *ask* price.
         @_transparent public var mid: Decimal64? {
             guard let bid = self.bid, let ask = self.ask else { return nil }
-            return bid + Decimal64(5, power: -1)! * (ask - bid)
+            return bid + Decimal64(5, power: -1).unsafelyUnwrapped * (ask - bid)
         }
     }
 }
@@ -524,7 +524,7 @@ extension API.Market.Instrument.Margin: Decodable {
 
 extension API.Market.Instrument.Margin.Band: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case currencyCode = "currency"
+        case currency
         case margin
         case minimum = "min"
         case maximum = "max"

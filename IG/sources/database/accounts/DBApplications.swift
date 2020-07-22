@@ -40,7 +40,7 @@ extension Database.Request.Accounts {
         self._database.publisher { _ in "SELECT * FROM Apps where key = ?1" }
             .read { (sqlite, statement, query, _) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
-                try sqlite3_bind_text(statement, 1, key.rawValue, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_bind_text(statement, 1, key.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
                 
                 switch sqlite3_step(statement).result {
                 case .row:  return Database.Application(statement: statement!)

@@ -26,7 +26,7 @@ extension API.Request.Markets {
                     throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
                 }
                 return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
-            }.makeRequest(.get, "markets/\(epic.rawValue)", version: 3, credentials: true)
+            }.makeRequest(.get, "markets/\(epic)", version: 3, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(values: true, date: true))
             .mapError(errorCast)
@@ -115,7 +115,7 @@ extension API.Request.Markets {
                 return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
                 [.init(name: "filter", value: "ALL"),
-                 .init(name: "epics", value: epics.map { $0.rawValue }.joined(separator: ",")) ]
+                 .init(name: "epics", value: epics.map { $0.description }.joined(separator: ",")) ]
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(values: true, date: true)) { (l: _WrapperList, _) in l.marketDetails }
             .mapError(errorCast)
