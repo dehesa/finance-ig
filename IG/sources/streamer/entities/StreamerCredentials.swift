@@ -16,7 +16,7 @@ extension Streamer {
         
         /// Creates the `Streamer` credentials from the received `API` credentials.
         /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
-        /// - throws: `Streamer.Error.invalidRequest`
+        /// - throws: `IG.Error` exclusively.
         public init(credentials: API.Credentials) throws {
             guard case .certificate(let access, let security) = credentials.token.value else {
                 throw IG.Error(.streamer(.invalidRequest), "Invalid API credentials.", help: "Log in to the API with 'certificate' credentials.")

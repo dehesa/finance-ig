@@ -4,7 +4,7 @@ import SQLite3
 extension Database.Migration {
     /// Where the actual migration happens.
     /// - parameter channel: The SQLite database connection.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     internal static func initialMigration(channel: Database.Channel) throws {
         try channel.write { (database) throws -> Void in
             // Set the application identifier for the database

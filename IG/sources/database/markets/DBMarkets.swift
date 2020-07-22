@@ -67,7 +67,7 @@ extension Database.Request.Markets {
     
     /// Returns the type of Market identified by the given epic.
     /// - parameter epic: Market instrument identifier.
-    /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `Database.Error.invalidResponse`.
+    /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.Error.invalidResponse`.
     public func type(epic: IG.Market.Epic) -> AnyPublisher<Database.Market.Kind?,IG.Error> {
         self._database.publisher { _ in "SELECT type FROM \(Database.Market.tableName) WHERE epic=?1" }
             .read { (sqlite, statement, query, _) -> Database.Market.Kind? in

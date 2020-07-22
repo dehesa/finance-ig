@@ -177,24 +177,26 @@ extension Database.Request.Markets.Forex {
             """
         try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
         
+        typealias F = Database.Market.Forex
+        typealias D = Database.Market.Forex.DealingInformation
+        typealias R = Database.Market.Forex.Restrictions
+        
         for m in markets {
             guard case .success(let inferred) = Database.Market.Forex._inferred(from: m) else { continue }
             // The pip value can also be inferred from: `instrument.pip.value`
-            let forex = Database.Market.Forex(epic: m.instrument.epic,
-                                           currencies:  .init(base: inferred.base, counter: inferred.counter),
-                                           identifiers: .init(name: m.instrument.name, market: inferred.marketId, chart: m.instrument.chartCode, reuters: m.instrument.newsCode),
-                                           information: .init(contractSize: Int(clamping: inferred.contractSize),
-                                                              pip: .init(value: Int(clamping: m.instrument.lotSize), decimalPlaces: Int(log10(Double(m.snapshot.scalingFactor)))),
-                                                              levelDecimalPlaces: m.snapshot.decimalPlacesFactor,
-                                                              slippageFactor: m.instrument.slippageFactor.value,
-                                                              guaranteedStop: .init(premium: m.instrument.limitedRiskPremium.value, extraSpread: m.snapshot.extraSpreadForControlledRisk),
-                                                              margin: .init(factor: m.instrument.margin.factor, depositBands: inferred.bands)),
-                                           restrictions: .init(minimumDealSize: m.rules.minimumDealSize.value,
-                                                               regularDistance: .init(minimum: m.rules.limit.mininumDistance.value, maximumAsPercentage: m.rules.limit.maximumDistance.value),
-                                                               guarantedStopDistance: .init(minimumValue: m.rules.stop.minimumLimitedRiskDistance.value,
-                                                                                            minimumUnit: inferred.guaranteedStopUnit,
-                                                                                            maximumAsPercentage: m.rules.limit.maximumDistance.value),
-                                                               trailingStop: .init(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
+            let forex = F(epic: m.instrument.epic,
+                          currencies: F.Currencies(base: inferred.base, counter: inferred.counter),
+                          identifiers: F.Identifiers(name: m.instrument.name, market: inferred.marketId, chart: m.instrument.chartCode, reuters: m.instrument.newsCode),
+                          information: D(contractSize: Int(clamping: inferred.contractSize),
+                                         pip: D.Pip(value: Int(clamping: m.instrument.lotSize), decimalPlaces: Int(log10(Double(m.snapshot.scalingFactor)))),
+                                         levelDecimalPlaces: m.snapshot.decimalPlacesFactor,
+                                         slippageFactor: m.instrument.slippageFactor.value,
+                                         guaranteedStop: D.GuaranteedStop(premium: m.instrument.limitedRiskPremium.value, extraSpread: m.snapshot.extraSpreadForControlledRisk),
+                                         margin: D.Margin(factor: m.instrument.margin.factor, depositBands: inferred.bands)),
+                          restrictions: R(minimumDealSize: m.rules.minimumDealSize.value,
+                                          regularDistance: R.Distance.Regular(minimum: m.rules.limit.mininumDistance.value, maximumAsPercentage: m.rules.limit.maximumDistance.value),
+                                          guarantedStopDistance: R.Distance.Variable(minimumValue: m.rules.stop.minimumLimitedRiskDistance.value, minimumUnit: inferred.guaranteedStopUnit, maximumAsPercentage: m.rules.limit.maximumDistance.value),
+                                          trailingStop: R.TrailingStop(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
             forex._bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { IG.Error(.database(.callFailed), "An error occurred storing values on '\(Database.Market.Forex.self)'.", info: ["Error code": $0]) }
             sqlite3_clear_bindings(statement)

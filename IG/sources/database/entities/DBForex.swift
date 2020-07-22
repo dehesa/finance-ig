@@ -105,7 +105,7 @@ extension Database.Market.Forex {
         /// Minimum deal size (expressed in points).
         public let minimumDealSize: Decimal64
         /// Minimum and maximum distances for limits and normal stops
-        fileprivate let regularDistance: Self.Distance.Regular
+        internal let regularDistance: Self.Distance.Regular
         /// Minimum and maximum allowed stops (limited risk).
         public let guarantedStopDistance: Self.Distance.Variable
         /// Restrictions related to trailing stops.
@@ -295,34 +295,33 @@ internal extension Database.Market.Forex.Restrictions {
 // MARK: Margins
 
 extension Database.Market.Forex {
-    #warning("Fix the stop usage")
-//    /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
-//    ///
-//    /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
-//    /// - parameter dealSize: The size of a given position.
-//    public func margin(forDealSize dealSize: Decimal64, price: Decimal64, stop: IG.Deal.Stop?) -> Decimal64 {
-//        let marginFactor = self.information.margin.depositBands.depositFactor(forDealSize: dealSize)
-//        let contractSize = Decimal64(exactly: self.information.contractSize)!
-//
-//        guard let stop = stop else {
-//            return dealSize * contractSize * price * marginFactor
-//        }
-//
-//        let stopDistance: Decimal64
-//        switch stop.type {
-//        case .distance(let distance): stopDistance = distance
-//        case .position(let level):    stopDistance = (level - price).magnitude
-//        }
-//
-//        switch stop.risk {
-//        case .exposed:
-//            let marginNoStop = dealSize * contractSize * price * marginFactor
-//            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (dealSize * contractSize * stopDistance)
-//            return min(marginNoStop, marginWithStop)
-//        case .limited(let premium):
-//            return (dealSize * contractSize * stopDistance) + (premium ?? self.information.guaranteedStop.premium)
-//        }
-//    }
+    /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
+    ///
+    /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
+    /// - parameter dealSize: The size of a given position.
+    public func margin(forDealSize dealSize: Decimal64, price: Decimal64, stop: (boundary: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk)?) -> Decimal64 {
+        let marginFactor = self.information.margin.depositBands.depositFactor(forDealSize: dealSize)
+        let contractSize = Decimal64(exactly: self.information.contractSize)!
+
+        guard let stop = stop else {
+            return dealSize * contractSize * price * marginFactor
+        }
+
+        let stopDistance: Decimal64
+        switch stop.boundary {
+        case .distance(let distance): stopDistance = distance
+        case .level(let level): stopDistance = (level - price).magnitude
+        }
+
+        switch stop.risk {
+        case .exposed:
+            let marginNoStop = dealSize * contractSize * price * marginFactor
+            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (dealSize * contractSize * stopDistance)
+            return min(marginNoStop, marginWithStop)
+        case .limited:
+            return (dealSize * contractSize * stopDistance) + self.information.guaranteedStop.premium
+        }
+    }
 }
 
 extension Database.Market.Forex.DealingInformation.Margin.Bands {
