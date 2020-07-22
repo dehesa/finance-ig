@@ -13,12 +13,12 @@ final class APIWatchlistTests: XCTestCase {
         let watchlists = api.watchlists.getAll().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(watchlists.isEmpty)
         for watchlist in watchlists {
-            XCTAssertFalse(watchlist.identifier.isEmpty)
+            XCTAssertFalse(watchlist.id.isEmpty)
             XCTAssertFalse(watchlist.name.isEmpty)
         }
         
         let target = watchlists.last!
-        let markets = api.watchlists.getMarkets(from: target.identifier).expectsOne(timeout: 2, on: self)
+        let markets = api.watchlists.getMarkets(from: target.id).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)
     }
 

@@ -3,23 +3,24 @@ import Foundation
 
 extension Test.Account {
     /// Error that can be thrown by trying to load an testing account file.
-    internal struct Error: IG.Error {
-        let type: Self.Kind
-        var message: String
-        var suggestion: String
-        var underlyingError: Swift.Error? = nil
-        var context: [Self.Item] = []
+    internal final class Error: LocalizedError, CustomNSError, CustomDebugStringConvertible {
+        private let type: Kind
+        let failureReason: String?
+        var recoverySuggestion: String? = nil
+        let helpAnchor: String?
+        var errorUserInfo: [String:Any] = [:]
+        let underlyingError: Swift.Error?
         
         /// Designated initializer, filling all required error fields.
         /// - parameter type: The error type.
-        /// - parameter message: A brief explanation on what happened.
-        /// - parameter suggestion: A helpful suggestion on how to avoid the error.
+        /// - parameter reason: A brief explanation on what happened.
+        /// - parameter help: A helpful suggestion on how to avoid the error.
         /// - parameter error: The underlying error that happened right before this error was created.
-        private init(_ type: Self.Kind, _ message: String, suggestion: String, underlying error: Swift.Error? = nil) {
+        init(_ type: Kind, _ reason: String, help: String, underlying error: Swift.Error? = nil) {
             self.type = type
-            self.message = message
+            self.failureReason = reason
+            self.helpAnchor = help
             self.underlyingError = error
-            self.suggestion = suggestion
         }
     }
 }
@@ -27,9 +28,9 @@ extension Test.Account {
 //result.append(details: "File URL: \(url.absoluteString)")
 extension Test.Account.Error {
     /// The type of API error raised.
-    enum Kind: CaseIterable {
+    enum Kind: Int {
         /// The environment key passed as parameter was not found on the environment variables.
-        case environmentVariableNotFound
+        case environmentVariableNotFound = 1
         /// The URL given in the file is invalid or none existant
         case invalidURL
         /// The bundle resource path couldn't be found.
@@ -40,68 +41,48 @@ extension Test.Account.Error {
         case accountParsingFailed
     }
     
-    static func environmentVariableNotFound(key: String) -> Self {
-        let message = "The target environment key '\(key)' doesn't seem to be set"
-        let suggestion = "If you are running the tests through the Command line, remember to add an environment variable when running the test command. If you are running the tests with Xcode: 1. Edit the 'IG' scheme. 2. Select the 'Test' section. 3. Select the 'Arguments' tab. 4. Add an environment variable with key '\(key)' and the value as the location JSON file with the test account data (e.g. 'file://Environment/mocked.json'). 5. Be sure to have the filled JSON account on that location"
-        return self.init(.environmentVariableNotFound, message, suggestion: suggestion)
+    static var errorDomain: String {
+        Bundle.IG.name + "\(Bundle.IG.name).\(Test.self).\(Test.Account.self).\(Test.Account.Error.self)"
     }
     
-    static func invalidURL(_ path: String) -> Self {
-        let message = (path.isEmpty) ? "The targeted URL is empty" : "The URL path is '\(path)'"
-        let suggestion = "The given URL was invalid. Review it carefully"
-        return self.init(.invalidURL, message, suggestion: suggestion)
+    var errorCode: Int {
+        self.type.rawValue
     }
     
-    static func bundleResourcesNotFound() -> Self {
-        let message = "The test Bundle resources (i.e. 'bundle.resourceURL' couldn't be loaded"
-        let suggestion = "Please contact the repository maintainer"
-        return self.init(.bundleResourcesNotFound, message, suggestion: suggestion)
-    }
-    
-    static func dataLoadFailed(url: URL, underlyingError error: Swift.Error) -> Self {
-        let message = "The file with URL '\(url.absoluteString)' couldn't be loaded through 'Data(contentsOf:)'"
-        let suggestion = "Review the URL and be sure there is a JSON file under that path"
-        return self.init(.dataLoadFailed, message, suggestion: suggestion, underlying: error)
-    }
-    
-    static func accountParsingFailed(url: URL, underlyingError error: Swift.Error) -> Self {
-        let message = "An error was encountered decoding the Test Account JSON file at '\(url.absoluteString)"
-        let suggestion = "Be sure the JSON file is valid and review the underlying error"
-        return self.init(.accountParsingFailed, message, suggestion: suggestion, underlying: error)
-    }
-}
-
-extension Test.Account.Error: IG.ErrorPrintable {
-    static var printableDomain: String { "\(Bundle.IG.name).\(Test.self).\(Test.Account.self).\(Test.Account.Error.self)" }
-    
-    var printableType: String {
+    var errorDescription: String? {
+        var result = "[Test] "
         switch self.type {
-        case .environmentVariableNotFound: return "Environment variable key not found"
-        case .invalidURL: return "Invald URL"
-        case .bundleResourcesNotFound: return "Bundle resources not found"
-        case .dataLoadFailed: return "Data load failed"
-        case .accountParsingFailed: return "Account parsing failed"
+        case .environmentVariableNotFound: result.append("Environment variable key not found.")
+        case .invalidURL: result.append("Invald URL.")
+        case .bundleResourcesNotFound: result.append("Bundle resources not found.")
+        case .dataLoadFailed: result.append("Data load failed.")
+        case .accountParsingFailed: result.append("Account parsing failed.")
         }
+        return result
     }
     
-    func printableMultiline(level: Int) -> String {
-        let levelPrefix    = Self.debugPrefix(level: level+1)
-        let sublevelPrefix = Self.debugPrefix(level: level+2)
-        
-        var result = "\(Self.printableDomain) (\(self.printableType))"
-        result.append("\(levelPrefix)Error message: \(self.message)")
-        result.append("\(levelPrefix)Suggestions: \(self.suggestion)")
-        
-        if !self.context.isEmpty {
-            result.append("\(levelPrefix)Error context: \(IG.ErrorHelper.representation(of: self.context, itemPrefix: sublevelPrefix, maxCharacters: Self.maxCharsPerLine))")
+    public var localizedDescription: String {
+        var result = "\(self.errorDescription!)"
+        if let reason = self.failureReason {
+            result.append("\n\tReason: \(reason)")
         }
-        
-        let errorStr = "\(levelPrefix)Underlying error: "
-        if let errorRepresentation = IG.ErrorHelper.representation(of: self.underlyingError, level: level, prefixCount: errorStr.count, maxCharacters: Self.maxCharsPerLine) {
-            result.append(errorStr)
-            result.append(errorRepresentation)
+        if let recovery = self.recoverySuggestion {
+            result.append("\n\tRecovery: \(recovery)")
         }
-        
+        if let help = self.helpAnchor {
+            result.append("\n\tHelp: \(help)")
+        }
+        if !self.errorUserInfo.isEmpty {
+            result.append("\n\tUser info: ")
+            result.append(self.errorUserInfo.map { "\($0): \($1)" }.joined(separator: ", "))
+        }
+        if let error = self.underlyingError {
+            result.append("\n\tUnderlying error: \(error)")
+        }
         return result
+    }
+    
+    public var debugDescription: String {
+        return self.localizedDescription
     }
 }

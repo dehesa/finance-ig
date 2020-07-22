@@ -19,7 +19,18 @@ extension Test.Account: Decodable {
     /// - parameter environmentKey: Build variable key, which value gives the location of the account JSON file.
     /// - returns: Representation of the account file.
     convenience init(environmentKey: String) {
-        let accountPath = ProcessInfo.processInfo.environment[environmentKey] ?! fatalError(Error.environmentVariableNotFound(key: environmentKey).debugDescription)
+        guard let accountPath = ProcessInfo.processInfo.environment[environmentKey] else {
+            let error = Error(.environmentVariableNotFound, "The target environment key '\(environmentKey)' doesn't seem to be set.", help: """
+                If you are running the tests through the Command line, remember to add an environment variable when running the test command.
+                If you are running the tests with Xcode:
+                    1. Edit the 'IG' scheme.
+                    2. Select the 'Test' section.
+                    3. Select the 'Arguments' tab.
+                    4. Add an environment variable with key '\(environmentKey)' and the value as the location JSON file with the test account data (e.g. 'file://Environment/mocked.json').
+                    5. Be sure to have the filled JSON account on that location
+                """)
+            fatalError(error.debugDescription)
+        }
 
         let accountFileURL: URL
         do {
@@ -29,12 +40,18 @@ extension Test.Account: Decodable {
         let data: Data
         do {
             data = try Data(contentsOf: accountFileURL)
-        } catch let error { fatalError(Error.dataLoadFailed(url: accountFileURL, underlyingError: error).debugDescription) }
+        } catch let error {
+            let error = Error(.dataLoadFailed, "The file with URL '\(accountFileURL.absoluteString)' couldn't be loaded through 'Data(contentsOf:)'", help: "Review the URL and be sure there is a JSON file under that path.", underlying: error)
+            fatalError(error.debugDescription)
+        }
 
         do {
             let result = try JSONDecoder().decode(Self.self, from: data)
-            self.init(identifier: result.identifier, api: result.api, streamer: result.streamer, database: result.database)
-        } catch let error { fatalError(Error.accountParsingFailed(url: accountFileURL, underlyingError: error).debugDescription) }
+            self.init(identifier: result.id, api: result.api, streamer: result.streamer, database: result.database)
+        } catch let error {
+            let error = Error(.accountParsingFailed, "An error was encountered decoding the Test Account JSON file at '\(accountFileURL.absoluteString)", help: "Be sure the JSON file is valid and review the underlying error.", underlying: error)
+            fatalError(error.debugDescription)
+        }
     }
     
     /// Parse a URL represented as a string into a proper URL.
@@ -51,12 +68,12 @@ extension Test.Account: Decodable {
         // Retrieve the schema (e.g. "file://") and see whether the path type is supported.
         guard let url = URL(string: path), let schemeString = url.scheme,
               let scheme = SupportedScheme(rawValue: schemeString) else {
-            throw Self.Error.invalidURL(path)
+            throw Self.Error(.invalidURL, "The URL path is '\(path)'.", help: "The given URL was invalid. Review it carefully.")
         }
         
         // Check that the url is bigger than just the scheme.
         let substring = path.dropFirst("\(scheme.rawValue)://".count)
-        guard let first = substring.first else { throw Self.Error.invalidURL(path) }
+        guard let first = substring.first else { throw Self.Error(.invalidURL, "The URL path is '\(url.path)'.", help: "The given URL was invalid. Review it carefully.") }
         
         // If the scheme is a web URL or a local path pointing to the root folder (i.e. "/"), return the URL without further modifications.
         guard case .file = scheme, first != "/" else { return url }
@@ -68,7 +85,7 @@ extension Test.Account: Decodable {
     /// Returns the URL for the test bundle resource.
     private static func _bundleResourceURL() throws -> URL {
         let bundle = Bundle(for: Self.self)
-        guard let url = bundle.resourceURL else { throw Self.Error.bundleResourcesNotFound() }
+        guard let url = bundle.resourceURL else { throw Self.Error(.bundleResourcesNotFound, "The test Bundle resources (i.e. 'bundle.resourceURL' couldn't be loaded", help: "Please contact the repository maintainer.") }
         return url
     }
 }
@@ -160,7 +177,7 @@ extension Test.Account.DatabaseData: Decodable {
 
         var rootURL: URL? = nil
         if var url = try container.decodeIfPresent(URL.self, forKey: .rootURL) {
-            guard url.isFileURL else { throw Test.Account.Error.invalidURL(url.path) }
+            guard url.isFileURL else { throw Test.Account.Error(.invalidURL, "The URL path is '\(url.path)'.", help: "The given URL was invalid. Review it carefully.") }
 
             if let host = url.host, host == "~" {
                 #if os(macOS)

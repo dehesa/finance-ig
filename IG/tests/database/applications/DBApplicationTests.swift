@@ -27,7 +27,7 @@ final class DBApplicationTests: XCTestCase {
             XCTAssertEqual(apiApp.allowance.account.tradingRequests, dbApp.allowance.account.tradingRequests)
             XCTAssertEqual(apiApp.allowance.account.historicalDataRequests, dbApp.allowance.account.historicalDataRequests)
             XCTAssertEqual(apiApp.allowance.subscriptionsLimit, dbApp.allowance.concurrentSubscriptions)
-            XCTAssertEqual(apiApp.creationDate, dbApp.created)
+            XCTAssertEqual(apiApp.date, dbApp.created)
             XCTAssertLessThan(dbApp.updated, Date())
         }
 

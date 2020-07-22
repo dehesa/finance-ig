@@ -18,7 +18,7 @@ final class APICertificateTests: XCTestCase {
         let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: self._acc.api.key, user: user).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, self._acc.api.key)
-        XCTAssertEqual(credentials.account, self._acc.identifier)
+        XCTAssertEqual(credentials.account, self._acc.id)
         XCTAssertFalse(credentials.token.isExpired)
         guard case .certificate(let access, let security) = credentials.token.value else {
             return XCTFail("Credentials were expected to be CST. Credentials received: \(credentials)")

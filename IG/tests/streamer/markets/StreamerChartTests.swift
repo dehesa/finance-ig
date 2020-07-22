@@ -12,7 +12,7 @@ final class StreamerChartTests: XCTestCase {
         XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        streamer.price.subscribe(epic: epic, interval: .second, fields: .all)
+        streamer.prices.subscribe(epic: epic, interval: .second, fields: .all)
             .expectsAtLeast(values: 4, timeout: 8, on: self) { (second) in
                 XCTAssertEqual(second.epic, epic)
                 XCTAssertEqual(second.interval, .second)
@@ -43,7 +43,7 @@ final class StreamerChartTests: XCTestCase {
         XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
-        streamer.price.subscribe(epic: epic, fields: .all)
+        streamer.prices.subscribe(epic: epic, fields: .all)
             .expectsAtLeast(values: 4, timeout: 8, on: self) { (tick) in
                 XCTAssertEqual(tick.epic, epic)
                 XCTAssertEqual(tick.volume, 1)
@@ -74,9 +74,9 @@ final class StreamerChartTests: XCTestCase {
         
         let expectation = self.expectation(description: "3 full minutes for all markets")
         let cancellable = Self.epics.publisher
-            .setFailureType(to: Streamer.Error.self)
+            .setFailureType(to: IG.Error.self)
             .flatMap {
-                streamer.price.subscribe(epic: $0, interval: .minute, fields: [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk], snapshot: true)
+                streamer.prices.subscribe(epic: $0, interval: .minute, fields: [.date, .isFinished, .numTicks, .openBid, .openAsk, .closeBid, .closeAsk, .lowestBid, .lowestAsk, .highestBid, .highestAsk], snapshot: true)
                     .retry(2)
             }.filter { $0.candle.isFinished ?? false }
             .sink(receiveCompletion: { _ in
