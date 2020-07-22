@@ -19,7 +19,7 @@ final class APITransactionTests: XCTestCase {
         for transaction in transactions {
             XCTAssertFalse(transaction.title.isEmpty)
             XCTAssertFalse(transaction.reference.isEmpty)
-            XCTAssertFalse(transaction.debugDescription.isEmpty)
+//            XCTAssertFalse(transaction.debugDescription.isEmpty)
         }
     }
 }

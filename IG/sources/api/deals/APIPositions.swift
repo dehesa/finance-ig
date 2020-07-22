@@ -38,6 +38,7 @@ extension API.Request.Deals {
     /// Creates a new position.
     ///
     /// This endpoint creates a "transient" position (identified by the returned deal reference).
+    /// - parameter reference: (default `nil`) A user-defined reference (e.g. `RV3JY2CVMHG1BH`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
     /// - parameter currency: The currency code (3 letters).
@@ -48,14 +49,13 @@ extension API.Request.Deals {
     /// - parameter limit: Optional limit level/distance at which the user will like to take profit. It can be marked as a distance from the buy/sell level, or as an absolute value,
     /// - parameter stop: Optional stop at which the user doesn't want to incur more losses. Positions may additional set risk limited stops and trailing stops.
     /// - parameter forceOpen: (default `true`). Enabling force open when creating a new position will enable a second position to be opened on a market. This variable must be `true` if the limit and/or the stop are set.
-    /// - parameter reference: (default `nil`). A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - returns: The transient deal reference (for an unconfirmed trade). If `reference` was set as an argument, that same value will be returned.
     /// - note: The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
     ///
     /// Some variables require specific toggles/settings:<br>
     /// - Setting a limit or a stop requires `force` open to be `true`. If not, an error will be thrown.
     /// - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
-    public func createPosition(reference: IG.Deal.Reference?, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code?, direction: IG.Deal.Direction,
+    public func createPosition(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code?, direction: IG.Deal.Direction,
                                order: Self.Position.Order, strategy: Self.Position.FillStrategy, size: Decimal64, limit: IG.Deal.Boundary?, stop: Self.Position.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadCreation(reference: reference, epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen) }
             .makeRequest(.post, "positions/otc", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })

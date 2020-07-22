@@ -20,13 +20,13 @@ final class APIApplicationTests: XCTestCase {
         XCTAssertEqual(app.key, self._acc.api.key)
         XCTAssertFalse(app.name.isEmpty)
         XCTAssertEqual(app.status, .enabled)
-        XCTAssertLessThan(app.creationDate, Date())
+        XCTAssertLessThan(app.date, Date())
         XCTAssertGreaterThan(app.allowance.overallRequests, 0)
         XCTAssertGreaterThan(app.allowance.account.overallRequests, 0)
         XCTAssertGreaterThan(app.allowance.account.tradingRequests, 0)
         XCTAssertGreaterThan(app.allowance.account.historicalDataRequests, 0)
         XCTAssertGreaterThan(app.allowance.subscriptionsLimit, 0)
-        XCTAssertLessThan(app.creationDate, Date())
+        XCTAssertLessThan(app.date, Date())
     }
     
     /// Tests the application configuration capabilities.

@@ -18,7 +18,7 @@ final class APIOAuthTests: XCTestCase {
         let credentials = api.session.loginOAuth(key: self._acc.api.key, user: user).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(credentials.client.rawValue.isEmpty)
         XCTAssertEqual(credentials.key, self._acc.api.key)
-        XCTAssertEqual(credentials.account, self._acc.identifier)
+        XCTAssertEqual(credentials.account, self._acc.id)
         XCTAssertFalse(credentials.token.isExpired)
         guard case .oauth(let access, let refresh, let scope, let type) = credentials.token.value else {
             return XCTFail("Credentials were expected to be OAuth. Credentials received: \(credentials)")
@@ -30,7 +30,7 @@ final class APIOAuthTests: XCTestCase {
         // Generate a typical request header
         let headers = credentials.requestHeaders
         XCTAssertEqual(headers[.authorization], "\(type) \(access)")
-        XCTAssertEqual(headers[.account], self._acc.identifier.rawValue)
+        XCTAssertEqual(headers[.account], self._acc.id.rawValue)
         // Check the refresh operation work as intended.
         let token = api.session.refreshOAuth(token: refresh, key: self._acc.api.key).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(token.isExpired)

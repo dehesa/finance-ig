@@ -29,7 +29,7 @@ final class DBPriceTests: XCTestCase {
         db.markets.update(apiMarket).expectsCompletion(timeout: 0.5, on: self)
         XCTAssertTrue(db.price.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self).isEmpty)
         
-        let apiPrices = api.price.getContinuously(epic: epic, from: from, to: to)
+        let apiPrices = api.prices.getContinuously(epic: epic, from: from, to: to)
             .map { (prices, _) -> [API.Price] in prices }
             .expectsAll(timeout: 4, on: self)
             .flatMap { $0 }

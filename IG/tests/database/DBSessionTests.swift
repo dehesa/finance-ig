@@ -5,7 +5,7 @@ final class DBSessionTests: XCTestCase {
     /// Tests the creation of an "in-memory" database.
     func testDatabaseInMemory() {
         let database = Test.makeDatabase(rootURL: nil, targetQueue: nil)
-        XCTAssertFalse(database.debugDescription.isEmpty)
+        XCTAssertNil(database.rootURL)
     }
     
     /// Tests the creation of a File-System database.

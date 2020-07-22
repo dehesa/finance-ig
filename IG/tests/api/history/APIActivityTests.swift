@@ -19,8 +19,8 @@ final class APIActivityTests: XCTestCase {
         
         for activity in activities {
             XCTAssertGreaterThan(activity.date, date)
-            XCTAssertFalse(activity.title.isEmpty)
-            XCTAssertFalse(activity.debugDescription.isEmpty)
+            XCTAssertFalse(activity.summary.isEmpty)
+//            XCTAssertFalse(activity.debugDescription.isEmpty)
         }
     }
 }

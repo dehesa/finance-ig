@@ -1045,20 +1045,20 @@
 				8DC4CA9E2149A6CE00344CBF /* applications */,
 				8DC4CA9A2149A6CE00344CBF /* history */,
 				8DC4CA962149A6CE00344CBF /* markets */,
-				8DC4CA922149A6CE00344CBF /* dealings */,
+				8DC4CA922149A6CE00344CBF /* deals */,
 				8D7D2DF0236318B300C0BEB5 /* scrapped */,
 				8D819E1022F2B3570031A9D5 /* utils */,
 			);
 			path = api;
 			sourceTree = "<group>";
 		};
-		8DC4CA922149A6CE00344CBF /* dealings */ = {
+		8DC4CA922149A6CE00344CBF /* deals */ = {
 			isa = PBXGroup;
 			children = (
 				8DC4CA932149A6CE00344CBF /* APIPositionTests.swift */,
 				8DC4CA942149A6CE00344CBF /* APIWorkingOrderTests.swift */,
 			);
-			path = dealings;
+			path = deals;
 			sourceTree = "<group>";
 		};
 		8DC4CA962149A6CE00344CBF /* markets */ = {

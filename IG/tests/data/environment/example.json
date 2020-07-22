@@ -10,7 +10,7 @@
         "certificate": {
             "access": "",
             "security": ""
-        }
+        },
         "oauth": {
             "access": "",
             "refresh": "",

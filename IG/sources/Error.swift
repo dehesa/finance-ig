@@ -34,11 +34,40 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     }
     
     public var errorDescription: String? {
-        self.type.description
+        var result: String
+        
+        switch self.type {
+        case .api(let f):
+            result = "[API] "
+            switch f {
+            case .sessionExpired: result.append("Session expired.")
+            case .invalidRequest: result.append("Invalid request.")
+            case .callFailed: result.append("Call failed.")
+            case .invalidResponse: result.append("Invalid response.")
+            }
+        case .streamer(let f):
+            result = "[Streamer] "
+            switch f {
+            case .sessionExpired: result.append("Session expired.")
+            case .invalidRequest: result.append("Invalid request.")
+            case .subscriptionFailed: result.append("Subscription failed.")
+            case .invalidResponse: result.append("Invalid response.")
+            }
+        case .database(let f):
+            result = "[Database] "
+            switch f {
+            case .sessionExpired: result.append("Session expired.")
+            case .invalidRequest: result.append("Invalid request.")
+            case .callFailed: result.append("Call failed.")
+            case .invalidResponse: result.append("Invalid response.")
+            }
+        }
+        
+        return result
     }
     
     public var localizedDescription: String {
-        var result = "\(self.type.description)"
+        var result = "\(self.errorDescription!)"
         if let reason = self.failureReason {
             result.append("\n\tReason: \(reason)")
         }
@@ -65,12 +94,35 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
 
 // MARK: -
 
+/// Forces a cast from the generic Swift error to the framework error.
+func errorCast(from error: Swift.Error) -> Error {
+    error as! Error
+}
+
 internal extension IG.Error {
     /// IG error domains.
-    enum Failure {
+    enum Failure: RawRepresentable {
         case api(API.Failure)
         case streamer(Streamer.Failure)
         case database(Database.Failure)
+        
+        init?(rawValue: Int) {
+            if let failure = API.Failure(rawValue: rawValue) {
+                self = .api(failure)
+            } else if let failure = Streamer.Failure(rawValue: rawValue) {
+                self = .streamer(failure)
+            } else if let failure = Database.Failure(rawValue: rawValue) {
+                self = .database(failure)
+            } else { return nil }
+        }
+        
+        var rawValue: Int {
+            switch self {
+            case .api(let f): return f.rawValue
+            case .streamer(let f): return f.rawValue
+            case .database(let f): return f.rawValue
+            }
+        }
     }
 }
 
@@ -113,73 +165,5 @@ internal extension Database {
         case callFailed = 303
         /// The fetched response from the database is invalid.
         case invalidResponse = 304
-    }
-}
-
-/// Forces a cast from the generic Swift error to the framework error.
-func errorCast(from error: Swift.Error) -> Error {
-    error as! Error
-}
-
-extension Error.Failure: RawRepresentable, CustomStringConvertible {
-    init?(rawValue: Int) {
-        if let failure = API.Failure(rawValue: rawValue) {
-            self = .api(failure)
-        } else if let failure = Streamer.Failure(rawValue: rawValue) {
-            self = .streamer(failure)
-        } else if let failure = Database.Failure(rawValue: rawValue) {
-            self = .database(failure)
-        } else {
-            return nil
-        }
-    }
-    
-    var rawValue: Int {
-        switch self {
-        case .api(let f): return f.rawValue
-        case .streamer(let f): return f.rawValue
-        case .database(let f): return f.rawValue
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .api(let f): return "[API] \(f.description)"
-        case .streamer(let f): return "[Streamer] \(f.description)"
-        case .database(let f): return "[Database] \(f.description)"
-        }
-    }
-}
-
-extension API.Failure: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .sessionExpired: return "Session expired."
-        case .invalidRequest: return "Invalid request."
-        case .callFailed: return "Call failed."
-        case .invalidResponse: return "Invalid response."
-        }
-    }
-}
-
-extension Streamer.Failure: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .sessionExpired: return "Session expired."
-        case .invalidRequest: return "Invalid request."
-        case .subscriptionFailed: return "Subscription failed."
-        case .invalidResponse: return "Invalid response."
-        }
-    }
-}
-
-extension Database.Failure: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .sessionExpired: return "Session expired."
-        case .invalidRequest: return "Invalid request."
-        case .callFailed: return "Call failed."
-        case .invalidResponse: return "Invalid response."
-        }
     }
 }

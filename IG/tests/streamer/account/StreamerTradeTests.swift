@@ -15,9 +15,8 @@ final class StreamerTradeTests: XCTestCase {
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
-        streamer.accounts.subscribeToConfirmations(account: self._acc.identifier).expectsAtLeast(values: 1, timeout: 2, on: self) { (confirmation) in
-            print(confirmation)
-        }
+        streamer.deals.subscribeToDeals(account: self._acc.id, fields: [.confirmations], snapshot: false)
+            .expectsAtLeast(values: 1, timeout: 2, on: self) { print($0) }
         
         streamer.session.disconnect().expectsOne(timeout: 2, on: self)
         XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
@@ -34,7 +33,7 @@ final class StreamerTradeTests: XCTestCase {
         
         // 1. Subscribe to confirmations
         var dealId: IG.Deal.Identifier? = nil
-        let cancellable = streamer.accounts.subscribeToConfirmations(account: self._acc.identifier, snapshot: false)
+        let cancellable = streamer.deals.subscribeToDeals(account: self._acc.id, fields: [.confirmations], snapshot: false)
             .sink(receiveCompletion: {
                 if case .failure(let error) = $0 {
                     XCTFail("The publisher failed unexpectedly with \(error)")
@@ -42,7 +41,7 @@ final class StreamerTradeTests: XCTestCase {
             }, receiveValue: { (update) in
                 print(update)
                 guard case .none = dealId else { return }
-                dealId = update.confirmation.dealIdentifier
+                dealId = update.confirmation!.deal.id
             })
         self.wait(seconds: 0.8)
         
@@ -53,7 +52,7 @@ final class StreamerTradeTests: XCTestCase {
         print("\n\nMarket level: \(market.snapshot.price!.mid!)\nWorking order level: \(level)\n\n")
         
         // 3. Create the working order
-        api.workingOrders.create(epic: epic, currency: .usd, direction: .buy, type: .limit, size: 1, level: level, limit: .distance(50), stop: (.distance(50), .exposed), expiration: .tillDate(Date().addingTimeInterval(60*60*5)))
+        api.deals.createWorkingOrder(reference: nil, epic: epic, expiry: .none, currency: .usd, type: .limit, expiration: .tillDate(Date().addingTimeInterval(60*60*5)), direction: .buy, size: 1, level: level, limit: .distance(50), stop: .distance(50, risk: .exposed), forceOpen: true)
             .expectsOne(timeout: 2, on: self)
         self._wait(max: 1.2, interval: 0.2) { (expectation) in
             guard case .some = dealId else { return }
@@ -64,12 +63,12 @@ final class StreamerTradeTests: XCTestCase {
         
         // 4. Modify the working order
         let newLevel = level + 0.0005
-        api.workingOrders.update(identifier: dealId!, type: .limit, level: newLevel, limit: nil, stop: nil, expiration: .tillCancelled)
+        api.deals.updateWorkingOrder(id: dealId!, type: .limit, expiration: .tillCancelled, level: newLevel, limit: nil, stop: nil)
             .expectsOne(timeout: 2, on: self)
         self.wait(seconds: 1)
         
         // 5. Delete working order
-        api.workingOrders.delete(identifier: dealId!).expectsOne(timeout: 2, on: self)
+        api.deals.deleteWorkingOrder(id: dealId!).expectsOne(timeout: 2, on: self)
         self.wait(seconds: 1)
         
         // 6. Unsubscribe & disconnect

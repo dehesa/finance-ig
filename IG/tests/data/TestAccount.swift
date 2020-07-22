@@ -5,9 +5,9 @@ import Foundation
 
 extension Test {
     /// Contains the loging information for the testing environment.
-    final class Account {
+    final class Account: Identifiable {
         /// The target account identifier.
-        let identifier: IG.Account.Identifier
+        let id: IG.Account.Identifier
         /// List of variables required to connect to the API.
         var api: APIData
         /// List of variables required to connect to the Streamer.
@@ -17,7 +17,7 @@ extension Test {
         
         /// Designated initializer letting you pass the test account data you want.
         init(identifier: IG.Account.Identifier, api: APIData, streamer: StreamerData? = nil, database: DatabaseData? = nil) {
-            self.identifier = identifier
+            self.id = identifier
             self.api = api
             self.streamer = streamer
             self.database = database
