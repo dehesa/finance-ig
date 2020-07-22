@@ -175,7 +175,7 @@ private extension Database.Channel {
     /// - warning: This function will perform a `queue.sync()` operation. Be sure no deadlocks occurs.
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter queue: The queue serializing access to the database.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     static func _make(location: Database.Location, queue: DispatchQueue) throws -> (rootURL: URL?, database: SQLite.Database) {
         let (rootURL, path): (URL?, String)
         

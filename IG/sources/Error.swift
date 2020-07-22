@@ -61,7 +61,11 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     public var debugDescription: String {
         return self.localizedDescription
     }
-    
+}
+
+// MARK: -
+
+internal extension IG.Error {
     /// IG error domains.
     enum Failure {
         case api(API.Failure)
@@ -69,8 +73,6 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
         case database(Database.Failure)
     }
 }
-
-// MARK: -
 
 internal extension API {
     /// The list of possible failures occurring in the API.
@@ -112,6 +114,11 @@ internal extension Database {
         /// The fetched response from the database is invalid.
         case invalidResponse = 304
     }
+}
+
+/// Forces a cast from the generic Swift error to the framework error.
+func errorCast(from error: Swift.Error) -> Error {
+    error as! Error
 }
 
 extension Error.Failure: RawRepresentable, CustomStringConvertible {
@@ -175,11 +182,4 @@ extension Database.Failure: CustomStringConvertible {
         case .invalidResponse: return "Invalid response."
         }
     }
-}
-
-// MARK: -
-
-/// Forces a cast from the generic Swift error to the framework error.
-func errorCast(from error: Swift.Error) -> IG.Error {
-    error as! IG.Error
 }

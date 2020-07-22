@@ -30,7 +30,7 @@ public final class Database {
     ///
     /// - parameter location: The location of the database (whether "in-memory" or file system).
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     public convenience init(location: Database.Location, targetQueue: DispatchQueue?) throws {
         if let targetQueue = targetQueue {
             dispatchPrecondition(condition: .notOnQueue(targetQueue))
@@ -45,7 +45,7 @@ public final class Database {
     /// - parameter rootURL: The file URL where the databse file is or `nil` for "in memory" storage.
     /// - parameter channel: The SQLite opaque pointer to the database.
     /// - parameter queue: The queue on which to process the `Database` requests and responses.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     internal init(channel: Database.Channel, queue: DispatchQueue) throws {
         self.channel = channel
         self.queue = queue

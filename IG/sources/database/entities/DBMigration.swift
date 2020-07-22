@@ -4,7 +4,7 @@ import SQLite3
 extension Database {
     /// Migrates the hosted database from its version to a targeted version.
     /// - parameter toVersion: The desired database version.
-    /// - throws: `Database.Error` exclusively if the database is already on a higher version number or there were problems during migration.
+    /// - throws: `IG.Error` exclusively if the database is already on a higher version number or there were problems during migration.
     internal final func migrate(to toVersion: Database.Migration.Version) throws {
         var info = try self._migrationInfo()
         guard info.version != toVersion else { return }
@@ -18,7 +18,7 @@ extension Database {
     }
     
     /// Apply the needed migrations to reach the hosted database to the latest version.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     internal final func migrateToLatestVersion() throws {
         var info = try self._migrationInfo()
         
@@ -29,7 +29,7 @@ extension Database {
     }
     
     /// - precondition: The database version number is expected to be valid at this moment.
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     private final func _migrateToNextVersion() throws {
         typealias M = Database.Migration
         switch M.Version(rawValue: try self.channel.unrestrictedAccess(M.version))! {
@@ -38,7 +38,7 @@ extension Database {
         }
     }
     
-    /// - throws: `Database.Error` exclusively.
+    /// - throws: `IG.Error` exclusively.
     private final func _migrationInfo() throws -> (applicationID: Int32, version: Database.Migration.Version) {
         // Retrieve the current database version
         let versionNumber = try self.channel.unrestrictedAccess(Database.Migration.version)
