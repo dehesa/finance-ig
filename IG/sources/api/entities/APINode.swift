@@ -73,7 +73,7 @@ extension API.Node: Decodable {
 
 internal extension API.JSON.DecoderKey {
     /// Key for JSON decoders under which a node identifier will be stored.
-    static let nodeIdentifier = CodingUserInfoKey(rawValue: "IG_APINodeId")!
+    static let nodeIdentifier = CodingUserInfoKey(rawValue: "IG_APINodeId").unsafelyUnwrapped
     /// Key for JSON decoders under which a node name will be stored.
-    static let nodeName = CodingUserInfoKey(rawValue: "IG_APINodeName")!
+    static let nodeName = CodingUserInfoKey(rawValue: "IG_APINodeName").unsafelyUnwrapped
 }

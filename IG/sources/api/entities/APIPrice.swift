@@ -39,7 +39,7 @@ extension API.Price {
         
         /// The middle price between the *bid* and the *ask* price.
         @_transparent public var mid: Decimal64 {
-            self.bid + Decimal64(5, power: -1)! * (self.ask - self.bid)
+            self.bid + Decimal64(5, power: -1).unsafelyUnwrapped * (self.ask - self.bid)
         }
     }
 }

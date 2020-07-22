@@ -67,7 +67,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     }
     
     public var localizedDescription: String {
-        var result = "\(self.errorDescription!)"
+        var result = "\(self.errorDescription.unsafelyUnwrapped)"
         if let reason = self.failureReason {
             result.append("\n\tReason: \(reason)")
         }

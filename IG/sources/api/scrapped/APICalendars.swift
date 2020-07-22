@@ -31,7 +31,7 @@ extension API.Request.Scrapped {
                 let toInterval = Int(to.timeIntervalSince1970) * 1000
                 return (fromInterval, toInterval)
             }.makeScrappedRequest(.get, url: {  (_, values) -> URL in
-                let subpath = "chartscalendar/events/\(epic.rawValue)/from/\(values.from)/to/\(values.to)/"
+                let subpath = "chartscalendar/events/\(epic)/from/\(values.from)/to/\(values.to)/"
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "ssoToken", value: scrappedCredentials.security),

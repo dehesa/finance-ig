@@ -202,7 +202,7 @@ internal extension Database.Market.Forex {
     typealias Indices = (epic: Int32, base: Int32, counter: Int32, identifiers: Self.Identifiers.Indices, information: Self.DealingInformation.Indices, restrictions: Self.Restrictions.Indices)
 
     init(statement s: SQLite.Statement, indices: Indices = (0, 1, 2, (3, 4, 5, 6), (7, 8, 9, 10, 11, 12, 13, 14, 15), (16, 17, 18, 19, 20, 21, 22)) ) {
-        self.epic = IG.Market.Epic(rawValue: String(cString: sqlite3_column_text(s, indices.epic)))!
+        self.epic = IG.Market.Epic(String(cString: sqlite3_column_text(s, indices.epic)))!
         self.currencies = .init(base:    Currency.Code(String(cString: sqlite3_column_text(s, indices.base)))!,
                                 counter: Currency.Code(String(cString: sqlite3_column_text(s, indices.counter)))!)
         self.identifiers  = .init(statement: s, indices: indices.identifiers)
@@ -211,7 +211,7 @@ internal extension Database.Market.Forex {
     }
 
     func _bind(to statement: SQLite.Statement, indices: Indices = (1, 2, 3, (4, 5, 6, 7), (8, 9, 10, 11, 12, 13, 14, 15, 16), (17, 18, 19, 20, 21, 22, 23))) {
-        sqlite3_bind_text(statement, indices.epic, self.epic.rawValue, -1, SQLite.Destructor.transient)
+        sqlite3_bind_text(statement, indices.epic, self.epic.description, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.base, self.currencies.base.description, -1, SQLite.Destructor.transient)
         sqlite3_bind_text(statement, indices.counter, self.currencies.counter.description, -1, SQLite.Destructor.transient)
         self.identifiers._bind(to: statement, indices: indices.identifiers)
@@ -445,22 +445,22 @@ extension Database.Market.Forex {
         // 8. Check the margin deposit bands
         let apiBands = market.instrument.margin.depositBands.sorted { $0.minimum < $1.minimum }
 
-        guard let code = apiBands.first?.currencyCode else {
+        guard let code = apiBands.first?.currency else {
             return .failure(error("doesn't have margin bands"))
         }
 
-        guard apiBands.allSatisfy({ $0.currencyCode == code }) else {
+        guard apiBands.allSatisfy({ $0.currency == code }) else {
             return .failure(error("margin bands have different currency units"))
         }
 
         for index in 0..<apiBands.count-1 {
             guard let max = apiBands[index].maximum else {
-                let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode) -> \($0.margin)%" }.joined(separator: ", ")
+                let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currency) -> \($0.margin)%" }.joined(separator: ", ")
                 return .failure(error("expected a maximum at index '\(index)' for deposit bands [\(representation)]"))
             }
 
             guard max == apiBands[index+1].minimum else {
-                let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currencyCode) -> \($0.margin)%" }.joined(separator: ", ")
+                let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currency) -> \($0.margin)%" }.joined(separator: ", ")
                 return .failure(error("doesn't have contiguous deposit bands [\(representation)]"))
             }
         }
@@ -516,7 +516,7 @@ extension Database.Market.Forex {
             }
         }
         // C. Check the epic
-        let epicSplit = market.instrument.epic.rawValue.split(separator: ".")
+        let epicSplit = market.instrument.epic.description.split(separator: ".")
         if epicSplit.count > 3 {
             let identifier = epicSplit[2]
             if let base = Currency.Code(String(identifier.prefix(3)) ),

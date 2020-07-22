@@ -17,13 +17,13 @@ extension API.Request.Session {
     /// - returns: `Future` related type forwarding platform credentials if the login was successful.
     internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> AnyPublisher<(credentials: API.Credentials, settings: API.Session.Settings), Swift.Error> {
         self.api.publisher
-            .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
+            .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.description] }, body: {
                 let payload = _PayloadCertificate(user: user, encryptedPassword: encryptPassword)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: API.Session._Certificate, _) -> (credentials: API.Credentials, settings: API.Session.Settings) in
                 let token = API.Token(.certificate(access: r.tokens.accessToken, security: r.tokens.securityToken), expirationDate: r.tokens.expirationDate)
-                let credentials = API.Credentials(client: r.session.client, account: r.account.identifier, key: key, token: token, streamerURL: r.session.streamerURL, timezone: r.session.timezone)
+                let credentials = API.Credentials(key: key, client: r.session.client, account: r.account.id, streamerURL: r.session.streamerURL, timezone: r.session.timezone, token: token)
                 return (credentials, r.session.settings)
             }.eraseToAnyPublisher()
     }
@@ -49,7 +49,7 @@ extension API.Request.Session {
     internal func refreshCertificate(key: API.Key, token: API.Token) -> AnyPublisher<(API.Session,API.Token),IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
-                var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
+                var result = [API.HTTP.Header.Key.apiKey: key.description]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -80,7 +80,7 @@ extension API.Request.Session {
     /// - todo: Use this to encrypt the password.
     fileprivate func _generateEncryptionKey(key: API.Key) -> AnyPublisher<API.Session._EncryptionKey,IG.Error> {
         self.api.publisher
-            .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.rawValue] })
+            .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.description] })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default())
             .mapError(errorCast)
@@ -168,28 +168,28 @@ fileprivate extension API.Session._Certificate {
 
 fileprivate extension API.Session._Certificate {
     /// Information about an account.
-    struct _Account {
+    struct _Account: Identifiable {
         /// Account identifier.
-        let identifier: IG.Account.Identifier
+        let id: IG.Account.Identifier
         /// Account type.
         let type: API.Account.Kind
         /// The default currency used in this session.
-        let currencyCode: Currency.Code
+        let currency: Currency.Code
         /// Account balance
         let balance: API.Account.Balance
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: _Keys.self)
-            self.identifier = try container.decode(IG.Account.Identifier.self, forKey: .account)
+            self.id = try container.decode(IG.Account.Identifier.self, forKey: .account)
             self.type = try container.decode(API.Account.Kind.self, forKey: .type)
-            self.currencyCode = try container.decode(Currency.Code.self, forKey: .currencyCode)
+            self.currency = try container.decode(Currency.Code.self, forKey: .currency)
             self.balance = try container.decode(API.Account.Balance.self, forKey: .balance)
         }
         
         private enum _Keys: String, CodingKey {
             case account = "currentAccountId"
             case type = "accountType"
-            case currencyCode = "currencyIsoCode"
+            case currency = "currencyIsoCode"
             case balance = "accountInfo"
         }
     }

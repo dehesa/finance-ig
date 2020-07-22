@@ -13,13 +13,13 @@ extension API.Request.Session {
     /// - returns: `Future` related type forwarding the platform credentials if the login was successful.
     internal func loginOAuth(key: API.Key, user: API.User) -> AnyPublisher<API.Credentials,Swift.Error> {
         self.api.publisher
-            .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.rawValue] }, body: {
+            .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.description] }, body: {
                 let payload = _PayloadOAuth(user: user)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(response: true)) { (r: API.Session._OAuth, _) -> API.Credentials in
                 let token = API.Token(.oauth(access: r.tokens.accessToken, refresh: r.tokens.refreshToken, scope: r.tokens.scope, type: r.tokens.type), expirationDate: r.tokens.expirationDate)
-                return .init(client: r.clientId, account: r.accountId, key: key, token: token, streamerURL: r.streamerURL, timezone: r.timezone)
+                return API.Credentials(key: key, client: r.clientId, account: r.accountId, streamerURL: r.streamerURL, timezone: r.timezone, token: token)
             }.eraseToAnyPublisher()
     }
 
@@ -34,7 +34,7 @@ extension API.Request.Session {
         self.api.publisher { _ -> _TemporaryRefresh in
                 guard !token.isEmpty else { throw IG.Error(.api(.invalidRequest), "The OAuth refresh token cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.") }
                 return _TemporaryRefresh(refreshToken: token, apiKey: key)
-            }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.rawValue] }, body: {
+            }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.description] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)

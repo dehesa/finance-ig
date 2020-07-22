@@ -295,6 +295,11 @@ extension Currency {
 
 /// ISO 4217 currency codes.
 extension Currency.Code: Codable {
+    public init(stringLiteral value: String) {
+        let currency = Self.init(value) ?! fatalError("Invalid currency code '\(value)'.")
+        self = currency
+    }
+    
     public init?(_ description: String) {
         guard description.utf8.count == 3 else { return nil }
         
@@ -328,11 +333,6 @@ extension Currency.Code: Codable {
         case _Values.nzd: self = .nzd
         default: return nil
         }
-    }
-    
-    public init(stringLiteral value: String) {
-        let currency = Self.init(value) ?! fatalError("Invalid currency code '\(value)'.")
-        self = currency
     }
     
     public var description: String {

@@ -124,7 +124,7 @@ extension API.Request.Session {
     public func get(key: API.Key, token: API.Token) -> AnyPublisher<API.Session,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, headers: {
-                var result = [API.HTTP.Header.Key.apiKey: key.rawValue]
+                var result = [API.HTTP.Header.Key.apiKey: key.description]
                 switch token.value {
                 case .certificate(let access, let security):
                     result[.clientSessionToken] = access
@@ -151,7 +151,7 @@ extension API.Request.Session {
     public func `switch`(to accountId: IG.Account.Identifier, makingDefault: Bool = false) -> AnyPublisher<API.Session.Settings,IG.Error> {
         self.api.publisher
             .makeRequest(.put, "session", version: 1, credentials: true, body: {
-                let payload = _PayloadSwitch(accountId: accountId.rawValue, defaultAccount: makingDefault)
+                let payload = _PayloadSwitch(accountId: accountId.description, defaultAccount: makingDefault)
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings, call) throws in

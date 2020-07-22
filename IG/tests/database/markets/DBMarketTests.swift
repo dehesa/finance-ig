@@ -33,7 +33,7 @@ final class DBMarketTests: XCTestCase {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
         
-        let all = (Test.Epic.forex + Test.Epic.forexMini).sorted(by: { $0.rawValue < $1.rawValue })
+        let all = (Test.Epic.forex + Test.Epic.forexMini).sorted(by: { $0 < $1 })
         for epics in all.chunked(into: 50) {
             let apiMarkets = api.markets.get(epics: .init(epics))
                 .expectsOne(timeout: 2, on: self)

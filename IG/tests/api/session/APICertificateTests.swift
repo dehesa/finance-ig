@@ -16,7 +16,7 @@ final class APICertificateTests: XCTestCase {
         }
         // Log in through certificate credentials with the test account
         let (credentials, _): (API.Credentials, API.Session.Settings) = api.session.loginCertificate(key: self._acc.api.key, user: user).expectsOne(timeout: 2, on: self)
-        XCTAssertFalse(credentials.client.rawValue.isEmpty)
+        XCTAssertFalse(credentials.client.description.isEmpty)
         XCTAssertEqual(credentials.key, self._acc.api.key)
         XCTAssertEqual(credentials.account, self._acc.id)
         XCTAssertFalse(credentials.token.isExpired)

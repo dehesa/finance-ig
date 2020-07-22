@@ -59,7 +59,7 @@ extension API.Request.Deals {
     public func updateWorkingOrder(id: IG.Deal.Identifier, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
-            }.makeRequest(.put, "workingorders/otc/\(id.rawValue)", version: 2, credentials: true, body: {
+            }.makeRequest(.put, "workingorders/otc/\(id)", version: 2, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
@@ -74,7 +74,7 @@ extension API.Request.Deals {
     /// - returns: *Future* forwarding the deal reference.
     public func deleteWorkingOrder(id: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher
-            .makeRequest(.delete, "workingorders/otc/\(id.rawValue)", version: 2, credentials: true)
+            .makeRequest(.delete, "workingorders/otc/\(id)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: Self.WrapperReference, _) in w.dealReference }
             .mapError(errorCast)

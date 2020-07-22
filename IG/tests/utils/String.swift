@@ -24,6 +24,6 @@ internal extension String {
     
     static func random(length: Int) -> String {
         let pool = _lowercaseASCII.appending(_uppercaseASCII)
-        return .init((0..<length).map { _ in pool.randomElement()! })
+        return .init((0..<length).map { _ in pool.randomElement().unsafelyUnwrapped })
     }
 }

@@ -21,7 +21,7 @@ extension Database.Request.Price {
     /// - returns: The dates under which there are prices or an empty array if no data has been previously stored for that timeframe.
     public func getAvailableDates(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[Date],IG.Error> {
         self._database.publisher { _ -> (tableName: String, query: String) in
-            let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+            let tableName = Database.Price.tableNamePrefix.appending(epic.description)
             var query = "SELECT date FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
@@ -68,7 +68,7 @@ extension Database.Request.Price {
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: The date furthest in the past stored in the database.
     public func getFirstDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
-        self._database.publisher { _  in "SELECT MIN(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.rawValue))'" }
+        self._database.publisher { _  in "SELECT MIN(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query, _) in
                 let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
@@ -86,7 +86,7 @@ extension Database.Request.Price {
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: The date from "newest" date stored in the database. If `nil`, no price points are for the given table.
     public func getLastDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
-        self._database.publisher { _ in "SELECT MAX(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.rawValue))'" }
+        self._database.publisher { _ in "SELECT MAX(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query, _) in
                 let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
@@ -105,7 +105,7 @@ extension Database.Request.Price {
     /// - parameter to: The date from which to end the query. If `nil`, the date at the end of the database is assumed.
     public func count(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<Int,IG.Error> {
         self._database.publisher { _ -> String in
-                let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+                let tableName = Database.Price.tableNamePrefix.appending(epic.description)
                 var query = "SELECT COUNT(*) FROM '\(tableName)'"
                 switch (from, to) {
                 case (let from?, let to?):
@@ -145,7 +145,7 @@ extension Database.Request.Price {
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
     public func get(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[Database.Price],IG.Error> {
         self._database.publisher { _ -> (tableName: String, query: String) in
-            let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+            let tableName = Database.Price.tableNamePrefix.appending(epic.description)
             var query = "SELECT * FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
@@ -195,7 +195,7 @@ extension Database.Request.Price {
     /// - returns: A signal with price point matching the closure as value.
     public func first(epic: IG.Market.Epic, from: Date, to: Date?, buying: Decimal64, selling: Decimal64) -> AnyPublisher<Database.Price?,IG.Error> {
         return self._database.publisher { _ -> (tableName: String, query: String) in
-            let tableName = Database.Price.tableNamePrefix.appending(epic.rawValue)
+            let tableName = Database.Price.tableNamePrefix.appending(epic.description)
             var query = "SELECT * FROM '\(tableName)'"
             
             if let to = to {

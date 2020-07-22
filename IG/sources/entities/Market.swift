@@ -1,29 +1,23 @@
 /// Namespace for market information.
 public enum Market {
     /// An epic represents a unique tradeable market.
-    public struct Epic: RawRepresentable, ExpressibleByStringLiteral, LosslessStringConvertible, Hashable, Comparable {
-        public let rawValue: String
+    public struct Epic {
+        /// The underlying storage.
+        @usableFromInline internal typealias _Buffer = (UInt64, UInt64, UInt64, UInt64)
+        /// Maximum UTF8 character count.
+        private static var count: Int { 32 }
         
-        public init?(rawValue: String) {
-            guard Self._validate(rawValue) else { return nil }
-            self.rawValue = rawValue
-        }
+        /// Internal storage safekeeping the UTF8 units and a null character.
+        @usableFromInline internal let _storage: _Buffer
         
-        public init(stringLiteral value: String) {
-            precondition(Self._validate(value), "Invalid market epic '\(value)'.")
-            self.rawValue = value
-        }
-        
-        @_transparent public init?(_ description: String) {
-            self.init(rawValue: description)
-        }
-        
-        @_transparent public var description: String {
-            self.rawValue
-        }
-        
-        @_transparent public static func < (lhs: Self, rhs: Self) -> Bool {
-            lhs.rawValue < rhs.rawValue
+        /// Unsafe designated initializer.
+        ///
+        /// This initializer doesn't perform the required type validation. If the provided `value` doesn't satisfy the validation requirement, the behavior is undefined.
+        /// - parameter value: String value to be stored as a market epic.
+        private init(unchecked value: String) {
+            var storage: _Buffer = (0, 0, 0, 0)
+            withUnsafeMutableBytes(of: &storage) { $0.copyBytes(from: value.utf8) }
+            self._storage = storage
         }
         
         /// Returns a Boolean indicating whether the raw value can represent a market epic.
@@ -43,20 +37,52 @@ public enum Market {
     }
 }
 
+extension Market.Epic: ExpressibleByStringLiteral, LosslessStringConvertible {
+    public init(stringLiteral value: String) {
+        precondition(Self._validate(value), "Invalid market epic '\(value)'.")
+        self.init(unchecked: value)
+    }
+    
+    public init?(_ description: String) {
+        guard Self._validate(description) else { return nil }
+        self.init(unchecked: description)
+    }
+    
+    public var description: String {
+        withUnsafePointer(to: self._storage) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: Self.count) {
+                String(cString: $0)
+            }
+        }
+    }
+}
+
+extension Market.Epic: Hashable, Comparable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs._storage == rhs._storage
+    }
+    
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs._storage < rhs._storage
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        withUnsafeBytes(of: self._storage) { hasher.combine(bytes: $0) }
+    }
+}
+
 // MARK: -
 
 extension Market.Epic: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        self.rawValue = try container.decode(String.self)
-        
-        guard Self._validate(self.rawValue) else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid market epic '\(self.rawValue)'.")
-        }
+        let value = try container.decode(String.self)
+        guard Self._validate(value) else { throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid market epic '\(value)'.") }
+        self.init(unchecked: value)
     }
     
     @_transparent public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(self.rawValue)
+        try container.encode(self.description)
     }
 }

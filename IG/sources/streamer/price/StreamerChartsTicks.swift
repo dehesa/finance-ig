@@ -12,7 +12,7 @@ extension Streamer.Request.Prices {
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
     /// - returns: Signal producer that can be started at any time.
     public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Tick,IG.Error> {
-        let item = "CHART:\(epic.rawValue):TICK"
+        let item = "CHART:\(epic):TICK"
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel

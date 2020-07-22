@@ -26,7 +26,7 @@ extension API.Request.Deals {
     /// - returns: *Future* forwarding the targeted position.
     public func getPosition(id: IG.Deal.Identifier) -> AnyPublisher<API.Position,IG.Error> {
         self.api.publisher
-            .makeRequest(.get, "positions/\(id.rawValue)", version: 2, credentials: true)
+            .makeRequest(.get, "positions/\(id)", version: 2, credentials: true)
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(date: true))
             .mapError(errorCast)
@@ -77,7 +77,7 @@ extension API.Request.Deals {
     /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
     public func updatePosition(id: IG.Deal.Identifier, limitLevel: Decimal64?, stop: Self.Position.StopEdit?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadUpdate(limit: limitLevel, stop: stop) }
-            .makeRequest(.put, "positions/otc/\(id.rawValue)", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
+            .makeRequest(.put, "positions/otc/\(id)", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
             .mapError(errorCast)

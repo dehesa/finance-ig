@@ -19,7 +19,7 @@ final class StreamerLowlevelTests: XCTestCase {
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-        client.connectionDetails.user = creds.identifier.rawValue
+        client.connectionDetails.user = creds.identifier.description
         client.connectionDetails.setPassword(creds.password)
         client.add(delegate: self)
         client.connect()
@@ -47,7 +47,7 @@ final class StreamerLowlevelTests: XCTestCase {
         
         // 1. Connect the Lighstreamer client
         let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-        client.connectionDetails.user = creds.identifier.rawValue
+        client.connectionDetails.user = creds.identifier.description
         client.connectionDetails.setPassword(creds.password)
         client.add(delegate: self)
         client.connect()

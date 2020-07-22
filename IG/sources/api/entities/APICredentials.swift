@@ -15,31 +15,6 @@ extension API {
         public let timezone: TimeZone
         /// The actual token values/headers.
         public internal(set) var token: API.Token
-        
-        /// Creates a credentials structure from hardcoded data.
-        public init(client: IG.Client.Identifier, account: IG.Account.Identifier, key: API.Key, token: API.Token, streamerURL: URL, timezone: TimeZone) {
-            self.key = key
-            self.client = client
-            self.account = account
-            self.streamerURL = streamerURL
-            self.timezone = timezone
-            self.token = token
-        }
-        
-        /// Key-value pairs to be added to the request headers.
-        /// - returns: The key-value pairs of the underlying credentials.
-        internal var requestHeaders: [API.HTTP.Header.Key:String] {
-            var result: [API.HTTP.Header.Key:String] = [.apiKey: self.key.rawValue]
-            switch self.token.value {
-            case .certificate(let access, let security):
-                result[.clientSessionToken] = access
-                result[.securityToken] = security
-            case .oauth(let access, _, _, let type):
-                result[.account] = self.account.rawValue
-                result[.authorization] = "\(type) \(access)"
-            }
-            return result
-        }
     }
 }
 
@@ -86,7 +61,23 @@ extension API.Token {
 
 // MARK: -
 
-extension API.Credentials: Codable {}
+extension API.Credentials: Codable {
+    /// Key-value pairs to be added to the request headers.
+    /// - returns: The key-value pairs of the underlying credentials.
+    internal var requestHeaders: [API.HTTP.Header.Key:String] {
+        var result: [API.HTTP.Header.Key:String] = [.apiKey: self.key.description]
+        switch self.token.value {
+        case .certificate(let access, let security):
+            result[.clientSessionToken] = access
+            result[.securityToken] = security
+        case .oauth(let access, _, _, let type):
+            result[.account] = self.account.description
+            result[.authorization] = "\(type) \(access)"
+        }
+        return result
+    }
+}
+
 extension API.Token: Codable {}
 
 extension API.Token.Kind: Codable {

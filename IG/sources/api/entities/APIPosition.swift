@@ -11,7 +11,7 @@ extension API {
         /// Date the position was created.
         public let date: Date
         /// Position currency ISO code.
-        public let currencyCode: Currency.Code?
+        public let currency: Currency.Code?
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Size of the contract.
@@ -40,7 +40,7 @@ extension API.Position: Decodable {
         self.id = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
         self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
         self.date = try nestedContainer.decode(Date.self, forKey: .date, with: DateFormatter.iso8601Broad)
-        self.currencyCode = try nestedContainer.decodeIfPresent(Currency.Code.self, forKey: .currencyCode)
+        self.currency = try nestedContainer.decodeIfPresent(Currency.Code.self, forKey: .currency)
         self.direction = try nestedContainer.decode(IG.Deal.Direction.self, forKey: .direction)
         self.contractSize = try nestedContainer.decode(Decimal64.self, forKey: .contractSize)
         self.size = try nestedContainer.decode(Decimal64.self, forKey: .size)
@@ -73,7 +73,7 @@ extension API.Position: Decodable {
             case identifier = "dealId"
             case reference = "dealReference"
             case date = "createdDateUTC"
-            case currencyCode = "currency"
+            case currency
             case contractSize, size
             case direction, level
             case limitLevel, stopLevel

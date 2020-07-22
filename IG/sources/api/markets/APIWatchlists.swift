@@ -97,7 +97,7 @@ extension API.Request.Watchlists {
                 guard !identifier.isEmpty else {
                     throw IG.Error(.api(.invalidRequest), "The watchlist identifier cannot be empty.", help: "Empty strings are not valid identifiers. Query the watchlist endpoint again and retrieve a proper watchlist identifier.")
                 }
-            }.makeRequest(.delete, "watchlists/\(identifier)/\(epic.rawValue)", version: 1, credentials: true)
+            }.makeRequest(.delete, "watchlists/\(identifier)/\(epic)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
             //.decodeJSON(decoder: .default()) { (_: Self.WrapperUpdate, _) in return }
             .ignoreOutput()

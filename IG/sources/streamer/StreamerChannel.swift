@@ -31,7 +31,7 @@ extension Streamer {
         @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
             self.credentials = credentials
             self._client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-            self._client.connectionDetails.user = credentials.identifier.rawValue
+            self._client.connectionDetails.user = credentials.identifier.description
             self._client.connectionDetails.setPassword(credentials.password)
             self._statusSubject = .init()
             self._unsubscriptionSubject = .init()

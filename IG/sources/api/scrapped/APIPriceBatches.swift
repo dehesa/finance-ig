@@ -18,7 +18,7 @@ extension API.Request.Scrapped {
         self.api.publisher
             .makeScrappedRequest(.get, url: { (_, _) in
                 let interval = resolution._components
-                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/combined-cached/\(numDataPoints)"
+                let subpath = "chart/snapshot/\(epic)/\(interval.number)/\(interval.identifier)/combined-cached/\(numDataPoints)"
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "format", value: "json"),
@@ -55,7 +55,7 @@ extension API.Request.Scrapped {
             }.makeScrappedRequest(.get, url: { (_, values) in
                 let interval = resolution._components
                 let (f, t) = values
-                let subpath = "chart/snapshot/\(epic.rawValue)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(min(f.nanosecond!, 999))/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)/\(min(t.nanosecond!,999))"
+                let subpath = "chart/snapshot/\(epic)/\(interval.number)/\(interval.identifier)/batch/start/\(f.year!)/\(f.month!)/\(f.day!)/\(f.hour!)/\(f.minute!)/\(f.second!)/\(min(f.nanosecond!, 999))/end/\(t.year!)/\(t.month!)/\(t.day!)/\(t.hour!)/\(t.minute!)/\(t.second!)/\(min(t.nanosecond!,999))"
                 return rootURL.appendingPathComponent(subpath)
             }, queries: { _ in
                 [.init(name: "format", value: "json"),
@@ -243,7 +243,7 @@ fileprivate extension API.PriceSnapshot {
 
 fileprivate extension CodingUserInfoKey {
     /// Key for JSON decoders under which a scaling factor for price values will be stored.
-    static var _scalingFactor: CodingUserInfoKey { CodingUserInfoKey(rawValue: "IG_APIScrappedScaling")! }
+    static var _scalingFactor: CodingUserInfoKey { CodingUserInfoKey(rawValue: "IG_APIScrappedScaling").unsafelyUnwrapped }
 }
 
 fileprivate extension API.Price.Resolution {
