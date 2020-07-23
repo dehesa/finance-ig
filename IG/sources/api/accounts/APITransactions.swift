@@ -126,7 +126,7 @@ extension API.Request.Accounts {
             let page: Self.Page
             
             init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: _CodingKeys.self)
+                let container = try decoder.container(keyedBy: _Keys.self)
                 let subContainer = try container.nestedContainer(keyedBy: Self.Page.CodingKeys.self, forKey: .pageData)
                 
                 let size = try container.decode(Int.self, forKey: .size)
@@ -135,7 +135,7 @@ extension API.Request.Accounts {
                 self.page = Page(number: number, size: size, count: count)
             }
             
-            private enum _CodingKeys: String, CodingKey {
+            private enum _Keys: String, CodingKey {
                 case size, pageData
             }
             

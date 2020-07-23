@@ -71,7 +71,7 @@ extension API.Account {
 extension API.Account: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
-        self.id = try container.decode(IG.Account.Identifier.self, forKey: .identifier)
+        self.id = try container.decode(IG.Account.Identifier.self, forKey: .id)
         self.name = try container.decode(String.self, forKey: .name)
         self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
         self.status = try container.decode(Status.self, forKey: .status)
@@ -86,7 +86,7 @@ extension API.Account: Decodable {
     }
     
     private enum _Keys: String, CodingKey {
-        case identifier = "accountId"
+        case id = "accountId"
         case name = "accountName"
         case alias = "accountAlias"
         case status, preferred, currency

@@ -47,7 +47,10 @@ extension API.Request.Nodes {
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
+}
 
+extension API.Request.Nodes {
+    
     // MARK: GET /marketnavigation/{nodeId}
     
     /// Returns all data of the given navigation node.
@@ -61,7 +64,7 @@ extension API.Request.Nodes {
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
                 guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                      let date = DateFormatter.humanReadableLong.date(from: dateString) else {
+                    let date = DateFormatter.humanReadableLong.date(from: dateString) else {
                         throw IG.Error(.api(.invalidResponse), "The response date couldn't be extracted from the response header.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request, "Response": response])
                 }
                 

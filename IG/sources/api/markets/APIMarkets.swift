@@ -92,7 +92,9 @@ extension API.Request.Markets {
                 return subject
             }.eraseToAnyPublisher()
     }
-    
+}
+
+extension API.Request.Markets {
     /// Returns the details of the given markets.
     /// - parameter epics: The market epics to target onto. It cannot be empty or greater than 50.
     /// - returns: Extended information of all the requested markets.
@@ -102,21 +104,21 @@ extension API.Request.Markets {
         }
         
         return api.publisher { (api) -> DateFormatter in
-                let epicRange = 1...50
-                guard epicRange.contains(epics.count) else {
-                    let message = "Only between 1 to 50 markets can be queried at the same time."
-                    let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
-                    throw IG.Error(.api(.invalidRequest), message, help: suggestion)
-                }
-                
-                guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-                }
-                return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
-            }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
-                [.init(name: "filter", value: "ALL"),
-                 .init(name: "epics", value: epics.map { $0.description }.joined(separator: ",")) ]
-            }).send(expecting: .json, statusCode: 200)
+            let epicRange = 1...50
+            guard epicRange.contains(epics.count) else {
+                let message = "Only between 1 to 50 markets can be queried at the same time."
+                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
+                throw IG.Error(.api(.invalidRequest), message, help: suggestion)
+            }
+            
+            guard let timezone = api.channel.credentials?.timezone else {
+                throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
+            }
+            return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
+        }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
+            [.init(name: "filter", value: "ALL"),
+             .init(name: "epics", value: epics.map { $0.description }.joined(separator: ",")) ]
+        }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default(values: true, date: true)) { (l: _WrapperList, _) in l.marketDetails }
             .mapError(errorCast)
             .eraseToAnyPublisher()

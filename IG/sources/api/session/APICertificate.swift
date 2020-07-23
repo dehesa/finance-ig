@@ -97,13 +97,13 @@ private extension API.Request.Session {
         let encryptedPassword: Bool
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: _CodingKeys.self)
+            var container = encoder.container(keyedBy: _Keys.self)
             try container.encode(self.user.name, forKey: .identifier)
             try container.encode(self.user.password, forKey: .password)
             try container.encode(self.encryptedPassword, forKey: .encryptedPassword)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case identifier, password, encryptedPassword
         }
     }

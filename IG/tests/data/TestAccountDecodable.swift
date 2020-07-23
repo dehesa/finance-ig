@@ -3,7 +3,7 @@ import Foundation
 
 extension Test.Account: Decodable {
     convenience init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _CodingKeys.self)
+        let container = try decoder.container(keyedBy: _Keys.self)
         let identifier = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
         let api = try container.decode(Self.APIData.self, forKey: .api)
         let streamer = try container.decodeIfPresent(Self.StreamerData.self, forKey: .streamer)
@@ -11,7 +11,7 @@ extension Test.Account: Decodable {
         self.init(identifier: identifier, api: api, streamer: streamer, database: database)
     }
 
-    private enum _CodingKeys: String, CodingKey {
+    private enum _Keys: String, CodingKey {
         case accountId, api, streamer, database
     }
 
@@ -94,13 +94,13 @@ extension Test.Account: Decodable {
 
 extension Test.Account.APIData: Decodable {
     convenience init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _CodingKeys.self)
+        let container = try decoder.container(keyedBy: _Keys.self)
         let rootURL = try Test.Account._parse(path: try container.decode(String.self, forKey: .rootURL))
         let key = try container.decode(API.Key.self, forKey: .key)
 
         var user: API.User? = nil
         if container.contains(.user) {
-            let nested = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .user)
+            let nested = try container.nestedContainer(keyedBy: _Keys.NestedKeys.self, forKey: .user)
             let username = try nested.decode(API.User.Name.self, forKey: .name)
             let password = try nested.decode(String.self, forKey: .password)
             user = API.User(username, .init(stringLiteral: password))
@@ -108,7 +108,7 @@ extension Test.Account.APIData: Decodable {
 
         var certificate: TokenCertificate? = nil
         if container.contains(.certificate) {
-            let nested = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .certificate)
+            let nested = try container.nestedContainer(keyedBy: _Keys.NestedKeys.self, forKey: .certificate)
             let access = try nested.decode(String.self, forKey: .access)
             let security = try nested.decode(String.self, forKey: .security)
             certificate = (access, security)
@@ -116,7 +116,7 @@ extension Test.Account.APIData: Decodable {
 
         var oauth: TokenOAuth? = nil
         if container.contains(.oauth) {
-            let nested = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .oauth)
+            let nested = try container.nestedContainer(keyedBy: _Keys.NestedKeys.self, forKey: .oauth)
             let access = try nested.decode(String.self, forKey: .access)
             let refresh = try nested.decode(String.self, forKey: .refresh)
             let scope = try nested.decode(String.self, forKey: .scope)
@@ -127,7 +127,7 @@ extension Test.Account.APIData: Decodable {
         self.init(url: rootURL, key: key, user: user, certificate: certificate, oauth: oauth)
     }
 
-    private enum _CodingKeys: String, CodingKey {
+    private enum _Keys: String, CodingKey {
         case rootURL = "url", key, user, certificate, oauth
 
         enum NestedKeys: String, CodingKey {
@@ -140,7 +140,7 @@ extension Test.Account.APIData: Decodable {
 
 extension Test.Account.StreamerData: Decodable {
     convenience init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _CodingKeys.self)
+        let container = try decoder.container(keyedBy: _Keys.self)
         let rootURL = try Test.Account._parse(path: try container.decode(String.self, forKey: .rootURL))
         let identifier = try container.decode(IG.Account.Identifier.self, forKey: .identifier)
 
@@ -149,7 +149,7 @@ extension Test.Account.StreamerData: Decodable {
             if let pass = try? container.decode(String.self, forKey: .password) {
                 password = pass
             } else {
-                let nestedContainer = try container.nestedContainer(keyedBy: _CodingKeys.NestedKeys.self, forKey: .password)
+                let nestedContainer = try container.nestedContainer(keyedBy: _Keys.NestedKeys.self, forKey: .password)
                 let access = try nestedContainer.decode(String.self, forKey: .access)
                 let security = try nestedContainer.decode(String.self, forKey: .security)
                 password = try Streamer.Credentials.password(fromCST: access, security: security)
@@ -160,7 +160,7 @@ extension Test.Account.StreamerData: Decodable {
         self.init(url: rootURL, identifier: identifier, password: password)
     }
 
-    private enum _CodingKeys: String, CodingKey {
+    private enum _Keys: String, CodingKey {
         case rootURL = "url", identifier, password
 
         enum NestedKeys: String, CodingKey {
@@ -173,7 +173,7 @@ extension Test.Account.StreamerData: Decodable {
 
 extension Test.Account.DatabaseData: Decodable {
     convenience init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _CodingKeys.self)
+        let container = try decoder.container(keyedBy: _Keys.self)
 
         var rootURL: URL? = nil
         if var url = try container.decodeIfPresent(URL.self, forKey: .rootURL) {
@@ -193,7 +193,7 @@ extension Test.Account.DatabaseData: Decodable {
         self.init(url: rootURL)
     }
 
-    private enum _CodingKeys: String, CodingKey {
+    private enum _Keys: String, CodingKey {
         case rootURL = "url"
     }
 }

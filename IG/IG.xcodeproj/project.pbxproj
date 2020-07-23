@@ -211,6 +211,10 @@
 		8D89C7942343210B00FD0F3D /* StreamerSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D89F7F522F0EB7E00AF7698 /* StreamerSessions.swift */; };
 		8D89C7952343210B00FD0F3D /* StreamerChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA4F2149A6CE00344CBF /* StreamerChannel.swift */; };
 		8D89C7982343A41700FD0F3D /* StreamerSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D819E1422F2BAEE0031A9D5 /* StreamerSessionTests.swift */; };
+		8D933B8224C9877300592377 /* APIEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D933B8124C9877300592377 /* APIEvent.swift */; };
+		8D933B8324C9877300592377 /* APIEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D933B8124C9877300592377 /* APIEvent.swift */; };
+		8D933B8524C9881D00592377 /* APIScrappedPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D933B8424C9881D00592377 /* APIScrappedPrice.swift */; };
+		8D933B8624C9881D00592377 /* APIScrappedPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D933B8424C9881D00592377 /* APIScrappedPrice.swift */; };
 		8DA398C02338E3EA007B918F /* IG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DA398B72338E3EA007B918F /* IG.framework */; platformFilter = ios; };
 		8DA40AB82362D16A004F596D /* Country.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA40AB72362CF17004F596D /* Country.swift */; };
 		8DA40AB92362D172004F596D /* Country.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA40AB72362CF17004F596D /* Country.swift */; };
@@ -391,6 +395,8 @@
 		8D88F5F8246C79D900743B2B /* UTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UTC.swift; sourceTree = "<group>"; };
 		8D89F7F522F0EB7E00AF7698 /* StreamerSessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerSessions.swift; sourceTree = "<group>"; };
 		8D911F6422ECF4CA0038E899 /* Decimal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decimal.swift; sourceTree = "<group>"; };
+		8D933B8124C9877300592377 /* APIEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEvent.swift; sourceTree = "<group>"; };
+		8D933B8424C9881D00592377 /* APIScrappedPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIScrappedPrice.swift; sourceTree = "<group>"; };
 		8D94BA952316575500AFBA1E /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSessionTests.swift; sourceTree = "<group>"; };
 		8D987E7D22F95651003F85D9 /* StreamerAccountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerAccountTests.swift; sourceTree = "<group>"; };
@@ -412,10 +418,7 @@
 		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
 		8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_iOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_iOS_Client.framework; sourceTree = "<group>"; };
 		8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
-		8DC20A6F231AF3B000760FA4 /* DBNodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodes.swift; sourceTree = "<group>"; };
 		8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodeTests.swift; sourceTree = "<group>"; };
-		8DC20A74231B08BC00760FA4 /* DBNodes+Market.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBNodes+Market.swift"; sourceTree = "<group>"; };
-		8DC20A77231B220A00760FA4 /* DBNodes+Node.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBNodes+Node.swift"; sourceTree = "<group>"; };
 		8DC4CA3C2149A68200344CBF /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS_tests.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3E2149A68200344CBF /* macOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = macOS_tests.plist; sourceTree = "<group>"; };
@@ -580,12 +583,14 @@
 				8D75154024C17F7500F7327C /* APIApplication.swift */,
 				8D24D0D1230EF496003D25EA /* APIConfirmation.swift */,
 				8DC4CA812149A6CE00344CBF /* APICredentials.swift */,
+				8D933B8124C9877300592377 /* APIEvent.swift */,
 				8D52F33D22FB1CA900521759 /* APIKey.swift */,
 				8D69B9E924C3324A00E82034 /* APIMarket.swift */,
 				8DDA54D324C595ED00E5D4C6 /* APINode.swift */,
 				8DE4A67222FB40CF0036CF5E /* APINodeMarket.swift */,
 				8DDBCD8224C216FE00CC4130 /* APIPosition.swift */,
 				8D69B9F324C332EA00E82034 /* APIPrice.swift */,
+				8D933B8424C9881D00592377 /* APIScrappedPrice.swift */,
 				8D69B9F024C332BD00E82034 /* APISentiment.swift */,
 				8D69B9E124C32F6E00E82034 /* APISession.swift */,
 				8D69B9E624C331DE00E82034 /* APITransaction.swift */,
@@ -729,9 +734,6 @@
 			children = (
 				8D10BBEF2318E91700557960 /* DBMarkets.swift */,
 				8DA8F89623181E7200F1A2C0 /* DBMarketsForex.swift */,
-				8DC20A6F231AF3B000760FA4 /* DBNodes.swift */,
-				8DC20A74231B08BC00760FA4 /* DBNodes+Market.swift */,
-				8DC20A77231B220A00760FA4 /* DBNodes+Node.swift */,
 			);
 			path = markets;
 			sourceTree = "<group>";
@@ -948,10 +950,10 @@
 		8DC4CA712149A6CE00344CBF /* markets */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA732149A6CE00344CBF /* APINodes.swift */,
 				8DC4CA722149A6CE00344CBF /* APIMarkets.swift */,
-				8DC4CA742149A6CE00344CBF /* APIWatchlists.swift */,
+				8DC4CA732149A6CE00344CBF /* APINodes.swift */,
 				8DF93B9722E757B4001B9412 /* APISentiments.swift */,
+				8DC4CA742149A6CE00344CBF /* APIWatchlists.swift */,
 			);
 			path = markets;
 			sourceTree = "<group>";
@@ -1384,6 +1386,7 @@
 				8DAC346E233D196A0082DB1C /* APIAccounts.swift in Sources */,
 				8D6923AC24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */,
 				8D7AB05C233F43AE00439CA1 /* APIActivities.swift in Sources */,
+				8D933B8324C9877300592377 /* APIEvent.swift in Sources */,
 				8DFEC5F1234078F7005906B3 /* APITransactions.swift in Sources */,
 				8D3CE540247A5DCB0097BED7 /* DealReference.swift in Sources */,
 				8DFEC5F2234080B7005906B3 /* APIPrices.swift in Sources */,
@@ -1395,6 +1398,7 @@
 				8DDA54E124C63AF600E5D4C6 /* StreamerChartAggregate.swift in Sources */,
 				8DDA54D824C5EC3B00E5D4C6 /* StreamerSession.swift in Sources */,
 				8DD7406624C04F2F00139C15 /* StreamerDeals.swift in Sources */,
+				8D933B8624C9881D00592377 /* APIScrappedPrice.swift in Sources */,
 				8DE06AF624BF8E8A00781836 /* StreamerUpdate.swift in Sources */,
 				8DFEC5F72340E9DF005906B3 /* APIConfirmations.swift in Sources */,
 				8DDA54DB24C604F200E5D4C6 /* StreamerAccount.swift in Sources */,
@@ -1532,6 +1536,7 @@
 				8D376D7D234C6297007D4A48 /* APIOAuth.swift in Sources */,
 				8D6923AB24C6E90F0037B919 /* StreamerConfirmation.swift in Sources */,
 				8D376D7E234C62A3007D4A48 /* APIApplications.swift in Sources */,
+				8D933B8224C9877300592377 /* APIEvent.swift in Sources */,
 				8D69B9E224C32F6E00E82034 /* APISession.swift in Sources */,
 				8D376D7F234C62A3007D4A48 /* APIAccounts.swift in Sources */,
 				8D376D80234C62A3007D4A48 /* APIActivities.swift in Sources */,
@@ -1543,6 +1548,7 @@
 				8DDA54E024C63AF600E5D4C6 /* StreamerChartAggregate.swift in Sources */,
 				8DDA54D724C5EC3B00E5D4C6 /* StreamerSession.swift in Sources */,
 				8D376D86234C62A3007D4A48 /* APISentiments.swift in Sources */,
+				8D933B8524C9881D00592377 /* APIScrappedPrice.swift in Sources */,
 				8DD7406524C04F2F00139C15 /* StreamerDeals.swift in Sources */,
 				8DE06AF524BF8E8A00781836 /* StreamerUpdate.swift in Sources */,
 				8DDA54DA24C604F200E5D4C6 /* StreamerAccount.swift in Sources */,

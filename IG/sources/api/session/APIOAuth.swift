@@ -51,12 +51,12 @@ private extension API.Request.Session {
         let user: API.User
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: _CodingKeys.self)
+            var container = encoder.container(keyedBy: _Keys.self)
             try container.encode(self.user.name, forKey: .identifier)
             try container.encode(self.user.password, forKey: .password)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case identifier, password
         }
     }
@@ -84,7 +84,7 @@ fileprivate extension API.Session {
         let tokens: _Token
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
+            let container = try decoder.container(keyedBy: _Keys.self)
             self.clientId = try container.decode(IG.Client.Identifier.self, forKey: .clientId)
             self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
@@ -95,7 +95,7 @@ fileprivate extension API.Session {
             self.tokens = try container.decode(API.Session._OAuth._Token.self, forKey: .tokens)
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case clientId
             case accountId
             case timezoneOffset
@@ -120,7 +120,7 @@ fileprivate extension API.Session._OAuth {
         let type: String
         
         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: _CodingKeys.self)
+            let container = try decoder.container(keyedBy: _Keys.self)
             
             self.accessToken = try container.decode(String.self, forKey: .accessToken)
             self.refreshToken = try container.decode(String.self, forKey: .refreshToken)
@@ -129,7 +129,7 @@ fileprivate extension API.Session._OAuth {
             
             let secondsString = try container.decode(String.self, forKey: .expireInSeconds)
             let seconds = try TimeInterval(secondsString)
-                ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The '\(_CodingKeys.expireInSeconds)' value (i.e. \(secondsString) could not be transformed into a number")
+                ?> DecodingError.dataCorruptedError(forKey: .expireInSeconds, in: container, debugDescription: "The '\(_Keys.expireInSeconds)' value (i.e. \(secondsString) could not be transformed into a number")
             
             if let response = decoder.userInfo[API.JSON.DecoderKey.responseHeader] as? HTTPURLResponse,
                let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
@@ -140,7 +140,7 @@ fileprivate extension API.Session._OAuth {
             }
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case accessToken = "access_token"
             case refreshToken = "refresh_token"
             case scope

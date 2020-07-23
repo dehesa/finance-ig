@@ -34,7 +34,7 @@ extension Database.Request.Markets {
                 var result: Set<IG.Market.Epic> = .init()
                 rowIterator: while true {
                     switch sqlite3_step(statement).result {
-                    case .row: result.insert( IG.Market.Epic(String(cString: sqlite3_column_text(statement.unsafelyUnwrapped, 0))).unsafelyUnwrapped )
+                    case .row: result.insert( IG.Market.Epic(String(cString: sqlite3_column_text(statement.unsafelyUnwrapped, 0)))! )
                     case .done: break rowIterator
                     case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.self)'.", info: ["Error code": e])
                     }

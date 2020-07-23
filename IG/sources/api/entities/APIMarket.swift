@@ -10,7 +10,7 @@ extension API {
         ///
         /// It typically represents the underlying 'real-world' market. For example, `VOD-UK` represents Vodafone Group PLC (UK).
         /// This identifier is primarily used in our market research services, such as client sentiment, and may be found on the /market/{epic} service
-        public let identifier: String?
+        public let id: String?
         /// IG tradeable financial instrument (market), typically based on some underlying financial market instrument.
         ///
         /// Since IG's instruments are derived, they do not have recognisable real-world identifiers such as the Reuters or Bloomberg codes.
@@ -353,14 +353,14 @@ extension API.Market: Decodable {
         self.snapshot = try container.decode(Self.Snapshot.self, forKey: .snapshot)
         
         let instrumentContainer = try container.nestedContainer(keyedBy: _Keys._NestedKeys.self, forKey: .instrument)
-        self.identifier = try (instrumentContainer).decodeIfPresent(String.self, forKey: .identifier)
+        self.id = try (instrumentContainer).decodeIfPresent(String.self, forKey: .id)
     }
     
     private enum _Keys: String, CodingKey {
         case instrument, rules = "dealingRules", snapshot
         
         enum _NestedKeys: String, CodingKey {
-            case identifier = "marketId"
+            case id = "marketId"
         }
     }
 }
