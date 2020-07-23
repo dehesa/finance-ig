@@ -37,7 +37,7 @@ extension API.Position: Decodable {
         self.market = try container.decode(API.Node.Market.self, forKey: .market)
         
         let nestedContainer = try container.nestedContainer(keyedBy: _Keys._NestedKeys.self, forKey: .position)
-        self.id = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .identifier)
+        self.id = try nestedContainer.decode(IG.Deal.Identifier.self, forKey: .id)
         self.reference = try nestedContainer.decode(IG.Deal.Reference.self, forKey: .reference)
         self.date = try nestedContainer.decode(Date.self, forKey: .date, with: DateFormatter.iso8601Broad)
         self.currency = try nestedContainer.decodeIfPresent(Currency.Code.self, forKey: .currency)
@@ -70,7 +70,7 @@ extension API.Position: Decodable {
         case position, market
         
         enum _NestedKeys: String, CodingKey {
-            case identifier = "dealId"
+            case id = "dealId"
             case reference = "dealReference"
             case date = "createdDateUTC"
             case currency

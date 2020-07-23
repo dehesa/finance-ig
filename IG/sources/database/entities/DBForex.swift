@@ -423,7 +423,7 @@ extension Database.Market.Forex {
             return .failure(error("is not of 'currency' type"))
         }
         // 3. Check the market identifier
-        guard let marketId = market.identifier else {
+        guard let marketId = market.id else {
             return .failure(error("doesn't contain a market identifier"))
         }
         // 4. Check the contract size
@@ -509,7 +509,7 @@ extension Database.Market.Forex {
             }
         }
         // B. Check the market identifier
-        if let marketId = market.identifier, marketId.count == 6 {
+        if let marketId = market.id, marketId.count == 6 {
             if let base = Currency.Code(String(marketId.prefix(3)) ),
                 let counter = Currency.Code(String(marketId.suffix(3))) {
                 return (base, counter)

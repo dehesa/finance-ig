@@ -30,7 +30,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     }
     
     public var errorCode: Int {
-        self.type.rawValue
+        self.type.code
     }
     
     public var errorDescription: String? {
@@ -94,35 +94,12 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
 
 // MARK: -
 
-/// Forces a cast from the generic Swift error to the framework error.
-func errorCast(from error: Swift.Error) -> Error {
-    error as! Error
-}
-
 internal extension IG.Error {
     /// IG error domains.
-    enum Failure: RawRepresentable {
+    enum Failure {
         case api(API.Failure)
         case streamer(Streamer.Failure)
         case database(Database.Failure)
-        
-        init?(rawValue: Int) {
-            if let failure = API.Failure(rawValue: rawValue) {
-                self = .api(failure)
-            } else if let failure = Streamer.Failure(rawValue: rawValue) {
-                self = .streamer(failure)
-            } else if let failure = Database.Failure(rawValue: rawValue) {
-                self = .database(failure)
-            } else { return nil }
-        }
-        
-        var rawValue: Int {
-            switch self {
-            case .api(let f): return f.rawValue
-            case .streamer(let f): return f.rawValue
-            case .database(let f): return f.rawValue
-            }
-        }
     }
 }
 
@@ -166,4 +143,19 @@ internal extension Database {
         /// The fetched response from the database is invalid.
         case invalidResponse = 304
     }
+}
+
+internal extension IG.Error.Failure {
+    var code: Int {
+        switch self {
+        case .api(let f): return f.rawValue
+        case .streamer(let f): return f.rawValue
+        case .database(let f): return f.rawValue
+        }
+    }
+}
+
+/// Forces a cast from the generic Swift error to the framework error.
+func errorCast(from error: Swift.Error) -> Error {
+    error as! Error
 }

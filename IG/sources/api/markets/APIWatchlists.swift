@@ -29,7 +29,7 @@ extension API.Request.Watchlists {
             }.makeRequest(.post, "watchlists", version: 1, credentials: true, body: {
                 (.json, try JSONEncoder().encode($0))
             }).send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: _WrapperCreation, _) in (w.identifier, w.areAllInstrumentsAdded) }
+            .decodeJSON(decoder: .default()) { (w: _WrapperCreation, _) in (w.id, w.areAllInstrumentsAdded) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
@@ -136,19 +136,19 @@ private extension API.Request.Watchlists {
 // MARK: Response Entities
 
 private extension API.Request.Watchlists {
-    struct _WrapperCreation: Decodable {
-        let identifier: String
+    struct _WrapperCreation: Identifiable, Decodable {
+        let id: String
         let areAllInstrumentsAdded: Bool
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
-            self.identifier = try container.decode(String.self, forKey: .identifier)
+            self.id = try container.decode(String.self, forKey: .id)
             let status = try container.decode(CodingKeys.Status.self, forKey: .status)
             self.areAllInstrumentsAdded = (status == .success)
         }
 
         private enum CodingKeys: String, CodingKey {
-            case identifier = "watchlistId"
+            case id = "watchlistId"
             case status = "status"
             
             enum Status: String, Decodable {

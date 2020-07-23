@@ -3,7 +3,7 @@ import Decimals
 
 extension API {
     /// Node within the Broker platform markets organization.
-    public struct Node: Identifiable {
+    public struct Node {
         /// Node identifier.
         /// - note: The top of the tree will return `nil` for this property.
         public let id: String?

@@ -166,7 +166,7 @@ extension API.Request.Deals {
         }
         
         func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: _CodingKeys.self)
+            var container = encoder.container(keyedBy: _Keys.self)
             try container.encodeIfPresent(self.reference, forKey: .reference)
             try container.encode(self.epic, forKey: .epic)
             try container.encode(self.expiry, forKey: .expiry)
@@ -207,7 +207,7 @@ extension API.Request.Deals {
             }
         }
         
-        private enum _CodingKeys: String, CodingKey {
+        private enum _Keys: String, CodingKey {
             case epic, expiry
             case currency = "currencyCode"
             case direction, type, size, level

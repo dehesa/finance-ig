@@ -17,7 +17,7 @@ extension API.Request.Accounts {
     /// - parameter pageSize: The number of activities returned per *page* (i.e. `Publisher` value). The valid range is between 10 and 500; anything beyond that will be clamped.
     /// - todo: validate `FIQL`.
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
-    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (identifier: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[API.Activity],IG.Error> {
+    public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (id: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[API.Activity],IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
                 guard let timezone = api.channel.credentials?.timezone else {
                     throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
@@ -39,8 +39,8 @@ extension API.Request.Accounts {
                     queries.append(.init(name: "detailed", value: "true"))
                 }
 
-                if let dealIdentifier = filterBy.identifier {
-                    queries.append(.init(name: "dealId", value: dealIdentifier.description))
+                if let dealId = filterBy.id {
+                    queries.append(.init(name: "dealId", value: dealId.description))
                 }
 
                 if let filter = filterBy.FIQL {

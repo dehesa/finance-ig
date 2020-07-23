@@ -36,7 +36,7 @@ final class APIWorkingOrderTests: XCTestCase {
         
         let orders = api.deals.getWorkingOrders()
             .expectsOne(timeout: 2, on: self)
-        XCTAssertNotNil(orders.first { $0.identifier == identifier })
+        XCTAssertNotNil(orders.first { $0.id == identifier })
 
         let deleteReference = api.deals.deleteWorkingOrder(id: confirmation.deal.id)
             .expectsOne(timeout: 2, on: self)

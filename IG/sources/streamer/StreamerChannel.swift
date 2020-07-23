@@ -57,7 +57,7 @@ extension Streamer {
 internal extension Streamer.Channel {
     /// Returns the current session status.
     @nonobjc var status: Streamer.Session.Status {
-        Streamer.Session.Status(rawValue: self._client.status).unsafelyUnwrapped
+        Streamer.Session.Status(rawValue: self._client.status)!
     }
     
     /// Subscribe to the status events and return the output in the given queue.

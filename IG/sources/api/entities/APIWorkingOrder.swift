@@ -2,9 +2,9 @@ import Decimals
 
 extension API {
     /// Working order awaiting for its trigger to be met.
-    public struct WorkingOrder {
+    public struct WorkingOrder: Identifiable {
         /// Permanent deal reference for a confirmed trade.
-        public let identifier: IG.Deal.Identifier
+        public let id: IG.Deal.Identifier
         /// Date when the order was created.
         public let date: Date
         /// Instrument epic identifier.
@@ -40,7 +40,7 @@ extension API.WorkingOrder: Decodable {
         self.market = try topContainer.decode(API.Node.Market.self, forKey: .market)
         
         let container = try topContainer.nestedContainer(keyedBy: _Keys._NestedKeys.self, forKey: .workingOrder)
-        self.identifier = try container.decode(IG.Deal.Identifier.self, forKey: .identifier)
+        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .id)
         self.date = try container.decode(Date.self, forKey: .date, with: DateFormatter.iso8601Broad)
         self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
         self.currency = try container.decode(Currency.Code.self, forKey: .currency)
@@ -72,7 +72,7 @@ extension API.WorkingOrder: Decodable {
         case market = "marketData"
         
         enum _NestedKeys: String, CodingKey {
-            case identifier = "dealId"
+            case id = "dealId"
             case date = "createdDateUTC"
             case epic
             case currency = "currencyCode"
