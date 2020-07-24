@@ -57,15 +57,24 @@ extension API {
     internal enum HTTP {
         /// The HTTP method supported by this API
         /// - seealso: [w3.org website specifying the RFC2616 protocol](http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html)
-        enum Method: String {
+        enum Method: Hashable, CustomStringConvertible {
             /// POST method ask the resource at the given URI to do something with the provided entity. Usually, it creates a new entity.
-            case post = "POST"
+            case post
             /// GET method is used to retrieve information.
-            case get = "GET"
+            case get
             /// PUT method stores an entity at a URI. It is used to create a new entity or update an existing one.
-            case put = "PUT"
+            case put
             /// DELETE method request a resource to be removed.
-            case delete = "DELETE"
+            case delete
+            
+            var description: String {
+                switch self {
+                case .post: return "POST"
+                case .get: return "GET"
+                case .put: return "PUT"
+                case .delete: return "DELETE"
+                }
+            }
         }
         
         /// HTTP header constants used by IG endpoints.
@@ -105,9 +114,15 @@ extension API {
             /// HTTP header values used throughout IG endpoints.
             enum Value {
                 /// The type of content types supported by this API
-                enum ContentType: String {
+                enum ContentType: CustomStringConvertible {
                     /// A JSON content type is expected.
-                    case json = "application/json; charset=UTF-8"
+                    case json
+                    
+                    var description: String {
+                        switch self {
+                        case .json: return "application/json; charset=UTF-8"
+                        }
+                    }
                 }
             }
         }

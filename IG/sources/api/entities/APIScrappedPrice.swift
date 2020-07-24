@@ -117,8 +117,8 @@ fileprivate extension API.PriceSnapshot {
     static func _decode(scrappedDataPoints: UnkeyedDecodingContainer, scalingFactor: Decimal64) throws -> [API.Price] {
         var prices: [API.Price] = []
         
-        let decodePoint: (KeyedDecodingContainer<_ElementKeys.DataPointKeys>, _ElementKeys.DataPointKeys) throws -> API.Price.Point = {
-            let pointContainer = try $0.nestedContainer(keyedBy: _ElementKeys.DataPointKeys.PriceKeys.self, forKey: $1)
+        let decodePoint: (KeyedDecodingContainer<_ElementKeys._DataPointKeys>, _ElementKeys._DataPointKeys) throws -> API.Price.Point = {
+            let pointContainer = try $0.nestedContainer(keyedBy: _ElementKeys._DataPointKeys._PriceKeys.self, forKey: $1)
             let bid = try pointContainer.decode(Decimal64.self, forKey: .bid) / scalingFactor
             let ask = try pointContainer.decode(Decimal64.self, forKey: .ask) / scalingFactor
             return .init(bid: bid, ask: ask, lastTraded: nil)
@@ -128,7 +128,7 @@ fileprivate extension API.PriceSnapshot {
         while !elementsContainer.isAtEnd {
             var pointsContainer = try elementsContainer.nestedContainer(keyedBy: _ElementKeys.self).nestedUnkeyedContainer(forKey: .dataPoints)
             while !pointsContainer.isAtEnd {
-                let container = try pointsContainer.nestedContainer(keyedBy: _ElementKeys.DataPointKeys.self)
+                let container = try pointsContainer.nestedContainer(keyedBy: _ElementKeys._DataPointKeys.self)
                 let timestamp = try container.decode(Int.self, forKey: .date)
                 let date = Date(timeIntervalSince1970: Double(timestamp / 1000))
                 do {
@@ -156,7 +156,7 @@ fileprivate extension API.PriceSnapshot {
         case tickCount = "tickCount"
         case dataPoints = "dataPoints"
         
-        enum DataPointKeys: String, CodingKey {
+        enum _DataPointKeys: String, CodingKey {
             case date = "timestamp"
             case open = "openPrice"
             case close = "closePrice"
@@ -164,7 +164,7 @@ fileprivate extension API.PriceSnapshot {
             case lowest = "lowPrice"
             case volume = "lastTradedVolume"
             
-            enum PriceKeys: String, CodingKey {
+            enum _PriceKeys: String, CodingKey {
                 case ask, bid
             }
         }

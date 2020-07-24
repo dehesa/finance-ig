@@ -93,7 +93,7 @@ extension API.Request.Deals {
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func closePosition(matchedBy identification: Self.Identification, direction: IG.Deal.Direction, order: API.Request.Deals.Position.Order, strategy: API.Request.Deals.Position.FillStrategy, size: Decimal64) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size) }
-            .makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: API.HTTP.Method.delete.rawValue] }, body: { (.json, try JSONEncoder().encode($0)) })
+            .makeRequest(.post, "positions/otc", version: 1, credentials: true, headers: { _ in [._method: API.HTTP.Method.delete.description] }, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { (w: _WrapperReference, _) in w.dealReference }
             .mapError(errorCast)
@@ -107,7 +107,7 @@ extension API.Request.Deals {
     public enum Position {}
     
     /// Identification mechanism at deletion time.
-    public enum Identification {
+    public enum Identification: Equatable {
         /// Permanent deal identifier for a confirmed trade.
         case identifier(IG.Deal.Identifier)
         /// Instrument epic identifier.
@@ -117,7 +117,7 @@ extension API.Request.Deals {
 
 extension API.Request.Deals.Position {
     /// Describes how the user's order must be executed.
-    public enum Order {
+    public enum Order: Equatable {
         /// A market order is an instruction to buy or sell at the best available price for the size of your order.
         ///
         /// When using this type of order you choose the size and direction of your order, but not the price (a level cannot be specified).
@@ -157,7 +157,7 @@ extension API.Request.Deals.Position {
     }
 
     /// The order fill strategy.
-    public enum FillStrategy {
+    public enum FillStrategy: Hashable {
         /// Execute and eliminate.
         ///
         /// Instructs the broker to execute a transaction and when it is done, eliminate such order.
@@ -176,7 +176,7 @@ extension API.Request.Deals.Position {
     }
 
     /// The level/price at which the user doesn't want to incur more lose.
-    public enum Stop {
+    public enum Stop: Equatable {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
         case level(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
         /// Relative stop over an undisclosed reference level.
@@ -189,7 +189,7 @@ extension API.Request.Deals.Position {
     }
     
     /// Available types of stops allowed during position amendment.
-    public enum StopEdit {
+    public enum StopEdit: Equatable {
         /// Absolute value of the stop (e.g. 1.653 USD/EUR).
         case level(Decimal64)
         /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.

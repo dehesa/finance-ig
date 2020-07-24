@@ -61,7 +61,7 @@ internal extension Publisher {
                        ) -> Publishers.TryMap<Self,API.Transit.Request<T>> where Output==API.Transit.Instance<T> {
         self.tryMap { (api, values) in
             var request = URLRequest(url: api.rootURL.appendingPathComponent(relativeURL))
-            request.httpMethod = method.rawValue
+            request.httpMethod = method.description
             
             do {
                 if let queries = try queryGenerator?(values) {
@@ -72,7 +72,7 @@ internal extension Publisher {
                 request.addHeaders(version: version, credentials: credentials, try headGenerator?(values))
 
                 if let body = try bodyGenerator?(values) {
-                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
+                    request.addValue(body.contentType.description, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
                     request.httpBody = body.data
                 }
             } catch let error as IG.Error {
@@ -104,7 +104,7 @@ internal extension Publisher {
             do {
                 let url = try! urlGenerator(api.rootURL, values)
                 request = URLRequest(url: url)
-                request.httpMethod = method.rawValue
+                request.httpMethod = method.description
                 
                 if let queries = try queryGenerator?(values) {
                     try request.addQueries(queries)
@@ -115,7 +115,7 @@ internal extension Publisher {
                 }
 
                 if let body = try bodyGenerator?(values) {
-                    request.addValue(body.contentType.rawValue, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
+                    request.addValue(body.contentType.description, forHTTPHeaderField: API.HTTP.Header.Key.requestType.rawValue)
                     request.httpBody = body.data
                 }
             } catch let error as IG.Error {

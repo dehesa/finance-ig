@@ -26,7 +26,7 @@ extension API {
 
 extension API.Account {
     /// Account type.
-    public enum Kind {
+    public enum Kind: Hashable {
         /// CFD (Contract for difference) account.
         case cfd
         /// Physical account.
@@ -36,7 +36,7 @@ extension API.Account {
     }
     
     /// Account status.
-    public enum Status {
+    public enum Status: Hashable {
         /// The account is disabled and cannot be operated onto.
         case disabled
         /// The account is enabled and ready to operate.
@@ -58,7 +58,7 @@ extension API.Account {
     }
     
     /// Account preferences.
-    public struct Preferences {
+    public struct Preferences: Equatable {
         /// Whether the user wants to be allowed to define trailing stop rules for his trade operations.
         ///
         /// A trailing stop is a type of stop order that moves automatically when the market moves in your favour, locking in gains while your position is open.

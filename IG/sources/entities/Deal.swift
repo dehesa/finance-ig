@@ -3,7 +3,7 @@ import Decimals
 /// Namespace for commonly used value/class types related to deals.
 public enum Deal {
     /// Deal direction.
-    public enum Direction: Equatable {
+    public enum Direction: Hashable {
         /// Going "long"
         case buy
         /// Going "short"
@@ -20,13 +20,13 @@ public enum Deal {
     }
 
     /// Position status.
-    public enum Status: Equatable {
+    public enum Status: Hashable {
         case opened
         case amended
         case closed(Self.Completion)
         case deleted
         
-        public enum Completion: Equatable {
+        public enum Completion: Hashable {
             case partially
             case fully
         }
@@ -47,7 +47,7 @@ public enum Deal {
     }
     
     /// Working order type.
-    public enum WorkingOrder: Equatable {
+    public enum WorkingOrder: Hashable {
         /// An instruction to deal if the price moves to a more favourable level.
         ///
         /// This is an order to open a position by buying when the market reaches a lower level than the current price, or selling short when the market hits a higher level than the current price.

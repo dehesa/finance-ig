@@ -26,7 +26,7 @@ extension Streamer {
 
 extension Streamer.Market {
     /// The current status of the market.
-    public enum Status {
+    public enum Status: Hashable {
         /// The market is open for trading.
         case tradeable
         /// The market is closed for the moment. Look at the market's opening hours for further information.

@@ -191,7 +191,7 @@ extension API.Request.Session {
 
 extension API.Request.Session {
     /// Type of sessions available
-    public enum Kind {
+    public enum Kind: Hashable {
         /// Certificates sessions last a default of 6 hours, but can get extended up to a maximum of 72 hours while they are in use.
         case certificate
         /// OAuth sessions are valid for a limited period (e.g. 60 seconds) as specified in the expiration date from the response.

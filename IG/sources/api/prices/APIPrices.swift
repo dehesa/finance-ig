@@ -33,7 +33,7 @@ extension API.Request.Prices {
             }.makeRequest(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.string(from: from)),
                  .init(name: "to", value: values.string(from: to)),
-                 .init(name: "resolution", value: resolution.rawValue),
+                 .init(name: "resolution", value: resolution.description),
                  .init(name: "pageSize", value: "0"),
                  .init(name: "pageNumber", value: "1") ]
             }).send(expecting: .json, statusCode: 200)
@@ -71,7 +71,7 @@ extension API.Request.Prices {
             }.makeRequest(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.formatter.string(from: from)),
                  .init(name: "to", value: values.formatter.string(from: to)),
-                 .init(name: "resolution", value: resolution.rawValue),
+                 .init(name: "resolution", value: resolution.description),
                  .init(name: "pageSize", value: String(values.pageSize)),
                  .init(name: "pageNumber", value: String(values.pageNumber)) ]
             }).sendPaginating(request: { (_, initial, previous) -> URLRequest? in
@@ -92,11 +92,11 @@ extension API.Request.Prices {
 
 extension API.Price {
     /// Resolution of requested prices.
-    public enum Resolution: String, CaseIterable {
-        case second = "SECOND"
-        case minute = "MINUTE", minute2 = "MINUTE_2", minute3 = "MINUTE_3", minute5 = "MINUTE_5", minute10 = "MINUTE_10", minute15 = "MINUTE_15", minute30 = "MINUTE_30"
-        case hour = "HOUR", hour2 = "HOUR_2", hour3 = "HOUR_3", hour4 = "HOUR_4"
-        case day = "DAY", week = "WEEK", month = "MONTH"
+    public enum Resolution: CaseIterable, CustomStringConvertible {
+        case second
+        case minute, minute2, minute3, minute5, minute10, minute15, minute30
+        case hour, hour2, hour3, hour4
+        case day, week, month
         
         /// Creates a resolution from the available ones closest to the amount of seconds passed as argument.
         /// - parameter seconds: Amount of seconds desired for a resolution.
@@ -112,6 +112,26 @@ extension API.Price {
             }
             
             self = result.resolution
+        }
+        
+        public var description: String {
+            switch self {
+            case .second: return "SECOND"
+            case .minute: return "MINUTE"
+            case .minute2: return "MINUTE_2"
+            case .minute3: return "MINUTE_3"
+            case .minute5: return "MINUTE_5"
+            case .minute10: return "MINUTE_10"
+            case .minute15: return "MINUTE_15"
+            case .minute30: return "MINUTE_30"
+            case .hour: return "HOUR"
+            case .hour2: return "HOUR_2"
+            case .hour3: return "HOUR_3"
+            case .hour4: return "HOUR_4"
+            case .day: return "DAY"
+            case .week: return "WEEK"
+            case .month: return "MONTH"
+            }
         }
         
         /// Returns the number of seconds of the receiving resolution.

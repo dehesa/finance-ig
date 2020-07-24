@@ -107,7 +107,7 @@ internal extension Database.Price.Point {
     }
 }
 
-internal extension Database.Request.Price {
+internal extension Database.Request.Prices {
     /// SQLite query to insert a `Database.Price` in the database.
     /// - parameter epic: The market epic being targeted.
     static func _priceInsertionQuery(epic: IG.Market.Epic) -> (tableName: String, query: String) {

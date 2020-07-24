@@ -12,7 +12,7 @@ final class DBPriceTests: XCTestCase {
         
         let from = Date().lastTuesday
         let to = Calendar(identifier: .iso8601).date(byAdding: .hour, value: 1, to: from)!
-        let prices = db.price.get(epic: Test.Epic.forex.randomElement()!, from: from, to: to).expectsOne(timeout: 0.5, on: self)
+        let prices = db.prices.get(epic: Test.Epic.forex.randomElement()!, from: from, to: to).expectsOne(timeout: 0.5, on: self)
         XCTAssertTrue(prices.isEmpty)
     }
 
@@ -27,16 +27,16 @@ final class DBPriceTests: XCTestCase {
         let epic: IG.Market.Epic = "CS.D.EURUSD.CFD.IP"
         let apiMarket = api.markets.get(epic: epic).expectsOne(timeout: 2, on: self)
         db.markets.update(apiMarket).expectsCompletion(timeout: 0.5, on: self)
-        XCTAssertTrue(db.price.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self).isEmpty)
+        XCTAssertTrue(db.prices.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self).isEmpty)
         
         let apiPrices = api.prices.getContinuously(epic: epic, from: from, to: to)
             .map { (prices, _) -> [API.Price] in prices }
             .expectsAll(timeout: 4, on: self)
             .flatMap { $0 }
         XCTAssertTrue(apiPrices.isSorted { $0.date < $1.date })
-        db.price.update(apiPrices, epic: epic).expectsCompletion(timeout: 0.5, on: self)
+        db.prices.update(apiPrices, epic: epic).expectsCompletion(timeout: 0.5, on: self)
         
-        let dbPrices = db.price.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self)
+        let dbPrices = db.prices.get(epic: epic, from: from, to: to).expectsOne(timeout: 0.5, on: self)
         XCTAssertTrue(dbPrices.isSorted { $0.date < $1.date })
         XCTAssertEqual(apiPrices.count, dbPrices.count)
         
