@@ -15,6 +15,7 @@ final class StreamerMarketTests: XCTestCase {
         streamer.markets.subscribe(epic: epic, fields: .all)
             .expectsAtLeast(values: 3, timeout: 6, on: self) { (market) in
                 XCTAssertEqual(market.epic, epic)
+                
                 XCTAssertNotNil(market.status)
                 XCTAssertNotNil(market.date)
                 XCTAssertNotNil(market.isDelayed)

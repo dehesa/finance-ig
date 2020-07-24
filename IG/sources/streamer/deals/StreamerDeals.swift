@@ -43,3 +43,10 @@ extension Streamer.Deal {
 //        case workingOrders = "WOU"
     }
 }
+
+extension Set where Element == Streamer.Deal.Field {
+    /// Returns all queryable fields.
+    @_transparent public static var all: Self {
+        .init(Element.allCases)
+    }
+}

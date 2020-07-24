@@ -10,7 +10,7 @@ extension Streamer {
         /// Values related to deal representing the open position (and its origin if any).
         public let deal: Self.Deal
         /// The actual trade (whether a position or a working order).
-        public let trade: Self.Trade
+        public let details: Self.Details
     }
 }
 
@@ -21,10 +21,10 @@ extension Streamer.Update {
         public let id: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
         public let reference: IG.Deal.Reference
-        /// The deal status.
-        public let status: Self.Status
         /// Deal identifier of the originating deal.
         public let originId: IG.Deal.Identifier?
+        /// The deal status.
+        public let status: Self.Status
     }
 }
 
@@ -45,27 +45,27 @@ extension Streamer.Update.Deal {
 
 extension Streamer.Update {
     /// The details of the given trade.
-    public struct Trade {
-        /// The position status.
-        public let status: Self.Status
-        /// The type of trade being updated.
-        public let type: Self.Kind
+    public struct Details {
         /// Instrument epic identifier.
         public let epic: IG.Market.Epic
         /// Instrument expiry period.
         public let expiry: IG.Market.Expiry
+        /// The position status.
+        public let status: Self.Status
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Deal size.
         public let size: Decimal64
         /// Level (instrument price) at which the position was openend.
         public let level: Decimal64
+        /// The type of trade being updated.
+        public let trade: Self.Trade
         /// User channel.
         public let channel: String
     }
 }
 
-extension Streamer.Update.Trade {
+extension Streamer.Update.Details {
     /// The position status.
     public enum Status: Hashable {
         case open
@@ -74,13 +74,13 @@ extension Streamer.Update.Trade {
     }
     
     /// The trade type.
-    public enum Kind {
-        case position(Streamer.Update.Trade.Position)
-        case workingOrder(Streamer.Update.Trade.WorkingOrder)
+    public enum Trade {
+        case position(Streamer.Update.Details.Position)
+        case workingOrder(Streamer.Update.Details.WorkingOrder)
     }
 }
 
-extension Streamer.Update.Trade {
+extension Streamer.Update.Details {
     /// Open position.
     public struct Position {
         /// The level (i.e. instrument's price) at which the user is happy to "take profit".
@@ -91,7 +91,7 @@ extension Streamer.Update.Trade {
 }
 
 
-extension Streamer.Update.Trade {
+extension Streamer.Update.Details {
     /// Working order waiting for the triggers to be hit.
     public struct WorkingOrder {
         /// The working order type.
@@ -114,7 +114,7 @@ extension Streamer.Update: Decodable {
         let container = try decoder.container(keyedBy: _Keys.self)
         self.date = try container.decode(Date.self, forKey: .date, with: .iso8601)
         self.deal = try .init(from: decoder)
-        self.trade = try .init(from: decoder)
+        self.details = try .init(from: decoder)
     }
     
     private enum _Keys: String, CodingKey {
@@ -140,7 +140,7 @@ extension Streamer.Update.Deal: Decodable {
     }
 }
 
-extension Streamer.Update.Trade: Decodable {
+extension Streamer.Update.Details: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
         
@@ -151,7 +151,7 @@ extension Streamer.Update.Trade: Decodable {
         case let value: throw DecodingError.dataCorruptedError(forKey: .status, in: container, debugDescription: "Invalid OPU status '\(value)'.")
         }
         
-        self.type = try .init(from: decoder)
+        self.trade = try .init(from: decoder)
         self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
         self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
         self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
@@ -166,7 +166,7 @@ extension Streamer.Update.Trade: Decodable {
     }
 }
 
-extension Streamer.Update.Trade.Kind: Decodable {
+extension Streamer.Update.Details.Trade: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
         if let orderType = try container.decodeIfPresent(IG.Deal.WorkingOrder.self, forKey: .type) {
@@ -186,7 +186,7 @@ extension Streamer.Update.Trade.Kind: Decodable {
                 stop = (stopLevel, risk)
             } else { stop = nil }
             
-            let workingOrder = Streamer.Update.Trade.WorkingOrder(type: orderType, expiration: expiration, currency: currency, limitDistance: limitDistance, stop: stop)
+            let workingOrder = Streamer.Update.Details.WorkingOrder(type: orderType, expiration: expiration, currency: currency, limitDistance: limitDistance, stop: stop)
             self = .workingOrder(workingOrder)
         } else {
             let limitLevel = try container.decodeIfPresent(Decimal64.self, forKey: .limitLevel)

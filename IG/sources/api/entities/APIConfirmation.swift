@@ -20,10 +20,10 @@ extension API.Confirmation {
         public let id: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
         public let reference: IG.Deal.Reference
-        /// Deal status (whether the operation has been accepted or rejected).
-        public let status: Self.Status
         /// Affected deals.
         public let affectedDeals: [API.Confirmation.AffectedDeal]
+        /// Deal status (whether the operation has been accepted or rejected).
+        public let status: Self.Status
     }
 }
 
@@ -55,12 +55,12 @@ extension API.Confirmation {
 extension API.Confirmation {
     /// The confirmation details. Many of its property will be `nil` if the overarching deal hasn't been accepted.
     public struct Details {
-        /// The position/workingOrder status.
-        public let status: IG.Deal.Status?
         /// Instrument epic identifier.
         public let epic: IG.Market.Epic
         /// Instrument expiration period.
         public let expiry: IG.Market.Expiry?
+        /// The position/workingOrder status.
+        public let status: IG.Deal.Status?
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// The deal size
