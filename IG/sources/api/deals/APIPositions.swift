@@ -9,7 +9,7 @@ extension API.Request.Deals {
     /// Returns all open positions for the active account.
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
-    /// - returns: *Future* forwarding a list of open positions.
+    /// - returns: Publisher forwarding a list of open positions.
     public func getPositions() -> AnyPublisher<[API.Position],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "positions", version: 2, credentials: true)
@@ -23,7 +23,7 @@ extension API.Request.Deals {
     
     /// Returns an open position for the active account by deal identifier.
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
-    /// - returns: *Future* forwarding the targeted position.
+    /// - returns: Publisher forwarding the targeted position.
     public func getPosition(id: IG.Deal.Identifier) -> AnyPublisher<API.Position,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "positions/\(id)", version: 2, credentials: true)
@@ -51,10 +51,7 @@ extension API.Request.Deals {
     /// - parameter forceOpen: (default `true`). Enabling force open when creating a new position will enable a second position to be opened on a market. This variable must be `true` if the limit and/or the stop are set.
     /// - returns: The transient deal reference (for an unconfirmed trade). If `reference` was set as an argument, that same value will be returned.
     /// - note: The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
-    ///
-    /// Some variables require specific toggles/settings:<br>
-    /// - Setting a limit or a stop requires `force` open to be `true`. If not, an error will be thrown.
-    /// - If a trailing stop is chosen, the "stop distance" and the "trailing distance" must be the same number.
+    /// - attention: Setting a limit or a stop requires `force` open to be `true`. If not, an error will be thrown.
     public func createPosition(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code?, direction: IG.Deal.Direction,
                                order: Self.Position.Order, strategy: Self.Position.FillStrategy, size: Decimal64, limit: IG.Deal.Boundary?, stop: Self.Position.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadCreation(reference: reference, epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen) }
@@ -74,7 +71,7 @@ extension API.Request.Deals {
     /// - parameter id: A permanent deal reference for a confirmed trade.
     /// - parameter limitLevel: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing values will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
-    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
+    /// - returns: Publisher forwarding the transient deal reference (for an unconfirmed trade).
     public func updatePosition(id: IG.Deal.Identifier, limitLevel: Decimal64?, stop: Self.Position.StopEdit?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadUpdate(limit: limitLevel, stop: stop) }
             .makeRequest(.put, "positions/otc/\(id)", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
@@ -88,7 +85,11 @@ extension API.Request.Deals {
     // MARK: DELETE /positions/otc
     
     /// Closes one or more positions.
-    /// - parameter request: A filter to match the positions to be deleted.
+    /// - parameter identification: Matches one or many positions to be closed.
+    /// - parameter direction: Opposite direction of the currenly open position/s.
+    /// - parameter order: The deletion execution order.
+    /// - parameter strategy: The order fill strategy (e.g. simply execute or fill-or-kill).
+    /// - parameter size: The amount of contracts to close.
     /// - returns: The transient deal reference (for an unconfirmed trade) wrapped in a SignalProducer's value.
     public func closePosition(matchedBy identification: Self.Identification, direction: IG.Deal.Direction, order: API.Request.Deals.Position.Order, strategy: API.Request.Deals.Position.FillStrategy, size: Decimal64) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadDeletion(identification: identification, direction: direction, order: order, strategy: strategy, size: size) }
@@ -158,8 +159,13 @@ extension API.Request.Deals.Position {
     /// The order fill strategy.
     public enum FillStrategy {
         /// Execute and eliminate.
+        ///
+        /// Instructs the broker to execute a transaction and when it is done, eliminate such order.
         case execute
-        /// Fill or kill.
+        /// Fill or kill order.
+        ///
+        /// Instructs the broker to execute a transaction immediately and completely or not at all.
+        /// The pupose of a fill-or-kill (FOK) order is to ensure that an entire position is executed at prevailing prices in a timely manner. Without a fill or kill designation it might take a prolonged period of time to complete a large order. Prolonged execution of the order has the potential to cause significant changes to a stock's price and causing market disruption.
         case fillOrKill
         
         /// The representation understood by the server.

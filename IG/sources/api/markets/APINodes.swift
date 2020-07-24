@@ -18,7 +18,7 @@ extension API.Request.Nodes {
     /// - parameter identifier: The identifier for the targeted node. If `nil`, the top-level nodes are returned.
     /// - parameter name: The name for the targeted name. If `nil`, the name of the node is not set on the returned `Node` instance.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
-    /// - returns: *Future* forwarding the node identified by the parameters recursively filled with the subnodes and submarkets till the given `depth`.
+    /// - returns: Publisher forwarding the node identified by the parameters recursively filled with the subnodes and submarkets till the given `depth`.
     public func get(identifier: String?, name: String? = nil, depth: Self.Depth = .none) -> AnyPublisher<API.Node,IG.Error> {
         let layers = depth._value
         guard layers > 0 else {
@@ -34,7 +34,7 @@ extension API.Request.Nodes {
     ///
     /// The search term cannot be an empty string.
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
-    /// - returns: *Future* forwarding all markets matching the search term.
+    /// - returns: Publisher forwarding all markets matching the search term.
     public func getMarkets(matching searchTerm: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
         self._api.publisher { (api) -> String in
                 guard !searchTerm.isEmpty else {
@@ -57,7 +57,7 @@ extension API.Request.Nodes {
     ///
     /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint..
     /// - parameter node: The entity targeting a specific node. Only the identifier is used.
-    /// - returns: *Future* forwarding a *full* node.
+    /// - returns: Publisher forwarding a *full* node.
     private static func _get(api: API, node: API.Node) -> AnyPublisher<API.Node,IG.Error> {
         api.publisher
             .makeRequest(.get, "marketnavigation/\(node.id ?? "")", version: 1, credentials: true)
@@ -85,7 +85,7 @@ extension API.Request.Nodes {
     /// Returns the navigation node indicated by the given node argument as well as all its children till a given depth.
     /// - parameter node: The entity targeting a specific node. Only the identifier is used for identification purposes.
     /// - parameter depth: The depth at which the tree will be travelled.  A negative integer will default to `0`.
-    /// - returns: *Future* forwarding the node given as an argument with complete subnodes and submarkets information.
+    /// - returns: Publisher forwarding the node given as an argument with complete subnodes and submarkets information.
     private static func _iterate(api: API, node: API.Node, depth: Int) -> AnyPublisher<API.Node,IG.Error> {
         // 1. Retrieve the targeted node.
         return _get(api: api, node: node).flatMap { [weak weakAPI = api] (node) -> AnyPublisher<API.Node,IG.Error> in

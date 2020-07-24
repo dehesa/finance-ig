@@ -10,39 +10,73 @@ final class APIWorkingOrderTests: XCTestCase {
     /// Tests the working order lifecycle.
     func testWorkingOrderLifecycle() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
-
-        let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
-            .expectsOne(timeout: 2, on: self)
-        let epic = market.instrument.epic
-        let expiry = market.instrument.expiration.expiry
+        
+        let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP").expectsOne(timeout: 2, on: self)
+        XCTAssertFalse(market.instrument.currencies.isEmpty)
+        XCTAssertEqual(market.snapshot.status, .tradeable)
+        XCTAssertFalse(market.instrument.currencies.isEmpty)
         let currency = market.instrument.currencies[0].code
-        let type: IG.Deal.WorkingOrder = .limit
-        let expiration: IG.Deal.WorkingOrder.Expiration = .tillDate(Date().addingTimeInterval(60 * 60 * 2))
-        let direction: IG.Deal.Direction = .buy
-        let size: Decimal64 = 1
-        let level = market.snapshot.price!.lowest - (0.0001 * 30)
-        let limitDistance: Decimal64 = 10
-        let stopDistance: Decimal64 = 20
-        let forceOpen: Bool = true
-        //let scalingFactor: Decimal64 = 10000
-        
-        let reference = api.deals.createWorkingOrder(reference: nil, epic: epic, expiry: expiry, currency: currency, type: type, expiration: expiration, direction: direction, size: size, level: level, limit: .distance(limitDistance), stop: .distance(stopDistance, risk: .exposed), forceOpen: forceOpen)
-            .expectsOne(timeout: 2, on: self)
-        let confirmation = api.deals.confirm(reference: reference)
-            .expectsOne(timeout: 2, on: self)
-        let identifier = confirmation.deal.id
-        XCTAssertEqual(confirmation.deal.reference, reference)
-        XCTAssertEqual(confirmation.deal.status, .accepted)
-        
-        let orders = api.deals.getWorkingOrders()
-            .expectsOne(timeout: 2, on: self)
-        XCTAssertNotNil(orders.first { $0.id == identifier })
+        let level = market.snapshot.price!.mid! - (80 / market.snapshot.scalingFactor)
+        let expiration = Date(timeIntervalSinceNow: 5 * 60)
+        let reference = IG.Deal.Reference("TestBundle_" + UInt.random(in: 0...1_000_000).description)!
 
-        let deleteReference = api.deals.deleteWorkingOrder(id: confirmation.deal.id)
+        // 1. Create a new working order.
+        let referenceOpened = api.deals
+            .createWorkingOrder(reference: reference, epic: market.instrument.epic, expiry: market.instrument.expiration.expiry, currency: currency, direction: .buy, type: .limit, expiration: .tillDate(expiration), size: 1, level: level, limit: nil, stop: nil)
             .expectsOne(timeout: 2, on: self)
-        XCTAssertEqual(deleteReference, reference)
-        let deleteConfirmation = api.deals.confirm(reference: deleteReference)
+        XCTAssertEqual(referenceOpened, reference)
+        // 1.1. Confirm the order has been created.
+        let confirmationOpened = api.deals
+            .confirm(reference: reference)
             .expectsOne(timeout: 2, on: self)
-        XCTAssertEqual(deleteConfirmation.deal.status, .accepted)
+        XCTAssertLessThanOrEqual(confirmationOpened.date, Date())
+        XCTAssertEqual(confirmationOpened.deal.status, .accepted)
+        XCTAssertEqual(confirmationOpened.deal.reference, reference)
+        XCTAssertEqual(confirmationOpened.details.epic, market.instrument.epic)
+        XCTAssertEqual(confirmationOpened.details.expiry!, market.instrument.expiration.expiry)
+        XCTAssertEqual(confirmationOpened.details.status!, .opened)
+        
+        // 2. Retrieve the working order data.
+        let order = api.deals
+            .getWorkingOrders()
+            .compactMap { $0.filter { $0.id == confirmationOpened.deal.id }.first }
+            .expectsOne(timeout: 2, on: self)
+        XCTAssertEqual(order.id, confirmationOpened.deal.id)
+        XCTAssertLessThanOrEqual(order.date, Date())
+        XCTAssertEqual(order.epic, market.instrument.epic)
+        guard case .tillDate = order.expiration else { return XCTFail() }
+        
+        self.wait(seconds: 1)
+        
+        // 3. Update the working order with new values.
+        let referenceAmended = api.deals
+            .updateWorkingOrder(id: order.id, type: order.type, expiration: .tillCancelled, level: order.level, limit: .distance(20), stop: .distance(20))
+            .expectsOne(timeout: 2, on: self) // The amended reference is different than the original reference
+        // 3.1. Confirm the working order has been updated.
+        let confirmationAmended = api.deals
+            .confirm(reference: referenceAmended)
+            .expectsOne(timeout: 2, on: self)
+        XCTAssertLessThanOrEqual(confirmationAmended.date, Date())
+        XCTAssertEqual(confirmationAmended.deal.status, .accepted)
+        XCTAssertEqual(confirmationAmended.deal.reference, referenceAmended)
+        XCTAssertEqual(confirmationAmended.details.epic, market.instrument.epic)
+        XCTAssertEqual(confirmationAmended.details.expiry!, market.instrument.expiration.expiry)
+        XCTAssertEqual(confirmationAmended.details.status!, .amended)
+        
+        self.wait(seconds: 1)
+        
+        // 4 Delete the working order.
+        let referenceDeleted = api.deals
+            .deleteWorkingOrder(id: confirmationAmended.deal.id)
+            .expectsOne(timeout: 2, on: self)
+        // 4.1 Confirm the working order has been deleted.
+        let confirmationDeleted = api.deals
+            .confirm(reference: referenceDeleted)
+            .expectsOne(timeout: 2, on: self)
+        XCTAssertLessThanOrEqual(confirmationDeleted.date, Date())
+        XCTAssertEqual(confirmationDeleted.deal.status, .accepted)
+        XCTAssertEqual(confirmationDeleted.details.epic, market.instrument.epic)
+        XCTAssertEqual(confirmationDeleted.details.expiry!, market.instrument.expiration.expiry)
+        XCTAssertEqual(confirmationDeleted.details.status!, .deleted)
     }
 }

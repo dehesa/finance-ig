@@ -14,7 +14,7 @@ extension API.Request.Session {
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - parameter encryptPassword: Boolean indicating whether the given password shall be encrypted before sending it to the server.
-    /// - returns: `Future` related type forwarding platform credentials if the login was successful.
+    /// - returns: Publisher forwarding platform credentials if the login was successful.
     internal func loginCertificate(key: API.Key, user: API.User, encryptPassword: Bool = false) -> AnyPublisher<(credentials: API.Credentials, settings: API.Session.Settings), Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 2, credentials: false, headers: { [.apiKey: key.description] }, body: {
@@ -31,7 +31,7 @@ extension API.Request.Session {
     // MARK: GET /session?fetchSessionTokens=true
 
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
-    /// - returns: Future related type forwarding a `API.Credentials.Token.certificate` if the process was successful.
+    /// - returns: Publisher forwarding a `API.Credentials.Token.certificate` if the process was successful.
     internal func refreshCertificate() -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: true, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] })
@@ -45,7 +45,7 @@ extension API.Request.Session {
     /// - note: No credentials (besides the provided ones as parameter) are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
     /// - parameter token: The credentials for the user session to query.
-    /// - returns: *Future* forwarding a `API.Credentials.Token.certificate` if the process was successful.
+    /// - returns: Publisher forwarding a `API.Credentials.Token.certificate` if the process was successful.
     internal func refreshCertificate(key: API.Key, token: API.Token) -> AnyPublisher<(API.Session,API.Token),IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session", version: 1, credentials: false, queries: { [URLQueryItem(name: "fetchSessionTokens", value: "true")] }, headers: {
@@ -76,7 +76,7 @@ extension API.Request.Session {
     /// 3. encrypt password + `|` + timestamp
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: The API key which the encryption key will be associated to.
-    /// - returns: *Future* forwarding the session's encryption key with the key's timestamp.
+    /// - returns: Publisher forwarding the session's encryption key with the key's timestamp.
     /// - todo: Use this to encrypt the password.
     fileprivate func _generateEncryptionKey(key: API.Key) -> AnyPublisher<API.Session._EncryptionKey,IG.Error> {
         self.api.publisher

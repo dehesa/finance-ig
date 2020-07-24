@@ -7,7 +7,7 @@ extension API.Request.Deals {
     // MARK: GET /workingorders
     
     /// Returns all open working orders for the active account.
-    /// - returns: *Future* forwarding all open working orders.
+    /// - returns: Publisher forwarding all open working orders.
     public func getWorkingOrders() -> AnyPublisher<[API.WorkingOrder],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "workingorders", version: 2, credentials: true)
@@ -24,18 +24,16 @@ extension API.Request.Deals {
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
     /// - parameter currency: The currency code (3 letters).
+    /// - parameter direction: Deal direction (whether buy or sell).
     /// - parameter type: The working order type.
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
-    /// - parameter direction: Deal direction (whether buy or sell).
     /// - parameter size: Deal size. Precision shall not be more than 12 decimal places.
     /// - parameter level: Price at which to execute the working order.
     /// - parameter limit: The limit level/distance at which the user will like to take profit once the working order has been transformed into a position.
     /// - parameter stop: The stop level/distance at which the user doesn't want to incur more losses once the working order has been transformed into a position. Trailing stops are not allowed on working orders.
     /// - parameter forceOpen: Enabling force open when creating a new position or working order will enable a second position to be opened on a market.
-    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
-    public func createWorkingOrder(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration,
-                       direction: IG.Deal.Direction, size: Decimal64,
-                       level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
+    /// - returns: Publisher forwarding the transient deal reference (for an unconfirmed trade).
+    public func createWorkingOrder(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code, direction: IG.Deal.Direction, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration, size: Decimal64, level: Decimal64, limit: IG.Deal.Boundary?, stop: API.Request.Deals.WorkingOrder.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadCreation(epic: epic, expiry: expiry, currency: currency, direction: direction, type: type, size: size, level: level, limit: limit, stop: stop, forceOpen: forceOpen, expiration: expiration, reference: reference)
             }.makeRequest(.post, "workingorders/otc", version: 2, credentials: true, body: {
@@ -49,13 +47,14 @@ extension API.Request.Deals {
     // MARK: PUT /workingorders/otc/{dealId}
     
     /// Updates an OTC working order.
+    /// - attention: The returned reference is distinct from any previous working order reference (there is no way to set up an amended reference).
     /// - parameter id: A permanent deal reference for a confirmed working order.
     /// - parameter type: The working order type.
     /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
     /// - parameter level: Price at which to execute the working order.
     /// - parameter limit: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the working order.
     /// - parameter stop: Passing a value will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop working order.
-    /// - returns: *Future* forwarding the transient deal reference (for an unconfirmed trade).
+    /// - returns: Publisher forwarding the transient deal reference (for an unconfirmed trade).
     public func updateWorkingOrder(id: IG.Deal.Identifier, type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration, level: Decimal64, limit: IG.Deal.Boundary?, stop: IG.Deal.Boundary?) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in
                 try _PayloadUpdate(type: type, level: level, limit: limit, stop: stop, expiration: expiration)
@@ -71,7 +70,7 @@ extension API.Request.Deals {
     
     /// Deletes an OTC working order.
     /// - parameter id: A permanent deal reference for a confirmed working order.
-    /// - returns: *Future* forwarding the deal reference.
+    /// - returns: Publisher forwarding the deal reference.
     public func deleteWorkingOrder(id: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher
             .makeRequest(.delete, "workingorders/otc/\(id)", version: 2, credentials: true)

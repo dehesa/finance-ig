@@ -418,7 +418,6 @@
 		8DB90A80231E79BE004204B8 /* DBInternals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBInternals.swift; sourceTree = "<group>"; };
 		8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_iOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_iOS_Client.framework; sourceTree = "<group>"; };
 		8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Lightstreamer_macOS_Client.framework; path = Dependencies/Lightstreamer/Lightstreamer_macOS_Client.framework; sourceTree = "<group>"; };
-		8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBNodeTests.swift; sourceTree = "<group>"; };
 		8DC4CA3C2149A68200344CBF /* macOS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3D2149A68200344CBF /* macOS_tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = macOS_tests.xcconfig; sourceTree = "<group>"; };
 		8DC4CA3E2149A68200344CBF /* macOS_tests.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = macOS_tests.plist; sourceTree = "<group>"; };
@@ -452,11 +451,7 @@
 		8DC4CA7F2149A6CE00344CBF /* APISessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISessions.swift; sourceTree = "<group>"; };
 		8DC4CA802149A6CE00344CBF /* APIOAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIOAuth.swift; sourceTree = "<group>"; };
 		8DC4CA812149A6CE00344CBF /* APICredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICredentials.swift; sourceTree = "<group>"; };
-		8DC4CA842149A6CE00344CBF /* APIFileProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIFileProtocol.swift; sourceTree = "<group>"; };
-		8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileChannel.swift; sourceTree = "<group>"; };
-		8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileSubscription.swift; sourceTree = "<group>"; };
 		8DC4CA872149A6CE00344CBF /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
-		8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerFileUpdate.swift; sourceTree = "<group>"; };
 		8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMarketTests.swift; sourceTree = "<group>"; };
 		8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTests.swift; sourceTree = "<group>"; };
 		8DC4CA902149A6CE00344CBF /* StreamerTradeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerTradeTests.swift; sourceTree = "<group>"; };
@@ -646,24 +641,6 @@
 			path = session;
 			sourceTree = "<group>";
 		};
-		8D819E1022F2B3570031A9D5 /* utils */ = {
-			isa = PBXGroup;
-			children = (
-				8DC4CA842149A6CE00344CBF /* APIFileProtocol.swift */,
-			);
-			path = utils;
-			sourceTree = "<group>";
-		};
-		8D819E1122F2B3AB0031A9D5 /* utils */ = {
-			isa = PBXGroup;
-			children = (
-				8DC4CA852149A6CE00344CBF /* StreamerFileChannel.swift */,
-				8DC4CA862149A6CE00344CBF /* StreamerFileSubscription.swift */,
-				8DC4CA882149A6CE00344CBF /* StreamerFileUpdate.swift */,
-			);
-			path = utils;
-			sourceTree = "<group>";
-		};
 		8D819E1322F2BAB40031A9D5 /* session */ = {
 			isa = PBXGroup;
 			children = (
@@ -777,7 +754,6 @@
 			children = (
 				8DB90A7E231E729F004204B8 /* DBMarketTests.swift */,
 				8DF1233D2330D9C900312A30 /* DBForexTests.swift */,
-				8DC20A72231AF77E00760FA4 /* DBNodeTests.swift */,
 			);
 			path = markets;
 			sourceTree = "<group>";
@@ -1017,7 +993,6 @@
 				8D819E1322F2BAB40031A9D5 /* session */,
 				8DC4CA8C2149A6CE00344CBF /* markets */,
 				8DC4CA8F2149A6CE00344CBF /* account */,
-				8D819E1122F2B3AB0031A9D5 /* utils */,
 			);
 			path = streamer;
 			sourceTree = "<group>";
@@ -1049,7 +1024,6 @@
 				8DC4CA962149A6CE00344CBF /* markets */,
 				8DC4CA922149A6CE00344CBF /* deals */,
 				8D7D2DF0236318B300C0BEB5 /* scrapped */,
-				8D819E1022F2B3570031A9D5 /* utils */,
 			);
 			path = api;
 			sourceTree = "<group>";

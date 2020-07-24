@@ -11,7 +11,8 @@ final class APITransactionTests: XCTestCase {
     func testTransactions() {
         let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
         
-        let transactions = api.accounts.getTransactionsContinuously(from: Date().lastTuesday)
+        let date = Date().lastTuesday
+        let transactions = api.accounts.getTransactionsContinuously(from: date)
             .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(transactions.isEmpty)
@@ -19,7 +20,6 @@ final class APITransactionTests: XCTestCase {
         for transaction in transactions {
             XCTAssertFalse(transaction.title.isEmpty)
             XCTAssertFalse(transaction.reference.isEmpty)
-//            XCTAssertFalse(transaction.debugDescription.isEmpty)
         }
     }
 }

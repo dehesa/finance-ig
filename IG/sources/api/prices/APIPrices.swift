@@ -23,7 +23,7 @@ extension API.Request.Prices {
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
     /// - parameter resolution: It defines the resolution of requested prices.
-    /// - returns: *Future* forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
+    /// - returns: Publisher forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
     public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),IG.Error> {
         self._api.publisher { (api) -> DateFormatter in
             guard let timezone = api.channel.credentials?.timezone else {
