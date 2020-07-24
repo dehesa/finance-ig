@@ -8,8 +8,6 @@ extension API {
         public struct Event {
             /// The specific date and time when the economic event is happening.
             public let date: Date
-            /// The country code.
-            public let country: Country
             /// The title of the economic event.
             public let headline: String
             /// The previous recurring event value.
@@ -18,6 +16,8 @@ extension API {
             public let expected: Self.Value?
             /// The actual recurring event value.
             public let actual: Self.Value?
+            /// The country code.
+            public let country: Country
         }
     }
 }

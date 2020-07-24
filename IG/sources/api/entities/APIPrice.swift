@@ -35,7 +35,7 @@ extension API.Price {
         /// Last traded price.
         ///
         /// This will generally be `nil` for non-exchanged-traded instruments.
-        public let lastTraded: Decimal64?
+//        public let lastTraded: Decimal64?
         
         /// The middle price between the *bid* and the *ask* price.
         @_transparent public var mid: Decimal64 {

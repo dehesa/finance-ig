@@ -2,7 +2,7 @@ import Decimals
 
 extension Deal {
     /// The limit at which the user is taking profit.
-    public enum Boundary: Equatable {
+    @frozen public enum Boundary: Equatable {
         /// Specifies the limit as a given absolute level.
         case level(Decimal64)
         /// Relative limit over an undisclosed reference level.
@@ -16,7 +16,7 @@ extension Deal {
 
 extension Deal.Stop {
     /// Defines the amount of risk being exposed while closing the stop loss.
-    public enum Risk: Hashable {
+    @frozen public enum Risk: Hashable {
         /// An exposed (or non-guaranteed) stop may expose the trade to slippage when exiting it.
         case exposed
         /// A guaranteed stop is a stop-loss order that puts an absolute limit on your liability, eliminating the chance of slippage and guaranteeing an exit price for your trade.
@@ -33,7 +33,7 @@ extension Deal.Stop {
     }
     
     /// A distance from the buy/sell level which will be moved towards the current level in case of a favourable trade.
-    public enum Trailing: Hashable {
+    @frozen public enum Trailing: Hashable {
         /// A static (non-movable) stop.
         case `static`
         /// A dynamic (trailing) stop.

@@ -1,5 +1,5 @@
-import Foundation
 @testable import IG
+import Foundation
 
 extension Test.Account {
     /// Error that can be thrown by trying to load an testing account file.

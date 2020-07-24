@@ -1,7 +1,7 @@
 /// Namespace for market information.
 public enum Market {
     /// An epic represents a unique tradeable market.
-    public struct Epic {
+    @frozen public struct Epic {
         /// The underlying storage.
         @usableFromInline internal typealias _Buffer = (UInt64, UInt64, UInt64, UInt64)
         /// Maximum UTF8 character count.

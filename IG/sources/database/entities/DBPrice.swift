@@ -4,7 +4,7 @@ import SQLite3
 
 extension Database {
     /// Historical market price snapshot.
-    public struct Price {
+    @frozen public struct Price {
         /// Snapshot date.
         public let date: Date
         /// Open session price.
@@ -23,10 +23,10 @@ extension Database {
     public struct PriceWrapper {
         /// The identifier for the sourcing market.
         public let epic: IG.Market.Epic
-        /// The price resolution (e.g. one second, five minutes, etc.).
-        public let interval: Streamer.Chart.Aggregated.Interval
         /// The actual price.
         public let price: Database.Price
+        /// The price resolution (e.g. one second, five minutes, etc.).
+        public let interval: Streamer.Chart.Aggregated.Interval
     }
 }
 

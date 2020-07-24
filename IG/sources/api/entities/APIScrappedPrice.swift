@@ -121,7 +121,7 @@ fileprivate extension API.PriceSnapshot {
             let pointContainer = try $0.nestedContainer(keyedBy: _ElementKeys._DataPointKeys._PriceKeys.self, forKey: $1)
             let bid = try pointContainer.decode(Decimal64.self, forKey: .bid) / scalingFactor
             let ask = try pointContainer.decode(Decimal64.self, forKey: .ask) / scalingFactor
-            return .init(bid: bid, ask: ask, lastTraded: nil)
+            return .init(bid: bid, ask: ask)
         }
         
         var elementsContainer = scrappedDataPoints
