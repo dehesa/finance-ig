@@ -20,10 +20,10 @@ extension Streamer.Confirmation {
         public let id: IG.Deal.Identifier
         /// Transient deal reference for an unconfirmed trade.
         public let reference: IG.Deal.Reference
-        /// Deal status (whether the operation has been accepted or rejected).
-        public let status: Self.Status
         /// Affected deals.
         public let affectedDeals: [Streamer.Confirmation.AffectedDeal]
+        /// Deal status (whether the operation has been accepted or rejected).
+        public let status: Self.Status
     }
 }
 

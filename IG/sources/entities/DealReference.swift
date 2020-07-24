@@ -1,6 +1,6 @@
 extension Deal {
     /// Transient deal identifier (for an unconfirmed trade).
-    public struct Reference {
+    @frozen public struct Reference {
         /// The underlying storage.
         @usableFromInline internal typealias _Buffer = (UInt64, UInt64, UInt64, UInt64)
         /// Maximum UTF8 character count.

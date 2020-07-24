@@ -3,7 +3,7 @@ import Decimals
 /// Namespace for commonly used value/class types related to deals.
 public enum Deal {
     /// Deal direction.
-    public enum Direction: Hashable {
+    @frozen public enum Direction: Hashable {
         /// Going "long"
         case buy
         /// Going "short"
@@ -58,7 +58,7 @@ public enum Deal {
         case stop
         
         /// Describes when the working order will expire.
-        public enum Expiration: Equatable {
+        @frozen public enum Expiration: Equatable {
             /// The order remains in place till it is explicitly cancelled.
             case tillCancelled
             /// The order remains in place till it is fulfill or the associated date is reached.

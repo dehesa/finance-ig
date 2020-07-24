@@ -98,12 +98,12 @@ private extension Services {
     static func _make(with api: API, queue: DispatchQueue, location: Database.Location) -> AnyPublisher<Services,IG.Error> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
-            return Fail(error: IG.Error.init(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in with your username and password."))
+            return Fail(error: IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in with your username and password."))
                 .eraseToAnyPublisher()
         }
         // Check that they haven't expired.
         guard apiCredentials.token.expirationDate > Date() else {
-            return Fail(error: IG.Error.init(.api(.invalidRequest), "The given credentials have expired.", help: "Log in with your username and password."))
+            return Fail(error: IG.Error(.api(.invalidRequest), "The given credentials have expired.", help: "Log in with your username and password."))
                 .eraseToAnyPublisher()
         }
         

@@ -1,6 +1,6 @@
-import XCTest
 @testable import IG
 import Combine
+import XCTest
 
 final class DBPriceTests: XCTestCase {
     /// The test account being used for the tests in this class.

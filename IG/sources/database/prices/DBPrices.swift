@@ -304,11 +304,12 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
             
             let query = Database.Request.Prices._priceInsertionQuery(epic: price.epic).query
             let streamPrice = Database.PriceWrapper(
-                    epic: price.epic, interval: price.interval,
+                    epic: price.epic,
                     price: .init(date: date, open: .init(bid: openBid, ask: openAsk),
                                 close: .init(bid: closeBid, ask: closeAsk),
                                 lowest: .init(bid: lowestBid, ask: lowestAsk),
-                                highest: .init(bid: highestBid, ask: highestAsk), volume: volume))
+                                highest: .init(bid: highestBid, ask: highestAsk), volume: volume),
+                    interval: price.interval)
             return ( db, (query, streamPrice) )
         }.write { (sqlite, statement, input, _) -> Database.PriceWrapper in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }

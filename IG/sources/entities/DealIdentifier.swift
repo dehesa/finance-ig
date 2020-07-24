@@ -1,6 +1,6 @@
 extension Deal {
     /// Position's permanent identifier.
-    public struct Identifier {
+    @frozen public struct Identifier {
         /// The underlying storage.
         @usableFromInline internal typealias _Buffer = (UInt64, UInt64, UInt64, UInt64)
         /// Maximum UTF8 character count.

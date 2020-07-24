@@ -1,7 +1,7 @@
-import XCTest
 @testable import IG
 import Combine
 import ConbiniForTesting
+import XCTest
 
 final class DBForexTests: XCTestCase {
     /// The test account being used for the tests in this class.
