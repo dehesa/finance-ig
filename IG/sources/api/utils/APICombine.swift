@@ -18,7 +18,7 @@ internal extension API {
 
 internal extension API {
     /// Publisher sending downstream the receiving `API` instance. If the instance has been deallocated when the chain is activated, a failure is sent downstream.
-    /// - returns: A Combine `Future` sending an `API` instance and completing immediately once it is activated.
+    /// - returns: A Publisher sending an `API` instance and completing immediately once it is activated.
     @_transparent var publisher: DeferredResult<API.Transit.Instance<Void>,IG.Error> {
         DeferredResult { [weak self] in
             guard let self = self else { return .failure( IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.") ) }
@@ -28,7 +28,7 @@ internal extension API {
     
     /// Publisher sending downstream the receiving `API` instance and some computed values. If the instance has been deallocated or the values cannot be generated, the publisher fails.
     /// - parameter valuesGenerator: Closure generating the values to be send downstream along with the `API` instance.
-    /// - returns: A Combine `Future` sending an `API` instance along with some computed values and completing immediately once it is activated.
+    /// - returns: A Publisher sending an `API` instance along with some computed values and completing immediately once it is activated.
     func publisher<T>(_ valuesGenerator: @escaping (_ api: API) throws -> T) -> DeferredResult<API.Transit.Instance<T>,IG.Error> {
         DeferredResult { [weak self] in
             guard let self = self else { return .failure( IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.") ) }
@@ -133,7 +133,7 @@ internal extension Publisher {
     /// The operator will also check that the network package received has the appropriate `HTTPURLResponse` header, is of the expected type (e.g. JSON) and it has the expected response status code (if any has been indicated).
     /// - parameter type: The HTTP content type expected as a result.
     /// - parameter statusCodes: If not `nil`, the sequence indicates all *viable*/supported status codes.
-    /// - returns: A `Future` related type forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
+    /// - returns: Publisher forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
     func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) -> Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap { (api, request, values) in

@@ -23,7 +23,7 @@ extension API.Request.Scrapped {
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
-    /// - returns: *Future* forwarding all user's applications.
+    /// - returns: Publisher forwarding all user's applications.
     public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Calendar.Event],IG.Error> {
         self.api.publisher { _ throws -> (from: Int, to: Int) in
                 guard from <= to else { throw IG.Error(.api(.invalidRequest), "The 'from' date must occur before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }

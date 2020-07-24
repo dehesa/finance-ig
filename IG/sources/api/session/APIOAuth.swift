@@ -10,7 +10,7 @@ extension API.Request.Session {
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: API key given by the platform identifying the endpoint usage.
     /// - parameter user: User name and password to log in into an account.
-    /// - returns: `Future` related type forwarding the platform credentials if the login was successful.
+    /// - returns: Publisher forwarding the platform credentials if the login was successful.
     internal func loginOAuth(key: API.Key, user: API.User) -> AnyPublisher<API.Credentials,Swift.Error> {
         self.api.publisher
             .makeRequest(.post, "session", version: 3, credentials: false, headers: { [.apiKey: key.description] }, body: {
@@ -29,7 +29,7 @@ extension API.Request.Session {
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
-    /// - returns: `Future` related type forwarding the OAUth token if the refresh process was successful.
+    /// - returns: Publisher forwarding the OAUth token if the refresh process was successful.
     internal func refreshOAuth(token: String, key: API.Key) -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher { _ -> _TemporaryRefresh in
                 guard !token.isEmpty else { throw IG.Error(.api(.invalidRequest), "The OAuth refresh token cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.") }

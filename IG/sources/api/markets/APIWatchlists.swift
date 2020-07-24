@@ -19,7 +19,7 @@ extension API.Request.Watchlists {
     /// Creates a watchlist.
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
-    /// - returns: *Future* forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
+    /// - returns: Publisher forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
     public func create(name: String, epics: [IG.Market.Epic]) -> AnyPublisher<(identifier: String, areAllInstrumentsAdded: Bool),IG.Error> {
         self._api.publisher { _ -> _PayloadCreation in
                 guard !name.isEmpty else {
@@ -38,7 +38,7 @@ extension API.Request.Watchlists {
     // MARK: GET /watchlists
     
     /// Returns all watchlists belonging to the active account.
-    /// - returns: *Future* forwarding an array of watchlists.
+    /// - returns: Publisher forwarding an array of watchlists.
     public func getAll() -> AnyPublisher<[API.Watchlist],IG.Error> {
         self._api.publisher
             .makeRequest(.get, "watchlists", version: 1, credentials: true)
@@ -52,7 +52,7 @@ extension API.Request.Watchlists {
     
     /// Returns the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
-    /// - returns: *Future* forwarding all markets under the targeted watchlist.
+    /// - returns: Publisher forwarding all markets under the targeted watchlist.
     public func getMarkets(from identifier: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
         self._api.publisher { _ -> Void in
                 guard !identifier.isEmpty else {
@@ -70,7 +70,7 @@ extension API.Request.Watchlists {
     /// Adds a market to a watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
-    /// - returns: *Future* indicating the success of the operation.
+    /// - returns: Publisher indicating the success of the operation.
     public func update(identifier: String, addingEpic epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Error> {
         self._api.publisher { _ in
                 guard !identifier.isEmpty else {
@@ -91,7 +91,7 @@ extension API.Request.Watchlists {
     /// Removes a market from a watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
-    /// - returns: *Future* indicating the success of the operation.
+    /// - returns: Publisher indicating the success of the operation.
     public func update(identifier: String, removingEpic epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Error> {
         self._api.publisher { _ in
                 guard !identifier.isEmpty else {
@@ -109,7 +109,7 @@ extension API.Request.Watchlists {
     
     /// Deletes the targeted watchlist.
     /// - parameter identifier: The identifier for the watchlist being targeted.
-    /// - returns: *Future* indicating the success of the operation.
+    /// - returns: Publisher indicating the success of the operation.
     public func delete(identifier: String) -> AnyPublisher<Never,IG.Error> {
         self._api.publisher { _ in
                 guard !identifier.isEmpty else {

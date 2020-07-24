@@ -22,7 +22,7 @@ final class APIMarketTests: XCTestCase {
         
         let epics = Set<IG.Market.Epic>(Test.Epic.forex + Test.Epic.forexMini)
         let markets = api.markets.getContinuously(epics: epics)
-            .expectsAll(timeout: 4, on: self)
+            .expectsAll(timeout: 5, on: self)
             .flatMap { $0 }
         XCTAssertEqual(epics.count, markets.count)
     }

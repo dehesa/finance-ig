@@ -20,13 +20,13 @@ public enum Deal {
     }
 
     /// Position status.
-    public enum Status {
+    public enum Status: Equatable {
         case opened
         case amended
         case closed(Self.Completion)
         case deleted
         
-        public enum Completion {
+        public enum Completion: Equatable {
             case partially
             case fully
         }
@@ -47,7 +47,7 @@ public enum Deal {
     }
     
     /// Working order type.
-    public enum WorkingOrder {
+    public enum WorkingOrder: Equatable {
         /// An instruction to deal if the price moves to a more favourable level.
         ///
         /// This is an order to open a position by buying when the market reaches a lower level than the current price, or selling short when the market hits a higher level than the current price.
@@ -58,7 +58,7 @@ public enum Deal {
         case stop
         
         /// Describes when the working order will expire.
-        public enum Expiration {
+        public enum Expiration: Equatable {
             /// The order remains in place till it is explicitly cancelled.
             case tillCancelled
             /// The order remains in place till it is fulfill or the associated date is reached.

@@ -133,10 +133,16 @@ extension Test.Account {
 
 extension XCTestCase {
     /// Returns the API credentials for this Test account.
-    func apiCredentials(from testAccount: Test.Account) -> API.Credentials {
+    ///
+    /// If `testAccount` doesn't defined exact credentials, this method will fetch them synchronously.
+    /// Any access trying to get credentials while the fetching is in process will get stopped for at least `timeout` amount of seconds (to give time for the process to finished).
+    /// - precondition: This function is synchronous and expects success. If there is no internet connection or the test account log in data is invalid, the function will crash.
+    /// - parameter testAccount: Reference type containing the test account information.
+    /// - parameter timeout: Maximum amount of seconds this function will wait for the credentials to be fetched.
+    /// - returns: Valid API credentials.
+    func apiCredentials(from testAccount: Test.Account, timeout: Int = 3) -> API.Credentials {
         let data: Test.Account.APIData = testAccount.api
         
-        let timeout = 3
         guard case .success = data._semaphore.wait(timeout: .now() + .seconds(timeout)) else {
             fatalError("The semaphore for accessing the API credentials timeout (\(timeout) seconds)")
         }
@@ -172,7 +178,7 @@ extension XCTestCase {
 }
 
 extension XCTestCase {
-    /// Try to get the Streamer credentials from the test data, and if it is not there it lets the API compute them.
+    /// Get the Streamer credentials from the test data, and if it is not there it lets the API compute them.
     func streamerCredentials(from testAccount: Test.Account) -> (rootURL: URL, credentials: Streamer.Credentials) {
         guard case .some(let data) = testAccount.streamer else {
             let credentials = self.apiCredentials(from: testAccount)

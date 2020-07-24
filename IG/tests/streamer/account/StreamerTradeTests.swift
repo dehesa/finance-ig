@@ -52,7 +52,7 @@ final class StreamerTradeTests: XCTestCase {
         print("\n\nMarket level: \(market.snapshot.price!.mid!)\nWorking order level: \(level)\n\n")
         
         // 3. Create the working order
-        api.deals.createWorkingOrder(reference: nil, epic: epic, expiry: .none, currency: .usd, type: .limit, expiration: .tillDate(Date().addingTimeInterval(60*60*5)), direction: .buy, size: 1, level: level, limit: .distance(50), stop: .distance(50, risk: .exposed), forceOpen: true)
+        api.deals.createWorkingOrder(reference: nil, epic: epic, expiry: .none, currency: .usd, direction: .buy, type: .limit, expiration: .tillDate(Date().addingTimeInterval(60*60*5)), size: 1, level: level, limit: .distance(50), stop: .distance(50, risk: .exposed), forceOpen: true)
             .expectsOne(timeout: 2, on: self)
         self._wait(max: 1.2, interval: 0.2) { (expectation) in
             guard case .some = dealId else { return }
