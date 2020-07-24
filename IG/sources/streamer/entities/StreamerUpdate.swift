@@ -30,7 +30,7 @@ extension Streamer.Update {
 
 extension Streamer.Update.Deal {
     /// The deal status.
-    public enum Status {
+    public enum Status: Equatable {
         case accepted
         case rejected(reason: String? = nil)
         
@@ -67,7 +67,7 @@ extension Streamer.Update {
 
 extension Streamer.Update.Trade {
     /// The position status.
-    public enum Status {
+    public enum Status: Hashable {
         case open
         case updated
         case deleted

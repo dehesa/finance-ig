@@ -149,7 +149,7 @@ extension API.Request.Nodes {
 
 extension API.Request.Nodes {
     /// Express the depth of a computed tree.
-    public enum Depth: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral {
+    public enum Depth: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Equatable {
         /// No depth (outside the targeted node).
         case none
         /// Number of subnodes layers under the targeted node will be queried.

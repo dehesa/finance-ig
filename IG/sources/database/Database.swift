@@ -17,7 +17,7 @@ public final class Database {
     /// Namespace for functionality related to IG's markets.
     @inlinable public final var markets: Database.Request.Markets { .init(database: self) }
     /// Namespace for functionality related to price data points.
-    @inlinable public final var price: Database.Request.Price { .init(database: self) }
+    @inlinable public final var prices: Database.Request.Prices { .init(database: self) }
     
     /// The database version.
     public final var version: Int { Database.Migration.Version.latest.rawValue }

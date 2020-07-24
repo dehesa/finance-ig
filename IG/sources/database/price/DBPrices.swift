@@ -5,7 +5,7 @@ import SQLite3
 
 extension Database.Request {
     /// Contains all functionality related to Database user's activity, transaction, and history of prices.
-    public struct Price {
+    public struct Prices {
         /// Pointer to the actual database instance in charge of the low-level objects.
         fileprivate unowned let _database: Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
@@ -13,7 +13,7 @@ extension Database.Request {
     }
 }
 
-extension Database.Request.Price {
+extension Database.Request.Prices {
     /// Returns all dates for which there are prices stored in the database.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query. If `nil`, the date at the beginning of the database is assumed.
@@ -137,7 +137,7 @@ extension Database.Request.Price {
     }
 }
 
-extension Database.Request.Price {
+extension Database.Request.Prices {
     /// Returns historical prices for a particular instrument.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query. If `nil`, the retrieved data starts with the first ever recorded price.
@@ -235,7 +235,7 @@ extension Database.Request.Price {
     }
 }
 
-extension Database.Request.Price {
+extension Database.Request.Prices {
     /// Updates the database with the information received from the server.
     /// - note: The market must be in the database before storing its price points.
     /// - parameter prices: The array of price points that have arrived from the server.
@@ -302,7 +302,7 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
                 throw IG.Error(.database(.invalidRequest), "The emitted price value is missing some properties", help: "Retry the connection")
             }
             
-            let query = Database.Request.Price._priceInsertionQuery(epic: price.epic).query
+            let query = Database.Request.Prices._priceInsertionQuery(epic: price.epic).query
             let streamPrice = Database.PriceWrapper(
                     epic: price.epic, interval: price.interval,
                     price: .init(date: date, open: .init(bid: openBid, ask: openAsk),

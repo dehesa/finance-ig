@@ -154,7 +154,7 @@ extension API.Market.Instrument {
     }
     
     /// Unit used to qualify the size of a trade.
-    public enum Unit: String {
+    public enum Unit {
         case amount
         case contracts
         case shares
@@ -194,8 +194,8 @@ extension API.Market.Instrument {
         public let value: Decimal64
         public let unit: Unit
         
-        public enum Unit: String {
-            case percentage = "pct"
+        public enum Unit {
+            case percentage
         }
     }
     
@@ -230,7 +230,7 @@ extension API.Market {
         public let stop: Self.Stop
         
         /// Market order trading preference.
-        public enum Order {
+        public enum Order: Equatable {
             /// Market orders are not allowed for the current site and/or instrument.
             case unavailable
             /// Market orders are allowed for the account type and instrument and the user has enabled market orders in their preferences.
@@ -239,7 +239,7 @@ extension API.Market {
         }
         
         /// Settings for positions' limits.
-        public struct Limit {
+        public struct Limit: Equatable {
             /// Minimum normal limit distance.
             public let mininumDistance: API.Market.Distance
             /// Maximum limit distance.
@@ -247,7 +247,7 @@ extension API.Market {
         }
         
         /// Settings for positions' stops.
-        public struct Stop {
+        public struct Stop: Equatable {
             /// Minimum normal stop distance.
             public let mininumDistance: API.Market.Distance
             /// Minimum controller risk stop distance.
@@ -258,7 +258,7 @@ extension API.Market {
             public let trailing: Self.Trailing
             
             /// Settings for positions' trailing stops.
-            public struct Trailing {
+            public struct Trailing: Equatable {
                 /// Trailing stops trading preference.
                 public let areAvailable: Bool
                 /// Minimum step distance.
@@ -293,7 +293,7 @@ extension API.Market {
 
 extension API.Market {
     /// The current status of the market.
-    public enum Status {
+    public enum Status: Hashable {
         /// The market is open for trading.
         case tradeable
         /// The market is closed for the moment. Look at the market's opening hours for further information.
@@ -331,13 +331,13 @@ extension API.Market {
 
 extension API.Market {
     /// Distance/Size preference.
-    public struct Distance {
+    public struct Distance: Equatable {
         /// The distance value.
         public let value: Decimal64
         /// The unit at which the `value` is measured against.
         public let unit: Unit
         
-        public enum Unit {
+        public enum Unit: Hashable {
             case points, percentage
         }
     }

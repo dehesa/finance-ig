@@ -143,7 +143,7 @@ private extension API.Request.Watchlists {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: Self.CodingKeys.self)
             self.id = try container.decode(String.self, forKey: .id)
-            let status = try container.decode(CodingKeys.Status.self, forKey: .status)
+            let status = try container.decode(CodingKeys._Status.self, forKey: .status)
             self.areAllInstrumentsAdded = (status == .success)
         }
 
@@ -151,7 +151,7 @@ private extension API.Request.Watchlists {
             case id = "watchlistId"
             case status = "status"
             
-            enum Status: String, Decodable {
+            enum _Status: String, Decodable {
                 case success = "SUCCESS"
                 case notAllInstrumentAdded = "SUCCESS_NOT_ALL_INSTRUMENTS_ADDED"
             }
@@ -167,9 +167,9 @@ private extension API.Request.Watchlists {
     }
     
     struct _WrapperUpdate: Decodable {
-        let status: Self.Status
+        let status: Self._Status
         
-        enum Status: String, Decodable {
+        enum _Status: String, Decodable {
             case success = "SUCCESS"
         }
     }

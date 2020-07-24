@@ -96,7 +96,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
 
 internal extension IG.Error {
     /// IG error domains.
-    enum Failure {
+    enum Failure: Hashable {
         case api(API.Failure)
         case streamer(Streamer.Failure)
         case database(Database.Failure)

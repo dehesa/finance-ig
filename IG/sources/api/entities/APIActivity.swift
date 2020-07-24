@@ -27,7 +27,7 @@ extension API {
 
 extension API.Activity {
     /// Activity Type.
-    public enum Kind {
+    public enum Kind: Hashable {
         /// System generated activity.
         case system
         /// Position activity.
@@ -39,7 +39,7 @@ extension API.Activity {
     }
     
     /// Activity status.
-    public enum Status {
+    public enum Status: Hashable {
         /// The activity has been accepted.
         case accepted
         /// The activity has been rejected.
@@ -49,7 +49,7 @@ extension API.Activity {
     }
     
     /// Trigger channel.
-    public enum Channel {
+    public enum Channel: Hashable {
         /// Activity performed through the platform's internal system.
         case system
         /// Activity performed through the platform's website.
@@ -102,7 +102,7 @@ extension API.Activity {
         /// The action type.
         ///
         /// Refects who is the receiver of the action on what status has been changed to.
-        public enum Kind {
+        public enum Kind: Hashable {
             /// The action affects a position and its status has been modified to the one given here.
             case position(status: API.Activity.Action.PositionStatus)
             /// The action affects a working order and its status has been modified to the one given here.
@@ -114,20 +114,24 @@ extension API.Activity {
         }
         
         /// Position's action status.
-        public enum PositionStatus {
+        public enum PositionStatus: Hashable {
             case opened
             case rolled
-            case partiallyClosed
-            case closed
+            case closed(Self.Completion)
             case deleted
+            
+            public enum Completion: Hashable {
+                case partially
+                case fully
+            }
         }
         
         /// Working order's action status.
-        public enum WorkingOrderStatus {
+        public enum WorkingOrderStatus: Hashable {
             case opened
-            case filled
             case amended
             case rolled
+            case filled
             case deleted
         }
     }
@@ -263,8 +267,8 @@ extension API.Activity.Action: Decodable {
         case "STOP_LIMIT_AMENDED":  self.type = .dealStopLimitAmended
         case "POSITION_OPENED":     self.type = .position(status: .opened)
         case "POSITION_ROLLED":     self.type = .position(status: .rolled)
-        case "POSITION_PARTIALLY_CLOSED": self.type = .position(status: .partiallyClosed)
-        case "POSITION_CLOSED":     self.type = .position(status: .closed)
+        case "POSITION_PARTIALLY_CLOSED": self.type = .position(status: .closed(.partially))
+        case "POSITION_CLOSED":     self.type = .position(status: .closed(.fully))
         case "POSITION_DELETED":    self.type = .position(status: .deleted)
         case "LIMIT_ORDER_OPENED":  self.type = .workingOrder(status: .opened, type: .limit)
         case "LIMIT_ORDER_FILLED":  self.type = .workingOrder(status: .filled, type: .limit)

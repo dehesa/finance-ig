@@ -87,7 +87,7 @@ extension API.Request.Deals {
 extension API.Request.Deals {
     public enum WorkingOrder {
         /// The level/price at which the user doesn't want to incur more lose.
-        public enum Stop {
+        public enum Stop: Equatable {
             /// Absolute value of the stop (e.g. 1.653 USD/EUR).
             case level(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
             /// Relative stop over an undisclosed reference level.
@@ -95,7 +95,7 @@ extension API.Request.Deals {
         }
         
         /// The level/price at which the user doesn't want to incur more lose.
-        public enum StopEdit {
+        public enum StopEdit: Equatable {
             /// Relative stop over an undisclosed reference level.
             case distance(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
         }

@@ -26,7 +26,7 @@ extension API.Request.Accounts {
                 }
 
                 if type != .all {
-                    queries.append(.init(name: "type", value: type.rawValue))
+                    queries.append(.init(name: "type", value: type.description))
                 }
 
                 queries.append(.init(name: "pageSize", value: "0"))
@@ -69,7 +69,7 @@ extension API.Request.Accounts {
                 }
 
                 if type != .all {
-                    queries.append(.init(name: "type", value: type.rawValue))
+                    queries.append(.init(name: "type", value: type.description))
                 }
 
                 queries.append(.init(name: "pageSize", value: String(page.size)))
@@ -98,17 +98,26 @@ extension API.Request.Accounts {
 
 extension API.Request.Accounts {
     /// Transaction type.
-    public enum Transaction: String {
-        case all = "ALL"
-        case deal = "ALL_DEAL"
-        case deposit = "DEPOSIT"
-        case withdrawal = "WITHDRAWAL"
+    public enum Transaction: CustomStringConvertible {
+        case all
+        case deal
+        case deposit
+        case withdrawal
         
         public init(_ type: API.Transaction.Kind) {
             switch type {
             case .deal: self = .deal
             case .deposit: self = .deposit
             case .withdrawal: self = .withdrawal
+            }
+        }
+        
+        public var description: String {
+            switch self {
+            case .all: return "ALL"
+            case .deal: return "ALL_DEAL"
+            case .deposit: return "DEPOSIT"
+            case .withdrawal: return "WITHDRAWAL"
             }
         }
     }

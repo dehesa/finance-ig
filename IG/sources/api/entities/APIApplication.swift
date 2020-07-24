@@ -20,7 +20,7 @@ extension API {
 
 extension API.Application {
     /// Application status in the platform.
-    public enum Status {
+    public enum Status: Hashable {
         /// The application is enabled and thus ready to receive/send data.
         case enabled
         /// The application has been disabled by the developer.
@@ -32,7 +32,7 @@ extension API.Application {
 
 extension API.Application {
     /// The platform allowance to the application's and account's allowances (e.g. requests per minute).
-    public struct Permission {
+    public struct Permission: Equatable {
         /// Boolean indicating if access to equity prices is permitted.
         public let accessToEquityPrices: Bool
         /// Boolean indicating if quote orders are permitted.
@@ -42,7 +42,7 @@ extension API.Application {
 
 extension API.Application {
     /// The limits constraining an API application.
-    public struct Allowance {
+    public struct Allowance: Equatable {
         /// Overal application request per minute allowance.
         public let overallRequests: Int
         /// Account related requests per minute allowance.
@@ -54,7 +54,7 @@ extension API.Application {
 
 extension API.Application.Allowance {
     /// Limit and allowances for the targeted account.
-    public struct Account {
+    public struct Account: Equatable {
         /// Per account request per minute allowance.
         public let overallRequests: Int
         /// Per account trading request per minute allowance.

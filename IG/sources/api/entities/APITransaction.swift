@@ -30,7 +30,7 @@ extension API {
 
 extension API.Transaction {
     /// Transaction type.
-    public enum Kind {
+    public enum Kind: Hashable {
         case deal
         case deposit
         case withdrawal

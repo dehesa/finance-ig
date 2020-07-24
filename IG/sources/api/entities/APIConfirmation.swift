@@ -170,7 +170,7 @@ extension API.Confirmation.Details: Decodable {
 
 extension API.Confirmation.Deal.Status {
     /// Description of trading operation error.
-    public enum RejectionReason: String, Decodable {
+    public enum RejectionReason: String, Equatable, Decodable {
         /// The operation resulted in an unknown result condition. Check transaction history or contact support for further information.
         case unknown = "UNKNOWN"
         /// An error has occurred but no detailed information is available. Check transaction history or contact support for further information.

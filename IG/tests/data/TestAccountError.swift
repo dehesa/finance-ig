@@ -28,7 +28,7 @@ extension Test.Account {
 //result.append(details: "File URL: \(url.absoluteString)")
 extension Test.Account.Error {
     /// The type of API error raised.
-    enum Kind: Int {
+    enum Kind: Int, Hashable {
         /// The environment key passed as parameter was not found on the environment variables.
         case environmentVariableNotFound = 1
         /// The URL given in the file is invalid or none existant
