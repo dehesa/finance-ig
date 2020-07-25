@@ -18,14 +18,8 @@ extension Streamer {
         /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
         /// - throws: `IG.Error` exclusively.
         public init(credentials: API.Credentials) throws {
-            guard case .certificate(let access, let security) = credentials.token.value else {
-                throw IG.Error(.streamer(.invalidRequest), "Invalid API credentials.", help: "Log in to the API with 'certificate' credentials.")
-            }
-            
-            guard let password = Streamer.Credentials.password(fromCST: access, security: security) else {
-                throw IG.Error(.streamer(.invalidRequest), "Invalid streamer password.", help: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer.")
-            }
-            
+            guard case .certificate(let access, let security) = credentials.token.value else { throw IG.Error._invalidCredentials() }
+            guard let password = Streamer.Credentials.password(fromCST: access, security: security) else { throw IG.Error._invalidPassword() }
             self.init(identifier: credentials.account, password: password)
         }
         
@@ -48,5 +42,16 @@ extension Streamer {
             
             return (password.isEmpty) ? nil : password
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when there is invalid credentials.
+    static func _invalidCredentials() -> Self {
+        Self(.streamer(.invalidRequest), "Invalid API credentials.", help: "Log in to the API with 'certificate' credentials.")
+    }
+    /// Error raised when the streamer password is invalid.
+    static func _invalidPassword() -> Self {
+        Self(.streamer(.invalidRequest), "Invalid streamer password.", help: "There seems to be a problem with the 'certificate' password provided. If you input it manually, double check it. If not, contact the repository maintainer.")
     }
 }

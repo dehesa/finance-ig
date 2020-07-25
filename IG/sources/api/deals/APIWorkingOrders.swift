@@ -239,7 +239,7 @@ extension API.Request.Deals {
                 switch limit {
                 case .level: break
                 case .distance(let distance):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid limit distance '\(distance)'.", help: "The limit distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalid(limitDistance: distance) }
                 }
                 self.limit = limit
             } else { self.limit = nil }
@@ -248,7 +248,7 @@ extension API.Request.Deals {
                 switch stop {
                 case .level: break
                 case .distance(let distance):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid stop distance '\(distance)'.", help: "The stop distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalidStop(distance: distance) }
                 }
                 self.stop = stop
             } else { self.stop = nil }
@@ -256,7 +256,7 @@ extension API.Request.Deals {
             switch expiration {
             case .tillCancelled: break
             case .tillDate(let date):
-                guard date > Date(timeIntervalSinceNow: 1) else { throw IG.Error(.api(.invalidRequest), "Invalid working order expiration date.", help: "The expiration date must be later than the current date") }
+                guard date > Date(timeIntervalSinceNow: 1) else { throw IG.Error._invalidExpiration(date: date) }
             }
             self.expiration = expiration
         }
