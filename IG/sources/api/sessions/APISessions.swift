@@ -53,9 +53,7 @@ extension API.Request.Session {
         case .certificate:
             return self.loginCertificate(key: key, user: user, encryptPassword: false)
                 .tryMap { [weak weakAPI = self.api] (credentials, settings) in
-                    guard let api = weakAPI else {
-                        throw IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
-                    }
+                    let api = try weakAPI ?> IG.Error._deallocatedAPI()
                     api.channel.credentials = credentials
                     return settings
                 }.mapError(errorCast)
@@ -63,9 +61,7 @@ extension API.Request.Session {
         case .oauth:
             return self.loginOAuth(key: key, user: user)
                 .tryCompactMap { [weak weakAPI = self.api] (credentials) -> API.Session.Settings? in
-                    guard let api = weakAPI else {
-                        throw IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
-                    }
+                    let api = try weakAPI ?> IG.Error._deallocatedAPI()
                     api.channel.credentials = credentials
                     return nil
                 }.mapError(errorCast)
@@ -79,22 +75,17 @@ extension API.Request.Session {
     /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while certificate refresh should happen infrequently (every 3 to 4 hours).
     /// - returns: Publisher indicating a successful token refresh with a successful complete.
     public func refresh() -> AnyPublisher<Never,IG.Error> {
-        self.api.publisher { (api) -> API.Credentials in
-                try api.channel.credentials ?> IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-            }.mapError { $0 as Swift.Error }
+        self.api.publisher { try $0.channel.credentials ?> IG.Error._unfoundCredentials() }
+            .mapError { $0 as Swift.Error }
             .flatMap { (api, credentials) -> AnyPublisher<API.Token,Swift.Error> in
                 switch credentials.token.value {
                 case .certificate: return api.session.refreshCertificate()
                 case .oauth(_, let refresh, _, _): return api.session.refreshOAuth(token: refresh, key: credentials.key)
                 }
             }.tryCompactMap { [weak weakAPI = self.api] (token) in
-                guard let api = weakAPI else {
-                    throw IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
-                }
+                let api = try weakAPI ?> IG.Error._deallocatedAPI()
                 try api.channel.setCredentials { (oldCredentials) in
-                    guard var newCredentials = oldCredentials else {
-                        throw IG.Error(.api(.sessionExpired), "No credentials were found on the API instance.", help: "You seem to have log out during the execution of this endpoint. Please, remain logged in next time")
-                    }
+                    var newCredentials = try oldCredentials ?> IG.Error._unfoundCredentials()
                     newCredentials.token = token
                     return newCredentials
                 }
@@ -155,13 +146,9 @@ extension API.Request.Session {
                 return (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings, call) throws in
-                guard let api = weakAPI else {
-                    throw IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
-                }
+                let api = try weakAPI ?> IG.Error._deallocatedAPI()
                 try api.channel.setCredentials { (oldCredentials) in
-                    guard var newCredentials = oldCredentials else {
-                        throw IG.Error(.api(.invalidResponse), "No credentials were found on the API instance.", help: "API functionality is asynchronous; keep around the API instance while a response hasn't been received", info: ["Request": call.request, "Response": call.response])
-                    }
+                    var newCredentials = try oldCredentials ?> IG.Error._unfoundCredentials(info: ["Request": call.request, "Response": call.response])
                     newCredentials.account = accountId
                     return newCredentials
                 }
@@ -202,5 +189,16 @@ extension API.Request.Session {
     private struct _PayloadSwitch: Encodable {
         let accountId: String
         let defaultAccount: Bool
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the API instance is deallocated.
+    static func _deallocatedAPI() -> Self {
+        Self(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the API credentials haven't been found.
+    static func _unfoundCredentials(info: [String:Any] = [:]) -> Self {
+        Self(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.", info: info)
     }
 }

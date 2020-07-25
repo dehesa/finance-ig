@@ -48,7 +48,7 @@ extension API.Request.Scrapped {
     /// - returns: Sorted array (from past to present) with `numDataPoints` price data points.
     public func getPrices(epic: IG.Market.Epic, resolution: API.Price.Resolution, from: Date, to: Date, scalingFactor: Decimal64, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Price],IG.Error> {
         self.api.publisher { _ -> (from: DateComponents, to: DateComponents) in
-                guard from <= to else { throw IG.Error(.api(.invalidRequest), "The 'from' date must occur before the 'to' date.", help: "Read the request documentation and be sure to follow all requirements.") }
+                guard from <= to else { throw IG.Error._invalidDates(from: from, to: to) }
                 let fromComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: from)
                 let toComponents = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second, .nanosecond], from: to)
                 return (fromComponents, toComponents)
@@ -121,5 +121,12 @@ fileprivate extension API.Price.Resolution {
         case .week:     return (minutes / (60 * 24 * 7)) + 1
         case .month:    return (minutes / (60 * 24 * 30)) + 1
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when event dates are invalid.
+    static func _invalidDates(from: Date, to: Date) -> Self {
+        Self(.api(.invalidRequest), "The 'from' date must occur before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.", info: ["From": from, "To": to])
     }
 }

@@ -14,7 +14,7 @@ internal extension Streamer.Subscription {
         case subscribed
         /// The subscription was shut down successfully.
         case unsubscribed
-        /// An update has been received.
+        /// A update has been received.
         case updateReceived(Streamer.Packet)
         /// Due to internal resource limitations, the server dropped `count` number of updates for the item name `item`.
         case updateLost(count: UInt, item: String?)
