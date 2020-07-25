@@ -182,13 +182,13 @@ extension XCTestCase {
     func streamerCredentials(from testAccount: Test.Account) -> (rootURL: URL, credentials: Streamer.Credentials) {
         guard case .some(let data) = testAccount.streamer else {
             let credentials = self.apiCredentials(from: testAccount)
-            return (credentials.streamerURL, try! .init(credentials: credentials))
+            return (credentials.streamerURL, try! .init(credentials))
         }
         
         if let creds = data.credentials {
             return (data.rootURL, creds)
         }
         
-        return (data.rootURL, try! .init(credentials: self.apiCredentials(from: testAccount)))
+        return (data.rootURL, try! .init(self.apiCredentials(from: testAccount)))
     }
 }

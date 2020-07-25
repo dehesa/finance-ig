@@ -17,7 +17,7 @@ extension Streamer.Request.Deals {
     // MARK: TRADE:ACCID
     
     /// Subscribes to the given account and receives updates on positions, working orders, and trade confirmations.
-    public func subscribeToDeals(account: IG.Account.Identifier, fields: Set<Streamer.Deal.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Deal,IG.Error> {
+    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Deal.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Deal,IG.Error> {
         let item = "TRADE:\(account)"
         let properties = fields.map { $0.rawValue }
         let decoder = JSONDecoder()

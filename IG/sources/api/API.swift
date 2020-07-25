@@ -41,10 +41,6 @@ public final class API {
     /// - parameter targetQueue: The target queue on which to process the `API` requests and responses. If `nil`, the system the system will provide an appropriate queue.
     /// - parameter qos: The Quality of Service for the API processing queue.
     public convenience init(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue? = nil, qos: DispatchQoS = .default) {
-        if let targetQueue = targetQueue {
-            dispatchPrecondition(condition: .notOnQueue(targetQueue))
-            targetQueue.sync { dispatchPrecondition(condition: .notOnQueue(DispatchQueue.main)) }
-        }
         let queue = DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
         let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: OperationQueue(underlying: queue))
         self.init(rootURL: rootURL, credentials: credentials, queue: queue, session: session)

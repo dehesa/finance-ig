@@ -16,7 +16,7 @@ extension Database {
     /// - returns: Publisher sending a `DB` instance and completing immediately once it is activated.
     internal var publisher: DeferredResult<Database.Transit.Instance<Void>,IG.Error> {
         DeferredResult { [weak self] in
-            guard let self = self else { return .failure( IG.Error(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the DB instance while request are being processed.") ) }
+            guard let self = self else { return .failure( IG.Error._deallocatedDB() ) }
             return .success( (self,()) )
         }
     }
@@ -26,14 +26,14 @@ extension Database {
     /// - returns: Publisher sending a `Database` instance along with some computed values and completing immediately once it is activated.
     internal func publisher<T>(_ valuesGenerator: @escaping (_ db: Database) throws -> T) -> DeferredResult<Database.Transit.Instance<T>,IG.Error> {
         DeferredResult { [weak self] in
-            guard let self = self else { return .failure( IG.Error(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the DB instance while request are being processed.") ) }
+            guard let self = self else { return .failure( IG.Error._deallocatedDB() ) }
             do {
                 let values = try valuesGenerator(self)
                 return .success( (self, values) )
             } catch let error as IG.Error {
                 return .failure( error )
-            } catch let underlyingError {
-                return .failure( IG.Error(.database(.invalidRequest), "The precomputed values couldn't be generated.", help: "Read the request documentation and be sure to follow all requirements.", underlying: underlyingError) )
+            } catch let error {
+                return .failure( IG.Error._invalidPrecomputedValues(error: error) )
             }
         }
     }
@@ -85,5 +85,16 @@ extension Publisher {
                 return try interaction(sqlite, &statement, input.values, isCancelled)
             }
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the DB instance is deallocated.
+    static func _deallocatedDB() -> Self {
+        Self(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the precomputed request values cannot be generated.
+    static func _invalidPrecomputedValues(error: Swift.Error) -> Self {
+        Self(.database(.invalidRequest), "The precomputed request values couldn't be generated.", help: "Read the request documentation and be sure to follow all requirements.", underlying: error)
     }
 }

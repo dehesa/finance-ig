@@ -15,7 +15,7 @@ final class StreamerDealTests: XCTestCase {
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
-        streamer.deals.subscribeToDeals(account: self._acc.id, fields: [.confirmations], snapshot: true)
+        streamer.deals.subscribe(account: self._acc.id, fields: [.confirmations], snapshot: true)
             .expectsAtLeast(values: 1, timeout: 2, on: self) {
                 XCTAssertTrue($0.confirmation != nil || $0.update != nil)
             }
