@@ -87,7 +87,7 @@ extension Int32 {
         return nil
     }
     /// Expects the reeiving integer is equal to `value`; if not, the error in the closure is thrown.
-    func expects(_ value: SQLite.Result, _ error: (_ receivedCode: SQLite.Result) -> IG.Error = { IG.Error(.database(.callFailed), "An error occurred execution a common SQLite.", info: ["Error code": $0]) }) throws {
+    func expects(_ value: SQLite.Result, _ error: (_ receivedCode: SQLite.Result) -> IG.Error = { IG.Error._unexpected(errorCode: $0) }) throws {
         if self == value.rawValue { return }
         throw error(.init(trusted: self))
     }
@@ -100,7 +100,6 @@ extension Int32 {
         lhs.rawValue == rhs
     }
 }
-
 
 extension SQLite.Result {
     // Successful result
@@ -160,3 +159,11 @@ extension SQLite.Result {
     // File opened that is not a database file
     internal static var errorNotDB: Self    { Self(trusted: SQLITE_NOTADB) }
 }
+
+private extension IG.Error {
+    /// Error raised when a SQLite result didn't match the expectations.
+    static func _unexpected(errorCode: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "The SQLite result didn't matched the expectation.", info: ["Received error code": errorCode])
+    }
+}
+

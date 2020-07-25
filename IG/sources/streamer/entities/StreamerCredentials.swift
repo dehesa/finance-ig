@@ -17,10 +17,11 @@ extension Streamer {
         /// Creates the `Streamer` credentials from the received `API` credentials.
         /// - parameter credentials: API secret with all the information to create the `Streamer` credentials.
         /// - throws: `IG.Error` exclusively.
-        public init(credentials: API.Credentials) throws {
-            guard case .certificate(let access, let security) = credentials.token.value else { throw IG.Error._invalidCredentials() }
+        public init(_ credentials: API.Credentials?) throws {
+            guard let creds = credentials,
+                  case .certificate(let access, let security) = creds.token.value else { throw IG.Error._invalidCredentials() }
             guard let password = Streamer.Credentials.password(fromCST: access, security: security) else { throw IG.Error._invalidPassword() }
-            self.init(identifier: credentials.account, password: password)
+            self.init(identifier: creds.account, password: password)
         }
         
         /// Encapsulates the creation of a Lightstreamer password.

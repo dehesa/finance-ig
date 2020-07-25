@@ -27,7 +27,7 @@ final class StreamerPositionTests: XCTestCase {
         let queue = DispatchQueue(label: "Lock queue")
         var waiter: Waiter? = nil
         
-        let cancellable = streamer.deals.subscribeToDeals(account: self._acc.id, fields: .all, snapshot: false)
+        let cancellable = streamer.deals.subscribe(account: self._acc.id, fields: .all, snapshot: false)
             .sink(receiveCompletion: { _ in XCTFail() }, receiveValue: { (deal) in
                 queue.sync { () -> XCTestExpectation? in
                     guard let w = waiter else { return nil }

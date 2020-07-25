@@ -45,6 +45,7 @@ extension API.Request.Session {
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
+    /// - parameter type: The type of log in to be performend (e.g. through `OAuth`).
     /// - parameter key: API key given by the platform identifying the usage of the IG endpoints.
     /// - parameter user: User name and password to log in into an IG account.
     /// - returns: Publisher outputting a login success with a successful complete event. If the login is of `.certificate` type, extra information on the session settings is forwarded as a value. The `.oauth` login type will simply complete successfully for successful operations (without forwarding any value).
@@ -71,7 +72,7 @@ extension API.Request.Session {
 
     /// Refreshes the underlying secret token so the session can remain connected for longer time.
     ///
-    /// This method applies the correct refresh depending on the underlying token (whether OAuth or credentials).
+    /// This method applies the correct refresh depending on the underlying token (whether OAuth or certificate).
     /// - note: OAuth refreshes are intended to happen often (less than 1 minute), while certificate refresh should happen infrequently (every 3 to 4 hours).
     /// - returns: Publisher indicating a successful token refresh with a successful complete.
     public func refresh() -> AnyPublisher<Never,IG.Error> {

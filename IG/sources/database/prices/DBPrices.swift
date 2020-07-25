@@ -287,7 +287,7 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
     /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data received should be ignored or throw an error (an break the pipeline. Even with this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
     public func updatePrice(database: Database, ignoringInvalidPrices: Bool) -> AnyPublisher<Database.PriceWrapper,Swift.Error> {
         self.tryCompactMap { [weak database] (price) -> Database.Transit.Instance<(query: String, data: Database.PriceWrapper)>? in
-            guard let db = database else { throw IG.Error(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the DB instance while request are being processed.") }
+            guard let db = database else { throw IG.Error._deallocatedDB() }
             guard let date = price.candle.date,
                   let openBid = price.candle.open.bid,
                   let openAsk = price.candle.open.ask,
@@ -319,5 +319,12 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
             sqlite3_reset(statement)
             return input.data
         }.eraseToAnyPublisher()
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the DB instance is deallocated.
+    static func _deallocatedDB() -> Self {
+        Self(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
     }
 }
