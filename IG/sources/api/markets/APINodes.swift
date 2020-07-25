@@ -37,9 +37,7 @@ extension API.Request.Nodes {
     /// - returns: Publisher forwarding all markets matching the search term.
     public func getMarkets(matching searchTerm: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
         self._api.publisher { (api) -> String in
-                guard !searchTerm.isEmpty else {
-                    throw IG.Error(.api(.invalidRequest), "Search for markets failed! The search term cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.")
-                }
+                guard !searchTerm.isEmpty else { throw IG.Error._invalidSearchTerm() }
                 return searchTerm
             }.makeRequest(.get, "markets", version: 1, credentials: true, queries: { [.init(name: "searchTerm", value: $0)] })
             .send(expecting: .json, statusCode: 200)
@@ -64,10 +62,7 @@ extension API.Request.Nodes {
             .send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .custom({ (request, response, _) -> JSONDecoder in
                 guard let dateString = response.allHeaderFields[API.HTTP.Header.Key.date.rawValue] as? String,
-                    let date = DateFormatter.humanReadableLong.date(from: dateString) else {
-                        throw IG.Error(.api(.invalidResponse), "The response date couldn't be extracted from the response header.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request, "Response": response])
-                }
-                
+                      let date = DateFormatter.humanReadableLong.date(from: dateString) else { throw IG.Error._malformedDateHeader(request: request, response: response) }
                 return JSONDecoder().set {
                     $0.userInfo[API.JSON.DecoderKey.responseDate] = date
                     
@@ -95,10 +90,7 @@ extension API.Request.Nodes {
                 return Result.Publisher(node).eraseToAnyPublisher()
             }
             // 3. Check the API instance is still there.
-            guard let api = weakAPI else {
-                return Fail<API.Node,IG.Error>(error: IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed."))
-                    .eraseToAnyPublisher()
-            }
+            guard let api = weakAPI else { return Fail<API.Node,IG.Error>(error: IG.Error._deallocatedAPI()).eraseToAnyPublisher() }
             
             /// The result of this combine pipeline.
             let subject = PassthroughSubject<API.Node,IG.Error>()
@@ -129,7 +121,7 @@ extension API.Request.Nodes {
                         }
                         // 8. If the API instance has been deallocated, forward an error downstream.
                         guard let api = weakAPI else {
-                            subject.send(completion: .failure(IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")))
+                            subject.send(completion: .failure(IG.Error._deallocatedAPI()))
                             childrenFetchingCancellable?.cancel()
                             return
                         }
@@ -185,5 +177,20 @@ extension API.Request.Nodes {
 extension API.Request.Nodes {
     private struct _WrapperSearch: Decodable {
         let markets: [API.Node.Market]
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the API instance is deallocated.
+    static func _deallocatedAPI() -> Self {
+        Self(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the search term is empty.
+    static func _invalidSearchTerm() -> Self {
+        Self(.api(.invalidRequest), "Invalid search term.", help: "The search term cannot be empty.")
+    }
+    /// Error raised when a date couldn't be extracted from a URL request header.
+    static func _malformedDateHeader(request: URLRequest, response: HTTPURLResponse) -> Self {
+        Self(.api(.invalidResponse), "The response date couldn't be extracted from the response header.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request, "Response": response])
     }
 }

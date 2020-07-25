@@ -26,7 +26,7 @@ extension API.Request.Scrapped {
     /// - returns: Publisher forwarding all user's applications.
     public func getEvents(epic: IG.Market.Epic, from: Date, to: Date, rootURL: URL = API.scrappedRootURL, scrappedCredentials: (cst: String, security: String)) -> AnyPublisher<[API.Calendar.Event],IG.Error> {
         self.api.publisher { _ throws -> (from: Int, to: Int) in
-                guard from <= to else { throw IG.Error(.api(.invalidRequest), "The 'from' date must occur before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }
+                guard from <= to else { throw IG.Error._invalidDates(from: from, to: to) }
                 let fromInterval = Int(from.timeIntervalSince1970) * 1000
                 let toInterval = Int(to.timeIntervalSince1970) * 1000
                 return (fromInterval, toInterval)
@@ -46,5 +46,12 @@ extension API.Request.Scrapped {
             .decodeJSON(decoder: .default())
             .mapError(errorCast)
             .eraseToAnyPublisher()
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when event dates are invalid.
+    static func _invalidDates(from: Date, to: Date) -> Self {
+        Self(.api(.invalidRequest), "The 'from' date must occur before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.", info: ["From": from, "To": to])
     }
 }

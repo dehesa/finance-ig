@@ -25,7 +25,7 @@ extension API.Request.Accounts {
     /// - returns: Publisher forwarding the newly set targeted application values.
     public func updateApplication(key: API.Key? = nil, status: API.Application.Status, accountAllowance allowance: (overall: UInt, trading: UInt)) -> AnyPublisher<API.Application,IG.Error> {
         self.api.publisher { (api) throws -> _PayloadUpdate in
-                let apiKey = try (key ?? api.channel.credentials?.key) ?> IG.Error(.api(.invalidRequest), "No credentials were found on the API instance", help: "Log in before calling this request")
+            let apiKey = try (key ?? api.channel.credentials?.key) ?> IG.Error._unfoundCredentials()
                 return .init(key: apiKey, status: status, overallAccountRequests: allowance.overall, tradingAccountRequests: allowance.trading)
             }.makeRequest(.put, "operations/application", version: 1, credentials: true, body: { (payload) in
                 return (.json, try JSONEncoder().encode(payload))
@@ -55,5 +55,12 @@ private extension API.Request.Accounts {
             case overallAccountRequests = "allowanceAccountOverall"
             case tradingAccountRequests = "allowanceAccountTrading"
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when no API credentials were found.
+    static func _unfoundCredentials() -> Self {
+        Self(.api(.invalidRequest), "No credentials were found on the API instance", help: "Log in before calling this request")
     }
 }

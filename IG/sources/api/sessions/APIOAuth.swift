@@ -32,7 +32,7 @@ extension API.Request.Session {
     /// - returns: Publisher forwarding the OAUth token if the refresh process was successful.
     internal func refreshOAuth(token: String, key: API.Key) -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher { _ -> _TemporaryRefresh in
-                guard !token.isEmpty else { throw IG.Error(.api(.invalidRequest), "The OAuth refresh token cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.") }
+                guard !token.isEmpty else { throw IG.Error._emptyRefreshToken(key: key) }
                 return _TemporaryRefresh(refreshToken: token, apiKey: key)
             }.makeRequest(.post, "session/refresh-token", version: 1, credentials: false, headers: { [.apiKey: $0.apiKey.description] }, body: {
                 let payload = ["refresh_token": $0.refreshToken]
@@ -147,5 +147,12 @@ fileprivate extension API.Session._OAuth {
             case type = "token_type"
             case expireInSeconds = "expires_in"
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when OAuth refresh token is empty.
+    static func _emptyRefreshToken(key: API.Key) -> Self {
+        Self(.api(.invalidRequest), "The OAuth refresh token cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.", info: ["API key": key])
     }
 }

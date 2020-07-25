@@ -102,6 +102,10 @@ extension API.Request.Deals {
     }
 }
 
+private extension IG.Error {
+    /// Error raised when
+}
+
 extension API.Request.Deals {
     private struct _PayloadCreation: Encodable {
         let epic: IG.Market.Epic
@@ -125,18 +129,18 @@ extension API.Request.Deals {
             self.direction = direction
             self.type = type
             
-            guard size > .zero else { throw IG.Error(.api(.invalidRequest), "Invalid size '\(size)'.", help: "The position size must be a positive greater-than-zero number.") }
+            guard size > .zero else { throw IG.Error._invalidDeal(size: size) }
             self.size = size
             self.level = level
             
             if let limit = limit {
                 switch (limit, direction) {
                 case (.distance(let distance), _):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid limit distance '\(distance)'.", help: "The limit distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalid(limitDistance: distance) }
                 case (.level(let limitLevel), .buy):
-                    guard limitLevel > level else { throw IG.Error(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be above the order level for 'buy' deals.") }
+                    guard limitLevel > level else { throw IG.Error._invalidLimitLevelBuy() }
                 case (.level(let limitLevel), .sell):
-                    guard limitLevel < level else { throw IG.Error(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be below the order level for 'sell' deals.") }
+                    guard limitLevel < level else { throw IG.Error._invalidLimitLevelSell() }
                 }
                 self.limit = limit
             } else { self.limit = nil }
@@ -145,11 +149,11 @@ extension API.Request.Deals {
             if let stop = stop {
                 switch (stop, direction) {
                 case (.level(let stopLevel, _), .buy):
-                    guard stopLevel < level else { throw IG.Error(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be below the order level for 'buy' deals.") }
+                    guard stopLevel < level else { throw IG.Error._invalidStopLevelBuy() }
                 case (.level(let stopLevel, _), .sell):
-                    guard stopLevel > level else { throw IG.Error(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be above the order level for 'sell' deals.") }
+                    guard stopLevel > level else { throw IG.Error._invalidStopLevelSell() }
                 case (.distance(let distance, _), _):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid stop distance.", help: "The stop distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalidStop(distance: distance) }
                 }
                 self.stop = stop
             } else { self.stop = nil }
@@ -158,8 +162,7 @@ extension API.Request.Deals {
             
             switch expiration {
             case .tillCancelled: break
-            case .tillDate(let date):
-                guard date > Date(timeIntervalSinceNow: 1) else { throw IG.Error(.api(.invalidRequest), "Invalid working order expiration date.", help: "The expiration date must be later than the current date") }
+            case .tillDate(let date): guard date > Date(timeIntervalSinceNow: 1) else { throw IG.Error._invalidExpiration(date: date) }
             }
             self.expiration = expiration
         }
@@ -307,3 +310,39 @@ private extension API.Request.Deals {
         let dealReference: IG.Deal.Reference
     }
 }
+
+private extension IG.Error {
+    /// Error raised when the deal size is invalid.
+    static func _invalidDeal(size: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid deal size.", help: "The deal size must be a positive greater-than-zero number.", info: ["Size": size])
+    }
+    /// Error raised when the deal limit distance is invalid.
+    static func _invalid(limitDistance: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid limit distance.", help: "The limit distance must be a positive greater-than-zero number.", info: ["Limit distance": limitDistance])
+    }
+    /// Error raised when invalid buy limit level.
+    static func _invalidLimitLevelBuy() -> Self {
+        Self(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be above the order level for 'buy' deals.")
+    }
+    /// Error raised when invalid sell limit level.
+    static func _invalidLimitLevelSell() -> Self {
+        Self(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be below the order level for 'sell' deals.")
+    }
+    /// Error raised when the deal stop level for buy is invalid.
+    static func _invalidStopLevelBuy() -> Self {
+        Self(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be below the order level for 'buy' deals.")
+    }
+    /// Error raised when the deal stop level for sell is invalid.
+    static func _invalidStopLevelSell() -> Self {
+        Self(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be above the order level for 'sell' deals.")
+    }
+    /// Error raised when the deal stop distance is invalid.
+    static func _invalidStop(distance: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid stop distance.", help: "The stop distance must be a positive greater-than-zero number.", info: ["Stop distance": distance])
+    }
+    /// Error raised when a working order expiration date is invalid.
+    static func _invalidExpiration(date: Date) -> Self {
+        Self(.api(.invalidRequest), "Invalid working order expiration date.", help: "The expiration date must be later than the current date", info: ["Expiration date": date])
+    }
+}
+

@@ -223,12 +223,12 @@ private extension API.Request.Deals {
             self.order = order
             self.strategy = strategy
             
-            guard size > .zero else { throw IG.Error(.api(.invalidRequest), "Invalid size '\(size)'.", help: "The position size must be a positive greater-than-zero number.") }
+            guard size > .zero else { throw IG.Error._invalidDeal(size: size) }
             self.size = size
             
             // If a limit or stop is set, then `forceOpen` must be true.
             if limit != nil || stop != nil {
-                guard forceOpen else { throw IG.Error(.api(.invalidRequest), "Invalid 'forceOpen' value for the given limit or stop.", help: "The position must set 'forceOpen' to true if a limit or stop is set.") }
+                guard forceOpen else { throw IG.Error._invalidForceOpen() }
             }
             self.forceOpen = forceOpen
             
@@ -236,11 +236,11 @@ private extension API.Request.Deals {
             if let limit = limit {
                 switch (limit, order.level, direction) {
                 case (.distance(let distance), _, _):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid limit distance '\(distance)'.", help: "The limit distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalid(limitDistance: distance) }
                 case (.level(let limitLevel), let level?, .buy):
-                    guard limitLevel > level else { throw IG.Error(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be above the order level for 'buy' deals.") }
+                    guard limitLevel > level else { throw IG.Error._invalidLimitLevelBuy() }
                 case (.level(let limitLevel), let level?, .sell):
-                    guard limitLevel < level else { throw IG.Error(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be below the order level for 'sell' deals.") }
+                    guard limitLevel < level else { throw IG.Error._invalidLimitLevelSell() }
                 default: break
                 }
                 self.limit = limit
@@ -250,13 +250,13 @@ private extension API.Request.Deals {
             if let stop = stop {
                 switch (stop, order.level, direction) {
                 case (.level(let stopLevel, _), let level?, .buy):
-                    guard stopLevel < level else { throw IG.Error(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be below the order level for 'buy' deals.") }
+                    guard stopLevel < level else { throw IG.Error._invalidStopLevelBuy() }
                 case (.level(let stopLevel, _), let level?, .sell):
-                    guard stopLevel > level else { throw IG.Error(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be above the order level for 'sell' deals.") }
+                    guard stopLevel > level else { throw IG.Error._invalidStopLevelSell() }
                 case (.distance(let distance, _), _, _):
-                    guard distance > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid stop distance.", help: "The stop distance must be a positive greater-than-zero number.") }
+                    guard distance > 0 else { throw IG.Error._invalidStop(distance: distance) }
                 case (.trailing(let distance, let increment), _, _):
-                    guard distance > 0 && increment > 0 else { throw IG.Error(.api(.invalidRequest), "Invalid trailing stop.", help: "The trailing stop distance and increment must be positive greater-than-zero numbers.") }
+                    guard distance > 0 && increment > 0 else { throw IG.Error._invalidTrailingStop(distance: distance, increment: increment) }
                 default: break
                 }
                 self.stop = stop
@@ -344,9 +344,7 @@ private extension API.Request.Deals {
         
         init(limit: Decimal64?, stop: API.Request.Deals.Position.StopEdit?) throws {
             if case .trailing(_, let distance, let increment) = stop {
-                guard distance > 0, increment > 0 else {
-                    throw IG.Error(.api(.invalidRequest), "Invalid stop for position amendment.", help: "The trailing stop distance and increment must be positive greater-than-zero numbers.", info: ["Trailing stop distance": distance, "Trailing stop increment": increment])
-                }
+                guard distance > 0, increment > 0 else { throw IG.Error._invalidTrailingStop(distance: distance, increment: increment) }
             }
             self.limitLevel = limit
             self.stop = stop
@@ -397,7 +395,7 @@ private extension API.Request.Deals {
         let size: Decimal64
         
         init(identification: API.Request.Deals.Identification, direction: IG.Deal.Direction, order: API.Request.Deals.Position.Order, strategy: API.Request.Deals.Position.FillStrategy, size: Decimal64) throws {
-            guard size > .zero else { throw IG.Error(.api(.invalidRequest), "Invalid size '\(size)'.", help: "The position size must be a positive greater-than-zero number.") }
+            guard size > .zero else { throw IG.Error._invalidDeal(size: size) }
             self.identification = identification
             self.direction = direction
             self.order = order
@@ -457,5 +455,44 @@ private extension API.Request.Deals {
 
     struct _WrapperReference: Decodable {
         let dealReference: IG.Deal.Reference
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the deal size is invalid.
+    static func _invalidDeal(size: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid deal size.", help: "The deal size must be a positive greater-than-zero number.", info: ["Size": size])
+    }
+    /// Error raised when the deal _forceOpen_ is invalid.
+    static func _invalidForceOpen() -> Self {
+        Self(.api(.invalidRequest), "Invalid 'forceOpen' value for the given limit or stop.", help: "The deal must set 'forceOpen' to true if a limit or stop is set.")
+    }
+    /// Error raised when the deal limit distance is invalid.
+    static func _invalid(limitDistance: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid limit distance.", help: "The limit distance must be a positive greater-than-zero number.", info: ["Limit distance": limitDistance])
+    }
+    /// Error raised when invalid buy limit level.
+    static func _invalidLimitLevelBuy() -> Self {
+        Self(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be above the order level for 'buy' deals.")
+    }
+    /// Error raised when invalid sell limit level.
+    static func _invalidLimitLevelSell() -> Self {
+        Self(.api(.invalidRequest), "Invalid limit level.", help: "The limit level must be below the order level for 'sell' deals.")
+    }
+    /// Error raised when the deal stop level for buy is invalid.
+    static func _invalidStopLevelBuy() -> Self {
+        Self(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be below the order level for 'buy' deals.")
+    }
+    /// Error raised when the deal stop level for sell is invalid.
+    static func _invalidStopLevelSell() -> Self {
+        Self(.api(.invalidRequest), "Invalid stop level.", help: "The stop level must be above the order level for 'sell' deals.")
+    }
+    /// Error raised when the deal stop distance is invalid.
+    static func _invalidStop(distance: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid stop distance.", help: "The stop distance must be a positive greater-than-zero number.", info: ["Stop distance": distance])
+    }
+    /// Error raised when the deal trailing stop is invalid.
+    static func _invalidTrailingStop(distance: Decimal64, increment: Decimal64) -> Self {
+        Self(.api(.invalidRequest), "Invalid trailing stop.", help: "The trailing stop distance and increment must be positive greater-than-zero numbers.", info: ["Trailing distance": distance, "Trailing increment": increment])
     }
 }

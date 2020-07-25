@@ -26,9 +26,7 @@ extension API.Request.Prices {
     /// - returns: Publisher forwarding a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
     public func get(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),IG.Error> {
         self._api.publisher { (api) -> DateFormatter in
-            guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-                }
+                let timezone = try api.channel.credentials?.timezone ?> IG.Error._unfoundCredentials()
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "prices/\(epic)", version: 3, credentials: true, queries: { (values) -> [URLQueryItem] in
                 [.init(name: "from", value: values.string(from: from)),
@@ -56,15 +54,9 @@ extension API.Request.Prices {
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents a list of price points and how many more requests (i.e. `allowance`) can still be performed on a unit of time.
     public func getContinuously(epic: IG.Market.Epic, from: Date, to: Date = Date(), resolution: API.Price.Resolution = .minute, array page: (size: Int, number: Int) = (20, 1)) -> AnyPublisher<(prices: [API.Price], allowance: API.Price.Allowance),IG.Error> {
         self._api.publisher { (api) -> (pageSize: Int, pageNumber: Int, formatter: DateFormatter) in
-                guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-                }
-                guard page.size > 0 else {
-                    throw IG.Error(.api(.invalidRequest), "The page size must be greater than zero; however, '\(page.size)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
-                }
-                guard page.number > 0 else {
-                    throw IG.Error(.api(.invalidRequest), "The page number must be greater than zero; however, '\(page.number)' was provided instead.", help: "Read the request documentation and be sure to follow all requirements.")
-                }
+                let timezone = try api.channel.credentials?.timezone ?> IG.Error._unfoundCredentials()
+                guard page.size > 0 else { throw IG.Error._invalid(pageSize: page.size) }
+                guard page.number > 0 else { throw IG.Error._invalid(pageNumber: page.number) }
 
                 let formatter = DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
                 return (page.size, page.number, formatter)
@@ -189,5 +181,20 @@ extension API.Request.Prices {
                 }
             }
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the API credentials haven't been found.
+    static func _unfoundCredentials() -> Self {
+        Self(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
+    }
+    /// Error raised when the page size is an invalid number.
+    static func _invalid(pageSize: Int) -> Self {
+        Self(.api(.invalidRequest), "The page size must be greater than zero.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Page size": pageSize])
+    }
+    /// Error raised when the page number is an invalid number.
+    static func _invalid(pageNumber: Int) -> Self {
+        Self(.api(.invalidRequest), "The page number must be greater than zero.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Page number": pageNumber])
     }
 }

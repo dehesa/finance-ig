@@ -22,9 +22,7 @@ extension API.Request.Markets {
     /// - returns: Information about the targeted market.
     public func get(epic: IG.Market.Epic) -> AnyPublisher<API.Market,IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-                }
+                let timezone = try api.channel.credentials?.timezone ?> IG.Error._unfoundCredentials()
                 return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "markets/\(epic)", version: 3, credentials: true)
             .send(expecting: .json, statusCode: 200)
@@ -79,7 +77,7 @@ extension API.Request.Markets {
                             }
                             
                             guard let api = weakAPI else {
-                                subject.send(completion: .failure(IG.Error(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")))
+                                subject.send(completion: .failure(IG.Error._deallocatedAPI()))
                                 cancellable = nil
                                 return
                             }
@@ -105,15 +103,9 @@ extension API.Request.Markets {
         
         return api.publisher { (api) -> DateFormatter in
             let epicRange = 1...50
-            guard epicRange.contains(epics.count) else {
-                let message = "Only between 1 to 50 markets can be queried at the same time."
-                let suggestion = (epics.isEmpty) ? "Request at least one market" : "The request tried to query \(epics.count) markets. Restrict the query to \(epicRange.upperBound) (included)."
-                throw IG.Error(.api(.invalidRequest), message, help: suggestion)
-            }
+            guard epicRange.contains(epics.count) else { throw IG.Error._invalidEpicRequest(num: epics.count, max: epicRange.upperBound) }
             
-            guard let timezone = api.channel.credentials?.timezone else {
-                throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-            }
+            let timezone = try api.channel.credentials?.timezone ?> IG.Error._unfoundCredentials()
             return DateFormatter.iso8601NoSeconds.deepCopy(timeZone: timezone)
         }.makeRequest(.get, "markets", version: 2, credentials: true, queries: { _ in
             [.init(name: "filter", value: "ALL"),
@@ -130,5 +122,21 @@ extension API.Request.Markets {
 extension API.Request.Markets {
     private struct _WrapperList: Decodable {
         let marketDetails: [API.Market]
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the API instance is deallocated.
+    static func _deallocatedAPI() -> Self {
+        Self(.api(.sessionExpired), "The API instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the API credentials haven't been found.
+    static func _unfoundCredentials() -> Self {
+        Self(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
+    }
+    /// Error raised when an invalid amount of epics are being requested.
+    static func _invalidEpicRequest(num: Int, max: Int) -> Self {
+        let suggestion = (num > 0) ? "Restrict the query to \(max) number of markets." : "Request at least one market"
+        return Self(.api(.invalidRequest), "Only between 1 to \(max) markets can be queried at the same time.", help: suggestion)
     }
 }

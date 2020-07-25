@@ -68,7 +68,7 @@ public final class Services {
         guard token.expirationDate > Date() else {
             switch token.value {
             case .certificate:
-                return Fail(error: IG.Error(.api(.invalidRequest), "The given certificate token has expired and it cannot be refreshed (it must be renewed).", help: "Log in with your username and password"))
+                return Fail(error: ._expiredToken())
                     .eraseToAnyPublisher()
             case .oauth(_, let refreshToken, _,_):
                 return api.session.refreshOAuth(token: refreshToken, key: apiKey)
@@ -98,12 +98,12 @@ private extension Services {
     static func _make(with api: API, queue: DispatchQueue, location: Database.Location) -> AnyPublisher<Services,IG.Error> {
         // Check that there is API credentials.
         guard var apiCredentials = api.channel.credentials else {
-            return Fail(error: IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in with your username and password."))
+            return Fail(error: ._unfoundAPICredentials())
                 .eraseToAnyPublisher()
         }
         // Check that they haven't expired.
         guard apiCredentials.token.expirationDate > Date() else {
-            return Fail(error: IG.Error(.api(.invalidRequest), "The given credentials have expired.", help: "Log in with your username and password."))
+            return Fail(error: ._expiredAPICredentials())
                 .eraseToAnyPublisher()
         }
         
@@ -130,5 +130,20 @@ private extension Services {
             return DeferredResult(closure: subServicesGenerator)
                 .eraseToAnyPublisher()
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the certificate token has expired and it cannot be refreshed.
+    static func _expiredToken() -> Self {
+        Self(.api(.sessionExpired), "Invalid log in token.", help: "The given certificate token has expired and it cannot be refreshed (it must be renewed). Log in with your username and password.")
+    }
+    /// Error raised when there are no credentials to log in.
+    static func _unfoundAPICredentials() -> Self {
+        Self(.api(.sessionExpired), "No credentials were found on the API instance.", help: "Log in with your username and password.")
+    }
+    /// Error raised when the APi credentials (whether certificate or OAuth) have expired.
+    static func _expiredAPICredentials() -> Self {
+        Self(.api(.sessionExpired), "The given API credentials have expired.", help: "Log in with your username and password.")
     }
 }

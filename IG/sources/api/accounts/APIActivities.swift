@@ -19,14 +19,9 @@ extension API.Request.Accounts {
     /// - returns: Combine `Publisher` forwarding multiple values. Each value represents an array of activities.
     public func getActivityContinuously(from: Date, to: Date? = nil, detailed: Bool, filterBy: (id: IG.Deal.Identifier?, FIQL: String?) = (nil, nil), arraySize pageSize: UInt = 50) -> AnyPublisher<[API.Activity],IG.Error> {
         self.api.publisher { (api) -> DateFormatter in
-                guard let timezone = api.channel.credentials?.timezone else {
-                    throw IG.Error(.api(.invalidRequest), "No credentials were found on the API instance.", help: "Log in before calling this request.")
-                }
-                
-                if let fiql = filterBy.FIQL, !fiql.isEmpty {
-                    throw IG.Error(.api(.invalidRequest), "THE FIQL filter cannot be empty.", help: "Read the request documentation and be sure to follow all requirements.")
-                }
-                
+                let timezone = try api.channel.credentials?.timezone ?> IG.Error._unfoundCredentials()
+                if let fiql = filterBy.FIQL, !fiql.isEmpty { throw IG.Error._emptyFilter() }
+            
                 return DateFormatter.iso8601Broad.deepCopy(timeZone: timezone)
             }.makeRequest(.get, "history/activity", version: 3, credentials: true, queries: { (dateFormatter) in
                 var queries: [URLQueryItem] = [.init(name: "from", value: dateFormatter.string(from: from))]
@@ -52,22 +47,13 @@ extension API.Request.Accounts {
                 queries.append(.init(name: "pageSize", value: String(size)))
                 return queries
             }).sendPaginating(request: { (api, initial, previous) -> URLRequest? in
-                guard let previous = previous else {
-                    return initial.request
-                }
+                guard let previous = previous else { return initial.request }
+                guard let next = previous.metadata.next else { return nil }
                 
-                guard let next = previous.metadata.next else {
-                    return nil
-                }
-
-                guard let queries = URLComponents(string: next)?.queryItems else {
-                    throw IG.Error(.api(.invalidRequest), "The paginated request for activities couldn't be processed because there were no 'next' queries.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": previous.request])
-                }
-
+                let queries = try URLComponents(string: next)?.queryItems ?> IG.Error._malformedNextPage(request: previous.request)
+                
                 guard let from = queries.first(where: { $0.name == "from" }),
-                      let to = queries.first(where: { $0.name == "to" }) else {
-                    throw IG.Error(.api(.invalidRequest), "The paginated request for activies couldn't be processed because the 'from' and/or 'to' queries couldn't be found.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": previous.request])
-                }
+                      let to = queries.first(where: { $0.name == "to" }) else { throw IG.Error._malformedPaginated(request: previous.request) }
 
                 return try initial.request.set { try $0.addQueries([from, to])}
             }, call: { (publisher, _) in
@@ -98,5 +84,24 @@ extension API.Request.Accounts {
                 let next: String?
             }
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when no API credentials were found.
+    static func _unfoundCredentials() -> Self {
+        Self(.api(.invalidRequest), "No credentials were found on the API instance", help: "Log in before calling this request")
+    }
+    /// Error raised when the FIQL filter is empty.
+    static func _emptyFilter() -> Self {
+        Self(.api(.invalidRequest), "Empty FIQL filter.", help: "If FIQL is defined, it cannot be empty.")
+    }
+    /// Error raised when a malformed page is received.
+    static func _malformedNextPage(request: URLRequest) -> Self {
+        Self(.api(.invalidRequest), "The paginated request for activities couldn't be processed because there were no 'next' queries.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["URL Request": request])
+    }
+    /// Error raised when a malformed paginated request is received.
+    static func _malformedPaginated(request: URLRequest) -> Self {
+        Self(.api(.invalidRequest), "The paginated request for activies couldn't be processed because the 'from' and/or 'to' queries couldn't be found.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Request": request])
     }
 }

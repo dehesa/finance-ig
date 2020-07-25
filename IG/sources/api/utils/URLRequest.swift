@@ -9,13 +9,8 @@ internal extension URLRequest {
             return
         }
         
-        guard let previousURL = self.url else {
-            throw IG.Error(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL was found empty.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self])
-        }
-        
-        guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else {
-            throw IG.Error(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into '\(URLComponents.self)'.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self])
-        }
+        guard let previousURL = self.url else { throw IG.Error._emptyURL(request: self) }
+        guard var components = URLComponents(url: previousURL, resolvingAgainstBaseURL: true) else { throw IG.Error._malformed(request: self) }
         
         if let previousQueries = components.queryItems {
             // If there are previous queries, replace previous query names by the new ones.
@@ -32,7 +27,7 @@ internal extension URLRequest {
         
         guard let url = components.url else {
             let representation = newQueries.map { "\($0.name): \($0.value ?? "")" }.joined(separator: ", ")
-            throw IG.Error(.api(.invalidRequest), "A new URL from the previous request and the given queries couldn't be formed.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": self, "Queries": representation])
+            throw IG.Error._invalid(request: self, queries: representation)
         }
         self.url = url
     }
@@ -57,5 +52,20 @@ internal extension URLRequest {
                 self.addValue(value, forHTTPHeaderField: key.rawValue)
             }
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when an empty URL is received.
+    static func _emptyURL(request: URLRequest) -> Self {
+        Self(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL was found empty.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": request])
+    }
+    /// Error raised when the request cannot be transformed in independent URL components.
+    static func _malformed(request: URLRequest) -> Self {
+        Self(.api(.invalidRequest), "New queries couldn't be appended to a receiving request, since the request URL cannot be transmuted into '\(URLComponents.self)'.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": request])
+    }
+    /// Error raised when a new URL request cannot be formed by appending the given URL queries.
+    static func _invalid(request: URLRequest, queries: String) -> Self {
+        Self(.api(.invalidRequest), "A new URL from the previous request and the given queries couldn't be formed.", help: "Read the request documentation and be sure to follow all requirements.", info: ["Request": request, "Queries": queries])
     }
 }
