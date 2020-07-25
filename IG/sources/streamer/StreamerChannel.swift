@@ -81,7 +81,7 @@ internal extension Streamer.Channel {
         let currentStatus = self.status
         switch currentStatus {
         case .disconnected(isRetrying: false): self._client.connect()
-        case .stalled: throw IG.Error(.streamer(.invalidRequest), "Stalled streamer connection.", help: "Disconnect and connect again.")
+        case .stalled: throw IG.Error._stalledConnection()
         case .connected, .connecting, .disconnected(isRetrying: true): break
         }
         return currentStatus
@@ -111,7 +111,7 @@ internal extension Streamer.Channel {
     @nonobjc func subscribe(on queue: DispatchQueue, mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> AnyPublisher<Streamer.Packet,Swift.Error> {
         // 1. Prepare the subscription.
         Deferred { [weak self, weak weakQueue = queue] () -> Result<(DispatchQueue,Streamer.Subscription),IG.Error>.Publisher in
-                guard case .some = self, let queue = weakQueue else { return .init(.failure( IG.Error(.streamer(.sessionExpired), "The Streamer instance has been deallocated.", help: "The streamer functionality is asynchronous. Keep around the Streamer instance while a connection is in process.") )) }
+                guard case .some = self, let queue = weakQueue else { return .init(.failure( IG.Error._deallocatedInstance() )) }
                 let subscription = Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot)
                 return .init((queue, subscription))
             // 2. Subscribe to the subscription status.
@@ -134,9 +134,9 @@ internal extension Streamer.Channel {
                 case .updateLost://(let count, let receivedItem): print("\(Streamer.printableDomain): Subscription to \(receivedItem ?? item) lost \(count) updates. Fields: [\(fields.joined(separator: ","))]")
                     return nil
                 case .error(let e):
-                    throw IG.Error(.streamer(.subscriptionFailed), "The subscription couldn't be established.", help: "Review the underlying error and try again.", underlying: e, info: ["Item": item, "Fields": fields])
+                    throw IG.Error._invalidSubscription(error: e, item: item, fields: fields)
                 case .unsubscribed:
-                    throw IG.Error(.streamer(.subscriptionFailed), "Unsubscribed event received from the underlying Lightstreamer layer.", help: "Check internet connectivity and try again.", info: ["Item": item, "Fields": fields])
+                    throw IG.Error._unsubscription(item: item, fields: fields)
                 }
             }.eraseToAnyPublisher()
     }
@@ -161,4 +161,23 @@ extension Streamer.Channel: LSClientDelegate {
     //@objc func client(_ client: LSLightstreamerClient, didReceiveServerError errorCode: Int, withMessage errorMessage: String?) { }
     //@objc func didAddDelegate(to: LSLightstreamerClient) { }
     //@objc func didRemoveDelegate(to: LSLightstreamerClient) { }
+}
+
+private extension IG.Error {
+    /// Error raised when the Streamer instance is deallocated.
+    static func _deallocatedInstance() -> Self {
+        Self(.streamer(.sessionExpired), "The \(Streamer.self) instance has been deallocated.", help: "The \(Streamer.self) functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the server connection is stalled.
+    static func _stalledConnection() -> Self {
+        Self(.streamer(.invalidRequest), "Stalled streamer connection.", help: "Disconnect and connect again.")
+    }
+    /// Error raised when the streamer subscription cannot be established.
+    static func _invalidSubscription(error: Swift.Error, item: String, fields: [String]) -> Self {
+        Self(.streamer(.subscriptionFailed), "The subscription couldn't be established.", help: "Review the underlying error and try again.", underlying: error, info: ["Item": item, "Fields": fields])
+    }
+    /// Error raised when an unsubscribe event has been received.
+    static func _unsubscription(item: String, fields: [String]) -> Self {
+        Self(.streamer(.subscriptionFailed), "Unsubscribed event received from the underlying Lightstreamer layer.", help: "Check internet connectivity and try again.", info: ["Item": item, "Fields": fields])
+    }
 }

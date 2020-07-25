@@ -72,7 +72,7 @@ internal extension Streamer.Market {
             case "AUCTION_NO_EDIT": self.status = .onAuctionNoEdits
             case "OFFLINE": self.status = .offline
             case "SUSPENDED": self.status = .suspended
-            case let value: throw IG.Error(.streamer(.invalidResponse), "Invalid status field", help: "Contact the repo maintainer and copy this error message.", info: ["Field": F.status, "Value": value])
+            case let value: throw IG.Error._invalid(status: value)
             }
         } else { self.status = nil }
         
@@ -92,5 +92,12 @@ fileprivate extension Streamer.Market.Day {
         self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)
         self.changeNet = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet)
         self.changePercentage = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage)
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the status field is invalid.
+    static func _invalid(status: String) -> Self {
+        Self(.streamer(.invalidResponse), "Invalid status field", help: "Contact the repo maintainer and copy this error message.", info: ["Field": F.status, "Value": status])
     }
 }

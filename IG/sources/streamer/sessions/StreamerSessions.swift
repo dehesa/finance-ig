@@ -45,11 +45,11 @@ extension Streamer.Request.Session {
         return self._streamer.channel.statusStream(on: self._streamer.queue)
             .setFailureType(to: Swift.Error.self)
             // 2. If the status stream completes, it means the streamer got deinitialized, and therefore the connection failed.
-            .append( Fail(error: IG.Error(.streamer(.sessionExpired), "The Streamer instance has been deallocated.", help: "The streamer functionality is asynchronous. Keep around the Streamer instance while a connection is in process.") as Swift.Error) )
+            .append( Fail(error: IG.Error._deallocatedInstance() as Swift.Error) )
             // 3. Only connect to the channel, when a subscription has been made.
             .prepend( Deferred { [weak weakStreamer = self._streamer] in
                 Result.Publisher( Result {
-                    guard let streamer = weakStreamer else { throw IG.Error(.streamer(.sessionExpired), "The Streamer instance has been deallocated.", help: "The streamer functionality is asynchronous. Keep around the Streamer instance while a connection is in process.") }
+                    guard let streamer = weakStreamer else { throw IG.Error._deallocatedInstance() }
                     let status = try streamer.channel.connect()
                     return (status == .disconnected(isRetrying: false)) ? .connecting : status
                 } )
@@ -58,8 +58,8 @@ extension Streamer.Request.Session {
                 switch $0 {
                 case .connected(.http), .connected(.websocket): return true
                 case .connected(.sensing), .connecting, .disconnected(isRetrying: true): return false
-                case .disconnected(isRetrying: false): throw IG.Error(.streamer(.invalidResponse), "The connection to the server couldn't be established.", help: "Check there is connection and try again.")
-                case .stalled: throw IG.Error(.streamer(.invalidResponse), "There is a connection established with the server, but it seems to be stalled.", help: "Manually disconnect and try again.")
+                case .disconnected(isRetrying: false): throw IG.Error._unableToConnect()
+                case .stalled: throw IG.Error._stalledConnection()
                 }
             }).mapError(errorCast)
             .eraseToAnyPublisher()
@@ -93,5 +93,20 @@ extension Streamer.Request.Session {
             // 3. Wait for the disconnect message and then finish.
             }).first(where: { $0 == .disconnected(isRetrying: false) })
             .eraseToAnyPublisher()
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the Streamer instance is deallocated.
+    static func _deallocatedInstance() -> Self {
+        Self(.streamer(.sessionExpired), "The \(Streamer.self) instance has been deallocated.", help: "The API functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+    /// Error raised when the connection to the server cannot be established.
+    static func _unableToConnect() -> Self {
+        Self(.streamer(.invalidResponse), "The connection to the server couldn't be established.", help: "Check there is connection and try again.")
+    }
+    /// Error raised when the server connection is stalled.
+    static func _stalledConnection() -> Self {
+        Self(.streamer(.invalidResponse), "There is a connection established with the server, but it seems to be stalled.", help: "Manually disconnect and try again.")
     }
 }

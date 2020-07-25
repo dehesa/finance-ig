@@ -66,7 +66,7 @@ internal extension Streamer.Packet {
         switch value {
         case "0", "false": return false
         case "1", "true":  return true
-        default: throw IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
+        default: throw IG.Error._invalid(value: value, forKey: key)
         }
     }
     
@@ -76,7 +76,7 @@ internal extension Streamer.Packet {
     /// - throws: `IG.Error` exclusively.
     func decodeIfPresent<Field>(_ type: Int.Type, forKey key: Field) throws -> Int? where Field: RawRepresentable, Field.RawValue==String {
         guard let value = self[key.rawValue]?.value else { return nil }
-        return try Int(value) ?> IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
+        return try Int(value) ?> IG.Error._invalid(value: value, forKey: key)
     }
     
     /// Decodes a value of the given type for the given key.
@@ -85,7 +85,7 @@ internal extension Streamer.Packet {
     /// - throws: `IG.Error` exclusively.
     func decodeIfPresent<Field>(_ type: Decimal64.Type, forKey key: Field) throws -> Decimal64? where Field: RawRepresentable, Field.RawValue==String {
         guard let value = self[key.rawValue]?.value else { return nil }
-        return try Decimal64(value) ?> IG.Error(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value]) 
+        return try Decimal64(value) ?> IG.Error._invalid(value: value, forKey: key)
     }
     
     /// Decodes a value of the given type for the given key.
@@ -102,7 +102,7 @@ internal extension Streamer.Packet {
               let cal = formatter.calendar,
               let zone = formatter.timeZone,
               let mixDate = now.mixComponents([.year, .month, .day], withDate: timeDate, [.hour, .minute, .second], calendar: cal, timezone: zone) else {
-            throw IG.Error(.streamer(.invalidResponse), "Invalid response date", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
+            throw IG.Error._invalid(value: value, forKey: key)
         }
         
         return (mixDate <= now) ? mixDate : cal.date(byAdding: DateComponents(day: -1), to: mixDate)!
@@ -116,7 +116,14 @@ internal extension Streamer.Packet {
     /// - throws: `IG.Error` exclusively.
     func decodeIfPresent<Field>(_ type: Date.Type, forKey key: Field) throws -> Date? where Field: RawRepresentable, Field.RawValue==String {
         guard let value = self[key.rawValue]?.value else { return nil }
-        guard let milliseconds = TimeInterval(value) else { throw IG.Error(.streamer(.invalidResponse), "Invalid response date", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value]) }
+        guard let milliseconds = TimeInterval(value) else { throw IG.Error._invalid(value: value, forKey: key) }
         return Date(timeIntervalSince1970: milliseconds / 1000)
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the response field contains an invalid value.
+    static func _invalid(value: String, forKey key: Any) -> Self {
+        Self(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
     }
 }

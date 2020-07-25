@@ -244,7 +244,7 @@ internal extension Publisher {
                         return next((pageRequest, result.metadata))
                     }, receiveValue: { (metadata, output) in
                         if let previouslyStored = pageResult {
-                            let error = IG.Error(.api(.callFailed), "A single page received two results", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: [
+                            let error = IG.Error._conflictedPaginatedResults(info: [
                                 "Request": pageRequest,
                                 "Previous result metadata": previouslyStored.metadata,
                                 "Previous result output": previouslyStored.output,
@@ -268,16 +268,14 @@ internal extension Publisher {
     /// - returns: Each value event triggers a JSON decoding process. This publisher forwards the response of that process.
     func decodeJSON<T,R>(decoder: API.JSON.Decoder<T>, result: R.Type = R.self) -> Publishers.TryMap<Self,R> where Self.Output==API.Transit.Call<T>, R: Decodable {
         self.tryMap { (request, response, data, values) -> R in
-            var decodingStage = true
+            var stage: Int = 0
             do {
-                let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values)
-                decodingStage.toggle()
+                let jsonDecoder = try decoder.makeDecoder(request: request, response: response, values: values); stage += 1
                 return try jsonDecoder.decode(R.self, from: data)
             } catch let error as IG.Error {
                 throw error
             } catch let error {
-                let msg = (decodingStage) ? "A JSON decoder couldn't be created" : "The response body could not be decoded as the expected type: '\(R.self)'."
-                throw IG.Error(.api(.invalidResponse), msg, help: "Review the returned error and try to fix the problem.", underlying: error, info: ["Request": request, "Response": response, "Data": data])
+                throw IG.Error._unableToDecode(stage: stage, request: request, response: response, data: data, error: error)
             }
         }
     }
@@ -296,13 +294,7 @@ internal extension Publisher {
             } catch let error as IG.Error {
                 throw error
             } catch let error {
-                let msg: String
-                switch stage {
-                case 0: msg = "A JSON decoder couldn't be created"
-                case 1: msg = "The response body could not be decoded as the expected type: '\(R.self)'"
-                default: msg = "The response body was decoded successfully from JSON, but it couldn't be transformed into the type: '\(W.self)'"
-                }
-                throw IG.Error(.api(.invalidResponse), msg, help: "", underlying: error, info: ["Request": request, "Response": response, "Data": data])
+                throw IG.Error._unableToDecode(stage: stage, request: request, response: response, data: data, error: error)
             }
         }
     }
@@ -344,5 +336,25 @@ private extension IG.Error {
     /// Error raised when an empty page is received.
     static func _emptyPaginated(request: URLRequest) -> Self {
         Self(.api(.callFailed), "A page call returned empty.", help: "Review the returned error and try to fix the problem.", info: ["Request": request])
+    }
+    /// Error raised when
+    static func _conflictedPaginatedResults(info: [String:Any]) -> Self {
+        Self(.api(.callFailed), "A single page received two results.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: info)
+    }
+    /// Error raised when a response body cannot be created.
+    static func _unableToDecode(stage: Int, request: URLRequest, response: HTTPURLResponse, data: Data, error: Swift.Error) -> Self {
+        let (reason, help): (String, String)
+        switch stage {
+        case 0:
+            reason = "A JSON decoder couldn't be created."
+            help = "Review the returned error and try to fix the problem."
+        case 1:
+            reason = "The response body could not be decoded as the expected type."
+            help = "Contact the repo maintainer."
+        default:
+            reason = "The response body was decoded successfully from JSON, but it couldn't be transformed into the given type."
+            help = "Contact the repo maintainer."
+        }
+        return Self(.api(.invalidResponse), reason, help: help, underlying: error, info: ["Request": request, "Response": response, "Data": data])
     }
 }
