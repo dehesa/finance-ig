@@ -3,9 +3,9 @@ import Foundation
 
 extension API.Request {
     /// Contains all functionality and variables related to the running API session.
-    public struct Session {
+    @frozen public struct Session {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
+        @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self.api = api }

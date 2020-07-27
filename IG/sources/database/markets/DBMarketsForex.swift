@@ -4,11 +4,11 @@ import SQLite3
 
 extension Database.Request.Markets {
     /// Contains all functionality related to Database Forex.
-    public struct Forex {
+    @frozen public struct Forex {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let _database: Database
+        private unowned let _database: Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
-        internal init(database: Database) { self._database = database }
+        @usableFromInline internal init(database: Database) { self._database = database }
     }
 }
 
@@ -19,14 +19,14 @@ extension Database.Request.Markets.Forex {
     public func getAll() -> AnyPublisher<[Database.Market.Forex],IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Market.Forex.tableName)" }
             .read { (sqlite, statement, query, _) in
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 var result: [Database.Market.Forex] = .init()
                 while true {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(Database.Market.Forex(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.Forex.self)'.", info: ["Error code": e])
+                    case let e: throw IG.Error._queryFailed(code: e)
                     }
                 }
             }.mapError(errorCast)
@@ -46,22 +46,22 @@ extension Database.Request.Markets.Forex {
                 var result: Set<Database.Market.Forex> = .init()
                 guard !epics.isEmpty else { return result }
                 
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 for (index, epic) in epics.enumerated() {
-                    try sqlite3_bind_text(statement, Int32(index + 1), epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                    try sqlite3_bind_text(statement, Int32(index + 1), epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
                 }
                 
                 loop: while true {
                     switch sqlite3_step(statement).result {
                     case .row: result.insert(.init(statement: statement!))
                     case .done: break loop
-                    case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.Forex.self).'", info: ["Error code": e])
+                    case let e: throw IG.Error._queryFailed(code: e)
                     }
                 }
                 
                 guard (epics.count == result.count) || !expectsAll else {
-                    throw IG.Error(.database(.invalidResponse), "The requested value couldn't be found.", help: "\(epics.count) epics were provided, however only \(result.count) epics were found.")
+                    throw IG.Error._notEnough(epics: epics, numResult: result.count)
                 }
                 return result
             }.mapError(errorCast)
@@ -75,14 +75,14 @@ extension Database.Request.Markets.Forex {
     public func get(epic: IG.Market.Epic) -> AnyPublisher<Database.Market.Forex,IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Market.Forex.tableName) WHERE epic=?1" }
             .read { (sqlite, statement, query, _) in
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
 
-                try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
 
                 switch sqlite3_step(statement).result {
                 case .row: return .init(statement: statement!)
-                case .done: throw IG.Error(.database(.invalidResponse), "The requested value couldn't be found", help: "The value is not in the database. Please introduce it, before trying to query it")
-                case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.Forex.self)'.", info: ["Error code": e])
+                case .done: throw IG.Error._unfoundRequestValue()
+                case let e: throw IG.Error._queryFailed(code: e)
                 }
             }.mapError(errorCast)
             .eraseToAnyPublisher()
@@ -104,7 +104,7 @@ extension Database.Request.Markets.Forex {
             
                 return (sql, binds)
             }.read { (sqlite, statement, input, _) in
-                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 for (index, currency) in input.binds {
                     sqlite3_bind_text(statement, index, currency.description, -1, SQLite.Destructor.transient)
@@ -115,7 +115,7 @@ extension Database.Request.Markets.Forex {
                     switch sqlite3_step(statement).result {
                     case .row:  result.append(.init(statement: statement!))
                     case .done: return result
-                    case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.Forex.self)'.", info: ["Error code": e])
+                    case let e: throw IG.Error._queryFailed(code: e)
                     }
                 }
             }.mapError(errorCast)
@@ -152,7 +152,7 @@ extension Database.Request.Markets.Forex {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!))
                 case .done: return result
-                case let e: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Market.Forex.self)'.", info: ["Error code": e])
+                case let e: throw IG.Error._queryFailed(code: e)
                 }
             }
         }.mapError(errorCast)
@@ -175,7 +175,7 @@ extension Database.Request.Markets.Forex {
                     contSize=excluded.contSize, pipVal=excluded.pipVal, placePip=excluded.placePip, placeLevel=excluded.placeLevel, slippage=excluded.slippage, premium=excluded.premium, extra=excluded.extra, margin=excluded.margin, bands=excluded.bands,
                     minSize=excluded.minSize, minDista=excluded.minDista, maxDista=excluded.maxDista, minRisk=excluded.minRisk, riskUnit=excluded.riskUnit, trailing=excluded.trailing, minStep=excluded.minStep
             """
-        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
         
         typealias F = Database.Market.Forex
         typealias D = Database.Market.Forex.DealingInformation
@@ -198,9 +198,36 @@ extension Database.Request.Markets.Forex {
                                           guarantedStopDistance: R.Distance.Variable(minimumValue: m.rules.stop.minimumLimitedRiskDistance.value, minimumUnit: inferred.guaranteedStopUnit, maximumAsPercentage: m.rules.limit.maximumDistance.value),
                                           trailingStop: R.TrailingStop(isAvailable: m.rules.stop.trailing.areAvailable, minimumIncrement: m.rules.stop.trailing.minimumIncrement.value)))
             forex._bind(to: statement!)
-            try sqlite3_step(statement).expects(.done) { IG.Error(.database(.callFailed), "An error occurred storing values on '\(Database.Market.Forex.self)'.", info: ["Error code": $0]) }
+            try sqlite3_step(statement).expects(.done) { IG.Error._storingFailed(code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when a SQLite command couldn't be compiled.
+    static func _compilationFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite binding couldn't take place.
+    static func _bindingFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite table fails.
+    static func _queryFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred querying the SQLite table.", info: ["Table": Database.Market.Forex.self, "Error code": code])
+    }
+    /// Error raised when a request value isn't found.
+    static func _unfoundRequestValue() -> Self {
+        Self(.database(.invalidResponse), "The requested value couldn't be found.", help: "The value is not in the database. Please introduce it, before trying to query it.")
+    }
+    /// Error raised when not enough epics have been found.
+    static func _notEnough(epics: Set<IG.Market.Epic>, numResult: Int) -> Self {
+        Self(.database(.invalidResponse), "The requested value couldn't be found.", help: "\(epics.count) epics were provided, however only \(numResult) epics were found.", info: ["Epics": epics])
+    }
+    /// Error raised when storing fails.
+    static func _storingFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred storing values on '\(Database.Market.Forex.self)'.", info: ["Error code": code])
     }
 }

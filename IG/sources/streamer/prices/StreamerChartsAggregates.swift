@@ -4,9 +4,9 @@ import Decimals
 
 extension Streamer.Request {
     /// Contains all functionality related to Streamer charts.
-    public struct Prices {
+    @frozen public struct Prices {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: Streamer
+        @usableFromInline internal unowned let streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
         @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }

@@ -5,9 +5,9 @@ import SQLite3
 
 extension Database.Request {
     /// Contains all functionality related to Database user's activity, transaction, and history of prices.
-    public struct Prices {
+    @frozen public struct Prices {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        fileprivate unowned let _database: Database
+        private unowned let _database: Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
         @usableFromInline internal init(database: Database) { self._database = database }
     }
@@ -25,7 +25,7 @@ extension Database.Request.Prices {
             var query = "SELECT date FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
-                guard from <= to else { throw IG.Error(.database(.invalidRequest), "The 'from' date must indicate a date before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }
+                guard from <= to else { throw IG.Error._invalidDates() }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             case (.some, .none): query.append(" WHERE date >= ?1")
             case (.none, .some): query.append(" WHERE date <= ?1")
@@ -38,7 +38,7 @@ extension Database.Request.Prices {
             // 1. Check the price table is there
             guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
             // 2. Compile the SQL statement
-            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
             switch (from, to) {
             case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
@@ -55,7 +55,7 @@ extension Database.Request.Prices {
                     let date = formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
                     result.append(date)
                 case .done: return result
-                case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+                case let c: throw IG.Error._queryFailed(code: c)
                 }
             }
             
@@ -71,11 +71,11 @@ extension Database.Request.Prices {
         self._database.publisher { _  in "SELECT MIN(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query, _) in
                 let formatter = UTC.Timestamp()
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
                 case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
                 case .done: return nil
-                case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+                case let c: throw IG.Error._queryFailed(code: c)
                 }
             }.mapError(errorCast)
             .eraseToAnyPublisher()
@@ -89,11 +89,11 @@ extension Database.Request.Prices {
         self._database.publisher { _ in "SELECT MAX(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query, _) in
                 let formatter = UTC.Timestamp()
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
                 case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
                 case .done: return nil
-                case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+                case let c: throw IG.Error._queryFailed(code: c)
                 }
             }.mapError(errorCast)
             .eraseToAnyPublisher()
@@ -109,7 +109,7 @@ extension Database.Request.Prices {
                 var query = "SELECT COUNT(*) FROM '\(tableName)'"
                 switch (from, to) {
                 case (let from?, let to?):
-                    guard from <= to else { throw IG.Error(.database(.invalidRequest), "The 'from' date must indicate a date before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }
+                    guard from <= to else { throw IG.Error._invalidDates() }
                     query.append(" WHERE date BETWEEN ?1 AND ?2")
                 case (.some, .none): query.append(" WHERE date >= ?1")
                 case (.none, .some): query.append(" WHERE date <= ?1")
@@ -118,7 +118,7 @@ extension Database.Request.Prices {
                 query.append(" ORDER BY date ASC")
                 return query
             }.read { (sqlite, statement, query, _) in
-                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 // 3. Add the variables to the statement
                 switch (from, to) {
                 case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
@@ -130,7 +130,7 @@ extension Database.Request.Prices {
                 switch sqlite3_step(statement).result {
                 case .row:  return Int(sqlite3_column_int(statement!, 0))
                 case .done: fatalError()
-                case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+                case let c: throw IG.Error._queryFailed(code: c)
                 }
             }.mapError(errorCast)
             .eraseToAnyPublisher()
@@ -149,7 +149,7 @@ extension Database.Request.Prices {
             var query = "SELECT * FROM '\(tableName)'"
             switch (from, to) {
             case (let from?, let to?):
-                guard from <= to else { throw IG.Error(.database(.invalidRequest), "The 'from' date must indicate a date before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.") }
+                guard from <= to else { throw IG.Error._invalidDates() }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             case (.some, .none): query.append(" WHERE date >= ?1")
             case (.none, .some): query.append(" WHERE date <= ?1")
@@ -162,7 +162,7 @@ extension Database.Request.Prices {
             // 1. Check the price table is there.
             guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
             // 2. Compile the SQL statement
-            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
             switch (from, to) {
             case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
@@ -177,7 +177,7 @@ extension Database.Request.Prices {
                 switch sqlite3_step(statement).result {
                 case .row:  result.append(.init(statement: statement!, formatter: formatter))
                 case .done: return result
-                case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+                case let c: throw IG.Error._queryFailed(code: c)
                 }
             }
             
@@ -199,9 +199,7 @@ extension Database.Request.Prices {
             var query = "SELECT * FROM '\(tableName)'"
             
             if let to = to {
-                guard from <= to else {
-                    throw IG.Error(.database(.invalidRequest), "The 'from' date must indicate a date before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.")
-                }
+                guard from <= to else { throw IG.Error._invalidDates() }
                 query.append(" WHERE date BETWEEN ?1 AND ?2")
             } else {
                 query.append(" WHERE date > ?1")
@@ -216,7 +214,7 @@ extension Database.Request.Prices {
             return (tableName, query)
         }.write { (sqlite, statement, input, _) in
             // 1. Compile the SQL statement (there is no check for price table).
-            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
             sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
             if let to = to {
@@ -228,7 +226,7 @@ extension Database.Request.Prices {
             switch sqlite3_step(statement).result {
             case .row:  return .init(statement: statement!, formatter: formatter)
             case .done: return nil
-            case let c: throw IG.Error(.database(.callFailed), "An error occurred querying a table for '\(Database.Price.self)'.", info: ["Error code": c])
+            case let c: throw IG.Error._queryFailed(code: c)
             }
         }.mapError(errorCast)
         .eraseToAnyPublisher()
@@ -246,20 +244,18 @@ extension Database.Request.Prices {
                 Self._priceInsertionQuery(epic: epic)
             }.write { (sqlite, statement, input, _) -> Void in
                 // 1. Check the epic is on the Markets table.
-                guard try Self._existsMarket(epic: epic, sqlite: sqlite) else {
-                    throw IG.Error(.database(.invalidRequest), "The market with epic '\(epic)' must be in the database before storing its price points.", help: "Store explicitly the market and the call this function again.")
-                }
+                guard try Self._existsMarket(epic: epic, sqlite: sqlite) else { throw IG.Error._unfoundMarket(epic: epic) }
                 // 2. Check the existance of the price table or create it if it is not there.
                 if try !Self._existsPriceTable(epic: epic, sqlite: sqlite) {
                     try sqlite3_exec(sqlite, Database.Price.tableDefinition(name: input.tableName), nil, nil, nil).expects(.ok) {
-                        IG.Error(.database(.callFailed), "The SQL statement to create a table for '\(input.tableName)' failed to execute.", info: ["Error code": $0])
+                        IG.Error._tableCreationFailed(name: input.tableName, code: $0)
                     }
                 }
                 // 3. Add the data to the database.
-                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+                try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 for p in prices {
                     guard let v = p.volume else {
-                        throw IG.Error(.database(.invalidRequest), "There must be volume for the price point to be stored in the database.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.")
+                        throw IG.Error._unfoundVolume()
                     }
                     let price = Database.Price(date: p.date,
                                             open: .init(bid: p.open.bid, ask: p.open.ask),
@@ -268,7 +264,7 @@ extension Database.Request.Prices {
                                             highest: .init(bid: p.highest.bid, ask: p.highest.ask),
                                             volume: .init(clamping: v))
                     price._bind(to: statement!)
-                    try sqlite3_step(statement).expects(.done) { IG.Error(.database(.callFailed), "An error occurred storing values on '\(Database.Price.self)' table", info: ["Error code": $0]) }
+                    try sqlite3_step(statement).expects(.done) { IG.Error._storingFailed(code: $0) }
                     sqlite3_clear_bindings(statement)
                     sqlite3_reset(statement)
                 }
@@ -299,7 +295,7 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
                   let highestAsk = price.candle.highest.ask,
                   let volume = price.candle.numTicks else {
                 guard !ignoringInvalidPrices else { return nil }
-                throw IG.Error(.database(.invalidRequest), "The emitted price value is missing some properties", help: "Retry the connection")
+                throw IG.Error._missingProperties()
             }
             
             let query = Database.Request.Prices._priceInsertionQuery(epic: price.epic).query
@@ -312,9 +308,9 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
                     interval: price.interval)
             return ( db, (query, streamPrice) )
         }.write { (sqlite, statement, input, _) -> Database.PriceWrapper in
-            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             input.data.price._bind(to: statement!)
-            try sqlite3_step(statement).expects(.done) { IG.Error(.database(.callFailed), "An error occurred storing values on '\(Database.Price.self)'.", info: ["Error code": $0]) }
+            try sqlite3_step(statement).expects(.done) { IG.Error._storingFailed(code: $0) }
             sqlite3_clear_bindings(statement)
             sqlite3_reset(statement)
             return input.data
@@ -326,5 +322,40 @@ private extension IG.Error {
     /// Error raised when the DB instance is deallocated.
     static func _deallocatedDB() -> Self {
         Self(.database(.sessionExpired), "The DB instance has been deallocated.", help: "The DB functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when a SQLite command couldn't be compiled.
+    static func _compilationFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite table fails.
+    static func _queryFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred querying the SQLite table.", info: ["Table": Database.Price.self, "Error code": code])
+    }
+    /// Error raised when storing fails.
+    static func _storingFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred storing values on '\(Database.Price.self)'.", info: ["Error code": code])
+    }
+    /// Error raised when a price is missing properties.
+    static func _missingProperties() -> Self {
+        Self(.database(.invalidRequest), "The emitted price value is missing some properties", help: "Retry the connection")
+    }
+    /// Error raised when the _from_ and _to_ date interval are invalid.
+    static func _invalidDates() -> Self {
+        Self(.database(.invalidRequest), "The 'from' date must indicate a date before the 'to' date", help: "Read the request documentation and be sure to follow all requirements.")
+    }
+    /// Error raised when the market epic couldn't be found in the SQLite database.
+    static func _unfoundMarket(epic: IG.Market.Epic) -> Self {
+        Self(.database(.invalidRequest), "The market epic must be in the database before storing its price points.", help: "Store explicitly the market and the call this function again.", info: ["Epic": epic])
+    }
+    /// Error raised when the SQLite table couldn't be created.
+    static func _tableCreationFailed(name: String, code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "The SQL statement to create a table for '\(name)' failed to execute.", info: ["Error code": code])
+    }
+    /// Error raised when no volume has been found in a price.
+    static func _unfoundVolume() -> Self {
+        Self(.database(.invalidRequest), "There must be volume for the price point to be stored in the database.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.")
     }
 }

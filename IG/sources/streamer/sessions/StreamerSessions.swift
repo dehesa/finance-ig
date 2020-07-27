@@ -4,9 +4,9 @@ import Foundation
 
 extension Streamer.Request {
     /// Contains all functionality related to the Streamer session.
-    public struct Session {
+    @frozen public struct Session {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        fileprivate unowned let _streamer: Streamer
+        private unowned let _streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
         @usableFromInline internal init(streamer: Streamer) { self._streamer = streamer }

@@ -14,12 +14,19 @@ extension Database.Migration {
             // Create all tables
             for type in types {
                 try sqlite3_exec(database, type.tableDefinition, nil, nil, nil).expects(.ok) {
-                    IG.Error(.database(.callFailed), "The SQL statement to create a table for '\(type.self)' failed to execute", info: ["Error code": $0])
+                    IG.Error._tableCreationFailed(type: type, code: $0)
                 }
             }
             
             // Set the version number to first version.
             try Self.setVersion(.v1, database: database)
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when a SQLite table cannot be created.
+    static func _tableCreationFailed(type: DBTable.Type, code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "The SQL statement to create a table for '\(type.self)' failed to execute", info: ["Error code": code])
     }
 }

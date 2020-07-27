@@ -3,7 +3,7 @@ import Foundation
 
 extension API.Request {
     /// List of endpoints related to user accounts.
-    public struct Accounts {
+    @frozen public struct Accounts {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.

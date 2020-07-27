@@ -132,13 +132,13 @@ internal extension Database.Request.Prices {
         defer { sqlite3_finalize(statement) }
         
         let query = "SELECT 1 FROM \(Database.Market.tableName) WHERE epic=?1"
-        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
-        try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": $0]) }
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
+        try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
         
         switch sqlite3_step(statement).result {
         case .row:  return true
         case .done: return false
-        case let c: throw IG.Error(.database(.callFailed), "SQLite couldn't verify the existance of the market with epic '\(epic)'.", info: ["Error code": c])
+        case let c: throw IG.Error._unfoundTable(epic: epic, code: c)
         }
     }
     
@@ -150,7 +150,7 @@ internal extension Database.Request.Prices {
         defer { sqlite3_finalize(statement) }
         
         let query = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?1"
-        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": $0]) }
+        try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
         
         let tableName = Database.Price.tableNamePrefix.appending(epic.description)
         sqlite3_bind_text(statement, 1, tableName, -1, SQLite.Destructor.transient)
@@ -158,7 +158,22 @@ internal extension Database.Request.Prices {
         switch sqlite3_step(statement).result {
         case .row:  return true
         case .done: return false
-        case let c: throw IG.Error(.database(.callFailed), "SQLite couldn't verify the existance of the '\(epic)''s price table.", info: ["Error code": c])
+        case let c: throw IG.Error._unfoundTable(epic: epic, code: c)
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when a SQLite command couldn't be compiled.
+    static func _compilationFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred trying to compile a SQL statement.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite binding couldn't take place.
+    static func _bindingFailed(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "An error occurred binding attributes to a SQL statement.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite table couldn't be found.
+    static func _unfoundTable(epic: IG.Market.Epic, code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "SQLite couldn't verify the existance of the market.", info: ["Epic": epic, "Error code": code])
     }
 }
