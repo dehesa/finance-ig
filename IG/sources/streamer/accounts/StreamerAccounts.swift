@@ -3,12 +3,12 @@ import Decimals
 
 extension Streamer.Request {
     /// Contains all functionality related to Streamer accounts.
-    public struct Accounts {
+    @frozen public struct Accounts {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: Streamer
+        private unowned let _streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }
+        @usableFromInline internal init(streamer: Streamer) { self._streamer = streamer }
     }
 }
 
@@ -27,8 +27,8 @@ extension Streamer.Request.Accounts {
         let item = "ACCOUNT:\(account)"
         let properties = fields.map { $0.rawValue }
         
-        return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+        return self._streamer.channel
+            .subscribe(on: self._streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Account(id: account, update: $0) }
             .mapStreamError(item: item, fields: fields)
             .eraseToAnyPublisher()

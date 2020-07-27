@@ -139,23 +139,20 @@ extension Database.Channel {
     private func _asyncTransactionAccess<T>(flags: DispatchWorkItemFlags, promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         self._queue.async(flags: flags) {
             if let errorCode = sqlite3_exec(self._database, "BEGIN TRANSACTION", nil, nil, nil).enforce(.ok) {
-                return receptionQueue.async {
-                    let error = IG.Error(.database(.callFailed), "Invalid SQLite execution.", help: "Review the returned error and try to fix the problem.", info: ["Error code": errorCode])
-                    promise(.failure(error))
-                }
+                return receptionQueue.async { promise(.failure(._invalidExecution(code: errorCode))) }
             }
             
             let output: T
             do {
                 output = try interaction(self._database)
             } catch let error {
-                if let errorCode = sqlite3_exec(self._database, "ROLLBACK", nil, nil, nil).enforce(.ok) { fatalError("An error occurred (code: \(errorCode) trying to rollback an operation.") }
+                if let errorCode = sqlite3_exec(self._database, "ROLLBACK", nil, nil, nil).enforce(.ok) {
+                    fatalError("An error occurred (code: \(errorCode) trying to rollback an operation.")
+                }
                 
                 switch error {
-                case let e as IG.Error:
-                    return promise(.failure(e))
-                case let e:
-                    return promise(.failure( IG.Error(.database(.callFailed), "Invalid SQLite execution.", help: "Review the underlying error and try to fix the problem.", underlying: e) ))
+                case let e as IG.Error: return promise(.failure(e))
+                case let e: return promise(.failure( IG.Error._invalidExecution(error: e) ))
                 }
             }
             
@@ -186,18 +183,16 @@ private extension Database.Channel {
         case .file(let url, let expectsExistance):
             (rootURL, path) = (url, url.path)
             // Check the URL validity.
-            guard url.isFileURL else {
-                throw IG.Error(.database(.invalidRequest), "The database location provided is not a valid file URL.", help: "Make sure the URL is of 'file://' domain", info: ["Root URL": url])
-            }
+            guard url.isFileURL else { throw IG.Error._invalid(url: url) }
             
             switch expectsExistance {
             case .some(true):
                 guard FileManager.default.fileExists(atPath: path) else {
-                    throw IG.Error(.database(.invalidRequest), "The database location didn't contain any SQLite database", help: "Make sure the database is in location '\(path)'.")
+                    throw IG.Error._unfoundDatabase(path: path)
                 }
             case .some(false):
                 guard !FileManager.default.fileExists(atPath: path) else {
-                    throw IG.Error(.database(.invalidRequest), "There is file in the given location", help: "Delete any previous file in location \(path) or change the database configuration.")
+                    throw IG.Error._conflictingFile(path: path)
                 }
                 fallthrough
             case .none:
@@ -206,7 +201,7 @@ private extension Database.Channel {
                     do {
                         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
                     } catch let error {
-                        throw IG.Error(.database(.invalidRequest), "When creating a database, the URL path couldn't be recreated.", help: "Make sure the rootURL and/or create all subfolders in between.", underlying: error)
+                        throw IG.Error._invalidPath(error: error)
                     }
                 }
             }
@@ -218,7 +213,7 @@ private extension Database.Channel {
             let openFlags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX  /* SQLITE_OPEN_FULLMUTEX */
             guard let errorCode = sqlite3_open_v2(path, &db, openFlags, nil).enforce(.ok) else { return nil }
             
-            let error = IG.Error(.database(.callFailed), "The SQLite database couldn't be opened.", help: "Make sure you have access to the folder/file location.", info: ["Error code": errorCode])
+            let error = IG.Error._cannotOpenDB(code: errorCode)
             if let channel = db {
                 let message = String(cString: sqlite3_errmsg(channel))
                 if message != errorCode.description { error.errorUserInfo["Open error message"] = message }
@@ -238,12 +233,12 @@ private extension Database.Channel {
         error = queue.sync {
             // Extended error codes (to better understand problems)
             if let extendedEnablingCode = sqlite3_extended_result_codes(db, 1).enforce(.ok) {
-                return IG.Error(.database(.callFailed), "The SQLite database couldn't enable extended result codes.", help: "Contact the repo maintainer.", info: ["Error code": extendedEnablingCode])
+                return IG.Error._unableToExtendErrorCodes(code: extendedEnablingCode)
             }
             
             // Foreign key constraints activation
             if let foreignEnablingCode = sqlite3_exec(db, "PRAGMA foreign_keys = ON", nil, nil, nil).enforce(.ok) {
-                return IG.Error(.database(.callFailed), "Foreign keys couldn't be enabled for the database.", help: "Contact the repo maintainer.", info: ["Error code": foreignEnablingCode])
+                return IG.Error._unableToActivateForeignKeys(code: foreignEnablingCode)
             }
             
             return nil
@@ -271,17 +266,55 @@ private extension Database.Channel {
             let scheduleResult = sqlite3_close_v2(database).result
             if scheduleResult == .ok { return }
             // If not even that couldn't be scheduled, just print the error and crash.
-            let error = IG.Error(.database(.callFailed), "The SQLite database coudln't be properly close.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: [
-                "Error code": scheduleResult,
-                "First closing code": closeResult,
-                "First closing message": closeLowlevelMessage
-            ])
-            
+            let error = IG.Error._unableToCloseDB(code: scheduleResult, result: closeResult, message: closeLowlevelMessage)
             let secondMessage = String(cString: sqlite3_errmsg(database))
             if secondMessage != scheduleResult.description {
                 error.errorUserInfo["Second closing message"] = secondMessage
             }
             fatalError(error.localizedDescription)
         }
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when a SQLite command fails.
+    static func _invalidExecution(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "Invalid SQLite execution.", help: "Review the returned error and try to fix the problem.", info: ["Error code": code])
+    }
+    /// Error raised when a SQLite command fails.
+    static func _invalidExecution(error: Swift.Error) -> Self {
+        Self(.database(.callFailed), "Invalid SQLite execution.", help: "Review the returned error and try to fix the problem.", underlying: error)
+    }
+    /// Error raised when the database location is invalid.
+    static func _invalid(url: URL) -> Self {
+        Self(.database(.invalidRequest), "The database location provided is not a valid file URL.", help: "Make sure the URL is of 'file://' domain", info: ["Root URL": url])
+    }
+    /// Error raised when the file path didn't contain any SQLite database.
+    static func _unfoundDatabase(path: String) -> Self {
+        Self(.database(.invalidRequest), "The database location didn't contain any SQLite database.", help: "Make sure the database is in location '\(path)'.")
+    }
+    /// Error raised when there is a file in the SQLite path.
+    static func _conflictingFile(path: String) -> Self {
+        Self(.database(.invalidRequest), "There is file in the given location.", help: "Delete any previous file in location \(path) or change the database configuration.")
+    }
+    /// Error raised when the file path cannot be recreated.
+    static func _invalidPath(error: Swift.Error) -> Self {
+        Self(.database(.invalidRequest), "When creating a database, the URL path couldn't be recreated.", help: "Make sure the rootURL and/or create all subfolders in between.", underlying: error)
+    }
+    /// Error raised when the database cannot be opened.
+    static func _cannotOpenDB(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "The SQLite database couldn't be opened.", help: "Make sure you have access to the folder/file location.", info: ["Error code": code])
+    }
+    /// Error raised when SQLite cannot extend the error codes.
+    static func _unableToExtendErrorCodes(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "The SQLite database couldn't enable extended result codes.", help: "Contact the repo maintainer.", info: ["Error code": code])
+    }
+    /// Error raised when SQLite cannot enable the foreign keys.
+    static func _unableToActivateForeignKeys(code: SQLite.Result) -> Self {
+        Self(.database(.callFailed), "Foreign keys couldn't be enabled for the database.", help: "Contact the repo maintainer.", info: ["Error code": code])
+    }
+    /// Error raised when the SQLite database cannot be closed.
+    static func _unableToCloseDB(code: SQLite.Result, result: Int32, message: String) -> Self {
+        Self(.database(.callFailed), "The SQLite database couldn't be properly close.", help: "A unexpected error was encountered. Please contact the repository maintainer and attach this debug print.", info: ["Error code": code, "First closing code": result, "First closing message": message])
     }
 }

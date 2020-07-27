@@ -4,12 +4,12 @@ import Decimals
 
 extension Streamer.Request {
     /// Contains all functionality related to Streamer markets.
-    public struct Markets {
+    @frozen public struct Markets {
         /// Pointer to the actual Streamer instance in charge of calling the Lightstreamer server.
-        internal unowned let streamer: Streamer
+        private unowned let _streamer: Streamer
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter streamer: The instance calling the actual subscriptions.
-        @usableFromInline internal init(streamer: Streamer) { self.streamer = streamer }
+        @usableFromInline internal init(streamer: Streamer) { self._streamer = streamer }
     }
 }
 
@@ -28,8 +28,8 @@ extension Streamer.Request.Markets {
         let properties = fields.map { $0.rawValue }
         let timeFormatter = DateFormatter.londonTime
         
-        return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+        return self._streamer.channel
+            .subscribe(on: self._streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter) }
             .mapStreamError(item: item, fields: fields)
             .eraseToAnyPublisher()

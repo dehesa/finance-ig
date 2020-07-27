@@ -4,9 +4,9 @@ import Decimals
 
 extension API.Request {
     /// List of endpoints related to a user's activity.
-    public struct Prices {
+    @frozen public struct Prices {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let _api: API
+        private unowned let _api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self._api = api }

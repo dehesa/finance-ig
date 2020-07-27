@@ -3,9 +3,9 @@ import Foundation
 
 extension API.Request {
     /// List of endpoints related to navigation nodes.
-    public struct Nodes {
+    @frozen public struct Nodes {
         /// Pointer to the actual API instance in charge of calling the endpoints.
-        fileprivate unowned let _api: API
+        private unowned let _api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self._api = api }

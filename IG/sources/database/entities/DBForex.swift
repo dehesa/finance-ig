@@ -411,73 +411,71 @@ extension Database.Market.Forex {
     /// Check whether the given API market instance is a valid Forex Database market and returns inferred values.
     /// - parameter market: The market information received from the platform's server.
     internal static func _inferred(from market: API.Market) -> Result<(base: Currency.Code, counter: Currency.Code, marketId: String, contractSize: Decimal64, guaranteedStopUnit: Database.Unit, bands: Self.DealingInformation.Margin.Bands),IG.Error> {
-        let error: (_ suffix: String) -> IG.Error = { IG.Error(.database(.invalidRequest), "The API market '\(market.instrument.epic)' \($0)", help: "Review the returned error and try to fix the problem") }
-        
         // 1. Check the type is .currency
         guard market.instrument.type == .currencies else {
-            return .failure(error("is not of 'currency' type"))
+            return .failure(._inferralError(epic: market.instrument.epic, "is not of 'currency' type"))
         }
 
         // 2. Check that currencies can be actually inferred and they are not equal
         guard let currencies = Self._currencyCodes(from: market), currencies.base != currencies.counter else {
-            return .failure(error("is not of 'currency' type"))
+            return .failure(._inferralError(epic: market.instrument.epic, "is not of 'currency' type"))
         }
         // 3. Check the market identifier
         guard let marketId = market.id else {
-            return .failure(error("doesn't contain a market identifier"))
+            return .failure(._inferralError(epic: market.instrument.epic, "doesn't contain a market identifier"))
         }
         // 4. Check the contract size
         guard let contractSize = market.instrument.contractSize else {
-            return .failure(error("doesn't contain a contract size"))
+            return .failure(._inferralError(epic: market.instrument.epic, "doesn't contain a contract size"))
         }
         // 5. Check the slippage factor unit
         guard market.instrument.slippageFactor.unit == .percentage else {
-            return .failure(error("has a slippage factor unit of '\(market.instrument.slippageFactor.unit)' when '.percentage' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a slippage factor unit of '\(market.instrument.slippageFactor.unit)' when '.percentage' was expected"))
         }
         // 6. Check the guaranteed stop premium unit
         guard market.instrument.limitedRiskPremium.unit == .points else {
-            return .failure(error("has a limit risk premium unit of '\(market.instrument.limitedRiskPremium.unit)' when '.points' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a limit risk premium unit of '\(market.instrument.limitedRiskPremium.unit)' when '.points' was expected"))
         }
         // 7. Check the margin unit
         guard market.instrument.margin.unit == .percentage else {
-            return .failure(error("has a margin unit of '\(market.instrument.margin.unit)' when '.percentage' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a margin unit of '\(market.instrument.margin.unit)' when '.percentage' was expected"))
         }
         // 8. Check the margin deposit bands
         let apiBands = market.instrument.margin.depositBands.sorted { $0.minimum < $1.minimum }
 
         guard let code = apiBands.first?.currency else {
-            return .failure(error("doesn't have margin bands"))
+            return .failure(._inferralError(epic: market.instrument.epic, "doesn't have margin bands"))
         }
 
         guard apiBands.allSatisfy({ $0.currency == code }) else {
-            return .failure(error("margin bands have different currency units"))
+            return .failure(._inferralError(epic: market.instrument.epic, "margin bands have different currency units"))
         }
 
         for index in 0..<apiBands.count-1 {
             guard let max = apiBands[index].maximum else {
                 let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currency) -> \($0.margin)%" }.joined(separator: ", ")
-                return .failure(error("expected a maximum at index '\(index)' for deposit bands [\(representation)]"))
+                return .failure(._inferralError(epic: market.instrument.epic, "expected a maximum at index '\(index)' for deposit bands [\(representation)]"))
             }
 
             guard max == apiBands[index+1].minimum else {
                 let representation = apiBands.map { "\($0.minimum)..<\($0.maximum.map { String(describing: $0) } ?? "max") \($0.currency) -> \($0.margin)%" }.joined(separator: ", ")
-                return .failure(error("doesn't have contiguous deposit bands [\(representation)]"))
+                return .failure(._inferralError(epic: market.instrument.epic, "doesn't have contiguous deposit bands [\(representation)]"))
             }
         }
 
         let bands = Self.DealingInformation.Margin.Bands(storage: apiBands.map { ($0.minimum, $0.margin) })
         // 9. Check the minimum deal size units.
         guard market.rules.minimumDealSize.unit == .points else {
-            return .failure(error("has a minimum deal size unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a minimum deal size unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
         }
 
         // 10. Check the limit units (they are the same as the stop units).
         guard market.rules.limit.mininumDistance.unit == .points else {
-            return .failure(error("has a minimum limit distance unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a minimum limit distance unit of '\(market.rules.limit.mininumDistance.unit)' when '.points' was expected"))
         }
 
         guard market.rules.limit.maximumDistance.unit == .percentage else {
-            return .failure(error("has a maximum limit distance unit of '\(market.rules.limit.maximumDistance.unit)' when '.percentage' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a maximum limit distance unit of '\(market.rules.limit.maximumDistance.unit)' when '.percentage' was expected"))
         }
         // 11. Check the guaranteed stop units.
         let unit: Database.Unit
@@ -487,7 +485,7 @@ extension Database.Market.Forex {
         }
         // 12. Check the trailing units.
         guard market.rules.stop.trailing.minimumIncrement.unit == .points else {
-            return .failure(error("has a minimum trailing step increment unit of '\(market.rules.stop.trailing.minimumIncrement.unit)' when '.points' was expected"))
+            return .failure(._inferralError(epic: market.instrument.epic, "has a minimum trailing step increment unit of '\(market.rules.stop.trailing.minimumIncrement.unit)' when '.points' was expected"))
         }
 
         return .success((currencies.base, currencies.counter, marketId, contractSize, unit, bands))
@@ -529,3 +527,9 @@ extension Database.Market.Forex {
     }
 }
 
+private extension IG.Error {
+    /// Error used on inferral functionality.
+    static func _inferralError(epic: IG.Market.Epic, _ suffix: String) -> Self {
+        Self(.database(.invalidRequest), "The API market '\(epic)' \(suffix)", help: "Review the returned error and try to fix the problem")
+    }
+}

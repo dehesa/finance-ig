@@ -6,9 +6,9 @@ extension API.Request {
     /// List of endpoints scrapped from the website.
     ///
     /// This endpoints require specific usage and won't work with the API key settings.
-    public struct Scrapped {
+    @frozen public struct Scrapped {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        internal unowned let api: API
+        @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self.api = api }

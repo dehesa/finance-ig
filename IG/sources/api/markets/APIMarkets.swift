@@ -4,7 +4,7 @@ import Decimals
 
 extension API.Request {
     /// List of endpoints related to API markets.
-    public struct Markets {
+    @frozen public struct Markets {
         /// Pointer to the actual API instance in charge of calling the endpoint.
         @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.

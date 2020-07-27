@@ -3,9 +3,9 @@ import Foundation
 
 extension API.Request {
     /// List of endpoints related to API watchlists.
-    public struct Watchlists {
+    @frozen public struct Watchlists {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        fileprivate unowned let _api: API
+        private unowned let _api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoint.
         @usableFromInline internal init(api: API) { self._api = api }
