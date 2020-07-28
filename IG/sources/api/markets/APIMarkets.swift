@@ -51,7 +51,7 @@ extension API.Request.Markets {
         let maxEpicsPerChunk = 50
         guard epics.count > maxEpicsPerChunk else { return Self._get(api: api, epics: epics) }
         
-        return self.api.publisher({ _ in epics.chunked(into: maxEpicsPerChunk) })
+        return self.api.publisher { _ in epics.chunked(into: maxEpicsPerChunk) }
             .flatMap { (api, chunks) -> PassthroughSubject<[API.Market],IG.Error> in
                 let subject = PassthroughSubject<[API.Market],IG.Error>()
                 
@@ -65,6 +65,7 @@ extension API.Request.Markets {
                         .sink(receiveCompletion: { [weak weakAPI = chunkAPI] in
                             if case .failure(let error) = $0 {
                                 subject.send(completion: .failure(error))
+                                cancellable?.cancel()
                                 cancellable = nil
                                 return
                             }
