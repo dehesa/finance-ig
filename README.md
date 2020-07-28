@@ -16,11 +16,11 @@ This framework provides:
     <br>The [Lighstreamer binaries](https://labs.ig.com/lightstreamer-downloads) are packaged with the source code. IG only supports an older Lightstreamer version and this framework provides exactly that version.
 -   Session management helpers (such as OAuth and Certificate token refreshes, etc).
 -   Optional small SQLite database to cache market and price information.
--   Currency and optional _Money_ structures.
+-   Currency and optional _Money_ types.
 
 # Usage
 
-To use this framework you just need to include `IG.xcodeproj` in your Xcode project/workspace. Then import the framework in any files that needs it. SPM support will arrive with Swift 5.3 ([SE-271](https://github.com/apple/swift-evolution/blob/master/proposals/0271-package-manager-resources.md) and [SE-272](https://github.com/apple/swift-evolution/blob/master/proposals/0272-swiftpm-binary-dependencies.md) will permit binary inclusion required for the Lightstreamer library).
+To use this framework you just need to include `IG.xcodeproj` in your Xcode project/workspace. Then import the framework in any file that needs it. SPM support will arrive with Swift 5.3 ([SE-271](https://github.com/apple/swift-evolution/blob/master/proposals/0271-package-manager-resources.md) and [SE-272](https://github.com/apple/swift-evolution/blob/master/proposals/0272-swiftpm-binary-dependencies.md) will permit binary inclusion required for the Lightstreamer library).
 
 ```swift
 import IG
@@ -83,7 +83,7 @@ For those reasons, it is recommended to use to Certificate tokens.
 
 All public Lightstreamer subscriptions are defined under the `Streamer` reference type. To expose the functionality.
 
-1. Retrieve the streamer credentials.
+1. Retrieve the streamer credentials and initialize a `Streamer` instance.
 
     ```swift
     guard let apiCreds = api.session.credentials else { return }
@@ -111,7 +111,7 @@ All public Lightstreamer subscriptions are defined under the `Streamer` referenc
 
 The library provides the option to create a SQLite database to cache market information and/or price data. This is a _work in progress_ and it currently only support forex markets and price resolutions of one minute.
 
-1. Define a database location (in-memory is also permited).
+1. Define a database location.
 
     ```swift
     let db = try Database(location: .inMemory)
