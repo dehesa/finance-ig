@@ -11,102 +11,139 @@
 
 This framework provides:
 
--   Access to IG's HTTP APIs.
--   Access to IG's Lightstreamer service.
-    <br>The Lighstreamer binaries are packaged with the source code. IG only supports an older Lightstreamer version and this framework provides exactly that version. To know more, check [labs.ig.com](https://labs.ig.com/lightstreamer-downloads).
--   Session management helpers.
-    <br>Such as OAuth and certificate token refreshes, etc.
--   Endpoints & Lighstreamer events cache.
-    <br>Implement through SQLite.
+-   All public [HTTP IG endpoints](https://labs.ig.com/rest-trading-api-reference) (with request, response, and error handling support).
+-   All public [Lightstreamer IG subscriptions](https://labs.ig.com/streaming-api-reference) (with request, response, and error handling support).
+    <br>The [Lighstreamer binaries](https://labs.ig.com/lightstreamer-downloads) are packaged with the source code. IG only supports an older Lightstreamer version and this framework provides exactly that version.
+-   Session management helpers (such as OAuth and Certificate token refreshes, etc).
+-   Optional small SQLite database to cache market and price information.
+-   Currency and optional _Money_ structures.
 
 # Usage
 
-The IG framework can be used to interface with IG's APIs, Lightstreamer's "real-time" events, and cache temporary data.
+To use this framework you just need to include `IG.xcodeproj` in your Xcode project/workspace. Then import the framework in any files that needs it. SPM support will arrive with Swift 5.3 ([SE-271](https://github.com/apple/swift-evolution/blob/master/proposals/0271-package-manager-resources.md) and [SE-272](https://github.com/apple/swift-evolution/blob/master/proposals/0272-swiftpm-binary-dependencies.md) will permit binary inclusion required for the Lightstreamer library).
 
--   Access all IG's endpoints through the `API` instance.
-    <br>All endpoints listed in IG's [API reference](https://labs.ig.com/rest-trading-api-reference) are supported (browse `API.swift` file to check them out).
-    <br>These endpoints offer compile-time interfaces for Swift and use Standard or Foundation types (e.g. `Date`).
+```swift
+import IG
+```
 
-    ```swift
-    let api = API(credentials: nil, targetQueue: nil)
-    api.login(type: .certificate, key: "a12345bc67890d12345e6789fg0hi123j4567890", user: .init("username", "password")).expectsCompletion()
+The IG framework uses the Swift Standard Library, Foundation, Combine, and the host system SQLite library. All these are provided implictly. There is also a SPM file defining the following third-party dependencies:
+-   [Decimals](https://github.com/dehesa/Decimal64) (for a more performant 64-bit decimal number type).
+-   [Conbini](https://www.github.com/dehesa/Conbini) (for extra functionality for Combine).
 
-    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
-    api.price.get(epic: "CS.D.EURUSD.MINI.IP", from: yesterday, resolution: .minute).sink { (prices, allowance) in
-        print(prices)
-    }
-    ```
+## API
 
--   Establish "real-time" connections through the `Streamer` instance.
-    <br>All subscriptions listed in IG's [Streaming API reference](https://labs.ig.com/streaming-api-reference) are supported (browse `Streamer.swift` file to check them out).
-    <br>As with the HTTP service, this framework offer compile-time interfaces for Swift and use Standard and/or Foundation types.
+All public HTTP endpoints are defined under the `API` reference type. To expose the functionality:
+1. Create an API instance.
 
     ```swift
-    let streamer = Streamer(rootURL: "...", credentials: .init(identifier: "ABC12", password: "..."), targetQueue: nil)
-    streamer.session.connect().expectsCompletion()
-    streamer.price.subscribe(epic: "CS.D.EURUSD.MINI.IP", interval: .second, fields: [.date, . volume, .openBid, .closeBid]).sink {
-      print($0)
-    }
+    let api = API(rootURL: API.rootURL, credentials: nil)
+    // Optionally you can pass the demo rootURL: URL(string: "https://demo-api.ig.com/gateway/deal")!
     ```
 
-    > Please be mindful of the [limits enforced by IG](https://labs.ig.com/faq#limits).
+2. Log into an account.
 
--   Create an in-memory or file database with the `DB` instance.
-    <br>The database is _work in progress_; currently only supporting price resolutions of one minute.
+    ```swift
+    let key: API.Key = "a12345bc67890d12345e6789fg0hi123j4567890"
+    let user = API.User(name: "username", password: "password")
+    api.sessions.login(type: .certificate, key: key, user: user)
+    ```
 
-Although you can cherry pick which service to use, it might be simpler to let the convenience `Services` initialize all subservices for you. To log in you need:
+    To generate your own API key, look [here](https://labs.ig.com/gettingstarted).
 
--   an _API key_.
-    <br>You can get one from someone that has an IG application, or you can [generate your own](https://labs.ig.com/gettingstarted); e.g. `a12345bc67890d12345e6789fg0hi123j4567890`.
--   Information for the user you will be logged in as.
-    <br>You can log in with your actual credentials.
+3. Call a specific endpoint.
+
+    ```swift
+    // As an example, lets get information about the EURUSD forex mini market.
+    api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
+    ```
+
+It is worth noticing that all the endpoints are asynchronous (they must call the server and receive a response). That is why this framework relies heavily in Combine and most functions return a `Publisher` type that can be chained with further endpoints. For example:
+
+```swift
+let api = API(rootURL: API.rootURL, credentials: nil)
+let cancellable = api.sessions.login(type: .certificate, key: key, user: user)
+    .then {
+        api.markets.get(epic: "CS.D.EURUSD.MINI.IP")
+    }.flatMap {
+        api.prices.get(epic: $0.instrument.epic, from: Date(timeIntervalSinceNow: -3_600), resolution: .minute)
+    }.sink(receiveCompletion: {
+        guard case .finished = $0 else { return print($0) }
+    }, receiveValue: { (prices) in
+        prices.forEach { print($0) }
+    })
+```
+
+The login process only needs to be called once, since the temporary token is stored within the api object. Make sure you keep the API instance around while you are using API functionality. IG permits the usage of OAuth or Certificate tokens. Although both work with any API endpoint, there are some differences:
+- OAuth tokens are only valid for 60 seconds, while Certificate tokens usually last for 6 hours.
+- It is not possible to request Lightstreamer credentials with OAuth tokens.
+
+For those reasons, it is recommended to use to Certificate tokens.
+
+## Streamer
+
+All public Lightstreamer subscriptions are defined under the `Streamer` reference type. To expose the functionality.
+
+1. Retrieve the streamer credentials.
+
+    ```swift
+    guard let apiCreds = api.session.credentials else { return }
+    let streamerCreds = try Streamer.Credentials(apiCreds)
+    let streamer = Streamer(rootURL: apiCreds.streamerURL, credentials: streamerCreds)
+    ```
+
+2. Connect the streamer.
+
+    ```swift
+    streamer.sessions.connect()
+    ```
+
+3. Subscribe to any targeted event.
+
+    ```swift
+    streamer.prices.subscribe(epic: "CS.D.EURUSD.MINI.IP", interval: .minute, fields: .all)
+    ```
+
+    The returned publisher will forward a new event till the publisher is cancelled.
+
+> Please be mindful of the [limits enforced by IG](https://labs.ig.com/faq#limits).
+
+## Database
+
+The library provides the option to create a SQLite database to cache market information and/or price data. This is a _work in progress_ and it currently only support forex markets and price resolutions of one minute.
+
+1. Define a database location (in-memory is also permited).
+
+    ```swift
+    let db = try Database(location: .inMemory)
+    ```
+
+2. Write some API market data.
+
+    ```swift
+    db.markets.update(apiMarket)
+    ```
+
+3. Write some API prices.
+
+    ```swift
+    db.prices.update(apiPrices, epic: "CS.D.EURUSD.MINI.IP")
+    ```
+
+## Services
+
+You can cherry pick which service to use; however, it might be simpler to let the convenience `Services` initialize all subservices for you.
+
+1. Get credentials.
+
     ```swift
     let user: API.User = .init(name: "username", password: "password")
     let apiKey: API.Key = "a12345bc67890d12345e6789fg0hi123j4567890"
-    var services = Services.make(key: apiKey, user: user).sink(...)
     ```
-    Optionally you can log in with an OAuth token or Certificate token.
+
+2. Create a services aggregator.
+
     ```swift
-    let oauthAccess = "toa7770m-1915-83u4-q665-80g574lm7659"
-    let oauthRefresh = "rho2072f-4006-17t8-n417-42j560hw5130"
-    let apiKey = "a12345bc67890d12345e6789fg0hi123j4567890"
-    let token: API.Credentials.Token = .init(.oauth(access: oauthAccess, refresh: oauthRefresh, scope: "profile", type: "Bearer"), .expiresIn: 60))
-    var services = Services.make(key: apiKey, token: token).sink(...)
+    let services = Services.make(key: apiKey, user: user)
     ```
 
 A `Services` instance has completely functional HTTP, Lightstreamer services, and SQLite database. All these services are initialized and ready to operate.
-
-```swift
-services.api.transactions.get(from: .yesterday: to: Date()).sink { (transactions) in
-    print("Between yesterday and today, there were \(transactions.count) transactions")
-
-    for transaction in transactions {
-        print(transaction.profitLoss)
-    }
-}
-
-services.streamer.markets.subscribe(to: "CS.D.EURUSD.MINI.IP", fields: [.bid, .offer, .date]).startWithValues {
-    print("Date: \($0.date!)")
-    print("Offer: \($0.price.offer!)")
-    print("Bid: \($0.price.bid!)")
-}
-```
-
-## Dependencies
-
-The following is a list of 1st party and 3rd party library/framework dependencies:
-
--   Foundation.
--   [Decimals](https://github.com/dehesa/Decimal64).
--   SQLite.
--   Combine (iOS 13.1+, macOS 10.15+).
--   [Conbini](https://www.github.com/dehesa/Conbini).
--   Lightstreamer binaries (prepackage within the framework under `/Frameworks`).
-
-I would love to provide the framework through SPM, but it doesn't currently support prebuilt binaries. This feature will arrive with Swift 5.3.
-
-# Roadmap
-
-<p align="center">
-    <img src="docs/assets/Roadmap.svg" alt="Visual roadmap about the Framework's future"/>
-</p>

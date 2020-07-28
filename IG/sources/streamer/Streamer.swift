@@ -28,7 +28,7 @@ public final class Streamer {
     /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
     /// - parameter targetQueue: The target queue on which to process the `Streamer` requests and responses.
     /// - note: Each subscription will have its own serial queue and the QoS will get inherited from `queue`.
-    public convenience init(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue?) {
+    public convenience init(rootURL: URL, credentials: Streamer.Credentials, targetQueue: DispatchQueue? = nil) {
         let processingQueue = DispatchQueue(label: Bundle.IG.identifier + ".streamer.queue",  qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
         let channel = Self.Channel(rootURL: rootURL, credentials: credentials)
         self.init(rootURL: rootURL, channel: channel, queue: processingQueue)

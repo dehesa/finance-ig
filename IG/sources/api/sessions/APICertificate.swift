@@ -209,7 +209,7 @@ fileprivate extension API.Session._Certificate {
             typealias Key = API.HTTP.Header.Key
             
             guard let access = headerFields[Key.clientSessionToken.rawValue] as? String,
-                let security = headerFields[Key.securityToken.rawValue] as? String else { return nil }
+                  let security = headerFields[Key.securityToken.rawValue] as? String else { return nil }
             self.accessToken = access
             self.securityToken = security
             
