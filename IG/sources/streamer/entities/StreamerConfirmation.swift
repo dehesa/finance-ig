@@ -28,7 +28,9 @@ extension Streamer.Confirmation {
 }
 
 extension Streamer.Confirmation.Deal {
-    /// Overarching deal status.
+    /// The confirmation status.
+    ///
+    /// The optional `details`' properties will be set or they will be `nil`, depending on whether this value is accepted or rejected.
     public enum Status: Equatable {
         case accepted
         case rejected(reason: RejectionReason?)
