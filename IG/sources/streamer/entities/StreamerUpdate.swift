@@ -29,7 +29,9 @@ extension Streamer.Update {
 }
 
 extension Streamer.Update.Deal {
-    /// The deal status.
+    /// The open position status.
+    ///
+    /// The optional `details`' properties will be set or they will be `nil`, depending on whether this value is accepted or rejected.
     public enum Status: Equatable {
         case accepted
         case rejected(reason: String? = nil)
@@ -68,7 +70,7 @@ extension Streamer.Update {
 extension Streamer.Update.Details {
     /// The position status.
     public enum Status: Hashable {
-        case open
+        case opened
         case updated
         case deleted
     }
@@ -145,7 +147,7 @@ extension Streamer.Update.Details: Decodable {
         let container = try decoder.container(keyedBy: _Keys.self)
         
         switch try container.decode(String.self, forKey: .status) {
-        case "OPEN": self.status = .open
+        case "OPEN": self.status = .opened
         case "UPDATED": self.status = .updated
         case "DELETED": self.status = .deleted
         case let value: throw DecodingError.dataCorruptedError(forKey: .status, in: container, debugDescription: "Invalid OPU status '\(value)'.")

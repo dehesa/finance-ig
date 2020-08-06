@@ -27,6 +27,12 @@ extension Database {
         public let price: Database.Price
         /// The price resolution (e.g. one second, five minutes, etc.).
         public let interval: Streamer.Chart.Aggregated.Interval
+        
+        public init(epic: IG.Market.Epic, price: Database.Price, interval: Streamer.Chart.Aggregated.Interval) {
+            self.epic = epic
+            self.price = price
+            self.interval = interval
+        }
     }
 }
 
