@@ -4,7 +4,7 @@ extension Database {
     /// Rebuilds and repacks the underlying database for better performance.
     public func rebuild() throws {
         try self.channel.unrestrictedAccess { (database) in
-            try sqlite3_exec(database, "PRAGMA VACUUM", nil, nil, nil).expects(.ok) {
+            try sqlite3_exec(database, "VACUUM", nil, nil, nil).expects(.ok) {
                 IG.Error._vacuumFailed(code: $0)
             }
         }
