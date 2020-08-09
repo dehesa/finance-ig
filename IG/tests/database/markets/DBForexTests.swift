@@ -2,6 +2,7 @@
 import Combine
 import ConbiniForTesting
 import XCTest
+import Decimals
 
 final class DBForexTests: XCTestCase {
     /// The test account being used for the tests in this class.

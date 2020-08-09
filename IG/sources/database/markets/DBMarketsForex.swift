@@ -142,7 +142,9 @@ extension Database.Request.Markets.Forex {
             }
             
             return (sql, binds)
-        }.read { (sql, statement, input, _) in
+        }.read { (sqlite, statement, input, _) in
+            try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
+            
             for (index, currency) in input.binds {
                 sqlite3_bind_text(statement, index, currency.description, -1, SQLite.Destructor.transient)
             }

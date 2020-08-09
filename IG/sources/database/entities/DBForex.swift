@@ -147,6 +147,64 @@ extension Database.Market.Forex {
 }
 
 extension Database.Market.Forex {
+    /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
+    ///
+    /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
+    /// - parameter size: The size of the targeted given deal.
+    /// - parameter price: The price at which the deal will be opened.
+    /// - parameter stop: The stop that will be used for the deal being operated.
+    public func margin(size: Decimal64, price: Decimal64, stop: Self.Stop?) -> Decimal64 {
+        let marginFactor = self.information.margin.depositBands.depositFactor(size: size) >> 2
+        let quantity = size * Decimal64(exactly: self.information.contractSize)!
+
+        switch stop {
+        case .none:
+            return quantity * price * marginFactor
+        case .level(let level, risk: .exposed):
+            let distance = (level - price).magnitude
+            let marginNoStop = quantity * price * marginFactor
+            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (quantity * distance)
+            return min(marginNoStop, marginWithStop)
+        case .level(let level, risk: .limited):
+            let distance = (level - price).magnitude
+            return (quantity * distance) + self.information.guaranteedStop.premium
+        case .distance(let distance, risk: .exposed):
+            let marginNoStop = quantity * price * marginFactor
+            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (quantity * distance)
+            return min(marginNoStop, marginWithStop)
+        case .distance(let distance, risk: .limited):
+            return (quantity * distance) + self.information.guaranteedStop.premium
+        }
+    }
+    
+    /// The level/price at which the user doesn't want to incur more lose.
+    public enum Stop: Equatable {
+        /// Absolute value of the stop (e.g. 1.653 USD/EUR).
+        case level(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
+        /// Relative stop over an undisclosed reference level.
+        case distance(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
+    }
+}
+
+extension Database.Market.Forex.DealingInformation.Margin.Bands {
+    /// Returns the deposit factor (expressed as a percentage `%`).
+    /// - parameter size: The size of a given position.
+    public func depositFactor(size: Decimal64) -> Decimal64 {
+        var result = self.storage[0].value
+        for element in self.storage {
+            guard size >= element.lowerBound else { return result }
+            result = element.value
+        }
+        return result
+    }
+    
+    /// Returns the last band.
+    public var last: (range: PartialRangeFrom<Decimal64>, depositFactor: Decimal64)? {
+        self.storage.last.map { ($0.lowerBound..., $0.value) }
+    }
+}
+
+extension Database.Market.Forex {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(self.epic)
     }
@@ -294,36 +352,6 @@ internal extension Database.Market.Forex.Restrictions {
 
 // MARK: Margins
 
-extension Database.Market.Forex {
-    /// Calculate the margin requirements for a given deal (identify by its size, price, and stop).
-    ///
-    /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
-    /// - parameter dealSize: The size of a given position.
-    public func margin(forDealSize dealSize: Decimal64, price: Decimal64, stop: (boundary: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk)?) -> Decimal64 {
-        let marginFactor = self.information.margin.depositBands.depositFactor(forDealSize: dealSize)
-        let contractSize = Decimal64(exactly: self.information.contractSize)!
-
-        guard let stop = stop else {
-            return dealSize * contractSize * price * marginFactor
-        }
-
-        let stopDistance: Decimal64
-        switch stop.boundary {
-        case .distance(let distance): stopDistance = distance
-        case .level(let level): stopDistance = (level - price).magnitude
-        }
-
-        switch stop.risk {
-        case .exposed:
-            let marginNoStop = dealSize * contractSize * price * marginFactor
-            let marginWithStop = (marginNoStop * self.information.slippageFactor) + (dealSize * contractSize * stopDistance)
-            return min(marginNoStop, marginWithStop)
-        case .limited:
-            return (dealSize * contractSize * stopDistance) + self.information.guaranteedStop.premium
-        }
-    }
-}
-
 extension Database.Market.Forex.DealingInformation.Margin.Bands {
     fileprivate typealias _StoredElement = (lowerBound: Decimal64, value: Decimal64)
     /// The character separators used in encoding/decoding.
@@ -377,22 +405,6 @@ extension Database.Market.Forex.DealingInformation.Margin.Bands {
 
     public func index(after i: Int) -> Int {
         self.storage.index(after: i)
-    }
-
-    /// Returns the deposit factor (expressed as a percentage `%`).
-    /// - parameter dealSize: The size of a given position.
-    public func depositFactor(forDealSize dealSize: Decimal64) -> Decimal64 {
-        var result = self.storage[0].value
-        for element in self.storage {
-            guard dealSize >= element.lowerBound else { return result }
-            result = element.value
-        }
-        return result
-    }
-
-    /// Returns the last band.
-    public var last: (range: PartialRangeFrom<Decimal64>, depositFactor: Decimal64)? {
-        self.storage.last.map { ($0.lowerBound..., $0.value) }
     }
 }
 
