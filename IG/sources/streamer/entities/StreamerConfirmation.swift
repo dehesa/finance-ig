@@ -65,7 +65,7 @@ extension Streamer.Confirmation {
         public let expiry: IG.Market.Expiry?
         /// Deal direction.
         public let direction: IG.Deal.Direction
-        /// The deal size
+        /// The deal size.
         public let size: Decimal64?
         /// Instrument price.
         public let level: Decimal64?
@@ -75,7 +75,7 @@ extension Streamer.Confirmation {
         public let stop: (type: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk, trailing: IG.Deal.Stop.Trailing)?
         /// Profit (value and currency).
         public let profit: IG.Deal.ProfitLoss?
-        /// User channel
+        /// User channel.
         public let channel: String
     }
 }

@@ -1,6 +1,11 @@
 import Foundation
 import SQLite3
 
+extension Database {
+    /// Namespace for all defined migrations.
+    enum Migration {}
+}
+
 extension Database.Migration {
     /// Where the actual migration happens.
     /// - parameter channel: The SQLite database connection.
@@ -8,7 +13,7 @@ extension Database.Migration {
     internal static func initialMigration(channel: Database.Channel) throws {
         try channel.write { (database) throws -> Void in
             // Set the application identifier for the database
-            try Self.setApplicationID(Self.applicationID, database: database)
+            try database.set(applicationId: Database.applicationId)
             
             let types: [DBTable.Type] = [Database.Application.self, Database.Market.self, Database.Market.Forex.self]
             // Create all tables
@@ -19,7 +24,7 @@ extension Database.Migration {
             }
             
             // Set the version number to first version.
-            try Self.setVersion(.v1, database: database)
+            try database.set(version: .v1)
         }
     }
 }

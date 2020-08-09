@@ -23,7 +23,7 @@ extension API.Request.Deals {
     /// Most orders are usually executed within a few milliseconds but the confirmation may not be available immediately if there is a delay.
     /// - note: the confirmation is only available up to 1 minute via this endpoint.
     /// - parameter reference: Temporary targeted deal reference.
-    public func confirm(reference: IG.Deal.Reference) -> AnyPublisher<API.Confirmation,IG.Error> {
+    public func getConfirmation(reference: IG.Deal.Reference) -> AnyPublisher<API.Confirmation,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "confirms/\(reference)", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)

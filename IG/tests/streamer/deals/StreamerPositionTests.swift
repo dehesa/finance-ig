@@ -59,7 +59,7 @@ final class StreamerPositionTests: XCTestCase {
         
         // 3. Retrieve the position.
         let positionId = api.deals
-            .confirm(reference: referenceOpened)
+            .getConfirmation(reference: referenceOpened)
             .expectsOne(timeout: 2, on: self)
             .deal.id
         

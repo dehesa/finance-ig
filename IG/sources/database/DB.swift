@@ -20,7 +20,7 @@ public final class Database {
     @inlinable public final var prices: Database.Request.Prices { .init(database: self) }
     
     /// The database version.
-    public final var version: Int { Database.Migration.Version.latest.rawValue }
+    public final var version: Int { Database.Version.latest.rawValue }
     /// The version of SQLite being used.
     public final var sqliteVersion: String { SQLITE_VERSION }
     
