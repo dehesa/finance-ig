@@ -135,7 +135,7 @@ extension API.Request.Deals.Position {
         ///
         /// The level has to be accompanied by a valid quote id (i.e. Lightstreamer price quote identifier).
         ///
-        /// A quoteID is the two-way market price that we are making for a given instrument. Because it is two-way, you can 'buy' or 'sell', according to whether you think the price will rise or fall
+        /// A quote identifier is the two-way market price that we are making for a given instrument. Because it is two-way, you can 'buy' or 'sell', according to whether you think the price will rise or fall
         /// - note: This type is only available subject to agreement with IG.
         case quote(id: String, level: Decimal64)
         

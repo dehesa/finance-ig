@@ -1,9 +1,9 @@
 import Foundation
 import SQLite3
 
-extension Database {
+internal extension Database {
     /// Contains the low-level functionality related to the SQLite database.
-    internal final class Channel {
+    final class Channel {
         /// Serial queue handling all database accesses.
         private let _queue: DispatchQueue
         /// The underlying SQLite instance (referencing the SQLite file).
@@ -37,7 +37,7 @@ extension Database.Channel {
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
-    internal func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._queue.sync(flags: .barrier) {
             try interaction(self._database)
@@ -53,7 +53,7 @@ extension Database.Channel {
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
     /// - todo: Make parallel reads (currently they are serial).
-    internal func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._transactionAccess(flags: [], interaction)
     }
@@ -66,7 +66,7 @@ extension Database.Channel {
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
-    internal func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._transactionAccess(flags: .barrier, interaction)
     }
@@ -110,7 +110,7 @@ extension Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    internal func readAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    func readAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
     }
@@ -123,7 +123,7 @@ extension Database.Channel {
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    internal func writeAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    func writeAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
     }

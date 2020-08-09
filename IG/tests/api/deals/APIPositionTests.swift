@@ -25,7 +25,7 @@ final class APIPositionTests: XCTestCase {
         XCTAssertEqual(referenceOpened, reference)
         // 1.1. Confirm the position has been opened.
         let confirmationOpened = api.deals
-            .confirm(reference: reference)
+            .getConfirmation(reference: reference)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationOpened.date, Date())
         XCTAssertEqual(confirmationOpened.deal.status, .accepted)
@@ -53,7 +53,7 @@ final class APIPositionTests: XCTestCase {
         XCTAssertEqual(referenceAmended, reference)
         // 3.1. Confirm the position has been updated.
         let confirmationAmended = api.deals
-            .confirm(reference: reference)
+            .getConfirmation(reference: reference)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationAmended.date, Date())
         XCTAssertEqual(confirmationAmended.deal.status, .accepted)
@@ -71,7 +71,7 @@ final class APIPositionTests: XCTestCase {
         XCTAssertEqual(referenceClosed, reference)
         // 4.1. Confirm the position has been closed.
         let confirmationClosed = api.deals
-            .confirm(reference: reference)
+            .getConfirmation(reference: reference)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationClosed.date, Date())
         XCTAssertEqual(confirmationClosed.deal.status, .accepted)

@@ -27,7 +27,7 @@ final class APIWorkingOrderTests: XCTestCase {
         XCTAssertEqual(referenceOpened, reference)
         // 1.1. Confirm the order has been created.
         let confirmationOpened = api.deals
-            .confirm(reference: reference)
+            .getConfirmation(reference: reference)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationOpened.date, Date())
         XCTAssertEqual(confirmationOpened.deal.status, .accepted)
@@ -54,7 +54,7 @@ final class APIWorkingOrderTests: XCTestCase {
             .expectsOne(timeout: 2, on: self) // The amended reference is different than the original reference
         // 3.1. Confirm the working order has been updated.
         let confirmationAmended = api.deals
-            .confirm(reference: referenceAmended)
+            .getConfirmation(reference: referenceAmended)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationAmended.date, Date())
         XCTAssertEqual(confirmationAmended.deal.status, .accepted)
@@ -71,7 +71,7 @@ final class APIWorkingOrderTests: XCTestCase {
             .expectsOne(timeout: 2, on: self)
         // 4.1 Confirm the working order has been deleted.
         let confirmationDeleted = api.deals
-            .confirm(reference: referenceDeleted)
+            .getConfirmation(reference: referenceDeleted)
             .expectsOne(timeout: 2, on: self)
         XCTAssertLessThanOrEqual(confirmationDeleted.date, Date())
         XCTAssertEqual(confirmationDeleted.deal.status, .accepted)
