@@ -178,7 +178,7 @@ private extension Database.Channel {
         
         // 1. Define file path (or in-memory keyword)
         switch location {
-        case .inMemory:
+        case .memory:
             (rootURL, path) = (nil, ":memory:")
         case .file(let url, let expectsExistance):
             (rootURL, path) = (url, url.path)
