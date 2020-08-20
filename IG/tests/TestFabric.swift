@@ -68,7 +68,7 @@ extension Test {
     /// - returns: A fully ready database.
     static func makeDatabase(rootURL: URL?, targetQueue: DispatchQueue?) -> Database {
         do {
-            return try .init(location: rootURL.map { .file(url: $0, expectsExistance: nil) } ?? .inMemory, targetQueue: targetQueue)
+            return try .init(location: rootURL.map { .file(url: $0, expectsExistance: nil) } ?? .memory, targetQueue: targetQueue)
         } catch let error {
             fatalError(String(describing: error))
         }

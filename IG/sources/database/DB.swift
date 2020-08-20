@@ -53,7 +53,7 @@ extension Database {
     /// The database location.
     public enum Location {
         /// The database will be created for this session in memory. At the end of the session it will be flushed.
-        case inMemory
+        case memory
         /// The database will be located in the file system (at the given path).
         ///
         /// The following cases are supported:
