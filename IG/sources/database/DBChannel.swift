@@ -37,7 +37,7 @@ extension Database.Channel {
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
-    func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    @_transparent func unrestrictedAccess<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._queue.sync(flags: .barrier) {
             try interaction(self._database)
@@ -53,7 +53,7 @@ extension Database.Channel {
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
     /// - todo: Make parallel reads (currently they are serial).
-    func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    @_transparent func read<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._transactionAccess(flags: [], interaction)
     }
@@ -66,7 +66,7 @@ extension Database.Channel {
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
     /// - throws: Any error thrown by the `interaction` closure.
     /// - returns: The result returned in the `interaction` closure.
-    func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
+    @_transparent func write<T>(_ interaction: (_ database: SQLite.Database) throws -> T) rethrows -> T {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         return try self._transactionAccess(flags: .barrier, interaction)
     }
@@ -106,11 +106,11 @@ extension Database.Channel {
     ///
     /// This is a parallel access, meaning that other read access may be performed in parallel.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
-    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter promise: Closure receiving the result of the transaction (the one returned by the `interaction` closure).
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    func readAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    @_transparent func readAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: [], promise: promise, on: receptionQueue, interaction)
     }
@@ -119,11 +119,11 @@ extension Database.Channel {
     ///
     /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
-    /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
+    /// - parameter promise: Closure receiving the result of the transaction (the one returned by the `interaction` closure).
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
     /// - parameter database: Low-level pointer to the SQLite database. Usage of this pointer outside the `interaction` closure produces a fatal error.
-    func writeAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
+    @_transparent func writeAsync<T>(promise: @escaping (Result<T,IG.Error>) -> Void, on receptionQueue: DispatchQueue, _ interaction: @escaping (_ database: SQLite.Database) throws -> T) {
         dispatchPrecondition(condition: .notOnQueue(self._queue))
         self._asyncTransactionAccess(flags: .barrier, promise: promise, on: receptionQueue, interaction)
     }
@@ -132,6 +132,7 @@ extension Database.Channel {
     ///
     /// This is a barrier access, meaning that all other access are kept on hold while this interaction is in operation.
     /// - warning: Don't call another read or write within the `interaction` closure or a deadlock will occur.
+    /// - parameter flags: The behavior for the executing work item.
     /// - parameter promise: Closure receiving the result of the transaction (that one returned by the `interaction` closure).
     /// - parameter receptionQueue: The queue where the `promise` will be executed.
     /// - parameter interaction: Closure giving the priviledge database connection.
