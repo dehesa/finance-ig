@@ -24,7 +24,7 @@ extension Database.Request.Markets {
         return self._database.publisher { _ -> String in
                 let clause = epics.enumerated().map { (index, _) in "epic=?\(index+1)" }.joined(separator: " OR ")
                 return "SELECT epic FROM \(Database.Market.tableName) WHERE \(clause)"
-            }.read { (sqlite, statement, query, _) in
+            }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 for (index, epic) in epics.enumerated() {
@@ -50,7 +50,7 @@ extension Database.Request.Markets {
     /// Only the epic and the type of markets are returned.
     public func getAll() -> AnyPublisher<[Database.Market],IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Market.tableName)" }
-            .read { (sqlite, statement, query, _) -> [Database.Market] in
+            .read { (sqlite, statement, query) -> [Database.Market] in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 var result: [Database.Market] = .init()
@@ -70,7 +70,7 @@ extension Database.Request.Markets {
     /// - returns: `SignalProducer` returning the market type or `nil` if the market has been found in the database. If the epic didn't matched any stored market, the producer generates an error `IG.Error.invalidResponse`.
     public func type(epic: IG.Market.Epic) -> AnyPublisher<Database.Market.Kind?,IG.Error> {
         self._database.publisher { _ in "SELECT type FROM \(Database.Market.tableName) WHERE epic=?1" }
-            .read { (sqlite, statement, query, _) -> Database.Market.Kind? in
+            .read { (sqlite, statement, query) -> Database.Market.Kind? in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
                 
@@ -95,7 +95,7 @@ extension Database.Request.Markets {
     /// - parameter markets: Information returned from the server.
     public func update(_ markets: [API.Market]) -> AnyPublisher<Never,IG.Error> {
         self._database.publisher { _ in "INSERT INTO \(Database.Market.tableName) VALUES(?1, ?2) ON CONFLICT(epic) DO UPDATE SET type=excluded.type" }
-            .write { (sqlite, statement, query, _) -> Void in
+            .write { (sqlite, statement, query) -> Void in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 for apiMarket in markets {

@@ -18,7 +18,7 @@ extension Database.Request.Markets.Forex {
     /// If there are no forex markets in the database yet, an empty array will be returned.
     public func getAll() -> AnyPublisher<[Database.Market.Forex],IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Market.Forex.tableName)" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 var result: [Database.Market.Forex] = .init()
@@ -42,7 +42,7 @@ extension Database.Request.Markets.Forex {
         self._database.publisher { _ -> String in
                 let values = (1...epics.count).map { "?\($0)" }.joined(separator: ", ")
                 return "SELECT * FROM \(Database.Market.Forex.tableName) WHERE epic IN (\(values))"
-            }.read { (sqlite, statement, query, _) in
+            }.read { (sqlite, statement, query) in
                 var result: Set<Database.Market.Forex> = .init()
                 guard !epics.isEmpty else { return result }
                 
@@ -74,7 +74,7 @@ extension Database.Request.Markets.Forex {
     /// - parameter epic: The forex market epic identifier.
     public func get(epic: IG.Market.Epic) -> AnyPublisher<Database.Market.Forex,IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Market.Forex.tableName) WHERE epic=?1" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
 
                 try sqlite3_bind_text(statement, 1, epic.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
@@ -103,7 +103,7 @@ extension Database.Request.Markets.Forex {
                 }
             
                 return (sql, binds)
-            }.read { (sqlite, statement, input, _) in
+            }.read { (sqlite, statement, input) in
                 try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 for (index, currency) in input.binds {
@@ -142,7 +142,7 @@ extension Database.Request.Markets.Forex {
             }
             
             return (sql, binds)
-        }.read { (sqlite, statement, input, _) in
+        }.read { (sqlite, statement, input) in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             
             for (index, currency) in input.binds {

@@ -17,7 +17,7 @@ extension Database.Request.Accounts {
     /// - returns: Discrete publisher producing a single value containing an array of all stored applications and then successfully completes.
     public func getApplications() -> AnyPublisher<[Database.Application],IG.Error> {
         self._database.publisher { _ in "SELECT * FROM \(Database.Application.tableName)" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 
                 var result: [Database.Application] = []
@@ -38,7 +38,7 @@ extension Database.Request.Accounts {
     /// - parameter key: The API key identifying the application.
     public func getApplication(key: API.Key) -> AnyPublisher<Database.Application,IG.Error> {
         self._database.publisher { _ in "SELECT * FROM Apps where key = ?1" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 try sqlite3_bind_text(statement, 1, key.description, -1, SQLite.Destructor.transient).expects(.ok) { IG.Error._bindingFailed(code: $0) }
                 
@@ -64,7 +64,7 @@ extension Database.Request.Accounts {
                     liApp = excluded.liApp, liAcco = excluded.liAcco, liTrade = excluded.liTrade, liHisto = excluded.liHisto, subs = excluded.subs,
                     created = excluded.created, updated = excluded.updated
             """
-        }.write { (sqlite, statement, query, _) in
+        }.write { (sqlite, statement, query) in
             try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             
             for app in applications {

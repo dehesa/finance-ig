@@ -33,7 +33,7 @@ extension Database.Request.Prices {
             }
             query.append(" ORDER BY date ASC")
             return (tableName, query)
-        }.read { (sqlite, statement, input, _) in
+        }.read { (sqlite, statement, input) in
             var result: [Date] = .init()
             // 1. Check the price table is there
             guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
@@ -69,7 +69,7 @@ extension Database.Request.Prices {
     /// - returns: The date furthest in the past stored in the database.
     public func getFirstDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
         self._database.publisher { _  in "SELECT MIN(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
@@ -87,7 +87,7 @@ extension Database.Request.Prices {
     /// - returns: The date from "newest" date stored in the database. If `nil`, no price points are for the given table.
     public func getLastDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
         self._database.publisher { _ in "SELECT MAX(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
-            .read { (sqlite, statement, query, _) in
+            .read { (sqlite, statement, query) in
                 let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
@@ -117,7 +117,7 @@ extension Database.Request.Prices {
                 }
                 query.append(" ORDER BY date ASC")
                 return query
-            }.read { (sqlite, statement, query, _) in
+            }.read { (sqlite, statement, query) in
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 // 3. Add the variables to the statement
                 switch (from, to) {
@@ -157,7 +157,7 @@ extension Database.Request.Prices {
             }
             query.append(" ORDER BY date ASC")
             return (tableName, query)
-        }.read { (sqlite, statement, input, _) in
+        }.read { (sqlite, statement, input) in
             var result: [Database.Price] = .init()
             // 1. Check the price table is there.
             guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
@@ -212,7 +212,7 @@ extension Database.Request.Prices {
             
             query.append(" ORDER BY date ASC LIMIT 1")
             return (tableName, query)
-        }.write { (sqlite, statement, input, _) in
+        }.write { (sqlite, statement, input) in
             // 1. Compile the SQL statement (there is no check for price table).
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
@@ -242,7 +242,7 @@ extension Database.Request.Prices {
     public func update(_ prices: [API.Price], epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Error> {
         self._database.publisher { _ in
                 Self._priceInsertionQuery(epic: epic)
-            }.write { (sqlite, statement, input, _) -> Void in
+            }.write { (sqlite, statement, input) -> Void in
                 // 1. Check the epic is on the Markets table.
                 guard try Self._existsMarket(epic: epic, sqlite: sqlite) else { throw IG.Error._unfoundMarket(epic: epic) }
                 // 2. Check the existance of the price table or create it if it is not there.
@@ -274,16 +274,17 @@ extension Database.Request.Prices {
     }
 }
 
-extension Publisher where Output==Streamer.Chart.Aggregated {
+import Conbini
+
+extension Publisher where Output==Streamer.Chart.Aggregated, Failure==IG.Error {
     /// Updates the database with the price values provided on the stream.
     ///
     /// The returned publisher forwards any previous error or generates `IG.Error` on some specific scenarios. If upstream there were no errors you can safely forcecast the error to the database error.
-    /// - warning: This operator doesn't check the market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
+    /// - warning: For performance reasons, this operator assumes the database instance exists and it doesn't check whether the targeted market is currently stored in the database. Please check the market basic information is stored and there is a price table for the epic before calling this operator.
     /// - parameter database: Database where the price data will be stored.
-    /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data received should be ignored or throw an error (an break the pipeline. Even with this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
-    public func updatePrice(database: Database, ignoringInvalidPrices: Bool) -> AnyPublisher<Database.PriceWrapper,Swift.Error> {
-        self.tryCompactMap { [weak database] (price) -> Database.Transit.Instance<(query: String, data: Database.PriceWrapper)>? in
-            guard let db = database else { throw IG.Error._deallocatedDB() }
+    /// - parameter ignoringInvalidPrices: Boolean indicating whether invalid price data should be ignored or throw an error (and therefore break the pipeline. Even when this argument is set to `true`, the publisher may generate errors, such as when the database pointer disappears or there is a writting error.
+    public func updatePrice(database: Database, ignoringInvalidPrices: Bool) -> AnyPublisher<Database.PriceWrapper,IG.Error> {
+        self.tryCompactMap { [unowned(unsafe) database] (price) -> Database.Transit<(query: String, data: Database.PriceWrapper)>? in
             guard let date = price.candle.date,
                   let openBid = price.candle.open.bid,
                   let openAsk = price.candle.open.ask,
@@ -306,8 +307,9 @@ extension Publisher where Output==Streamer.Chart.Aggregated {
                                 lowest: .init(bid: lowestBid, ask: lowestAsk),
                                 highest: .init(bid: highestBid, ask: highestAsk), volume: volume),
                     interval: price.interval)
-            return ( db, (query, streamPrice) )
-        }.write { (sqlite, statement, input, _) -> Database.PriceWrapper in
+            return ( database, (query, streamPrice) )
+        }.mapError { $0 as! IG.Error }
+        .write { (sqlite, statement, input) -> Database.PriceWrapper in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             input.data.price._bind(to: statement!)
             try sqlite3_step(statement).expects(.done) { IG.Error._storingFailed(code: $0) }
