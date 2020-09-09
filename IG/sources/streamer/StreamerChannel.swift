@@ -12,12 +12,17 @@ import Foundation
 extension Streamer {
     /// Instances of this class control the underlying LIghtStreamer objects.
     internal final class Channel: NSObject {
-        /// Streamer credentials used to access the trading platform.
-        @nonobjc let credentials: Streamer.Credentials
-        
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let _client: LSLightstreamerClient
+        
+        /// The lock used to restrict access to the credentials.
+        @nonobjc private let _lock: UnfairLock
+        /// Streamer credentials used to access the trading platform.
+        @nonobjc let credentials: Streamer.Credentials
+        
+        /// The current session status.
+        @nonobjc private var _status: Streamer.Session.Status
         /// A subject subscribing to the session status.
         /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
         @nonobjc private let _statusSubject: PassthroughSubject<Streamer.Session.Status,Never>
@@ -29,26 +34,32 @@ extension Streamer {
         /// - parameter rootURL: The URL where the streaming server is located.
         /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
         @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
-            self.credentials = credentials
+            // 1. Remove the usage of ObjC exceptions by the Lightstreamer framework.
+            if !LSLightstreamerClient.limitExceptionsUse { LSLightstreamerClient.limitExceptionsUse = true }
+            // 2. Set up the lightstreamer client with the root URL, user, and password.
             self._client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
             self._client.connectionDetails.user = credentials.identifier.description
             self._client.connectionDetails.setPassword(credentials.password)
-            self._statusSubject = .init()
-            self._unsubscriptionSubject = .init()
+            // 3. Set up all the remaining variables managing the Lighstreamer state.
+            self._lock = UnfairLock()
+            self.credentials = credentials
+            self._status = .disconnected(isRetrying: false)
+            self._statusSubject = PassthroughSubject()
+            self._unsubscriptionSubject = PassthroughSubject()
             super.init()
-            // The client stores the delegate weakly, therefore there is no reference cycle.
+            // 4. The Lighstreamer client stores the delegate weakly, thus there is no reference cycle.
             self._client.add(delegate: self)
         }
         
         deinit {
-            self._client.remove(delegate: self)
             self.unsubscribeAll()
             self.disconnect()
             self._statusSubject.send(completion: .finished)
+            self._client.remove(delegate: self)
         }
         
         /// The Lightstreamer library version.
-        static var lightstreamerVersion: String {
+        @nonobjc static var lightstreamerVersion: String {
             LSLightstreamerClient.lib_VERSION
         }
     }
@@ -57,7 +68,7 @@ extension Streamer {
 internal extension Streamer.Channel {
     /// Returns the current session status.
     @nonobjc var status: Streamer.Session.Status {
-        Streamer.Session.Status(rawValue: self._client.status)!
+        self._lock.execute { self._status }
     }
     
     /// Subscribe to the status events and return the output in the given queue.
@@ -99,52 +110,23 @@ internal extension Streamer.Channel {
         return status
     }
     
-    /// Subscribe to the following item and field (in the given mode) requesting (or not) a snapshot.
-    ///
-    /// The returned publisher only fails with `IG.Error`. That information is left out for optimization purposes.
+    /// Subscribe to the following items and fields (in the given mode) requesting (or not) a snapshot.
     /// - parameter queue: The queue on which value processing will take place.
     /// - parameter mode: The streamer subscription mode.
-    /// - parameter item: The item identfier (e.g. "MARKET", "ACCOUNT", etc).
+    /// - parameter items: The item identfiers (e.g. "MARKET", "ACCOUNT", etc).
     /// - parameter fields: The fields (or properties) from the given item to be received in the subscription.
     /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
     /// - returns: A publisher forwarding updates as values. This publisher will only stop by not holding a reference to the signal, by interrupting it with a cancellable, or by calling `unsubscribeAll()`
-    @nonobjc func subscribe(on queue: DispatchQueue, mode: Streamer.Mode, item: String, fields: [String], snapshot: Bool) -> AnyPublisher<Streamer.Packet,Swift.Error> {
-        // 1. Prepare the subscription.
-        Deferred { [weak self, weak weakQueue = queue] () -> Result<(DispatchQueue,Streamer.Subscription),IG.Error>.Publisher in
-                guard case .some = self, let queue = weakQueue else { return .init(.failure( IG.Error._deallocatedInstance() )) }
-                let subscription = Streamer.Subscription(mode: mode, item: item, fields: fields, snapshot: snapshot)
-                return .init((queue, subscription))
-            // 2. Subscribe to the subscription status.
-            }.flatMap { [client = self._client, subject = self._unsubscriptionSubject] (queue, subscription) in
-                subscription.subscribeToStatus(on: queue)
-                    // 3. In case of `unsubscribeAll()` finish the pipeline.
-                    .prefix(untilOutputFrom: subject)
-                    // 4. Subscribe/Unsubscribe in the Lightstreamer layers.
-                    .handleEvents(receiveSubscription: { (_) in client.subscribe(subscription.lowlevel) },
-                                  receiveCompletion: { (_) in client.unsubscribe(subscription.lowlevel) },
-                                  receiveCancel: { client.unsubscribe(subscription.lowlevel) })
-                    .setFailureType(to: IG.Error.self)
-            // 5. Map the subscription event, letting pass the updates, ignoring the lost packages, and throwing errors for any other case.
-            }.tryCompactMap { (event) -> Streamer.Packet? in
-                switch event {
-                case .updateReceived(let update):
-                    return update
-                case .subscribed: // print("\(Streamer.printableDomain): Subscription to \(item) established")
-                    return nil
-                case .updateLost://(let count, let receivedItem): print("\(Streamer.printableDomain): Subscription to \(receivedItem ?? item) lost \(count) updates. Fields: [\(fields.joined(separator: ","))]")
-                    return nil
-                case .error(let e):
-                    throw IG.Error._invalidSubscription(error: e, item: item, fields: fields)
-                case .unsubscribed:
-                    throw IG.Error._unsubscription(item: item, fields: fields)
-                }
-            }.eraseToAnyPublisher()
+    @nonobjc func subscribe(on queue: DispatchQueue, mode: Streamer.Mode, items: [String], fields: [String], snapshot: Bool) -> Publishers.ReceiveOn<Publishers.PrefixUntilOutput<Streamer.Subscription, PassthroughSubject<(),Never>>,DispatchQueue> {
+        Streamer.Subscription(client: self._client, mode: mode, items: items, fields: fields, snapshot: snapshot)
+            .prefix(untilOutputFrom: self._unsubscriptionSubject)
+            .receive(on: queue)
     }
     
     /// Unsubscribe to all ongoing subscriptions.
     /// - returns: All subscriptions that were active at the time of the call (i.e. right before the unsubscription takes place).
     @nonobjc func unsubscribeAll() {
-        self._unsubscriptionSubject.send(())
+        self._unsubscriptionSubject.send()
     }
 }
 
@@ -152,7 +134,17 @@ internal extension Streamer.Channel {
 
 extension Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
+        // 1. Translate from ObjC status to Swift status.
         let receivedStatus = Streamer.Session.Status(rawValue: status) ?! fatalError("Lightstreamer client status '\(status)' was not recognized")
+        self._lock.lock()
+        // 2. Ignore if the status is the same as the previous one.
+        guard self._status != receivedStatus else { return self._lock.unlock() }
+        // 3. Safe the new status.
+        self._status = receivedStatus
+        self._lock.unlock()
+        // 4. If the new status is disconnected, close all subscriptions.
+        if case .disconnected(isRetrying: false) = receivedStatus { self._unsubscriptionSubject.send() }
+        // 5. Communicate downstream the new status.
         self._statusSubject.send(receivedStatus)
     }
     
@@ -164,20 +156,8 @@ extension Streamer.Channel: LSClientDelegate {
 }
 
 private extension IG.Error {
-    /// Error raised when the Streamer instance is deallocated.
-    static func _deallocatedInstance() -> Self {
-        Self(.streamer(.sessionExpired), "The \(Streamer.self) instance has been deallocated.", help: "The \(Streamer.self) functionality is asynchronous. Keep around the API instance while the request/response is being processed.")
-    }
     /// Error raised when the server connection is stalled.
     static func _stalledConnection() -> Self {
         Self(.streamer(.invalidRequest), "Stalled streamer connection.", help: "Disconnect and connect again.")
-    }
-    /// Error raised when the streamer subscription cannot be established.
-    static func _invalidSubscription(error: Swift.Error, item: String, fields: [String]) -> Self {
-        Self(.streamer(.subscriptionFailed), "The subscription couldn't be established.", help: "Review the underlying error and try again.", underlying: error, info: ["Item": item, "Fields": fields])
-    }
-    /// Error raised when an unsubscribe event has been received.
-    static func _unsubscription(item: String, fields: [String]) -> Self {
-        Self(.streamer(.subscriptionFailed), "Unsubscribed event received from the underlying Lightstreamer layer.", help: "Check internet connectivity and try again.", info: ["Item": item, "Fields": fields])
     }
 }

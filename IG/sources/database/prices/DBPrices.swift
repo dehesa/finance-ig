@@ -240,7 +240,11 @@ extension Database.Request.Prices {
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
     public func update(_ prices: [API.Price], epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Error> {
-        self._database.publisher { _ in
+        guard !prices.isEmpty else {
+            return Empty().eraseToAnyPublisher()
+        }
+        
+        return self._database.publisher { _ in
                 Self._priceInsertionQuery(epic: epic)
             }.write { (sqlite, statement, input) -> Void in
                 // 1. Check the epic is on the Markets table.

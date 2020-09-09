@@ -12,7 +12,7 @@ extension Test {
     static func makeAPI(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue?, file: StaticString = #file, line: UInt = #line) -> API {
         switch Test.Account.SupportedScheme(url: rootURL) {
         case .https:
-            return .init(rootURL: rootURL, credentials: credentials, targetQueue: targetQueue, qos: targetQueue?.qos ?? .default)
+            return API(rootURL: rootURL, credentials: credentials, queue: targetQueue)
         case .file:
 //            let configuration = API.defaultSessionConfigurations
 //            configuration.protocolClasses = [APIFileProtocol.self]
@@ -35,7 +35,7 @@ extension Test {
 
         switch Self.Account.SupportedScheme(url: rootURL) {
         case .https:
-            streamer = .init(rootURL: rootURL, credentials: credentials, targetQueue: targetQueue)
+            streamer = .init(rootURL: rootURL, credentials: credentials, queue: targetQueue)
         case .file:
 //            let channel = StreamerFileChannel(rootURL: rootURL, credentials: credentials)
 //            streamer = .init(rootURL: rootURL, channel: channel, autoconnect: false)

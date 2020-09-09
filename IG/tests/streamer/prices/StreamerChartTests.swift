@@ -8,7 +8,7 @@ final class StreamerChartTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect().expectsCompletion(timeout: 2, on: self)
+        streamer.session.connect().expectsCompletion(timeout: 5, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
@@ -39,12 +39,12 @@ final class StreamerChartTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        streamer.session.connect().expectsCompletion(timeout: 2, on: self)
+        streamer.session.connect().expectsCompletion(timeout: 5, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
         let epic: IG.Market.Epic = "CS.D.EURGBP.MINI.IP"
         streamer.prices.subscribe(epic: epic, fields: .all)
-            .expectsAtLeast(values: 4, timeout: 8, on: self) { (tick) in
+            .expectsAtLeast(values: 4, timeout: 10, on: self) { (tick) in
                 XCTAssertEqual(tick.epic, epic)
                 XCTAssertEqual(tick.volume, 1)
                 XCTAssertLessThanOrEqual(tick.date!, Date())
@@ -52,5 +52,27 @@ final class StreamerChartTests: XCTestCase {
 
         streamer.session.disconnect().expectsOne(timeout: 2, on: self)
         XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
+    }
+    
+    /// Tests the subscription to multiple markets.
+    func testMultipleChartAggregates() {
+        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
+        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+        
+        streamer.session.connect().expectsCompletion(timeout: 5, on: self)
+        XCTAssertTrue(streamer.session.status.isReady)
+        
+        let formatter = DateFormatter().set { $0.dateFormat = "MM.dd HH:mm:ss" }
+        let epics: Set<IG.Market.Epic> = ["CS.D.EURGBP.MINI.IP", "CS.D.EURUSD.MINI.IP", "CS.D.EURCAD.CFD.IP"]
+        let cancellable = streamer.prices.subscribe(epics: epics, interval: .minute, fields: .candle).sink(receiveCompletion: {
+                print("Subscription completed: \($0)")
+            }, receiveValue: { (agg) in
+                guard let date = agg.candle.date else { return print("\tnil - \(agg.epic)") }
+                print("\(formatter.string(from: date)) - \(agg.epic)")
+            })
+        
+        self.wait(seconds: 120)
+        cancellable.cancel()
+        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
     }
 }

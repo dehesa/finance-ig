@@ -1,3 +1,10 @@
+#if os(macOS)
+import Lightstreamer_macOS_Client
+#elseif os(iOS)
+import Lightstreamer_iOS_Client
+#else
+#error("OS currently not supported")
+#endif
 import Foundation
 import Decimals
 
@@ -60,7 +67,7 @@ fileprivate typealias F = Streamer.Market.Field
 
 internal extension Streamer.Market {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, update: Streamer.Packet, timeFormatter: DateFormatter) throws {
+    init(epic: IG.Market.Epic, update: LSItemUpdate, timeFormatter: DateFormatter) throws {
         self.epic = epic
         
         if let status = update.decodeIfPresent(String.self, forKey: F.status) {
@@ -86,7 +93,7 @@ internal extension Streamer.Market {
 
 fileprivate extension Streamer.Market.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
         self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
         self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)

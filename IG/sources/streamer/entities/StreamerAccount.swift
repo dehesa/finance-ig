@@ -1,3 +1,10 @@
+#if os(macOS)
+import Lightstreamer_macOS_Client
+#elseif os(iOS)
+import Lightstreamer_iOS_Client
+#else
+#error("OS currently not supported")
+#endif
 import Foundation
 import Decimals
 
@@ -65,7 +72,7 @@ fileprivate typealias F = Streamer.Account.Field
 
 internal extension Streamer.Account {
     /// - throws: `IG.Error` exclusively.
-    init(id: IG.Account.Identifier, update: Streamer.Packet) throws {
+    init(id: IG.Account.Identifier, update: LSItemUpdate) throws {
         self.id = id
         self.funds =  try update.decodeIfPresent(Decimal64.self, forKey: F.funds)
         self.equity = try .init(update: update)
@@ -76,7 +83,7 @@ internal extension Streamer.Account {
 
 fileprivate extension Streamer.Account.Equity {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.equity)
         self.used = try update.decodeIfPresent(Decimal64.self, forKey: F.equityUsed)
         self.cashAvailable = try update.decodeIfPresent(Decimal64.self, forKey: F.cashAvailable)
@@ -86,7 +93,7 @@ fileprivate extension Streamer.Account.Equity {
 
 fileprivate extension Streamer.Account.Margins {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.margin)
         self.limitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.marginLimitedRisk)
         self.nonLimitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.marginNonLimitedRisk)
@@ -96,7 +103,7 @@ fileprivate extension Streamer.Account.Margins {
 
 fileprivate extension Streamer.Account.ProfitLoss {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLoss)
         self.limitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossLimitedRisk)
         self.nonLimitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossNonLimitedRisk)

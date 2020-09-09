@@ -29,11 +29,13 @@ extension Streamer.Request.Markets {
         let timeFormatter = DateFormatter.londonTime
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter) }
-            .mapStreamError(item: item, fields: fields)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
+    
+    #warning("Add multiple")
 }
 
 // MARK: - Request Entities

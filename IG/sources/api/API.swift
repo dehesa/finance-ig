@@ -2,9 +2,8 @@ import Foundation
 
 /// The API instance is the bridge to the HTTP endpoints provided by the platform.
 ///
-/// It allows you to authenticate on the platforms and it stores the credentials for priviledge endpoints (which are most of them).
-/// APIs where there are no explicit `note` in the documentation require stored credentials.
-/// - note: You can create as many API instances as you want, but each instance contains its on URL Session; thus you may want to have a single API instance doing all your endpoint calling.
+/// It allows you to authenticate on the platforms and it stores the credentials for priviledge endpoints (which are most of them). APIs where there are no explicit `note` in the documentation require stored credentials.
+/// - note: You can create as many API instances as you want, but each instance contains its on URL session; thus you may want to have a single API instance doing all your calls.
 public final class API {
     /// URL root address.
     public final let rootURL: URL
@@ -31,28 +30,19 @@ public final class API {
     @inlinable public final var scrapped: API.Request.Scrapped { .init(api: self) }
     
     /// Convenience initializer setting the root URL and initial credentials for the API instance.
-    ///
-    /// Alternatively, the initializer accepts the target queue and QoS in which the API responses will be processed.
-    ///
-    /// - precondition: `targetQueue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.  Also, the initializer cannot be called from within the `targetQueue` execution context.
-    ///
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter targetQueue: The target queue on which to process the `API` requests and responses. If `nil`, the system the system will provide an appropriate queue.
-    /// - parameter qos: The Quality of Service for the API processing queue.
-    public convenience init(rootURL: URL, credentials: API.Credentials?, targetQueue: DispatchQueue? = nil, qos: DispatchQoS = .default) {
-        let queue = DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: qos, attributes: .init(), autoreleaseFrequency: .inherit, target: targetQueue)
+    /// - parameter queue: The queue used to process the requests and responses. If `nil`, the system will create a serial queue.
+    public convenience init(rootURL: URL = API.rootURL, credentials: API.Credentials? = nil, queue: DispatchQueue? = nil) {
+        let queue = queue ?? DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: .default)
         let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: OperationQueue(underlying: queue))
         self.init(rootURL: rootURL, credentials: credentials, queue: queue, session: session)
     }
     
     /// Designated initializer used for regular and mocked usage.
-    ///
-    /// - precondition: `queue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.
-    ///
     /// - parameter rootURL: The base/root URL for all endpoint calls.
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
-    /// - parameter queue: The `DispatchQueue` actually handling the `API` requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
+    /// - parameter queue: The `DispatchQueue` actually handling the requests and responses. It is also the delegate `OperationQueue`'s underlying queue.
     /// - parameter session: The URL session used to call the real (or mocked) endpoints. 
     internal init(rootURL: URL, credentials: API.Credentials?, queue: DispatchQueue, session: URLSession) {
         (self.rootURL, self.queue) = (rootURL, queue)
@@ -61,8 +51,10 @@ public final class API {
 }
 
 extension API {
-    /// The root address for the publicly accessible endpoints.
-    public static let rootURL = URL(string: "https://api.ig.com/gateway/deal").unsafelyUnwrapped
+    /// The root URL for the production endpoints.
+    @inlinable public static var rootURL: URL { URL(string: "https://api.ig.com/gateway/deal").unsafelyUnwrapped }
+    /// The root URL for the demo accounts.
+    @inlinable public static var demoRootURL: URL { URL(string: "https://demo-api.ig.com/gateway/deal").unsafelyUnwrapped }
     /// The root URL for the hidden endpoints.
-    public static let scrappedRootURL = URL(string: "https://deal.ig.com").unsafelyUnwrapped
+    @inlinable public static var scrappedRootURL: URL { URL(string: "https://deal.ig.com").unsafelyUnwrapped }
 }

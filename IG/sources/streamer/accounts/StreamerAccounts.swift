@@ -28,9 +28,9 @@ extension Streamer.Request.Accounts {
         let properties = fields.map { $0.rawValue }
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Account(id: account, update: $0) }
-            .mapStreamError(item: item, fields: fields)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }

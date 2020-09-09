@@ -32,7 +32,7 @@ public final class Database {
     /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
     /// - throws: `IG.Error` exclusively.
     public convenience init(location: Database.Location, targetQueue: DispatchQueue? = nil) throws {
-        let queue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        let queue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, target: targetQueue)
         let channel = try Database.Channel(location: location, targetQueue: targetQueue)
         try self.init(channel: channel, queue: queue)
     }

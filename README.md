@@ -36,8 +36,8 @@ All public HTTP endpoints are defined under the `API` reference type. To expose 
 1. Create an API instance.
 
     ```swift
-    let api = API(rootURL: API.rootURL, credentials: nil)
-    // Optionally you can pass the demo rootURL: URL(string: "https://demo-api.ig.com/gateway/deal")!
+    let api = API()
+    // Optionally you can pass the demo rootURL: API(rootURL: API.demoRootURL)
     ```
 
 2. Log into an account.
