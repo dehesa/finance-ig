@@ -16,7 +16,9 @@ extension API {
         /// Default/Preferred login account.
         public let isDefault: Bool
         /// Account currency.
-        public let currency: Currency.Code
+        ///
+        /// For demo accounts, the currency is `nil`.
+        public let currency: Currency.Code?
         /// Permission of money transfers in and out of the account.
         public let transfersAllowed: (`in`: Bool, out: Bool)
         /// Account balance.
@@ -76,7 +78,7 @@ extension API.Account: Decodable {
         self.alias = try container.decodeIfPresent(String.self, forKey: .alias)
         self.status = try container.decode(Status.self, forKey: .status)
         self.isDefault = try container.decode(Bool.self, forKey: .preferred)
-        self.currency = try container.decode(Currency.Code.self, forKey: .currency)
+        self.currency = try container.decodeIfPresent(Currency.Code.self, forKey: .currency)
         self.transfersAllowed = (
             try container.decode(Bool.self, forKey: .transfersIn),
             try container.decode(Bool.self, forKey: .transfersOut)

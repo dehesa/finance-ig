@@ -3,7 +3,7 @@ import Foundation
 /// Errors thrown by the IG framework.
 public final class Error: LocalizedError, CustomNSError, CustomDebugStringConvertible {
     /// The internal error type.
-    private let type: Error.Failure
+    private let type: Failure
     /// A localized message describing the reason for the failure.
     public let failureReason: String?
     /// A localized message describing how one might recover from the failure.
@@ -16,7 +16,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     public let underlyingError: Swift.Error?
     
     /// Designated initializer.
-    internal init(_ type: Error.Failure, _ reason: String? = nil, help: String? = nil, underlying: Swift.Error? = nil, info: [String:Any] = [:]) {
+    internal init(_ type: Failure, _ reason: String? = nil, help: String? = nil, underlying: Swift.Error? = nil, info: [String:Any] = [:]) {
         self.type = type
         self.failureReason = reason
         self.recoverySuggestion = nil
@@ -156,6 +156,6 @@ internal extension IG.Error.Failure {
 }
 
 /// Forces a cast from the generic Swift error to the framework error.
-func errorCast(from error: Swift.Error) -> Error {
-    error as! Error
+@usableFromInline func errorCast(from error: Swift.Error) -> IG.Error {
+    error as! IG.Error
 }

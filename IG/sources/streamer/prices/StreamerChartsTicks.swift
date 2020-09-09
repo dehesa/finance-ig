@@ -16,11 +16,13 @@ extension Streamer.Request.Prices {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .distinct, item: item, fields: properties, snapshot: snapshot)
+            .subscribe(on: self.streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Chart.Tick(epic: epic, item: item, update: $0) }
-            .mapStreamError(item: item, fields: fields)
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
+    
+    #warning("Add multiple")
 }
 
 // MARK: - Request Entities

@@ -21,7 +21,7 @@ internal extension API {
     /// - returns: A Publisher sending an `API` instance and completing immediately once it is activated.
     @_transparent var publisher: DeferredResult<API.Transit.Instance<Void>,IG.Error> {
         DeferredResult { [weak self] in
-            guard let self = self else { return .failure(IG.Error._deallocatedAPI()) }
+            guard let self = self else { return .failure(._deallocatedAPI()) }
             return .success( (self,()) )
         }
     }
@@ -31,7 +31,7 @@ internal extension API {
     /// - returns: A Publisher sending an `API` instance along with some computed values and completing immediately once it is activated.
     func publisher<T>(_ valuesGenerator: @escaping (_ api: API) throws -> T) -> DeferredResult<API.Transit.Instance<T>,IG.Error> {
         DeferredResult { [weak self] in
-            guard let self = self else { return .failure(IG.Error._deallocatedAPI()) }
+            guard let self = self else { return .failure(._deallocatedAPI()) }
             do {
                 let values = try valuesGenerator(self)
                 return .success( (self, values) )
@@ -135,7 +135,9 @@ internal extension Publisher {
     /// - parameter statusCodes: If not `nil`, the sequence indicates all *viable*/supported status codes.
     /// - returns: Publisher forwarding  downstream the endpoint request, response, received blob/data, and any pre-computed values.
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCodes: S? = nil) -> Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
+    func send<S,T>(expecting type: API.HTTP.Header.Value.ContentType? = nil,
+                   statusCodes: S? = nil
+                  ) -> Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, S:Sequence, S.Element==Int {
         self.flatMap { (api, request, values) in
             api.channel.session
                 .dataTaskPublisher(for: request)
@@ -160,7 +162,9 @@ internal extension Publisher {
     /// - parameter type: The HTTP content type expected as a result.
     /// - parameter codes: List of HTTP status codes expected (i.e. the endpoint call is considered successful).
     /// - returns: Each value event triggers a network call. This publisher forwards the response of that network call.
-    func send<T>(expecting type: API.HTTP.Header.Value.ContentType? = nil, statusCode codes: Int...) ->  Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error {
+    func send<T>(expecting type: API.HTTP.Header.Value.ContentType? = nil,
+                 statusCode codes: Int...
+                ) ->  Publishers.FlatMap< Publishers.TryMap< Publishers.MapError<URLSession.DataTaskPublisher,IG.Error>, API.Transit.Call<T>>, Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error {
         self.send(expecting: type, statusCodes: codes)
     }
     
@@ -173,8 +177,8 @@ internal extension Publisher {
     func sendPaginating<T,M,R,P>(request pageRequestGenerator: @escaping (_ api: API, _ initial: (request: URLRequest, values: T), _ previous: API.Transit.PreviousPage<M>?) throws -> URLRequest?,
                                  call pageCall: @escaping (_ pageRequest: Result<API.Transit.Request<T>,Swift.Error>.Publisher, _ values: T) -> P
                                 ) -> Publishers.FlatMap<DeferredPassthrough<R,Swift.Error>,Self> where Self.Output==API.Transit.Request<T>, Self.Failure==Swift.Error, P:Publisher, P.Output==(M,R), P.Failure==IG.Error {
-        self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) -> DeferredPassthrough<R,Swift.Error> in
-            .init { (subject) in
+        self.flatMap(maxPublishers: .max(1)) { (api, initialRequest, values) in
+            DeferredPassthrough<R,Swift.Error> { (subject) in
                 typealias Iterator = (_ previous: API.Transit.PreviousPage<M>?) -> Void
                 /// Recursive closure fed with the last successfully retrieved page (or `nil` at the very beginning).
                 var iterator: Iterator? = nil

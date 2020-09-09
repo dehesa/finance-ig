@@ -37,7 +37,7 @@ public final class Services {
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, user: API.User) -> AnyPublisher<Services,IG.Error> {
         let queue = Self._makeQueue(targetQueue: nil)
-        let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
+        let api = API(rootURL: serverURL, credentials: nil, queue: queue)
         return api.session.login(type: .certificate, key: apiKey, user: user)
             .flatMap { _ in Self._make(with: api, queue: queue, location: databaseLocation) }
             .eraseToAnyPublisher()
@@ -53,7 +53,7 @@ public final class Services {
     /// - returns: A fully initialized `Services` instance with all services enabled (and logged in).
     public static func make(withDatabase databaseLocation: Database.Location, serverURL: URL = API.rootURL, apiKey: API.Key, token: API.Token) -> AnyPublisher<Services,IG.Error> {
         let queue = Self._makeQueue(targetQueue: nil)
-        let api = API(rootURL: serverURL, credentials: nil, targetQueue: queue, qos: queue.qos)
+        let api = API(rootURL: serverURL, credentials: nil, queue: queue)
         
         /// This closure  creates  the remaining subservices from the given api key and token.
         /// - requires: The `token` passed to this closure must be valid and already tested. If not, an error event will be sent.
@@ -87,7 +87,7 @@ private extension Services {
     /// Creates the queue "overlord" managing all services.
     /// - parameter targetQueue: The queue were all services work items end.
     static func _makeQueue(targetQueue: DispatchQueue?) -> DispatchQueue {
-        DispatchQueue(label: Bundle.IG.identifier + ".services", qos: .default, attributes: .concurrent, autoreleaseFrequency: .inherit, target: targetQueue)
+        DispatchQueue(label: Bundle.IG.identifier + ".services", qos: .default, attributes: .concurrent, target: targetQueue)
     }
 
     /// Creates a streamer from an API instance and package both in a `Services` structure.
@@ -111,7 +111,7 @@ private extension Services {
             do {
                 let secret = try Streamer.Credentials(apiCredentials)
                 let database = try Database(location: location, targetQueue: queue)
-                let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, targetQueue: queue)
+                let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, queue: queue)
                 return .success(Services(queue: queue, api: api, streamer: streamer, database: database))
             } catch let error {
                 return .failure(error as! IG.Error)

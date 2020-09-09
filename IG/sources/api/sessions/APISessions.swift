@@ -5,7 +5,7 @@ extension API.Request {
     /// Contains all functionality and variables related to the running API session.
     @frozen public struct Session {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        @usableFromInline internal unowned let api: API
+        @usableFromInline internal unowned(unsafe) let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self.api = api }
@@ -18,25 +18,24 @@ extension API.Request.Session {
         self.api.channel.credentials
     }
     
+    /// The credentials status for the receiving API instance.
+    public var status: API.Session.Status {
+        self.api.channel.status
+    }
+
+    /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
+    /// - remark: The subject never fails and only completes successfully when the `API` instance gets deinitialized.
+    /// - returns: Publisher emitting unique status values.
+    public var statusStream: AnyPublisher<API.Session.Status,Never> {
+        self.api.channel.statusStream
+    }
+    
     /// Boolean indicating whether the API can perform priviledge endpoints.
     ///
     /// To return `true`, there must be credentials in the session and the token must not be expired.
     public var isActive: Bool {
         guard let credentials = self.api.channel.credentials else { return false }
         return !credentials.token.isExpired
-    }
-    
-    /// The credentials status for the receiving API instance.
-    public var status: API.Session.Status {
-        self.api.channel.status
-    }
-    
-    /// Returns a publisher outputting session events such as `.logout`, `.ready`, or `.expired`.
-    /// - remark: The subject never fails and only completes successfully when the `API` instance gets deinitialized.
-    /// - returns: Publisher emitting unique status values.
-    public var statusStream: AnyPublisher<API.Session.Status,Never> {
-        self.api.channel.statusStream(on: self.api.queue)
-            .eraseToAnyPublisher()
     }
 
     // MARK: POST /session
@@ -85,7 +84,7 @@ extension API.Request.Session {
                 }
             }.tryCompactMap { [weak weakAPI = self.api] (token) in
                 let api = try weakAPI ?> IG.Error._deallocatedAPI()
-                try api.channel.setCredentials { (oldCredentials) in
+                try api.channel.credentials { (oldCredentials) in
                     var newCredentials = try oldCredentials ?> IG.Error._unfoundCredentials()
                     newCredentials.token = token
                     return newCredentials
@@ -148,7 +147,7 @@ extension API.Request.Session {
             }).send(expecting: .json, statusCode: 200)
             .decodeJSON(decoder: .default()) { [weak weakAPI = self.api] (sessionSwitch: API.Session.Settings, call) throws in
                 let api = try weakAPI ?> IG.Error._deallocatedAPI()
-                try api.channel.setCredentials { (oldCredentials) in
+                try api.channel.credentials { (oldCredentials) in
                     var newCredentials = try oldCredentials ?> IG.Error._unfoundCredentials(info: ["Request": call.request, "Response": call.response])
                     newCredentials.account = accountId
                     return newCredentials

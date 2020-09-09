@@ -30,9 +30,35 @@ extension Streamer.Request.Prices {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .merge, item: item, fields: properties, snapshot: snapshot)
+            .subscribe(on: self.streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0) }
-            .mapStreamError(item: item, fields: fields)
+            .mapError(errorCast)
+            .eraseToAnyPublisher()
+    }
+    
+    /// Subscribes to multiple markets and returns aggreagated chart data for a specific time interval.
+    ///
+    /// For example, if subscribed to EUR/USD on the 5-minute interval; the data received will be the one of the last 5-minute candle and some statistics of the day.
+    /// - parameter epics: The epics identifying the targeted markets.
+    /// - parameter interval: The aggregation interval for the candle.
+    /// - parameter fields: The chart properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
+    /// - returns: Signal producer that can be started at any time.
+    public func subscribe(epics: Set<IG.Market.Epic>, interval: Streamer.Chart.Aggregated.Interval, fields: Set<Streamer.Chart.Aggregated.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Aggregated,IG.Error> {
+        guard !epics.isEmpty else { return Empty().eraseToAnyPublisher() }
+        guard epics.count > 1 else { return self.subscribe(epic: epics.first.unsafelyUnwrapped, interval: interval, fields: fields, snapshot: snapshot) }
+        
+        let items = epics.map { "CHART:\($0):\(interval.description)" }
+        let properties = fields.map { $0.rawValue }
+        
+        return self.streamer.channel
+            .subscribe(on: self.streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
+            .tryMap {
+                guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().dropLast().joined(separator: ":")) else {
+                    throw IG.Error._invalid(itemName: $0.itemName)
+                }
+                return try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0)
+            }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
 }
@@ -131,5 +157,12 @@ extension Set where Element == Streamer.Chart.Aggregated.Field {
     /// Returns all queryable fields.
     @_transparent public static var all: Self {
         .init(Element.allCases)
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the epic reveived as an update item is invalid.
+    static func _invalid(itemName: String?) -> Self {
+        Self(.streamer(.invalidResponse), "The Lightstreamer item name received couldn't be matched to a supported epic.", help: "Review the received item name.", info: ["Received item": itemName ?? ""])
     }
 }

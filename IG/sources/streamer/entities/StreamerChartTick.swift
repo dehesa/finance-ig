@@ -1,3 +1,10 @@
+#if os(macOS)
+import Lightstreamer_macOS_Client
+#elseif os(iOS)
+import Lightstreamer_iOS_Client
+#else
+#error("OS currently not supported")
+#endif
 import Foundation
 import Decimals
 
@@ -46,7 +53,7 @@ fileprivate typealias F = Streamer.Chart.Tick.Field
 
 internal extension Streamer.Chart.Tick {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, item: String, update: Streamer.Packet) throws {
+    init(epic: IG.Market.Epic, item: String, update: LSItemUpdate) throws {
         self.epic = epic
         self.date = try update.decodeIfPresent(Date.self, forKey: F.date)
         self.bid = try update.decodeIfPresent(Decimal64.self, forKey: F.bid)
@@ -58,7 +65,7 @@ internal extension Streamer.Chart.Tick {
 
 fileprivate extension Streamer.Chart.Tick.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
         self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
         self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)

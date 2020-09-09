@@ -9,7 +9,7 @@ final class StreamerSessionTests: XCTestCase {
         let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
         let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
         
-        let connectionStatus = streamer.session.connect().expectsOne(timeout: 2, on: self)
+        let connectionStatus = streamer.session.connect().expectsOne(timeout: 4, on: self)
         XCTAssertTrue(connectionStatus.isReady)
         XCTAssertEqual(connectionStatus, streamer.session.status)
         
@@ -43,7 +43,7 @@ final class StreamerSessionTests: XCTestCase {
         var statuses: [Streamer.Session.Status] = [streamer.session.status]
         let cancellable = streamer.session.statusStream.sink { statuses.append($0) }
         
-        streamer.session.connect().expectsOne(timeout: 2, on: self)
+        streamer.session.connect().expectsOne(timeout: 4, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
         self.wait(seconds: 0.3)

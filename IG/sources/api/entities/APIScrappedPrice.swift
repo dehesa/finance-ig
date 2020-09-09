@@ -24,7 +24,7 @@ extension API {
         public let offsetToUTC: TimeInterval
         /// The price data points available throught the batch endpoint.
         ///
-        /// The available prices always end at the previous hour ends. For example, if at API endpoint call time  is 10:20 UTC, the last available price will be 09:59 UTC.
+        /// The available prices always end at the previous hour ends. For example, if the API endpoint call time  is 10:20 UTC, the last available price will be 09:59 UTC.
         public let availableBatchPrices: DateInterval
         /// The prices brought with the snapshot (already ordered by the server).
         public let prices: [API.Price]
@@ -139,9 +139,9 @@ fileprivate extension API.PriceSnapshot {
                     let volume = try container.decodeIfPresent(UInt.self, forKey: .volume)
                     prices.append(.init(date: date, open: open, close: close, lowest: lowest, highest: highest, volume: volume))
                 } catch /*let error*/ {
-                    //                    #if DEBUG
-                    //                    print("Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
-                    //                    #endif
+//                    #if DEBUG
+//                    print("Ignoring invalid price data point at timestamp \(date)\t\n\(error)")
+//                    #endif
                     continue
                 }
             }

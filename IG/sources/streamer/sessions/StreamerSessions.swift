@@ -29,7 +29,6 @@ extension Streamer.Request.Session {
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
     public var statusStream: AnyPublisher<Streamer.Session.Status,Never> {
         self._streamer.channel.statusStream(on: self._streamer.queue)
-            .removeDuplicates()
             .eraseToAnyPublisher()
     }
     
@@ -45,14 +44,12 @@ extension Streamer.Request.Session {
         return self._streamer.channel.statusStream(on: self._streamer.queue)
             .setFailureType(to: Swift.Error.self)
             // 2. If the status stream completes, it means the streamer got deinitialized, and therefore the connection failed.
-            .append( Fail(error: IG.Error._deallocatedInstance() as Swift.Error) )
+            .append(Fail(error: IG.Error._deallocatedInstance() as Swift.Error))
             // 3. Only connect to the channel, when a subscription has been made.
-            .prepend( Deferred { [weak weakStreamer = self._streamer] in
-                Result.Publisher( Result {
-                    guard let streamer = weakStreamer else { throw IG.Error._deallocatedInstance() }
-                    let status = try streamer.channel.connect()
-                    return (status == .disconnected(isRetrying: false)) ? .connecting : status
-                } )
+            .prepend(DeferredTryValue { [weak weakStreamer = self._streamer] in
+                guard let streamer = weakStreamer else { throw IG.Error._deallocatedInstance() }
+                let status = try streamer.channel.connect()
+                return (status == .disconnected(isRetrying: false)) ? .connecting : status
             // 4. Filter the _connecting_ statuses.
             }).tryFirst(where: {
                 switch $0 {
@@ -80,16 +77,11 @@ extension Streamer.Request.Session {
     public func disconnect() -> AnyPublisher<Streamer.Session.Status,Never> {
         // 1. Subscribe to the channel status.
         self._streamer.channel.statusStream(on: self._streamer.queue)
-            .prepend( Deferred { [weak weakStreamer = self._streamer] () -> Just<Streamer.Session.Status> in
-                let status: Streamer.Session.Status
-                // 2. Unsubscribe all if needed and disconnect.
-                if let channel = weakStreamer?.channel {
-                    channel.unsubscribeAll()
-                    status = channel.disconnect()
-                } else {
-                    status = .disconnected(isRetrying: false)
-                }
-                return Just(status)
+            // 2. Unsubscribe all subscription (if needed) and disconnect the channel.
+            .prepend(DeferredValue { [weak weakStreamer = self._streamer] in
+                guard let channel = weakStreamer?.channel else { return .disconnected(isRetrying: false) }
+                channel.unsubscribeAll()
+                return channel.disconnect()
             // 3. Wait for the disconnect message and then finish.
             }).first(where: { $0 == .disconnected(isRetrying: false) })
             .eraseToAnyPublisher()

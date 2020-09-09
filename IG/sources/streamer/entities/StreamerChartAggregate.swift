@@ -1,3 +1,10 @@
+#if os(macOS)
+import Lightstreamer_macOS_Client
+#elseif os(iOS)
+import Lightstreamer_iOS_Client
+#else
+#error("OS currently not supported")
+#endif
 import Foundation
 import Decimals
 
@@ -67,17 +74,17 @@ fileprivate typealias F = Streamer.Chart.Aggregated.Field
 
 internal extension Streamer.Chart.Aggregated {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, interval: Self.Interval, update: Streamer.Packet) throws {
+    init(epic: IG.Market.Epic, interval: Self.Interval, update: LSItemUpdate) throws {
         self.epic = epic
         self.interval = interval
-        self.candle = try .init(update: update)
-        self.day = try .init(update: update)
+        self.candle = try Candle(update: update)
+        self.day = try Day(update: update)
     }
 }
 
 fileprivate extension Streamer.Chart.Aggregated.Candle {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.date = try update.decodeIfPresent(Date.self, forKey: F.date)
         self.numTicks = try update.decodeIfPresent(Int.self, forKey: F.numTicks)
         self.isFinished = try update.decodeIfPresent(Bool.self, forKey: F.isFinished)
@@ -102,7 +109,7 @@ fileprivate extension Streamer.Chart.Aggregated.Candle {
 
 fileprivate extension Streamer.Chart.Aggregated.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: Streamer.Packet) throws {
+    init(update: LSItemUpdate) throws {
         self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
         self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
         self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)

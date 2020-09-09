@@ -152,7 +152,7 @@ extension XCTestCase {
             guard credentials.token.isExpired else { return credentials }
         }
         
-        let api: API = .init(rootURL: data.rootURL, credentials: data._cached, targetQueue: nil, qos: .default)
+        let api = API(rootURL: data.rootURL, credentials: data._cached)
         let result: API.Credentials
         if case .some = api.channel.credentials {
             api.session.refresh().expectsCompletion(timeout: 1.5, on: self)
@@ -166,7 +166,7 @@ extension XCTestCase {
             let s = api.session.get(key: data.key, token: token).expectsOne(timeout: 2, on: self)
             result = API.Credentials(key: data.key, client: s.client, account: s.account, streamerURL: s.streamerURL, timezone: s.timezone, token: token)
         } else if let user = data.user {
-            api.session.login(type: .certificate, key: data.key, user: user).expectsCompletion(timeout: 1.5, on: self)
+            api.session.login(type: .certificate, key: data.key, user: user).expectsCompletion(timeout: 3, on: self)
             result = api.channel.credentials!
         } else {
             fatalError("Some type of information must be provided to retrieve the API credentials")
