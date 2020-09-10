@@ -74,46 +74,46 @@ fileprivate typealias F = Streamer.Chart.Aggregated.Field
 
 internal extension Streamer.Chart.Aggregated {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, interval: Self.Interval, update: LSItemUpdate) throws {
+    init(epic: IG.Market.Epic, interval: Self.Interval, update: LSItemUpdate, fields: Set<Field>) throws {
         self.epic = epic
         self.interval = interval
-        self.candle = try Candle(update: update)
-        self.day = try Day(update: update)
+        self.candle = try Candle(update: update, fields: fields)
+        self.day = try Day(update: update, fields: fields)
     }
 }
 
 fileprivate extension Streamer.Chart.Aggregated.Candle {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.date = try update.decodeIfPresent(Date.self, forKey: F.date)
-        self.numTicks = try update.decodeIfPresent(Int.self, forKey: F.numTicks)
-        self.isFinished = try update.decodeIfPresent(Bool.self, forKey: F.isFinished)
+    init(update: LSItemUpdate, fields: Set<Streamer.Chart.Aggregated.Field>) throws {
+        self.date = fields.contains(F.date) ? try update.decodeIfPresent(Date.self, forKey: F.date) : nil
+        self.numTicks = fields.contains(F.numTicks) ? try update.decodeIfPresent(Int.self, forKey: F.numTicks) : nil
+        self.isFinished = fields.contains(F.isFinished) ? try update.decodeIfPresent(Bool.self, forKey: F.isFinished) : nil
         
-        let openBid = try update.decodeIfPresent(Decimal64.self, forKey: F.openBid)
-        let openAsk = try update.decodeIfPresent(Decimal64.self, forKey: F.openAsk)
+        let openBid = fields.contains(F.openBid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.openBid) : nil
+        let openAsk = fields.contains(F.openAsk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.openAsk) : nil
         self.open = .init(bid: openBid, ask: openAsk)
         
-        let closeBid = try update.decodeIfPresent(Decimal64.self, forKey: F.closeBid)
-        let closeAsk = try update.decodeIfPresent(Decimal64.self, forKey: F.closeAsk)
+        let closeBid = fields.contains(F.closeBid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.closeBid) : nil
+        let closeAsk = fields.contains(F.closeAsk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.closeAsk) : nil
         self.close = .init(bid: closeBid, ask: closeAsk)
         
-        let lowestBid = try update.decodeIfPresent(Decimal64.self, forKey: F.lowestBid)
-        let lowestAsk = try update.decodeIfPresent(Decimal64.self, forKey: F.lowestAsk)
+        let lowestBid = fields.contains(F.lowestBid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.lowestBid) : nil
+        let lowestAsk = fields.contains(F.lowestAsk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.lowestAsk) : nil
         self.lowest = .init(bid: lowestBid, ask: lowestAsk)
         
-        let highestBid = try update.decodeIfPresent(Decimal64.self, forKey: F.highestBid)
-        let highestAsk = try update.decodeIfPresent(Decimal64.self, forKey: F.highestAsk)
+        let highestBid = fields.contains(F.highestBid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.highestBid) : nil
+        let highestAsk = fields.contains(F.highestAsk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.highestAsk) : nil
         self.highest = .init(bid: highestBid, ask: highestAsk)
     }
 }
 
 fileprivate extension Streamer.Chart.Aggregated.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
-        self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
-        self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)
-        self.changeNet = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet)
-        self.changePercentage = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage)
+    init(update: LSItemUpdate, fields: Set<Streamer.Chart.Aggregated.Field>) throws {
+        self.lowest = fields.contains(F.dayLowest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest) : nil
+        self.mid = fields.contains(F.dayMid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid) : nil
+        self.highest = fields.contains(F.dayHighest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest) : nil
+        self.changeNet = fields.contains(F.dayChangeNet) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet) : nil
+        self.changePercentage = fields.contains(F.dayChangePercentage) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage) : nil
     }
 }

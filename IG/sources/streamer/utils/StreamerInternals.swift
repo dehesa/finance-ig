@@ -42,7 +42,7 @@ internal extension LSItemUpdate {
     /// - parameter type: The type of value to decode.
     /// - parameter key: The key that the decoded value is associated with.
     @nonobjc func decodeIfPresent<Field>(_ type: String.Type, forKey key: Field) -> String? where Field: RawRepresentable, Field.RawValue==String {
-        return self.value(withFieldName: key.rawValue)
+        self.value(withFieldName: key.rawValue)
     }
     /// Decodes a value of the given type for the given key.
     /// - parameter type: The type of value to decode.

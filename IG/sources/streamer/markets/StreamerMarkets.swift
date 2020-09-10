@@ -30,7 +30,7 @@ extension Streamer.Request.Markets {
         
         return self._streamer.channel
             .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
-            .tryMap { try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter) }
+            .tryMap { [fields] in try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
@@ -51,11 +51,11 @@ extension Streamer.Request.Markets {
         
         return self._streamer.channel
             .subscribe(on: self._streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
-            .tryMap {
+            .tryMap { [fields] in
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
                 }
-                return try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter)
+                return try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter, fields: fields)
             }.mapError(errorCast)
             .eraseToAnyPublisher()
     }

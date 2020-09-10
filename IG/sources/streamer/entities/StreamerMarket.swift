@@ -67,10 +67,10 @@ fileprivate typealias F = Streamer.Market.Field
 
 internal extension Streamer.Market {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, update: LSItemUpdate, timeFormatter: DateFormatter) throws {
+    init(epic: IG.Market.Epic, update: LSItemUpdate, timeFormatter: DateFormatter, fields: Set<Field>) throws {
         self.epic = epic
         
-        if let status = update.decodeIfPresent(String.self, forKey: F.status) {
+        if fields.contains(F.status), let status = update.decodeIfPresent(String.self, forKey: F.status) {
             switch status {
             case "TRADEABLE": self.status = .tradeable
             case "CLOSED": self.status = .closed
@@ -83,22 +83,22 @@ internal extension Streamer.Market {
             }
         } else { self.status = nil }
         
-        self.date = try update.decodeIfPresent(Date.self, with: timeFormatter, forKey: F.date)
-        self.isDelayed = try update.decodeIfPresent(Bool.self, forKey: F.isDelayed)
-        self.bid = try update.decodeIfPresent(Decimal64.self, forKey: F.bid)
-        self.ask = try update.decodeIfPresent(Decimal64.self, forKey: F.ask)
-        self.day = try .init(update: update)
+        self.date = fields.contains(F.date) ? try update.decodeIfPresent(Date.self, with: timeFormatter, forKey: F.date) : nil
+        self.isDelayed = fields.contains(F.isDelayed) ? try update.decodeIfPresent(Bool.self, forKey: F.isDelayed) : nil
+        self.bid = fields.contains(F.bid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.bid) : nil
+        self.ask = fields.contains(F.ask) ? try update.decodeIfPresent(Decimal64.self, forKey: F.ask) : nil
+        self.day = try .init(update: update, fields: fields)
     }
 }
 
 fileprivate extension Streamer.Market.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
-        self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
-        self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)
-        self.changeNet = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet)
-        self.changePercentage = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage)
+    init(update: LSItemUpdate, fields: Set<Streamer.Market.Field>) throws {
+        self.lowest = fields.contains(F.dayLowest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest) : nil
+        self.mid = fields.contains(F.dayMid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid) : nil
+        self.highest = fields.contains(F.dayHighest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest) : nil
+        self.changeNet = fields.contains(F.dayChangeNet) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet) : nil
+        self.changePercentage = fields.contains(F.dayChangePercentage) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage) : nil
     }
 }
 

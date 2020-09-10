@@ -23,17 +23,18 @@ fileprivate typealias F = Streamer.Deal.Field
 
 internal extension Streamer.Deal {
     /// - throws: `IG.Error` exclusively.
-    init(account: IG.Account.Identifier, item: String, update: LSItemUpdate, decoder: JSONDecoder) throws {
+    init(account: IG.Account.Identifier, item: String, update: LSItemUpdate, decoder: JSONDecoder, fields: Set<Field>) throws {
         self.account = account
         
         do {
-            self.confirmation = try update.decodeIfPresent(String.self, forKey: F.confirmations).map {
-                try decoder.decode(Streamer.Confirmation.self, from: .init($0.utf8))
-            }
+            if fields.contains(F.confirmations), let c = update.decodeIfPresent(String.self, forKey: F.confirmations) {
+                self.confirmation = try decoder.decode(Streamer.Confirmation.self, from: .init(c.utf8))
+            } else { self.confirmation = nil }
             
-            self.update = try update.decodeIfPresent(String.self, forKey: F.updates).map {
-                try decoder.decode(Streamer.Update.self, from: .init($0.utf8))
-            }
+            if fields.contains(F.updates), let u = update.decodeIfPresent(String.self, forKey: F.updates) {
+                self.update = try decoder.decode(Streamer.Update.self, from: .init(u.utf8))
+            } else { self.update = nil }
+            
         } catch let error as IG.Error {
             throw error
         } catch let error {

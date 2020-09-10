@@ -24,7 +24,7 @@ extension Streamer.Request.Deals {
         
         return self._streamer.channel
             .subscribe(on: self._streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
-            .tryMap { try Streamer.Deal(account: account, item: item, update: $0, decoder: decoder) }
+            .tryMap { [fields] in try Streamer.Deal(account: account, item: item, update: $0, decoder: decoder, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }

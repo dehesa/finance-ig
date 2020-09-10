@@ -28,7 +28,8 @@ extension Streamer.Request.Session {
     /// - remark: The subject never fails and only completes successfully when the `Channel` gets deinitialized.
     /// - returns: Publisher emitting unique status values and only completing (successfully) when the `API` instance is deinitialized.
     public var statusStream: AnyPublisher<Streamer.Session.Status,Never> {
-        self._streamer.channel.statusStream(on: self._streamer.queue)
+        self._streamer.channel
+            .statusStream(on: self._streamer.queue)
             .eraseToAnyPublisher()
     }
     

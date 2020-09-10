@@ -312,7 +312,7 @@ extension Publisher where Output==Streamer.Chart.Aggregated, Failure==IG.Error {
                                 highest: .init(bid: highestBid, ask: highestAsk), volume: volume),
                     interval: price.interval)
             return ( database, (query, streamPrice) )
-        }.mapError { $0 as! IG.Error }
+        }.mapError(errorCast)
         .write { (sqlite, statement, input) -> Database.PriceWrapper in
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             input.data.price._bind(to: statement!)

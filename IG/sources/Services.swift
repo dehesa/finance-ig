@@ -110,7 +110,7 @@ private extension Services {
         let subServicesGenerator: ()->Result<Services,IG.Error> = {
             do {
                 let secret = try Streamer.Credentials(apiCredentials)
-                let database = try Database(location: location, targetQueue: queue)
+                let database = try Database(location: location, queue: queue)
                 let streamer = Streamer(rootURL: apiCredentials.streamerURL, credentials: secret, queue: queue)
                 return .success(Services(queue: queue, api: api, streamer: streamer, database: database))
             } catch let error {

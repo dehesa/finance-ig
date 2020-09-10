@@ -29,7 +29,7 @@ extension Streamer.Request.Accounts {
         
         return self._streamer.channel
             .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
-            .tryMap { try Streamer.Account(id: account, update: $0) }
+            .tryMap { [fields] in try Streamer.Account(id: account, update: $0, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }

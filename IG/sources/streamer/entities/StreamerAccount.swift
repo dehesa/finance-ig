@@ -72,40 +72,40 @@ fileprivate typealias F = Streamer.Account.Field
 
 internal extension Streamer.Account {
     /// - throws: `IG.Error` exclusively.
-    init(id: IG.Account.Identifier, update: LSItemUpdate) throws {
+    init(id: IG.Account.Identifier, update: LSItemUpdate, fields: Set<Field>) throws {
         self.id = id
-        self.funds =  try update.decodeIfPresent(Decimal64.self, forKey: F.funds)
-        self.equity = try .init(update: update)
-        self.margins = try .init(update: update)
-        self.profitLoss = try .init(update: update)
+        self.funds = fields.contains(F.funds) ? try update.decodeIfPresent(Decimal64.self, forKey: F.funds) : nil
+        self.equity = try .init(update: update, fields: fields)
+        self.margins = try .init(update: update, fields: fields)
+        self.profitLoss = try .init(update: update, fields: fields)
     }
 }
 
 fileprivate extension Streamer.Account.Equity {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.equity)
-        self.used = try update.decodeIfPresent(Decimal64.self, forKey: F.equityUsed)
-        self.cashAvailable = try update.decodeIfPresent(Decimal64.self, forKey: F.cashAvailable)
-        self.tradeAvailable = try update.decodeIfPresent(Decimal64.self, forKey: F.tradeAvailable)
+    init(update: LSItemUpdate, fields: Set<Streamer.Account.Field>) throws {
+        self.value = fields.contains(F.equity) ? try update.decodeIfPresent(Decimal64.self, forKey: F.equity) : nil
+        self.used = fields.contains(F.equityUsed) ? try update.decodeIfPresent(Decimal64.self, forKey: F.equityUsed) : nil
+        self.cashAvailable = fields.contains(F.cashAvailable) ? try update.decodeIfPresent(Decimal64.self, forKey: F.cashAvailable) : nil
+        self.tradeAvailable = fields.contains(F.tradeAvailable) ? try update.decodeIfPresent(Decimal64.self, forKey: F.tradeAvailable) : nil
     }
 }
 
 fileprivate extension Streamer.Account.Margins {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.margin)
-        self.limitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.marginLimitedRisk)
-        self.nonLimitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.marginNonLimitedRisk)
-        self.deposit = try update.decodeIfPresent(Decimal64.self, forKey: F.deposit)
+    init(update: LSItemUpdate, fields: Set<Streamer.Account.Field>) throws {
+        self.value = fields.contains(F.margin) ? try update.decodeIfPresent(Decimal64.self, forKey: F.margin) : nil
+        self.limitedRisk = fields.contains(F.marginLimitedRisk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.marginLimitedRisk) : nil
+        self.nonLimitedRisk = fields.contains(F.marginNonLimitedRisk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.marginNonLimitedRisk) : nil
+        self.deposit = fields.contains(F.deposit) ? try update.decodeIfPresent(Decimal64.self, forKey: F.deposit): nil
     }
 }
 
 fileprivate extension Streamer.Account.ProfitLoss {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.value = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLoss)
-        self.limitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossLimitedRisk)
-        self.nonLimitedRisk = try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossNonLimitedRisk)
+    init(update: LSItemUpdate, fields: Set<Streamer.Account.Field>) throws {
+        self.value = fields.contains(F.profitLoss) ? try update.decodeIfPresent(Decimal64.self, forKey: F.profitLoss) : nil
+        self.limitedRisk = fields.contains(F.profitLossLimitedRisk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossLimitedRisk) : nil
+        self.nonLimitedRisk = fields.contains(F.profitLossNonLimitedRisk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossNonLimitedRisk) : nil
     }
 }

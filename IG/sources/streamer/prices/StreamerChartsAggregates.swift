@@ -31,7 +31,7 @@ extension Streamer.Request.Prices {
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
-            .tryMap { try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0) }
+            .tryMap { [fields] in try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
@@ -53,11 +53,11 @@ extension Streamer.Request.Prices {
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
-            .tryMap {
+            .tryMap { [fields] in
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().dropLast().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
                 }
-                return try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0)
+                return try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0, fields: fields)
             }.mapError(errorCast)
             .eraseToAnyPublisher()
     }

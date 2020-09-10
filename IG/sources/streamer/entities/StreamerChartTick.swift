@@ -53,23 +53,23 @@ fileprivate typealias F = Streamer.Chart.Tick.Field
 
 internal extension Streamer.Chart.Tick {
     /// - throws: `IG.Error` exclusively.
-    init(epic: IG.Market.Epic, item: String, update: LSItemUpdate) throws {
+    init(epic: IG.Market.Epic, item: String, update: LSItemUpdate, fields: Set<Field>) throws {
         self.epic = epic
-        self.date = try update.decodeIfPresent(Date.self, forKey: F.date)
-        self.bid = try update.decodeIfPresent(Decimal64.self, forKey: F.bid)
-        self.ask = try update.decodeIfPresent(Decimal64.self, forKey: F.ask)
-        self.volume = try update.decodeIfPresent(Decimal64.self, forKey: F.volume)
-        self.day = try .init(update: update)
+        self.date = fields.contains(F.date) ? try update.decodeIfPresent(Date.self, forKey: F.date) : nil
+        self.bid = fields.contains(F.bid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.bid) : nil
+        self.ask = fields.contains(F.ask) ? try update.decodeIfPresent(Decimal64.self, forKey: F.ask) : nil
+        self.volume = fields.contains(F.volume) ? try update.decodeIfPresent(Decimal64.self, forKey: F.volume) : nil
+        self.day = try .init(update: update, fields: fields)
     }
 }
 
 fileprivate extension Streamer.Chart.Tick.Day {
     /// - throws: `IG.Error` exclusively.
-    init(update: LSItemUpdate) throws {
-        self.lowest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest)
-        self.mid = try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid)
-        self.highest = try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest)
-        self.changeNet = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet)
-        self.changePercentage = try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage)
+    init(update: LSItemUpdate, fields: Set<Streamer.Chart.Tick.Field>) throws {
+        self.lowest = fields.contains(F.dayLowest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayLowest) : nil
+        self.mid = fields.contains(F.dayMid) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayMid) : nil
+        self.highest = fields.contains(F.dayHighest) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayHighest) : nil
+        self.changeNet = fields.contains(F.dayChangeNet) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangeNet) : nil
+        self.changePercentage = fields.contains(F.dayChangePercentage) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage) : nil
     }
 }

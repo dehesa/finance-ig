@@ -29,11 +29,11 @@ public final class Database {
     /// - precondition: `targetQueue` cannot be set to `DispatchQueue.main` no to a queue which ultimately executes blocks on `DispatchQueue.main`.  Also, the initializer cannot be called from within the `targetQueue` execution context.
     ///
     /// - parameter location: The location of the database (whether "in-memory" or file system).
-    /// - parameter targetQueue: The target queue on which to process the `Database` requests and responses.
+    /// - parameter queue: The queue on which to process the `Database` requests and responses. If `nil`, an appropriate queue will be created.
     /// - throws: `IG.Error` exclusively.
-    public convenience init(location: Database.Location, targetQueue: DispatchQueue? = nil) throws {
-        let queue = targetQueue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, target: targetQueue)
-        let channel = try Database.Channel(location: location, targetQueue: targetQueue)
+    public convenience init(location: Database.Location, queue: DispatchQueue? = nil) throws {
+        let queue = queue ?? DispatchQueue(label: Bundle.IG.identifier + ".database.queue", qos: .utility, attributes: .concurrent, target: queue)
+        let channel = try Database.Channel(location: location, targetQueue: queue)
         try self.init(channel: channel, queue: queue)
     }
     

@@ -17,7 +17,7 @@ extension Streamer.Request.Prices {
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
-            .tryMap { try Streamer.Chart.Tick(epic: epic, item: item, update: $0) }
+            .tryMap { [fields] in try Streamer.Chart.Tick(epic: epic, item: item, update: $0, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
@@ -36,11 +36,11 @@ extension Streamer.Request.Prices {
         
         return self.streamer.channel
             .subscribe(on: self.streamer.queue, mode: .distinct, items: items, fields: properties, snapshot: snapshot)
-            .tryMap {
+            .tryMap { [fields] in
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
                 }
-                return try Streamer.Chart.Tick(epic: epic, item: item, update: $0)
+                return try Streamer.Chart.Tick(epic: epic, item: item, update: $0, fields: fields)
             }.mapError(errorCast)
             .eraseToAnyPublisher()
     }
