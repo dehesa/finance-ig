@@ -17,7 +17,6 @@
 		8D24C90224E01BC400BB9775 /* DBOptimizations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24C90024E01BC400BB9775 /* DBOptimizations.swift */; };
 		8D286D272344C8D000D582AE /* StreamerMarkets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA592149A6CE00344CBF /* StreamerMarkets.swift */; };
 		8D286D282344CA8100D582AE /* StreamerMarketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */; };
-		8D2CC9E12477D45600B56599 /* Decimals in Frameworks */ = {isa = PBXBuildFile; productRef = 8D2CC9E02477D45600B56599 /* Decimals */; };
 		8D2EA92B233B4E030004A4C2 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA7C2149A6CE00344CBF /* API.swift */; };
 		8D2EA92D233B545E0004A4C2 /* APIUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0A232B22EB9600001853E7 /* APIUser.swift */; };
 		8D2EA92E233B54610004A4C2 /* APIKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D52F33D22FB1CA900521759 /* APIKey.swift */; };
@@ -102,7 +101,6 @@
 		8D376DA2234C6300007D4A48 /* DBMigrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F8912317EAB100F1A2C0 /* DBMigrations.swift */; };
 		8D376DA3234C6300007D4A48 /* DBMigrations+v1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE8A1A52349E33200031B1E /* DBMigrations+v1.swift */; };
 		8D376DA4234C6300007D4A48 /* DBApplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F88F2317BF7200F1A2C0 /* DBApplications.swift */; };
-		8D376DA5234C634B007D4A48 /* Lightstreamer_macOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */; };
 		8D376DA7234C6379007D4A48 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD468D322F1C70100134B67 /* Test.swift */; };
 		8D376DA8234C637B007D4A48 /* TestFabric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEF08122F9994F005AB34C /* TestFabric.swift */; };
 		8D376DA9234C6387007D4A48 /* TestAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D4B971422F1C995002B267F /* TestAccount.swift */; };
@@ -202,7 +200,6 @@
 		8D80CFD12341E93200E63411 /* TestFabric.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAEF08122F9994F005AB34C /* TestFabric.swift */; };
 		8D80CFD52341FDC300E63411 /* TestAccountDecodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D80CFD42341FDC300E63411 /* TestAccountDecodable.swift */; };
 		8D80CFD623421B2D00E63411 /* APISessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CAA42149A6CE00344CBF /* APISessionTests.swift */; };
-		8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */; platformFilter = ios; };
 		8D88F5F9246C79D900743B2B /* UTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D88F5F8246C79D900743B2B /* UTC.swift */; };
 		8D88F5FA246C79D900743B2B /* UTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D88F5F8246C79D900743B2B /* UTC.swift */; };
 		8D89C78B2343120C00FD0F3D /* APISentimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF93B9922E75C11001B9412 /* APISentimentTests.swift */; };
@@ -237,7 +234,6 @@
 		8DC7FBF523E2F5D2002D7F5E /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */; };
 		8DC7FBF723E2F5D2002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF623E2F5D2002D7F5E /* Conbini */; };
 		8DC7FBF923E2F5E1002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; productRef = 8DC7FBF823E2F5E1002D7F5E /* Conbini */; };
-		8DC7FBFD23E2F650002D7F5E /* Conbini in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = 8DC7FBFC23E2F650002D7F5E /* Conbini */; };
 		8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */ = {isa = PBXBuildFile; platformFilter = ios; productRef = 8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */; };
 		8DCC341424C186AE004229EF /* Decimals in Frameworks */ = {isa = PBXBuildFile; productRef = 8DCC341324C186AE004229EF /* Decimals */; };
 		8DCC341524C18761004229EF /* APIApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D75154024C17F7500F7327C /* APIApplication.swift */; };
@@ -283,6 +279,13 @@
 		8DE8A1A32349DF9600031B1E /* DBMigrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F8912317EAB100F1A2C0 /* DBMigrations.swift */; };
 		8DE8A1A62349E33200031B1E /* DBMigrations+v1.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE8A1A52349E33200031B1E /* DBMigrations+v1.swift */; };
 		8DE8A1A72349E4E300031B1E /* DBApplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA8F88F2317BF7200F1A2C0 /* DBApplications.swift */; };
+		8DF1EACD250A2E1C00F33853 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EACC250A2E1C00F33853 /* Security.framework */; };
+		8DF1EACF250A2E2600F33853 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EACE250A2E2600F33853 /* SystemConfiguration.framework */; };
+		8DF1EAD1250A2E6500F33853 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EAD0250A2E6500F33853 /* Security.framework */; };
+		8DF1EAD3250A2E6D00F33853 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EAD2250A2E6D00F33853 /* SystemConfiguration.framework */; };
+		8DF1EAD5250A2F0600F33853 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EAD4250A2F0600F33853 /* Combine.framework */; };
+		8DF1EAD7250A2F0F00F33853 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EAD6250A2F0F00F33853 /* Combine.framework */; };
+		8DF1EADD250A303800F33853 /* Decimals in Frameworks */ = {isa = PBXBuildFile; productRef = 8DF1EADC250A303800F33853 /* Decimals */; };
 		8DF489DC234BA19200DB85AA /* DBSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */; };
 		8DF489DD234BA27A00DB85AA /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
 		8DF489DE234BA45200DB85AA /* DBApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */; };
@@ -501,6 +504,12 @@
 		8DE50471245AD09C001BD304 /* UnfairLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnfairLock.swift; sourceTree = "<group>"; };
 		8DE8A1A52349E33200031B1E /* DBMigrations+v1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DBMigrations+v1.swift"; sourceTree = "<group>"; };
 		8DF1233D2330D9C900312A30 /* DBForexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBForexTests.swift; sourceTree = "<group>"; };
+		8DF1EACC250A2E1C00F33853 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		8DF1EACE250A2E2600F33853 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		8DF1EAD0250A2E6500F33853 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
+		8DF1EAD2250A2E6D00F33853 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
+		8DF1EAD4250A2F0600F33853 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = System/Library/Frameworks/Combine.framework; sourceTree = SDKROOT; };
+		8DF1EAD6250A2F0F00F33853 /* Combine.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Combine.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Combine.framework; sourceTree = DEVELOPER_DIR; };
 		8DF85B1B22F046FA00F1C525 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		8DF9218224CAF8580097927F /* StreamerPositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerPositionTests.swift; sourceTree = "<group>"; };
 		8DF9218524CB3A6A0097927F /* TestMemoryLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestMemoryLayout.swift; sourceTree = "<group>"; };
@@ -517,10 +526,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */,
-				8DC7FBFD23E2F650002D7F5E /* Conbini in Frameworks */,
 				8DA398C02338E3EA007B918F /* IG.framework in Frameworks */,
-				8D8472D3234B6917007432A8 /* Lightstreamer_iOS_Client.framework in Frameworks */,
+				8DC7FBFF23E2F650002D7F5E /* ConbiniForTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,7 +535,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D2CC9E12477D45600B56599 /* Decimals in Frameworks */,
+				8DF1EAD5250A2F0600F33853 /* Combine.framework in Frameworks */,
+				8DF1EACF250A2E2600F33853 /* SystemConfiguration.framework in Frameworks */,
+				8DF1EACD250A2E1C00F33853 /* Security.framework in Frameworks */,
+				8DF1EADD250A303800F33853 /* Decimals in Frameworks */,
 				8DC7FBF723E2F5D2002D7F5E /* Conbini in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -537,9 +547,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC7FBF523E2F5D2002D7F5E /* ConbiniForTesting in Frameworks */,
 				8DC4CBEB2149A78700344CBF /* IG.framework in Frameworks */,
-				8D376DA5234C634B007D4A48 /* Lightstreamer_macOS_Client.framework in Frameworks */,
+				8DC7FBF523E2F5D2002D7F5E /* ConbiniForTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -547,6 +556,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8DF1EAD7250A2F0F00F33853 /* Combine.framework in Frameworks */,
+				8DF1EAD3250A2E6D00F33853 /* SystemConfiguration.framework in Frameworks */,
+				8DF1EAD1250A2E6500F33853 /* Security.framework in Frameworks */,
 				8DCC341424C186AE004229EF /* Decimals in Frameworks */,
 				8DC7FBF923E2F5E1002D7F5E /* Conbini in Frameworks */,
 			);
@@ -755,6 +767,12 @@
 		8DC1A497234B596D00AD75C5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				8DF1EAD4250A2F0600F33853 /* Combine.framework */,
+				8DF1EAD6250A2F0F00F33853 /* Combine.framework */,
+				8DF1EAD2250A2E6D00F33853 /* SystemConfiguration.framework */,
+				8DF1EAD0250A2E6500F33853 /* Security.framework */,
+				8DF1EACE250A2E2600F33853 /* SystemConfiguration.framework */,
+				8DF1EACC250A2E1C00F33853 /* Security.framework */,
 				8DC1A49F234B5B5700AD75C5 /* Lightstreamer_iOS_Client.framework */,
 				8DC1A4A4234B5C0200AD75C5 /* Lightstreamer_macOS_Client.framework */,
 			);
@@ -1188,9 +1206,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8DA398CC2338E3EA007B918F /* Build configuration list for PBXNativeTarget "IG [iOS]" */;
 			buildPhases = (
-				8DC1A49A234B5A0B00AD75C5 /* Embed Frameworks */,
 				8DA398B22338E3EA007B918F /* Headers */,
 				8DA398B32338E3EA007B918F /* Sources */,
+				8DC1A49A234B5A0B00AD75C5 /* Embed Frameworks */,
 				8DDDD984236702AE002089E8 /* Frameworks */,
 			);
 			buildRules = (
@@ -1221,7 +1239,6 @@
 			);
 			name = "IG Tests [iOS]";
 			packageProductDependencies = (
-				8DC7FBFC23E2F650002D7F5E /* Conbini */,
 				8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */,
 			);
 			productName = "IG iOSTests";
@@ -1232,9 +1249,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8DC4CBF32149A78700344CBF /* Build configuration list for PBXNativeTarget "IG [macOS]" */;
 			buildPhases = (
-				8DC1A4A1234B5BA300AD75C5 /* Embed Frameworks */,
 				8DC4CBDC2149A78700344CBF /* Headers */,
 				8DC4CBDD2149A78700344CBF /* Sources */,
+				8DC1A4A1234B5BA300AD75C5 /* Embed Frameworks */,
 				8DC1F953236702500060AF6C /* Frameworks */,
 			);
 			buildRules = (
@@ -1244,7 +1261,7 @@
 			name = "IG [macOS]";
 			packageProductDependencies = (
 				8DC7FBF623E2F5D2002D7F5E /* Conbini */,
-				8D2CC9E02477D45600B56599 /* Decimals */,
+				8DF1EADC250A303800F33853 /* Decimals */,
 			);
 			productName = IG;
 			productReference = 8DC4CBE12149A78700344CBF /* IG.framework */;
@@ -1687,7 +1704,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = V4LZL56CA7;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1729,7 +1746,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = V4LZL56CA7;
+				DEVELOPMENT_TEAM = "";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -1764,6 +1781,7 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
@@ -1803,6 +1821,7 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
@@ -2135,11 +2154,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8D2CC9E02477D45600B56599 /* Decimals */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8D2CC9DF2477D45600B56599 /* XCRemoteSwiftPackageReference "Decimal64" */;
-			productName = Decimals;
-		};
 		8DC7FBF423E2F5D2002D7F5E /* ConbiniForTesting */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
@@ -2155,17 +2169,16 @@
 			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
 			productName = Conbini;
 		};
-		8DC7FBFC23E2F650002D7F5E /* Conbini */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
-			productName = Conbini;
-		};
 		8DC7FBFE23E2F650002D7F5E /* ConbiniForTesting */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8DC7FBF323E2F5D2002D7F5E /* XCRemoteSwiftPackageReference "Conbini" */;
 			productName = ConbiniForTesting;
 		};
 		8DCC341324C186AE004229EF /* Decimals */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Decimals;
+		};
+		8DF1EADC250A303800F33853 /* Decimals */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Decimals;
 		};
