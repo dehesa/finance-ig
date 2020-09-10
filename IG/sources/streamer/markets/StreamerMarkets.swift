@@ -35,7 +35,30 @@ extension Streamer.Request.Markets {
             .eraseToAnyPublisher()
     }
     
-    #warning("Add multiple")
+    /// Subscribes to the multiple markets and returns in the response the specified attributes/fields.
+    ///
+    /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
+    /// - parameter epics: The epics identifying the targeted markets.
+    /// - parameter fields: The market properties/fields bieng targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+    public func subscribe(epics: Set<IG.Market.Epic>, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,IG.Error> {
+        guard !epics.isEmpty else { return Empty().eraseToAnyPublisher() }
+        guard epics.count > 1 else { return self.subscribe(epic: epics.first.unsafelyUnwrapped, fields: fields, snapshot: snapshot) }
+        
+        let items = epics.map { "MARKET:\($0)" }
+        let properties = fields.map { $0.rawValue }
+        let timeFormatter = DateFormatter.londonTime
+        
+        return self._streamer.channel
+            .subscribe(on: self._streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
+            .tryMap {
+                guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
+                    throw IG.Error._invalid(itemName: $0.itemName)
+                }
+                return try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter)
+            }.mapError(errorCast)
+            .eraseToAnyPublisher()
+    }
 }
 
 // MARK: - Request Entities
@@ -77,5 +100,12 @@ extension Set where Element == Streamer.Market.Field {
     /// Returns all queryable fields.
     @_transparent public static var all: Self {
         .init(Element.allCases)
+    }
+}
+
+private extension IG.Error {
+    /// Error raised when the epic reveived as an update item is invalid.
+    static func _invalid(itemName: String?) -> Self {
+        Self(.streamer(.invalidResponse), "The Lightstreamer item name received couldn't be matched to a supported epic.", help: "Review the received item name.", info: ["Received item": itemName ?? ""])
     }
 }

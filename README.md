@@ -103,7 +103,7 @@ All public Lightstreamer subscriptions are defined under the `Streamer` referenc
     streamer.prices.subscribe(epic: "CS.D.EURUSD.MINI.IP", interval: .minute, fields: .all)
     ```
 
-    The returned publisher will forward a new event till the publisher is cancelled.
+    The returned publisher will forward events till the publisher is cancelled.
 
 > Please be mindful of the [limits enforced by IG](https://labs.ig.com/faq#limits).
 
