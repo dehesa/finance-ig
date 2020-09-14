@@ -19,16 +19,17 @@ extension Streamer.Request.Accounts {
     /// Subscribes to the given account and returns in the response the specified attribute/fields.
     ///
     /// The only way to unsubscribe is to not hold the signal producer returned and have no active observer in the signal.
-    /// - parameter account: The Account identifier.
+    /// - parameter account: The account identifier.
     /// - parameter fields: The account properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Account,IG.Error> {
+    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Account.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Account,IG.Error> {
         let item = "ACCOUNT:\(account)"
         let properties = fields.map { $0.rawValue }
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { [fields] in try Streamer.Account(id: account, update: $0, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()

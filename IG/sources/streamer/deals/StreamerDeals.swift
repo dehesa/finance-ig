@@ -17,13 +17,17 @@ extension Streamer.Request.Deals {
     // MARK: TRADE:ACCID
     
     /// Subscribes to the given account and receives updates on positions, working orders, and trade confirmations.
-    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Deal.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Deal,IG.Error> {
+    /// - parameter account: The account identifier.
+    /// - parameter fields: The account properties/fields being targeted.
+    /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the last deal.
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used.
+    public func subscribe(account: IG.Account.Identifier, fields: Set<Streamer.Deal.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Deal,IG.Error> {
         let item = "TRADE:\(account)"
         let properties = fields.map { $0.rawValue }
         let decoder = JSONDecoder()
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self._streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { [fields] in try Streamer.Deal(account: account, item: item, update: $0, decoder: decoder, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()

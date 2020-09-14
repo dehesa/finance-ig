@@ -5,7 +5,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     /// The internal error type.
     private let type: Failure
     /// A localized message describing the reason for the failure.
-    public let failureReason: String?
+    public let failureReason: String
     /// A localized message describing how one might recover from the failure.
     public let recoverySuggestion: String?
     /// A localized message providing "help" text if the user requests help.
@@ -16,7 +16,7 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     public let underlyingError: Swift.Error?
     
     /// Designated initializer.
-    internal init(_ type: Failure, _ reason: String? = nil, help: String? = nil, underlying: Swift.Error? = nil, info: [String:Any] = [:]) {
+    internal init(_ type: Failure, _ reason: String, help: String? = nil, underlying: Swift.Error? = nil, info: [String:Any] = [:]) {
         self.type = type
         self.failureReason = reason
         self.recoverySuggestion = nil
@@ -33,33 +33,33 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
         self.type.code
     }
     
-    public var errorDescription: String? {
+    public var errorDescription: String {
         var result: String
         
         switch self.type {
         case .api(let f):
-            result = "[API] "
+            result = "API "
             switch f {
-            case .sessionExpired: result.append("Session expired.")
-            case .invalidRequest: result.append("Invalid request.")
-            case .callFailed: result.append("Call failed.")
-            case .invalidResponse: result.append("Invalid response.")
+            case .sessionExpired: result.append("session expired")
+            case .invalidRequest: result.append("invalid request")
+            case .callFailed: result.append("call failed")
+            case .invalidResponse: result.append("invalid response")
             }
         case .streamer(let f):
-            result = "[Streamer] "
+            result = "Streamer "
             switch f {
-            case .sessionExpired: result.append("Session expired.")
-            case .invalidRequest: result.append("Invalid request.")
-            case .subscriptionFailed: result.append("Subscription failed.")
-            case .invalidResponse: result.append("Invalid response.")
+            case .sessionExpired: result.append("session expired")
+            case .invalidRequest: result.append("invalid request")
+            case .subscriptionFailed: result.append("subscription failed")
+            case .invalidResponse: result.append("invalid response")
             }
         case .database(let f):
-            result = "[Database] "
+            result = "Database "
             switch f {
-            case .sessionExpired: result.append("Session expired.")
-            case .invalidRequest: result.append("Invalid request.")
-            case .callFailed: result.append("Call failed.")
-            case .invalidResponse: result.append("Invalid response.")
+            case .sessionExpired: result.append("session expired")
+            case .invalidRequest: result.append("invalid request")
+            case .callFailed: result.append("call failed")
+            case .invalidResponse: result.append("invalid response")
             }
         }
         
@@ -67,23 +67,25 @@ public final class Error: LocalizedError, CustomNSError, CustomDebugStringConver
     }
     
     public var localizedDescription: String {
-        var result = "\(self.errorDescription.unsafelyUnwrapped)"
-        if let reason = self.failureReason {
-            result.append("\n\tReason: \(reason)")
-        }
+        var result = "\(self.errorDescription) - \(self.failureReason)"
+        
         if let recovery = self.recoverySuggestion {
             result.append("\n\tRecovery: \(recovery)")
         }
+        
         if let help = self.helpAnchor {
             result.append("\n\tHelp: \(help)")
         }
+        
         if !self.errorUserInfo.isEmpty {
             result.append("\n\tUser info: ")
             result.append(self.errorUserInfo.map { "\($0): \($1)" }.joined(separator: ", "))
         }
+        
         if let error = self.underlyingError {
             result.append("\n\tUnderlying error: \(error)")
         }
+        
         return result
     }
     

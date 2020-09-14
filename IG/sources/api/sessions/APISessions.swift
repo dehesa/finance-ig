@@ -5,7 +5,7 @@ extension API.Request {
     /// Contains all functionality and variables related to the running API session.
     @frozen public struct Session {
         /// Pointer to the actual API instance in charge of calling the endpoint.
-        @usableFromInline internal unowned(unsafe) let api: API
+        @usableFromInline internal unowned let api: API
         /// Hidden initializer passing the instance needed to perform the endpoint.
         /// - parameter api: The instance calling the actual endpoints.
         @usableFromInline internal init(api: API) { self.api = api }

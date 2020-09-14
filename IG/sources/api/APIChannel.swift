@@ -20,7 +20,7 @@ extension API {
         /// The status scheduler announcing when a token has expired.
         private var _statusTimer: DispatchSourceTimer?
         /// The processing queue for the status cancellable.
-        private unowned(unsafe) let _expirationScheduler: DispatchQueue
+        private unowned let _expirationScheduler: DispatchQueue
         
         /// Designated initializer passing the basic requirements for an API channel.
         /// - parameter session: Real or mock URL session calling the endpoints.
@@ -141,7 +141,7 @@ extension API.Channel {
         assert(self._statusTimer == nil)
 
         let source = DispatchSource.makeTimerSource(queue: self._expirationScheduler)
-        source.setEventHandler { [unowned(unsafe) self] in
+        source.setEventHandler { [unowned self] in
             self._lock.lock()
             self._statusTimer = nil
             // Don't duplicate events. If the status is already expired, don't perform any more work.

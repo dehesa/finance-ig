@@ -34,7 +34,7 @@ public final class API {
     /// - parameter credentials: `nil` for yet unknown credentials (most of the cases); otherwise, use your hard-coded credentials.
     /// - parameter queue: The queue used to process the requests and responses. If `nil`, the system will create a serial queue.
     public convenience init(rootURL: URL = API.rootURL, credentials: API.Credentials? = nil, queue: DispatchQueue? = nil) {
-        let queue = queue ?? DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: .default)
+        let queue = queue ?? DispatchQueue(label: Bundle.IG.identifier + ".api.queue", qos: .utility)
         let session = URLSession(configuration: API.Channel.defaultSessionConfigurations, delegate: nil, delegateQueue: OperationQueue(underlying: queue))
         self.init(rootURL: rootURL, credentials: credentials, queue: queue, session: session)
     }
@@ -46,7 +46,7 @@ public final class API {
     /// - parameter session: The URL session used to call the real (or mocked) endpoints. 
     internal init(rootURL: URL, credentials: API.Credentials?, queue: DispatchQueue, session: URLSession) {
         (self.rootURL, self.queue) = (rootURL, queue)
-        self.channel = .init(session: session, credentials: credentials, scheduler: queue)
+        self.channel = API.Channel(session: session, credentials: credentials, scheduler: queue)
     }
 }
 

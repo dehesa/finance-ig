@@ -23,13 +23,14 @@ extension Streamer.Request.Markets {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,IG.Error> {
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used. 
+    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Market.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Market,IG.Error> {
         let item = "MARKET:\(epic)"
         let properties = fields.map { $0.rawValue }
         let timeFormatter = DateFormatter.londonTime
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self._streamer.queue, mode: .merge, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { [fields] in try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
@@ -41,7 +42,8 @@ extension Streamer.Request.Markets {
     /// - parameter epics: The epics identifying the targeted markets.
     /// - parameter fields: The market properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market.
-    public func subscribe(epics: Set<IG.Market.Epic>, fields: Set<Streamer.Market.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Market,IG.Error> {
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used. 
+    public func subscribe(epics: Set<IG.Market.Epic>, fields: Set<Streamer.Market.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Market,IG.Error> {
         guard !epics.isEmpty else { return Empty().eraseToAnyPublisher() }
         guard epics.count > 1 else { return self.subscribe(epic: epics.first.unsafelyUnwrapped, fields: fields, snapshot: snapshot) }
         
@@ -50,7 +52,7 @@ extension Streamer.Request.Markets {
         let timeFormatter = DateFormatter.londonTime
         
         return self._streamer.channel
-            .subscribe(on: self._streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self._streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
             .tryMap { [fields] in
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)

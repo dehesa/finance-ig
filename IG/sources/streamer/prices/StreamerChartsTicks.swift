@@ -10,13 +10,14 @@ extension Streamer.Request.Prices {
     /// - parameter epic: The epic identifying the targeted market.
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Tick,IG.Error> {
+    public func subscribe(epic: IG.Market.Epic, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Chart.Tick,IG.Error> {
         let item = "CHART:\(epic):TICK"
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self.streamer.queue, mode: .distinct, items: [item], fields: properties, snapshot: snapshot)
             .tryMap { [fields] in try Streamer.Chart.Tick(epic: epic, item: item, update: $0, fields: fields) }
             .mapError(errorCast)
             .eraseToAnyPublisher()
@@ -26,8 +27,9 @@ extension Streamer.Request.Prices {
     /// - parameter epics: The epics identifying the targeted markets.
     /// - parameter fields: The chart properties/fields bieng targeted.
     /// - parameter snapshot: Boolean indicating whether a "beginning" package should be sent with the current state of the market. explicitly call `connect()`.
+    /// - parameter queue: `DispatchQueue` processing the received values and where the value is forwarded. If `nil`, the internal `Streamer` queue will be used.
     /// - returns: Signal producer that can be started at any time.
-    public func subscribe(epics: Set<IG.Market.Epic>, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true) -> AnyPublisher<Streamer.Chart.Tick,IG.Error> {
+    public func subscribe(epics: Set<IG.Market.Epic>, fields: Set<Streamer.Chart.Tick.Field>, snapshot: Bool = true, queue: DispatchQueue? = nil) -> AnyPublisher<Streamer.Chart.Tick,IG.Error> {
         guard !epics.isEmpty else { return Empty().eraseToAnyPublisher() }
         guard epics.count > 1 else { return self.subscribe(epic: epics.first.unsafelyUnwrapped, fields: fields, snapshot: snapshot) }
         
@@ -35,7 +37,7 @@ extension Streamer.Request.Prices {
         let properties = fields.map { $0.rawValue }
         
         return self.streamer.channel
-            .subscribe(on: self.streamer.queue, mode: .distinct, items: items, fields: properties, snapshot: snapshot)
+            .subscribe(on: queue ?? self.streamer.queue, mode: .distinct, items: items, fields: properties, snapshot: snapshot)
             .tryMap { [fields] in
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
