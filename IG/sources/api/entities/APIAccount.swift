@@ -47,16 +47,16 @@ extension API.Account {
         case suspended
     }
     
-    /// Account balances.
+    /// Account balance.
     public struct Balance {
         /// Balance of funds in the account.
-        public let value: Decimal64
+        public let funds: Decimal64
         /// Minimum deposit amount required for margins.
         public let deposit: Decimal64
         /// Profit & Loss amount.
         public let profitLoss: Decimal64
         /// Amount available for trading.
-        public let available: Decimal64
+        public let tradeAvailable: Decimal64
     }
     
     /// Account preferences.
@@ -127,8 +127,9 @@ extension API.Account.Status: Decodable {
 
 extension API.Account.Balance: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case value = "balance"
-        case deposit, profitLoss, available
+        case funds = "balance"
+        case deposit, profitLoss
+        case tradeAvailable = "available"
     }
 }
 

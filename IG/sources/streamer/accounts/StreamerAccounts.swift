@@ -41,7 +41,7 @@ extension Streamer.Request.Accounts {
 extension Streamer.Account {
     /// Possible fields to subscribe to when querying account data.
     public enum Field: String, CaseIterable {
-        /// Funds
+        /// Total cash balance on your account.
         case funds = "FUNDS"
         /// Amount cash available to trade value, after account balance, profit and loss, and minimum deposit amount have been considered.
         case cashAvailable = "AVAILABLE_CASH"
@@ -50,8 +50,6 @@ extension Streamer.Account {
         /// Account minimum deposit value required for margins.
         case deposit = "DEPOSIT"
         
-        /// Margin
-        ///
         /// The amount required from a client (in addition to any deposit due) to cover losses when a price moves adversely.
         case margin = "MARGIN"
         /// Margin for limited risk.
@@ -59,9 +57,11 @@ extension Streamer.Account {
         /// Margin for non-limited risk.
         case marginNonLimitedRisk = "MARGIN_NLR"
         
-        /// Equity.
+        /// Net value of your account (`funds` plus or minus running profit/loss).
         case equity = "EQUITY"
-        /// Equity used.
+        /// Percentage of `equity` used by `margin`.
+        ///
+        /// Your position could be automatically closed if this reaches 100%.
         case equityUsed = "EQUITY_USED"
         
         /// Account profit and loss value.
