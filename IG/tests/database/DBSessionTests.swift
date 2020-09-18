@@ -25,3 +25,14 @@ final class DBSessionTests: XCTestCase {
         try! FileManager.default.removeItem(at: fileURL)
     }
 }
+
+private extension String {
+    private static let _lowercaseASCII = "abcdefghijklmnopqrstuvwxyz"
+    private static let _uppercaseASCII = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    private static let _numbers = "0123456789"
+    
+    static func random(length: Int) -> String {
+        let pool = _lowercaseASCII.appending(_uppercaseASCII)
+        return .init((0..<length).map { _ in pool.randomElement().unsafelyUnwrapped })
+    }
+}

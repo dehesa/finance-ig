@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		8D0906A2236B4533005E7501 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0906A1236B4522005E7501 /* Date.swift */; };
 		8D0906A3236B4537005E7501 /* Date.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0906A1236B4522005E7501 /* Date.swift */; };
+		8D0D4F9A2515157A0062EAA3 /* APIScrapped.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0D4F992515157A0062EAA3 /* APIScrapped.swift */; };
+		8D0D4F9B2515157A0062EAA3 /* APIScrapped.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0D4F992515157A0062EAA3 /* APIScrapped.swift */; };
 		8D24C8FB24E0009C00BB9775 /* DBVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24C8FA24E0009C00BB9775 /* DBVersion.swift */; };
 		8D24C8FC24E0009C00BB9775 /* DBVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24C8FA24E0009C00BB9775 /* DBVersion.swift */; };
 		8D24C8FE24E004D500BB9775 /* DBInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D24C8FD24E004D500BB9775 /* DBInfo.swift */; };
@@ -124,7 +126,6 @@
 		8D376DC0234C63BE007D4A48 /* StreamerDealTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA902149A6CE00344CBF /* StreamerDealTests.swift */; };
 		8D376DC1234C63C7007D4A48 /* DBSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */; };
 		8D376DC2234C63CB007D4A48 /* DBApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */; };
-		8D376DC4234C63D6007D4A48 /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
 		8D3872542361F26E005AD120 /* APICalendars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3872522361F21F005AD120 /* APICalendars.swift */; };
 		8D3872552361F271005AD120 /* APIPriceBatches.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3872532361F25A005AD120 /* APIPriceBatches.swift */; };
 		8D3872562361F278005AD120 /* APICalendars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3872522361F21F005AD120 /* APICalendars.swift */; };
@@ -275,7 +276,6 @@
 		8DF1EAD7250A2F0F00F33853 /* Combine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8DF1EAD6250A2F0F00F33853 /* Combine.framework */; };
 		8DF1EADD250A303800F33853 /* Decimals in Frameworks */ = {isa = PBXBuildFile; productRef = 8DF1EADC250A303800F33853 /* Decimals */; };
 		8DF489DC234BA19200DB85AA /* DBSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D94BA9A2316A6E600AFBA1E /* DBSessionTests.swift */; };
-		8DF489DD234BA27A00DB85AA /* String.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC4CA872149A6CE00344CBF /* String.swift */; };
 		8DF489DE234BA45200DB85AA /* DBApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB22F8E231EB550001FCF6C /* DBApplicationTests.swift */; };
 		8DF489DF234BB07A00DB85AA /* DBCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2C214723313BFF006F8C41 /* DBCombine.swift */; };
 		8DF9218324CAF8580097927F /* StreamerPositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DF9218224CAF8580097927F /* StreamerPositionTests.swift */; };
@@ -342,6 +342,7 @@
 /* Begin PBXFileReference section */
 		8D0906A1236B4522005E7501 /* Date.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date.swift; sourceTree = "<group>"; };
 		8D0A232B22EB9600001853E7 /* APIUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIUser.swift; sourceTree = "<group>"; };
+		8D0D4F992515157A0062EAA3 /* APIScrapped.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIScrapped.swift; sourceTree = "<group>"; };
 		8D10BBEF2318E91700557960 /* DBMarkets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBMarkets.swift; sourceTree = "<group>"; };
 		8D19C51E232694DC00F029B3 /* SQLite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLite.swift; sourceTree = "<group>"; };
 		8D1C8D552322D9E500841CA0 /* OperationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationQueue.swift; sourceTree = "<group>"; };
@@ -448,7 +449,6 @@
 		8DC4CA7F2149A6CE00344CBF /* APISessions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISessions.swift; sourceTree = "<group>"; };
 		8DC4CA802149A6CE00344CBF /* APIOAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIOAuth.swift; sourceTree = "<group>"; };
 		8DC4CA812149A6CE00344CBF /* APICredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICredentials.swift; sourceTree = "<group>"; };
-		8DC4CA872149A6CE00344CBF /* String.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = String.swift; sourceTree = "<group>"; };
 		8DC4CA8D2149A6CE00344CBF /* StreamerMarketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerMarketTests.swift; sourceTree = "<group>"; };
 		8DC4CA8E2149A6CE00344CBF /* StreamerChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerChartTests.swift; sourceTree = "<group>"; };
 		8DC4CA902149A6CE00344CBF /* StreamerDealTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamerDealTests.swift; sourceTree = "<group>"; };
@@ -546,13 +546,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8D3872512361F1E8005AD120 /* scrapped */ = {
+		8D0D4F96251515310062EAA3 /* experimental */ = {
 			isa = PBXGroup;
 			children = (
+			);
+			path = experimental;
+			sourceTree = "<group>";
+		};
+		8D3872512361F1E8005AD120 /* experimental */ = {
+			isa = PBXGroup;
+			children = (
+				8D0D4F992515157A0062EAA3 /* APIScrapped.swift */,
 				8D3872522361F21F005AD120 /* APICalendars.swift */,
 				8D3872532361F25A005AD120 /* APIPriceBatches.swift */,
 			);
-			path = scrapped;
+			path = experimental;
 			sourceTree = "<group>";
 		};
 		8D47509623262EC60051E425 /* utils */ = {
@@ -627,13 +635,13 @@
 			path = entities;
 			sourceTree = "<group>";
 		};
-		8D7D2DF0236318B300C0BEB5 /* scrapped */ = {
+		8D7D2DF0236318B300C0BEB5 /* experimental */ = {
 			isa = PBXGroup;
 			children = (
 				8D7D2DF1236318CF00C0BEB5 /* APICalendarTests.swift */,
 				8DCD2CE32366C4BF0099259B /* APIPriceBatchTests.swift */,
 			);
-			path = scrapped;
+			path = experimental;
 			sourceTree = "<group>";
 		};
 		8D80F45622F0C59800DE1E5B /* sessions */ = {
@@ -811,6 +819,7 @@
 		8DC4CA422149A6CE00344CBF /* sources */ = {
 			isa = PBXGroup;
 			children = (
+				8D0D4F96251515310062EAA3 /* experimental */,
 				8DC4CA442149A6CE00344CBF /* IG.h */,
 				8DC4CA432149A6CE00344CBF /* Services.swift */,
 				8DF85B1B22F046FA00F1C525 /* Error.swift */,
@@ -907,7 +916,7 @@
 				8DC4CA712149A6CE00344CBF /* markets */,
 				8DC4CA752149A6CE00344CBF /* prices */,
 				8DC4CA642149A6CE00344CBF /* deals */,
-				8D3872512361F1E8005AD120 /* scrapped */,
+				8D3872512361F1E8005AD120 /* experimental */,
 				8DC4CA6B2149A6CE00344CBF /* utils */,
 			);
 			path = api;
@@ -977,7 +986,6 @@
 		8DC4CA822149A6CE00344CBF /* tests */ = {
 			isa = PBXGroup;
 			children = (
-				8D5B3E1B232F855E0022959F /* Epics.swift */,
 				8DC4CA912149A6CE00344CBF /* api */,
 				8DC4CA892149A6CE00344CBF /* streamer */,
 				8D94BA992316A69A00AFBA1E /* database */,
@@ -989,7 +997,7 @@
 		8DC4CA832149A6CE00344CBF /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				8DC4CA872149A6CE00344CBF /* String.swift */,
+				8D5B3E1B232F855E0022959F /* Epics.swift */,
 				8D0906A1236B4522005E7501 /* Date.swift */,
 			);
 			path = utils;
@@ -1032,7 +1040,7 @@
 				8DC4CA962149A6CE00344CBF /* markets */,
 				8DC4CA9A2149A6CE00344CBF /* prices */,
 				8DC4CA922149A6CE00344CBF /* deals */,
-				8D7D2DF0236318B300C0BEB5 /* scrapped */,
+				8D7D2DF0236318B300C0BEB5 /* experimental */,
 			);
 			path = api;
 			sourceTree = "<group>";
@@ -1340,6 +1348,7 @@
 				8D33B8D72339689E002B524B /* Client.swift in Sources */,
 				8D69B9EB24C3324A00E82034 /* APIMarket.swift in Sources */,
 				8D45266E233A6A740034D577 /* Market.swift in Sources */,
+				8D0D4F9B2515157A0062EAA3 /* APIScrapped.swift in Sources */,
 				8DDA54E424C642F500E5D4C6 /* StreamerChartTick.swift in Sources */,
 				8D45267C233AC0190034D577 /* MarketExpiry.swift in Sources */,
 				8D452672233A6CC80034D577 /* DealIdentifier.swift in Sources */,
@@ -1434,7 +1443,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DF489DD234BA27A00DB85AA /* String.swift in Sources */,
 				8D0906A3236B4537005E7501 /* Date.swift in Sources */,
 				8D6DB859234245FB0042F330 /* Epics.swift in Sources */,
 				8D80CFD623421B2D00E63411 /* APISessionTests.swift in Sources */,
@@ -1488,6 +1496,7 @@
 				8D376D5F234C61EE007D4A48 /* Error.swift in Sources */,
 				8D376D63234C6210007D4A48 /* Account.swift in Sources */,
 				8D376D64234C6210007D4A48 /* Client.swift in Sources */,
+				8D0D4F9A2515157A0062EAA3 /* APIScrapped.swift in Sources */,
 				8DDA54E324C642F500E5D4C6 /* StreamerChartTick.swift in Sources */,
 				8D376D65234C6210007D4A48 /* Market.swift in Sources */,
 				8D376D66234C6210007D4A48 /* MarketExpiry.swift in Sources */,
@@ -1582,7 +1591,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D376DC4234C63D6007D4A48 /* String.swift in Sources */,
 				8D0906A2236B4533005E7501 /* Date.swift in Sources */,
 				8D376DAC234C6387007D4A48 /* Epics.swift in Sources */,
 				8D376DAD234C63A4007D4A48 /* APISessionTests.swift in Sources */,

@@ -26,8 +26,6 @@ public final class API {
     @inlinable public final var nodes: API.Request.Nodes { .init(api: self) }
     /// Namespace for endpoints related to watchlist management (e.g. create/remove watchlist, add/remove markets to it, etc.).
     @inlinable public final var watchlists: API.Request.Watchlists { .init(api: self) }
-    /// Namespace for endpoints related to endpoints scrapped from IG website (e.g. economic calendar).
-    @inlinable public final var scrapped: API.Request.Scrapped { .init(api: self) }
     
     /// Convenience initializer setting the root URL and initial credentials for the API instance.
     /// - parameter rootURL: The base/root URL for all endpoint calls.
