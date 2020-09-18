@@ -4,10 +4,17 @@ import ConbiniForTesting
 import Combine
 
 final class StreamerSessionTests: XCTestCase {
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
+    
     /// Tests the connection/disconnection events.
-    func testStreamerSession() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testStreamerSession() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         let connectionStatus = streamer.session.connect().expectsOne(timeout: 4, on: self)
         XCTAssertTrue(connectionStatus.isReady)
@@ -21,9 +28,12 @@ final class StreamerSessionTests: XCTestCase {
     }
     
     /// Test unsubscription when there is no subscriptions.
-    func testUnsubscribeFromNone() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testUnsubscribeFromNone() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsOne(timeout: 2, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
@@ -36,9 +46,12 @@ final class StreamerSessionTests: XCTestCase {
     }
     
     /// Tests the status delivery through subscription.
-    func testStreamerStatusSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testStreamerStatusSubscription() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         var statuses: [Streamer.Session.Status] = [streamer.session.status]
         let cancellable = streamer.session.statusStream.sink { statuses.append($0) }

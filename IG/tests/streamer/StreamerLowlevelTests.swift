@@ -10,17 +10,16 @@ import ConbiniForTesting
 import Foundation
 
 final class StreamerLowlevelTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Test the subscription to the market using the Lightstreamer framework directly.
     func testLowlevelMarketSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
-        
         // 1. Connect the Lighstreamer client
-        let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-        client.connectionDetails.user = creds.identifier.description
-        client.connectionDetails.setPassword(creds.password)
+        let client = LSLightstreamerClient(serverAddress: "<#Lightstreamer server address#>", adapterSet: nil)
+        client.connectionDetails.user = "<#Lighstreamer user#>"
+        client.connectionDetails.setPassword("<#Lighstreamer password#>")
         client.add(delegate: self)
         client.connect()
         self.wait(seconds: 1)
@@ -43,18 +42,16 @@ final class StreamerLowlevelTests: XCTestCase {
     
     /// Tests account confirmation subscription using the Lightstreamer framework directly.
     func testLowlevelConfirmationSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
-        
         // 1. Connect the Lighstreamer client
-        let client = LSLightstreamerClient(serverAddress: rootURL.absoluteString, adapterSet: nil)
-        client.connectionDetails.user = creds.identifier.description
-        client.connectionDetails.setPassword(creds.password)
+        let client = LSLightstreamerClient(serverAddress: "<#Lightstreamer server address#>", adapterSet: nil)
+        client.connectionDetails.user = "<#Lighstreamer user#>"
+        client.connectionDetails.setPassword("<#Lighstreamer password#>")
         client.add(delegate: self)
         client.connect()
         self.wait(seconds: 1)
         
         // 2. Establish a subscription
-        let subscription = LSSubscription(mode: "DISTINCT", item: "TRADE:\(creds.identifier)", fields: ["CONFIRMS"])
+        let subscription = LSSubscription(mode: "DISTINCT", item: "TRADE:<#identifier#>", fields: ["CONFIRMS"])
         subscription.requestedSnapshot = "yes"
         subscription.add(delegate: self)
         client.subscribe(subscription)

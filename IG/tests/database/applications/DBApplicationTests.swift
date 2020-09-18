@@ -3,16 +3,19 @@ import IG
 import Combine
 
 final class DBApplicationTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests the creation of an "in-memory" database.
-    func testApplicationsInMemory() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+    func testApplicationsInMemory() throws {
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
         let apiResponse = api.accounts.getApplications().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(apiResponse.isEmpty)
         
-        let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
+        let db = try Database(location: .memory)
         db.accounts.update(applications: apiResponse).expectsCompletion(timeout: 2, on: self)
         
         let dbResponse = db.accounts.getApplications().expectsOne(timeout: 0.5, on: self)
@@ -38,8 +41,8 @@ final class DBApplicationTests: XCTestCase {
     }
     
     /// Tests the creation of an "in-memory" database.
-    func testApplicationsEmpty() {
-        let db = Test.makeDatabase(rootURL: nil, targetQueue: nil)
+    func testApplicationsEmpty() throws {
+        let db = try Database(location: .memory)
         db.accounts.getApplication(key: "a12345bc67890d12345e6789fg0hi123j4567890").expectsFailure(timeout: 0.5, on: self)
     }
 }

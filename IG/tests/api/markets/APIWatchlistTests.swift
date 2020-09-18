@@ -3,12 +3,14 @@ import ConbiniForTesting
 import XCTest
 
 final class APIWatchlistTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests the various watchlist retrieval endpoints.
     func testWatchlistRetrieval() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let watchlists = api.watchlists.getAll().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(watchlists.isEmpty)
@@ -24,7 +26,8 @@ final class APIWatchlistTests: XCTestCase {
 
     /// Tests to perform only on the server side.
     func testWatchlistLifecycle() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         /// Epics to be added to the watchlist.
         let startEpics: [IG.Market.Epic] = ["CS.D.EURUSD.MINI.IP", "CS.D.EURCHF.CFD.IP"].sorted { $0 > $1 }
         let addedEpic: IG.Market.Epic = "CS.D.GBPEUR.CFD.IP"

@@ -3,12 +3,14 @@ import ConbiniForTesting
 import XCTest
 
 final class APINavigationNodeTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests navigation nodes retrieval.
     func testNavigationRootNodes() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let rootNode = api.nodes.get(identifier: nil, name: "Root", depth: .none).expectsOne(timeout: 2, on: self)
         XCTAssertNil(rootNode.id)
@@ -22,7 +24,8 @@ final class APINavigationNodeTests: XCTestCase {
     
     // Tests the major forex node.
     func testNavigationMarketsSubtree() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let target: (identifier: String, name: String) = ("264134", "Major FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .none).expectsOne(timeout: 2, on: self)
@@ -36,7 +39,8 @@ final class APINavigationNodeTests: XCTestCase {
     
     /// Drill down two levels in the navigation nodes tree.
     func testNavigationSubtree() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let target: (identifier: String, name: String) = ("195235", "FX")
         let node = api.nodes.get(identifier: target.identifier, name: target.name, depth: .all).expectsOne(timeout: 8, on: self)
@@ -49,7 +53,8 @@ final class APINavigationNodeTests: XCTestCase {
 
     /// Test the market search capabilities.
     func testMarketTermSearch() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
 
         let markets = api.nodes.getMarkets(matching: "NZD").expectsOne(timeout: 2, on: self)
         XCTAssertFalse(markets.isEmpty)

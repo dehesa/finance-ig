@@ -4,12 +4,14 @@ import XCTest
 
 /// Tests API transaction retrieval
 final class APITransactionTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests paginated transaction retrieval.
     func testTransactions() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let date = Date().lastTuesday
         let transactions = api.accounts.getTransactionsContinuously(from: date)

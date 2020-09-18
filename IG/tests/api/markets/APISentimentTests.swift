@@ -3,12 +3,14 @@ import ConbiniForTesting
 import XCTest
 
 final class APISentimentTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests the platform's sentiment list call.
     func testSentiments() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let ids = ["EURGBP", "GC", "VOD-UK"].sorted { $0 > $1 }
         let markets = api.markets.getSentiment(from: ids).expectsOne(timeout: 2, on: self)
@@ -22,7 +24,8 @@ final class APISentimentTests: XCTestCase {
     
     /// Tests the platform's sentiment call.
     func testSentiment() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
 
         let id = "EURGBP"
         let market = api.markets.getSentiment(from: id).expectsOne(timeout: 2, on: self)
@@ -32,7 +35,8 @@ final class APISentimentTests: XCTestCase {
     }
 
     func testMarketRelations() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let id = "EURGBP"
         let markets = api.markets.getSentiment(relatedTo: id).expectsOne(timeout: 2, on: self)

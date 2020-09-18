@@ -4,17 +4,17 @@ import XCTest
 
 /// Tests API Application related endpoints.
 final class APIPriceBatchTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Test price data extraction (by number of data points).
     func testLasPricesExtractionByNumber() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: nil, targetQueue: nil)
-        
         let cst: String = "<#CST#>"
         let security: String = "<#X-SECURTY-TOKEN#>"
         
         let num = 300
+        let api = API()
         let snapshot = api.scrapped.getPriceSnapshot(epic: "CS.D.EURUSD.MINI.IP", resolution: .minute, numDataPoints: num, scrappedCredentials: (cst, security)).expectsOne(timeout: 2, on: self)
         XCTAssertFalse(snapshot.prices.isEmpty)
         XCTAssertEqual(num, snapshot.prices.count)

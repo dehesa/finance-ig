@@ -4,18 +4,14 @@ import XCTest
 
 /// Tests API Account related endpoints.
 final class APIAccountTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
-    
     override func setUp() {
         self.continueAfterFailure = false
     }
-}
 
-extension APIAccountTests {
     /// Tests Account information retrieval.
     func testAccounts() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let accounts = api.accounts.getAll().expectsOne(timeout: 2, on: self)
         XCTAssertFalse(accounts.isEmpty)
@@ -28,7 +24,8 @@ extension APIAccountTests {
     
     /// Tests Account update/retrieve.
     func testAccountPreferences() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let initial = api.accounts.getPreferences().expectsOne(timeout: 2, on: self)
         api.accounts.updatePreferences(trailingStops: !initial.trailingStops).expectsCompletion(timeout: 1.5, on: self)

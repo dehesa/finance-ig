@@ -3,10 +3,17 @@ import IG
 import Combine
 
 final class StreamerMarketTests: XCTestCase {
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
+    
     /// Tests the market info subscription.
-    func testMarketSubscriptions() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testMarketSubscriptions() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.session.status.isReady)

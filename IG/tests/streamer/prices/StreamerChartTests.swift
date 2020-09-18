@@ -3,10 +3,17 @@ import IG
 import Combine
 
 final class StreamerChartTests: XCTestCase {
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
+    
     /// Tests subscription to candle charts.
-    func testChartSecond() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testChartSecond() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsCompletion(timeout: 5, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
@@ -35,9 +42,12 @@ final class StreamerChartTests: XCTestCase {
     }
     
     /// Tests subscription to tick charts.
-    func testChartTick() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testChartTick() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsCompletion(timeout: 5, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
@@ -55,9 +65,12 @@ final class StreamerChartTests: XCTestCase {
     }
     
     /// Tests the subscription to multiple markets.
-    func testMultipleChartAggregates() {
-        let (rootURL, creds) = self.streamerCredentials(from: Test.account(environmentKey: Test.defaultEnvironmentKey))
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testMultipleChartAggregates() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsCompletion(timeout: 5, on: self)
         XCTAssertTrue(streamer.session.status.isReady)

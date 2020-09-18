@@ -4,12 +4,14 @@ import XCTest
 
 /// Tests API history activity related enpoints
 final class APIActivityTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests paginated activity retrieval.
     func testActivities() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
+        let api = API()
+        api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let date = Date().lastTuesday
         let activities = api.accounts.getActivityContinuously(from: date, detailed: true)

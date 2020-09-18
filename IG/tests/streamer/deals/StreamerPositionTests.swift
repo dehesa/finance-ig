@@ -5,14 +5,17 @@ import Combine
 import Decimals
 
 final class StreamerPositionTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Tests the position creation, retrieval, amendment, and deletion receiving the confirmations in a subscription.
-    func testPositionSubscriptionLifetime() {
-        let api = Test.makeAPI(rootURL: self._acc.api.rootURL, credentials: self.apiCredentials(from: self._acc), targetQueue: nil)
-        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testPositionSubscriptionLifetime() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         let market = api.markets.get(epic: "CS.D.EURUSD.MINI.IP").expectsOne(timeout: 2, on: self)
         XCTAssertFalse(market.instrument.currencies.isEmpty)
@@ -27,7 +30,7 @@ final class StreamerPositionTests: XCTestCase {
         let queue = DispatchQueue(label: "Lock queue")
         var waiter: Waiter? = nil
         
-        let cancellable = streamer.deals.subscribe(account: self._acc.id, fields: .all, snapshot: false)
+        let cancellable = streamer.deals.subscribe(account: creds.api.account, fields: .all, snapshot: false)
             .sink(receiveCompletion: { _ in XCTFail() }, receiveValue: { (deal) in
                 queue.sync { () -> XCTestExpectation? in
                     guard let w = waiter else { return nil }

@@ -3,20 +3,24 @@ import IG
 import Combine
 
 final class StreamerAccountTests: XCTestCase {
-    /// The test account being used for the tests in this class.
-    private let _acc = Test.account(environmentKey: Test.defaultEnvironmentKey)
+    override func setUp() {
+        self.continueAfterFailure = false
+    }
     
     /// Test Lightstreamer subscription to account changes.
-    func testAccountSubscription() {
-        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
-        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
+    func testAccountSubscription() throws {
+        let api = API()
+        api.session.login(type: .certificate, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
+        
+        let creds = (api: try XCTUnwrap(api.session.credentials), streamer: try Streamer.Credentials(api.session.credentials))
+        let streamer = Streamer(rootURL: creds.api.streamerURL, credentials: creds.streamer)
         
         streamer.session.connect().expectsCompletion(timeout: 2, on: self)
         XCTAssertTrue(streamer.session.status.isReady)
         
-        streamer.accounts.subscribe(account: self._acc.id, fields: .all)
+        streamer.accounts.subscribe(account: creds.api.account, fields: .all)
             .expectsAtLeast(values: 1, timeout: 2, on: self) { (account) in
-                XCTAssertEqual(account.id, self._acc.id)
+                XCTAssertEqual(account.id, creds.api.account)
                 XCTAssertNotNil(account.funds)
                 XCTAssertNotNil(account.equity.value)
                 XCTAssertNotNil(account.equity.used)
