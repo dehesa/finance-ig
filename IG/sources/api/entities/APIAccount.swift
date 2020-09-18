@@ -57,6 +57,13 @@ extension API.Account {
         public let profitLoss: Decimal64
         /// Amount available for trading.
         public let tradeAvailable: Decimal64
+        
+        /// The amount of equity (i.e. `funds` + `profitLoss` being taken by the margin.
+        public var equityUsed: Decimal64 {
+            let equity = self.funds + self.profitLoss
+            guard equity > .zero else { return 1 }
+            return self.deposit / equity
+        }
     }
     
     /// Account preferences.

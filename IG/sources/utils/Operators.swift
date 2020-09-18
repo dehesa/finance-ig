@@ -69,6 +69,7 @@ public extension SettableReference {
 extension Calendar: SettableValue {}
 extension DateComponents: SettableValue {}
 extension DateFormatter: SettableReference {}
+extension NumberFormatter: SettableReference {}
 extension JSONDecoder: SettableReference {}
 extension Set: SettableValue {}
 extension URLRequest: SettableValue {}
