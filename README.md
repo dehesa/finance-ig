@@ -3,9 +3,8 @@
 </p>
 
 <p align="center">
-    <a href="https://swift.org/about/#swiftorg-and-open-source"><img src="docs/assets/badges/Swift.svg" alt="Swift 5.2"></a>
+    <a href="https://swift.org/about/#swiftorg-and-open-source"><img src="docs/assets/badges/Swift.svg" alt="Swift 5.3"></a>
     <a href="https://github.com/dehesa/CodableCSV/wiki/Implicit-dependencies"><img src="docs/assets/badges/Apple.svg" alt="macOS 10.15+ - iOS 13+"></a>
-    <a href="https://developer.apple.com/xcode"><img src="docs/assets/badges/Xcode.svg" alt="Xcode 11"></a>
     <a href="http://doge.mit-license.org"><img src="docs/assets/badges/License.svg" alt="MIT License"></a>
 </p>
 
@@ -20,15 +19,36 @@ This framework provides:
 
 # Usage
 
-To use this framework you just need to include `IG.xcodeproj` in your Xcode project/workspace. Then import the framework in any file that needs it. SPM support will arrive with Swift 5.3 ([SE-271](https://github.com/apple/swift-evolution/blob/master/proposals/0271-package-manager-resources.md) and [SE-272](https://github.com/apple/swift-evolution/blob/master/proposals/0272-swiftpm-binary-dependencies.md) will permit binary inclusion required for the Lightstreamer library).
+To use this library, you need to:
+
+<ul>
+<details><summary>Add <code>IG</code> to your project through <a href="https://github.com/apple/swift-package-manager/tree/master/Documentation">SPM</a>.</summary><p>
+
+```swift
+// swift-tools-version:5.3
+import PackageDescription
+
+let package = Package(
+    /* Your package name, supported platforms, and generated products go here */
+    dependencies: [
+        .package(url: "https://github.com/dehesa/IG.git", from: "0.11.0")
+    ],
+    targets: [
+        .target(name: /* Your target name here */, dependencies: ["IG"])
+    ]
+)
+```
+
+</p></details>
+
+<details><summary>Import <code>IG</code> in the file that needs it.</summary><p>
 
 ```swift
 import IG
 ```
 
-The IG framework uses the Swift Standard Library, Foundation, Combine, and the host system SQLite library. All these are provided implictly. There is also a SPM file defining the following third-party dependencies:
--   [Decimals](https://github.com/dehesa/Decimal64) (for a more performant 64-bit decimal number type).
--   [Conbini](https://www.github.com/dehesa/Conbini) (for extra functionality for Combine).
+</p></details>
+</ul>
 
 ## API
 
@@ -114,7 +134,7 @@ The library provides the option to create a SQLite database to cache market info
 1. Define a database location.
 
     ```swift
-    let db = try Database(location: .inMemory)
+    let db = try Database(location: .memory)
     ```
 
 2. Write some API market data.

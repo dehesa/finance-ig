@@ -19,8 +19,8 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 ## System
- - OS: [e.g. macOS 10.15.4, iOS 13.4]
- - IG: [e.g. 0.8.1]
+ - OS: [e.g. macOS 11, iOS 14]
+ - IG: [e.g. 0.11.0]
 
 ## Additional context
 Add any other context about the problem here.
