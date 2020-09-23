@@ -59,18 +59,18 @@ extension Database.Price {
     
     internal static func tableDefinition(name: String) -> String { """
         CREATE TABLE '\(name)' (
-        date     TEXT    NOT NULL CHECK( (date IS DATETIME(date)) AND (date <= CURRENT_TIMESTAMP) ),
-        openBid  INTEGER NOT NULL,
-        openAsk  INTEGER NOT NULL,
-        closeBid INTEGER NOT NULL,
-        closeAsk INTEGER NOT NULL,
-        lowBid   INTEGER NOT NULL,
-        lowAsk   INTEGER NOT NULL,
-        highBid  INTEGER NOT NULL,
-        highAsk  INTEGER NOT NULL,
-        volume   INTEGER NOT NULL,
-        
-        PRIMARY KEY(date)
+            date     INTEGER NOT NULL,
+            openBid  INTEGER NOT NULL,
+            openAsk  INTEGER NOT NULL,
+            closeBid INTEGER NOT NULL,
+            closeAsk INTEGER NOT NULL,
+            lowBid   INTEGER NOT NULL,
+            lowAsk   INTEGER NOT NULL,
+            highBid  INTEGER NOT NULL,
+            highAsk  INTEGER NOT NULL,
+            volume   INTEGER NOT NULL,
+            
+            PRIMARY KEY(date)
         ) WITHOUT ROWID;
         """
     }
@@ -79,17 +79,17 @@ extension Database.Price {
 internal extension Database.Price {
     typealias Indices = (date: Int32, openBid: Int32, openAsk: Int32, closeBid: Int32, closeAsk: Int32, lowBid: Int32, lowAsk: Int32, highBid: Int32, highAsk: Int32, volume: Int32)
     
-    init(statement s: SQLite.Statement, formatter: UTC.Timestamp, indices: Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
-        self.date = formatter.date(from: String(cString: sqlite3_column_text(s, indices.date)))
-        self.open = .init(statement: s, indices: (indices.openBid, indices.openAsk))
-        self.close = .init(statement: s, indices: (indices.closeBid, indices.closeAsk))
-        self.lowest = .init(statement: s, indices: (indices.lowBid, indices.lowAsk))
-        self.highest = .init(statement: s, indices: (indices.highBid, indices.highAsk))
+    init(statement s: SQLite.Statement, indices: Indices = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)) {
+        self.date = Date(timeIntervalSince1970: TimeInterval(sqlite3_column_int(s, indices.date)))
+        self.open = Point(statement: s, indices: (indices.openBid, indices.openAsk))
+        self.close = Point(statement: s, indices: (indices.closeBid, indices.closeAsk))
+        self.lowest = Point(statement: s, indices: (indices.lowBid, indices.lowAsk))
+        self.highest = Point(statement: s, indices: (indices.highBid, indices.highAsk))
         self.volume = Int(sqlite3_column_int(s, indices.volume))
     }
     
     func _bind(to statement: SQLite.Statement, indices: Indices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) {
-        sqlite3_bind_text(statement, indices.date, UTC.Timestamp.string(from: self.date), -1, SQLite.Destructor.transient)
+        sqlite3_bind_int(statement, indices.date, Int32(self.date.timeIntervalSince1970))
         self.open.bind(to: statement, indices: (indices.openBid, indices.openAsk))
         self.close.bind(to: statement, indices: (indices.closeBid, indices.closeAsk))
         self.lowest.bind(to: statement, indices: (indices.lowBid, indices.lowAsk))
@@ -121,13 +121,12 @@ internal extension Database.Request.Prices {
         tableName.append(epic.description)
         
         let query = """
-        INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
-        ON CONFLICT(date) DO UPDATE SET
-        openBid=excluded.openBid, openAsk=excluded.openAsk,
-        closeBid=excluded.closeBid, closeAsk=excluded.closeAsk,
-        lowBid=excluded.lowBid, lowAsk=excluded.lowAsk,
-        highBid=excluded.highBid, highAsk=excluded.highAsk,
-        volume=excluded.volume
+        INSERT INTO '\(tableName)' VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10) ON CONFLICT(date) DO UPDATE SET
+            openBid=excluded.openBid, openAsk=excluded.openAsk,
+            closeBid=excluded.closeBid, closeAsk=excluded.closeAsk,
+            lowBid=excluded.lowBid, lowAsk=excluded.lowAsk,
+            highBid=excluded.highBid, highAsk=excluded.highAsk,
+            volume=excluded.volume
         """
         
         return (tableName, query)

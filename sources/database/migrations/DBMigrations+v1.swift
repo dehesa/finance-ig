@@ -7,10 +7,10 @@ extension Database {
 }
 
 extension Database.Migration {
-    /// Where the actual migration happens.
+    /// The initial database configuration settings.
     /// - parameter channel: The SQLite database connection.
     /// - throws: `IG.Error` exclusively.
-    internal static func initialMigration(channel: Database.Channel) throws {
+    internal static func toVersion1(channel: Database.Channel) throws {
         try channel.write { (database) throws -> Void in
             // Set the application identifier for the database
             try database.set(applicationId: Database.applicationId)

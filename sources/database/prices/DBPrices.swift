@@ -41,25 +41,22 @@ extension Database.Request.Prices {
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
             switch (from, to) {
-            case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-                                      sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
-            case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-            case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, let to?):sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+                                      sqlite3_bind_int(statement, 2, Int32(to.timeIntervalSince1970))
+            case (let from?, .none):  sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+            case (.none, let to?):    sqlite3_bind_int(statement, 1, Int32(to.timeIntervalSince1970))
             case (.none, .none):      break
             }
             // 4. Retrieve data
-            let formatter = UTC.Timestamp()
             while true {
                 switch sqlite3_step(statement).result {
                 case .row:
-                    let date = formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
+                    let date = Date(timeIntervalSince1970: TimeInterval(sqlite3_column_int(statement!, 0)))
                     result.append(date)
                 case .done: return result
                 case let c: throw IG.Error._queryFailed(code: c)
                 }
             }
-            
-            return result
         }.mapError(errorCast)
         .eraseToAnyPublisher()
     }
@@ -70,10 +67,9 @@ extension Database.Request.Prices {
     public func getFirstDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
         self._database.publisher { _  in "SELECT MIN(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query) in
-                let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
-                case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
+                case .row:  return Date(timeIntervalSince1970: TimeInterval(sqlite3_column_int(statement!, 0)))
                 case .done: return nil
                 case let c: throw IG.Error._queryFailed(code: c)
                 }
@@ -88,10 +84,9 @@ extension Database.Request.Prices {
     public func getLastDate(epic: IG.Market.Epic) -> AnyPublisher<Date?,IG.Error> {
         self._database.publisher { _ in "SELECT MAX(date) FROM '\(Database.Price.tableNamePrefix.appending(epic.description))'" }
             .read { (sqlite, statement, query) in
-                let formatter = UTC.Timestamp()
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 switch sqlite3_step(statement).result {
-                case .row:  return formatter.date(from: String(cString: sqlite3_column_text(statement!, 0)))
+                case .row:  return Date(timeIntervalSince1970: TimeInterval(sqlite3_column_int(statement!, 0)))
                 case .done: return nil
                 case let c: throw IG.Error._queryFailed(code: c)
                 }
@@ -121,10 +116,10 @@ extension Database.Request.Prices {
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 // 3. Add the variables to the statement
                 switch (from, to) {
-                case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-                                          sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
-                case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-                case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+                case (let from?, let to?):sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+                                          sqlite3_bind_int(statement, 2, Int32(to.timeIntervalSince1970))
+                case (let from?, .none):  sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+                case (.none, let to?):    sqlite3_bind_int(statement, 1, Int32(to.timeIntervalSince1970))
                 case (.none, .none):      break
                 }
                 switch sqlite3_step(statement).result {
@@ -165,23 +160,20 @@ extension Database.Request.Prices {
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
             switch (from, to) {
-            case (let from?, let to?):sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-                                      sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
-            case (let from?, .none):  sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-            case (.none, let to?):    sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: to),   -1, SQLite.Destructor.transient)
+            case (let from?, let to?):sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+                                      sqlite3_bind_int(statement, 2, Int32(to.timeIntervalSince1970))
+            case (let from?, .none):  sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+            case (.none, let to?):    sqlite3_bind_int(statement, 1, Int32(to.timeIntervalSince1970))
             case (.none, .none):      break
             }
             
-            let formatter = UTC.Timestamp()
             while true {
                 switch sqlite3_step(statement).result {
-                case .row:  result.append(.init(statement: statement!, formatter: formatter))
+                case .row:  result.append(Database.Price(statement: statement!))
                 case .done: return result
                 case let c: throw IG.Error._queryFailed(code: c)
                 }
             }
-            
-            return result
         }.mapError(errorCast)
         .eraseToAnyPublisher()
     }
@@ -216,15 +208,12 @@ extension Database.Request.Prices {
             // 1. Compile the SQL statement (there is no check for price table).
             try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
             // 3. Add the variables to the statement
-            sqlite3_bind_text(statement, 1, UTC.Timestamp.string(from: from), -1, SQLite.Destructor.transient)
-            if let to = to {
-                sqlite3_bind_text(statement, 2, UTC.Timestamp.string(from: to), -1, SQLite.Destructor.transient)
-            }
+            sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
+            if let to = to { sqlite3_bind_int(statement, 2, Int32(to.timeIntervalSince1970)) }
             
-            let formatter = UTC.Timestamp()
             // 4. Retrieve data
             switch sqlite3_step(statement).result {
-            case .row:  return .init(statement: statement!, formatter: formatter)
+            case .row:  return .init(statement: statement!)
             case .done: return nil
             case let c: throw IG.Error._queryFailed(code: c)
             }
@@ -258,9 +247,7 @@ extension Database.Request.Prices {
                 // 3. Add the data to the database.
                 try sqlite3_prepare_v2(sqlite, input.query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
                 for p in prices {
-                    guard let v = p.volume else {
-                        throw IG.Error._unfoundVolume()
-                    }
+                    guard let v = p.volume else { throw IG.Error._unfoundVolume() }
                     let price = Database.Price(date: p.date,
                                             open: .init(bid: p.open.bid, ask: p.open.ask),
                                             close: .init(bid: p.close.bid, ask: p.close.ask),

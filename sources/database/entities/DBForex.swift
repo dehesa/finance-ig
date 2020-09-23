@@ -222,35 +222,35 @@ extension Database.Market.Forex: DBTable {
     internal static var tableDefinition: String {
         """
         CREATE TABLE \(Self.tableName) (
-        epic       TEXT    NOT NULL UNIQUE CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
-        base       TEXT    NOT NULL        CHECK( LENGTH(base) == 3 ),
-        counter    TEXT    NOT NULL        CHECK( LENGTH(counter) == 3 ),
+            epic       TEXT    NOT NULL UNIQUE CHECK( LENGTH(epic) BETWEEN 6 AND 30 ),
+            base       TEXT    NOT NULL        CHECK( LENGTH(base) == 3 ),
+            counter    TEXT    NOT NULL        CHECK( LENGTH(counter) == 3 ),
 
-        name       TEXT    NOT NULL UNIQUE CHECK( LENGTH(name) > 0 ),
-        marketId   TEXT    NOT NULL        CHECK( LENGTH(marketId) > 0 ),
-        chartId    TEXT                    CHECK( LENGTH(chartId) > 0 ),
-        reutersId  TEXT    NOT NULL        CHECK( LENGTH(reutersId) > 0 ),
+            name       TEXT    NOT NULL UNIQUE CHECK( LENGTH(name) > 0 ),
+            marketId   TEXT    NOT NULL        CHECK( LENGTH(marketId) > 0 ),
+            chartId    TEXT                    CHECK( LENGTH(chartId) > 0 ),
+            reutersId  TEXT    NOT NULL        CHECK( LENGTH(reutersId) > 0 ),
 
-        contSize   INTEGER NOT NULL        CHECK( contSize > 0 ),
-        pipVal     INTEGER NOT NULL        CHECK( pipVal > 0 ),
-        placePip   INTEGER NOT NULL        CHECK( placePip >= 0 ),
-        placeLevel INTEGER NOT NULL        CHECK( placeLevel >= 0 ),
-        slippage   INTEGER NOT NULL        CHECK( slippage >= 0 ),
-        premium    INTEGER NOT NULL        CHECK( premium >= 0 ),
-        extra      INTEGER NOT NULL        CHECK( extra >= 0 ),
-        margin     INTEGER NOT NULL        CHECK( margin >= 0 ),
-        bands      TEXT    NOT NULL        CHECK( LENGTH(bands) > 0 ),
+            contSize   INTEGER NOT NULL        CHECK( contSize > 0 ),
+            pipVal     INTEGER NOT NULL        CHECK( pipVal > 0 ),
+            placePip   INTEGER NOT NULL        CHECK( placePip >= 0 ),
+            placeLevel INTEGER NOT NULL        CHECK( placeLevel >= 0 ),
+            slippage   INTEGER NOT NULL        CHECK( slippage >= 0 ),
+            premium    INTEGER NOT NULL        CHECK( premium >= 0 ),
+            extra      INTEGER NOT NULL        CHECK( extra >= 0 ),
+            margin     INTEGER NOT NULL        CHECK( margin >= 0 ),
+            bands      TEXT    NOT NULL        CHECK( LENGTH(bands) > 0 ),
 
-        minSize    INTEGER NOT NULL        CHECK( minSize >= 0 ),
-        minDista   INTEGER NOT NULL        CHECK( minDista >= 0 ),
-        maxDista   INTEGER NOT NULL        CHECK( maxDista >= 0 ),
-        minRisk    INTEGER NOT NULL        CHECK( minRisk >= 0 ),
-        riskUnit   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
-        trailing   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
-        minStep    INTEGER NOT NULL        CHECK( minStep >= 0 ),
+            minSize    INTEGER NOT NULL        CHECK( minSize >= 0 ),
+            minDista   INTEGER NOT NULL        CHECK( minDista >= 0 ),
+            maxDista   INTEGER NOT NULL        CHECK( maxDista >= 0 ),
+            minRisk    INTEGER NOT NULL        CHECK( minRisk >= 0 ),
+            riskUnit   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
+            trailing   INTEGER NOT NULL        CHECK( trailing BETWEEN 0 AND 1 ),
+            minStep    INTEGER NOT NULL        CHECK( minStep >= 0 ),
 
-        CHECK( base != counter ),
-        FOREIGN KEY(epic) REFERENCES Markets(epic)
+            CHECK( base != counter ),
+            FOREIGN KEY(epic) REFERENCES Markets(epic)
         );
         """
     }

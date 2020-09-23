@@ -34,8 +34,9 @@ private extension Database {
     /// - throws: `IG.Error` exclusively.
     final func _migrateToNextVersion() throws {
         switch Database.Version(rawValue: try self.channel.unrestrictedAccess { try $0.version() })! {
-        case .v0: try Database.Migration.initialMigration(channel: self.channel)
-        case .v1: break
+        case .v0: try Database.Migration.toVersion1(channel: self.channel)
+        case .v1: try Database.Migration.toVersion2(channel: self.channel)
+        case .v2: break
         }
     }
 }
