@@ -20,17 +20,21 @@ extension Database.Request.Rates {
     /// - parameter to: The date from which to end the query (inclusive). If `nil`, the retrieved data ends with the last recorded interest rate.
     /// - returns: The requested central bank interest rates or an empty array if no data has been previously stored for that timeframe.
     public func getInterests(currencies: Set<Currency.Code>, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[Database.InterestRate],IG.Error> {
-        self._database.publisher { _ -> String in
+        guard !currencies.isEmpty else { return Empty().eraseToAnyPublisher() }
+        
+        return self._database.publisher { _ -> String in
                 var query = "SELECT * FROM '\(Database.InterestRate.tableName)'"
                 switch (from, to) {
                 case (let from?, let to?):
                     guard from <= to else { throw IG.Error._invalidDates() }
-                    query.append(" WHERE date BETWEEN ?1 AND ?2")
-                case (.some, .none): query.append(" WHERE date >= ?1")
-                case (.none, .some): query.append(" WHERE date <= ?1")
-                case (.none, .none): break
+                    query.append(" WHERE (date BETWEEN ?1 AND ?2) AND (")
+                case (.some, .none): query.append(" WHERE (date >= ?1) AND (")
+                case (.none, .some): query.append(" WHERE (date <= ?1) AND (")
+                case (.none, .none): query.append(" WHERE (")
                 }
-                query.append(" ORDER BY date ASC")
+            
+                query.append(currencies.map { "(currency == '\($0.description)')" }.joined(separator: " OR "))
+                query.append(") ORDER BY date ASC")
                 return query
             }.read { (sqlite, statement, query) -> [Database.InterestRate] in
                 var result: [Database.InterestRate] = []
@@ -62,9 +66,8 @@ extension Database.Request.Rates {
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
     internal func update(interests: [Database.InterestRate]) -> AnyPublisher<Never,IG.Error> {
         guard !interests.isEmpty else { return Empty().eraseToAnyPublisher() }
-        #warning("Will this pk_CurInterest work?")
         return self._database.publisher { _ -> String in
-                "INSERT INTO '\(Database.InterestRate.tableName)' VALUES(?1, ?2, ?3) ON CONFLICT(pk_CurInterest) DO UPDATE SET rate=excluded.rate"
+                "INSERT INTO '\(Database.InterestRate.tableName)' VALUES(?1, ?2, ?3) ON CONFLICT(date,currency) DO UPDATE SET rate=excluded.rate"
             }.write { (sqlite, statement, query) -> Void in
                 // 1. Compile the SQL statement.
                 try sqlite3_prepare_v2(sqlite, query, -1, &statement, nil).expects(.ok) { IG.Error._compilationFailed(code: $0) }
@@ -92,10 +95,10 @@ private extension IG.Error {
     }
     /// Error raised when a SQLite table fails.
     static func _queryFailed(code: SQLite.Result) -> Self {
-        Self(.database(.callFailed), "An error occurred querying the SQLite table.", info: ["Table": Database.Price.self, "Error code": code])
+        Self(.database(.callFailed), "An error occurred querying the SQLite table.", info: ["Table": Database.InterestRate.self, "Error code": code])
     }
     /// Error raised when storing fails.
     static func _storingFailed(code: SQLite.Result) -> Self {
-        Self(.database(.callFailed), "An error occurred storing values on '\(Database.Price.self)'.", info: ["Error code": code])
+        Self(.database(.callFailed), "An error occurred storing values on '\(Database.InterestRate.self)'.", info: ["Error code": code])
     }
 }

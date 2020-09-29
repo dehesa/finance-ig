@@ -19,6 +19,8 @@ public final class Database {
     @inlinable public final var markets: Database.Request.Markets { .init(database: self) }
     /// Namespace for functionality related to price data points.
     @inlinable public final var prices: Database.Request.Prices { .init(database: self) }
+    /// Namespace for functionality related to central banks interest rates and inflation.
+    @inlinable public final var rates: Database.Request.Rates { .init(database: self) }
     
     /// The database version.
     public final var version: Int { Database.Version.latest.rawValue }
