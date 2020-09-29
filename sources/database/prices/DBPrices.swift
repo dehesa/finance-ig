@@ -4,7 +4,7 @@ import Decimals
 import SQLite3
 
 extension Database.Request {
-    /// Contains all functionality related to Database user's activity, transaction, and history of prices.
+    /// Contains all functionality related to the history of prices.
     @frozen public struct Prices {
         /// Pointer to the actual database instance in charge of the low-level objects.
         private unowned let _database: Database
@@ -153,7 +153,7 @@ extension Database.Request.Prices {
             query.append(" ORDER BY date ASC")
             return (tableName, query)
         }.read { (sqlite, statement, input) in
-            var result: [Database.Price] = .init()
+            var result: [Database.Price] = []
             // 1. Check the price table is there.
             guard try Self._existsPriceTable(epic: epic, sqlite: sqlite) else { return result }
             // 2. Compile the SQL statement
@@ -164,7 +164,7 @@ extension Database.Request.Prices {
                                       sqlite3_bind_int(statement, 2, Int32(to.timeIntervalSince1970))
             case (let from?, .none):  sqlite3_bind_int(statement, 1, Int32(from.timeIntervalSince1970))
             case (.none, let to?):    sqlite3_bind_int(statement, 1, Int32(to.timeIntervalSince1970))
-            case (.none, .none):      break
+            case (.none, .none): break
             }
             
             while true {
@@ -229,9 +229,7 @@ extension Database.Request.Prices {
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
     /// - returns: A publisher that completes successfully (without sending any value) if the operation has been successful.
     public func update(_ prices: [API.Price], epic: IG.Market.Epic) -> AnyPublisher<Never,IG.Error> {
-        guard !prices.isEmpty else {
-            return Empty().eraseToAnyPublisher()
-        }
+        guard !prices.isEmpty else { return Empty().eraseToAnyPublisher() }
         
         return self._database.publisher { _ in
                 Self._priceInsertionQuery(epic: epic)

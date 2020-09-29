@@ -27,24 +27,4 @@ final class StreamerDealTests: XCTestCase {
         streamer.session.disconnect().expectsOne(timeout: 2, on: self)
         XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
     }
-    
-    /// Tests for the stream deal subscription (without snapshot).
-//    func testEmptyDeals() {
-//        let (rootURL, creds) = self.streamerCredentials(from: self._acc)
-//        let streamer = Test.makeStreamer(rootURL: rootURL, credentials: creds, targetQueue: nil)
-//
-//        streamer.session.connect().expectsCompletion(timeout: 2, on: self)
-//        XCTAssertTrue(streamer.session.status.isReady)
-//
-//        let cancellable = streamer.deals.subscribeToDeals(account: self._acc.id, fields: [.confirmations], snapshot: false)
-//            .sink(receiveCompletion: {
-//                guard case .finished = $0 else { return XCTFail() }
-//            }, receiveValue: { _ in XCTFail() })
-//
-//        self.wait(seconds: 2)
-//        cancellable.cancel()
-//
-//        streamer.session.disconnect().expectsOne(timeout: 2, on: self)
-//        XCTAssertEqual(streamer.session.status, .disconnected(isRetrying: false))
-//    }
 }

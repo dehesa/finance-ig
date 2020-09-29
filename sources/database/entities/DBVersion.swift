@@ -5,8 +5,10 @@ internal extension Database {
         case v0 = 0
         /// The initial version
         case v1 = 1
-        /// Database modification changing dates to integer numbers.
+        /// DB changed price dates to integer numbers.
         case v2 = 2
+        /// DB added the interest rate table.
+        case v3 = 3
         
         /// The last described migration.
         static var latest: Self { Self.allCases.last! }

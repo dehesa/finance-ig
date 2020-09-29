@@ -13,6 +13,55 @@ public enum UTC {
 }
 
 extension UTC {
+    /// Date using the UTC calendar and timezone.
+    internal final class Day {
+        private var _components = DateComponents()
+        private let _year = UnsafeMutablePointer<Int>.allocate(capacity: 1)
+        private let _month = UnsafeMutablePointer<Int>.allocate(capacity: 1)
+        private let _day = UnsafeMutablePointer<Int>.allocate(capacity: 1)
+
+        deinit {
+            self._year.deallocate()
+            self._month.deallocate()
+            self._day.deallocate()
+        }
+
+        /// Returns the date represented by the given `String`, which must have the format `yyyy-MM-dd`.
+        func date(from string: String) -> Date {
+            let _ = withVaList([self._year, self._month, self._day]) {
+                vsscanf(string, "%d-%d-%d", $0)
+            }
+
+            self._components.year = self._year.pointee
+            self._components.month = self._month.pointee
+            self._components.day = self._day.pointee
+            return UTC.calendar.date(from: self._components)!
+        }
+        
+        /// Returns the string representation for the given `Date` with format `yyyy-MM-dd`.
+        static func string(from date: Date) -> String {
+            let components = UTC.calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+            
+            var result = String()
+            result.reserveCapacity(10)
+            
+            result.append(String(components.year!))
+            result.append("-")
+            
+            let month = components.month!
+            if month < 10 { result.append("0") }
+            result.append(String(month))
+            result.append("-")
+            
+            let day = components.day!
+            if day < 10 { result.append("0") }
+            result.append(String(day))
+            return result
+        }
+    }
+}
+
+extension UTC {
     /// Date and time using the UTC calendar and timezone.
     /// - Example: `2019-09-09 11:43:09`
     internal final class Timestamp {

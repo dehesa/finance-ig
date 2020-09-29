@@ -21,7 +21,7 @@ extension Database.Migration {
                     }
                 }
             }
-        guard !epics.isEmpty else { return }
+        guard !epics.isEmpty else { return try channel.unrestrictedAccess { try $0.set(version: .v2) } }
         
         // 2. Find out all price tables in the database.
         let tableNames = try channel.read { (database) -> [String] in
@@ -48,7 +48,7 @@ extension Database.Migration {
             
             return result
         }
-        guard !tableNames.isEmpty else { return }
+        guard !tableNames.isEmpty else { return try channel.unrestrictedAccess { try $0.set(version: .v2) } }
         let tmpNames = tableNames.map { $0.appending("_tmp") }
         
         // 3. Rename all price tables.

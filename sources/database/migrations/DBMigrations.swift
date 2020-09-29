@@ -36,7 +36,8 @@ private extension Database {
         switch Database.Version(rawValue: try self.channel.unrestrictedAccess { try $0.version() })! {
         case .v0: try Database.Migration.toVersion1(channel: self.channel)
         case .v1: try Database.Migration.toVersion2(channel: self.channel)
-        case .v2: break
+        case .v2: try Database.Migration.toVersion3(channel: self.channel)
+        case .v3: break
         }
     }
 }
