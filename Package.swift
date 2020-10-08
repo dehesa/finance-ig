@@ -11,7 +11,7 @@ var package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/dehesa/Decimals.git", from: "0.1.0"),
-        .package(url: "https://github.com/dehesa/Conbini.git", from: "0.6.1"),
+        .package(url: "https://github.com/dehesa/Conbini.git", from: "0.6.2"),
     ],
     targets: [
         .binaryTarget(name: "Lightstreamer", url:"https://github.com/dehesa/IG/releases/download/0.11.0/Lightstreamer-2.1.2.zip", checksum: "fb40a5553b76bf87b447c84705f5630d1b860654a6af3cd0b4f2c8667a2b251c"),

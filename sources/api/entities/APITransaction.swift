@@ -3,11 +3,14 @@ import Decimals
 
 extension API {
     /// A financial transaction between accounts.
+    ///
+    /// It lists a transaction that results in changes to your account money (e.g. operation outcome, bank deposit, interest accounting, etc.).
     public struct Transaction {
         /// The type of transaction.
         public let type: Self.Kind
-        /// Deal Reference.
-        /// - note: It seems to be a substring of the actual `dealId`.
+        /// Transaction reference.
+        ///
+        /// If the transaction is the outcome of a closed position, this reference points to the last characters of the `dealId`.
         public let reference: String
         /// Instrument name.
         ///
@@ -60,20 +63,20 @@ extension API.Transaction: Decodable {
             throw DecodingError.dataCorruptedError(forKey: .size, in: container, debugDescription: "The size string '\(sizeString)' couldn't be parsed into a number")
         }
         
-        let openDate = try container.decode(Date.self, forKey: .openDate, with: DateFormatter.iso8601Broad)
+        self.open.date = try container.decode(Date.self, forKey: .openDate, with: DateFormatter.iso8601Broad)
         let openString = try container.decode(String.self, forKey: .openLevel)
         if openString == "-" {
-            self.open = (openDate, nil)
+            self.open.level = nil
         } else if let openLevel = Decimal64(openString) {
-            self.open = (openDate, openLevel)
+            self.open.level = openLevel
         } else {
             throw DecodingError.dataCorruptedError(forKey: .openLevel, in: container, debugDescription: "The open level '\(openString)' couldn't be parsed into a number")
         }
         
-        let closeDate = try container.decode(Date.self, forKey: .closeDate, with: DateFormatter.iso8601Broad)
+        self.close.date = try container.decode(Date.self, forKey: .closeDate, with: DateFormatter.iso8601Broad)
         let closeString = try container.decode(String.self, forKey: .closeLevel)
         if let closeLevel = Decimal64(closeString) {
-            self.close = (closeDate, (closeLevel == 0) ? nil : closeLevel)
+            self.close.level = (closeLevel == 0) ? nil : closeLevel
         } else {
             throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level '\(closeString)' couldn't be parsed into a number")
         }

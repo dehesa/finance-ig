@@ -31,7 +31,7 @@ import PackageDescription
 let package = Package(
     /* Your package name, supported platforms, and generated products go here */
     dependencies: [
-        .package(url: "https://github.com/dehesa/IG.git", from: "0.11.0")
+        .package(url: "https://github.com/dehesa/IG.git", from: "0.11.1")
     ],
     targets: [
         .target(name: /* Your target name here */, dependencies: ["IG"])
