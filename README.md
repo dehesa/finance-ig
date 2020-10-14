@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://swift.org/about/#swiftorg-and-open-source"><img src="docs/assets/badges/Swift.svg" alt="Swift 5.3"></a>
-    <a href="https://github.com/dehesa/CodableCSV/wiki/Implicit-dependencies"><img src="docs/assets/badges/Apple.svg" alt="macOS 10.15+ - iOS 13+"></a>
+    <img src="docs/assets/badges/Apple.svg" alt="macOS 10.15+ - iOS 13+ - tvOS 13+">
     <a href="http://doge.mit-license.org"><img src="docs/assets/badges/License.svg" alt="MIT License"></a>
 </p>
 
@@ -31,7 +31,7 @@ import PackageDescription
 let package = Package(
     /* Your package name, supported platforms, and generated products go here */
     dependencies: [
-        .package(url: "https://github.com/dehesa/IG.git", from: "0.11.1")
+        .package(url: "https://github.com/dehesa/IG.git", from: "0.11.2")
     ],
     targets: [
         .target(name: /* Your target name here */, dependencies: ["IG"])
