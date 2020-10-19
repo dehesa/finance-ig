@@ -10,7 +10,7 @@ var package = Package(
         .library(name: "IG", targets: ["IG"])
     ],
     dependencies: [
-        .package(url: "https://github.com/dehesa/Decimals.git", from: "0.1.0"),
+        .package(url: "https://github.com/dehesa/Decimals.git", from: "0.1.1"),
         .package(url: "https://github.com/dehesa/Conbini.git", from: "0.6.2"),
     ],
     targets: [
