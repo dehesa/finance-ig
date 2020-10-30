@@ -89,7 +89,7 @@ fileprivate extension API.Session {
             self.accountId = try container.decode(IG.Account.Identifier.self, forKey: .accountId)
             self.streamerURL = try container.decode(URL.self, forKey: .streamerURL)
             // - warning: The OAuth login doesn't account for summer/winter time. However the certificate and getSession do.
-            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset) + 1
+            let timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
             self.timezone = try TimeZone(secondsFromGMT: timezoneOffset * 3_600) ?> DecodingError.dataCorruptedError(forKey: .timezoneOffset, in: container, debugDescription: "The timezone offset couldn't be migrated to UTC/GMT")
             
             self.tokens = try container.decode(API.Session._OAuth._Token.self, forKey: .tokens)

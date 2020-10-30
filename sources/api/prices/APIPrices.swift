@@ -18,7 +18,7 @@ extension API.Request.Prices {
     // MARK: GET /prices/{epic}
     
     /// Returns historical prices for a particular instrument.
-    /// - warning: The *constinuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may FAIL.
+    /// - warning: The *continuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may FAIL.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.
