@@ -76,7 +76,7 @@ extension API.Transaction: Decodable {
         self.close.date = try container.decode(Date.self, forKey: .closeDate, with: DateFormatter.iso8601Broad)
         let closeString = try container.decode(String.self, forKey: .closeLevel)
         if let closeLevel = Decimal64(closeString) {
-            self.close.level = (closeLevel == 0) ? nil : closeLevel
+            self.close.level = closeLevel.isZero ? nil : closeLevel
         } else {
             throw DecodingError.dataCorruptedError(forKey: .closeLevel, in: container, debugDescription: "The close level '\(closeString)' couldn't be parsed into a number")
         }

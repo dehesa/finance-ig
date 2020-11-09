@@ -362,7 +362,8 @@ extension Database.Market.Forex.DealingInformation.Margin.Bands {
         self.storage = underlying.split(separator: Self._separator.elements).map {
             let strings = $0.split(separator: Self._separator.numbers)
             precondition(strings.count == 2, "The given forex margin band '\(String($0))' is invalid since it contains \(strings.count) elements. Only 2 are expected")
-            guard let lowerBound = Decimal64(String(strings[0])), let factor = Decimal64(String(strings[1])) else { fatalError() }
+            let lowerBound = Decimal64(String(strings[0]))!
+            let factor = Decimal64(String(strings[1]))!
             return (lowerBound, factor)
         }
 

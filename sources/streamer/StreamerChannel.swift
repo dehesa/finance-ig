@@ -58,6 +58,7 @@ extension Streamer {
             self.disconnect()
             self._statusSubject.send(completion: .finished)
             self._client.removeDelegate(self)
+            self._lock.invalidate()
         }
         
         /// The Lightstreamer library version.

@@ -3,7 +3,7 @@ import Decimals
 import SQLite3
 
 extension Database {
-    /// Historical market price snapshot.
+    /// Candle price information.
     @frozen public struct Price {
         /// Snapshot date.
         public let date: Date

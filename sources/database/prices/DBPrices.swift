@@ -135,8 +135,8 @@ extension Database.Request.Prices {
 extension Database.Request.Prices {
     /// Returns historical prices for a particular instrument.
     /// - parameter epic: Instrument's epic (such as `CS.D.EURUSD.MINI.IP`).
-    /// - parameter from: The date from which to start the query. If `nil`, the retrieved data starts with the first ever recorded price.
-    /// - parameter to: The date from which to end the query. If `nil`, the retrieved data ends with the last recorded price.
+    /// - parameter from: The date from which to start the query (included). If `nil`, the retrieved data starts with the first ever recorded price.
+    /// - parameter to: The date at which to end the query (included). If `nil`, the retrieved data ends with the last recorded price.
     /// - returns: The requested price points or an empty array if no data has been previously stored for that timeframe.
     public func get(epic: IG.Market.Epic, from: Date? = nil, to: Date? = nil) -> AnyPublisher<[Database.Price],IG.Error> {
         self._database.publisher { _ -> (tableName: String, query: String) in

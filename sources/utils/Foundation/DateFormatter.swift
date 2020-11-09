@@ -15,7 +15,7 @@ internal extension DateFormatter {
     static let londonTime = DateFormatter().set {
         $0.dateFormat = "HH:mm:ss"
         $0.calendar = Calendar(identifier: .iso8601)
-        $0.timeZone = TimeZone(identifier: "Europe/London") ?! fatalError()
+        $0.timeZone = TimeZone(identifier: "Europe/London")!
     }
     
     /// Month/Year formatter (e.g. SEP-18) using the UTC calendar and timezone as `DateFormatter` base.

@@ -22,7 +22,7 @@ public struct UnfairLock {
     /// Executes a priviledge operation on the receiving lock.
     /// - parameter closure: The operation to execute while holding the closure.
     /// - returns: The value returned from the closure.
-    @discardableResult @_transparent public func execute<T>(within closure: ()->T) -> T {
+    @discardableResult @_transparent @inline(__always) public func execute<T>(within closure: ()->T) -> T {
         os_unfair_lock_lock(self._lock)
         let result = closure()
         os_unfair_lock_unlock(self._lock)

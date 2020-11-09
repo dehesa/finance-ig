@@ -154,7 +154,7 @@ extension API.Request.Nodes {
         }
         
         public init(integerLiteral value: UInt) {
-            if value == 0 {
+            if value == .zero {
                 self = .none
             } else {
                 self = .layers(value)
