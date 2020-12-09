@@ -3,10 +3,8 @@ import Foundation
 import Decimals
 
 extension API.Request.Deals {
-    
-    // MARK: GET /workingorders
-    
     /// Returns all open working orders for the active account.
+    /// - seealso: GET /workingorders
     /// - returns: Publisher forwarding all open working orders.
     public func getWorkingOrders() -> AnyPublisher<[API.WorkingOrder],IG.Error> {
         self.api.publisher
@@ -17,9 +15,8 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: POST /workingorders/otc
-    
     /// Creates an OTC working order.
+    /// - seealso: POST /workingorders/otc
     /// - parameter reference: A user-defined reference (e.g. `RV3JZ2CWMHG1BK`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint. 
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
@@ -44,9 +41,8 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: PUT /workingorders/otc/{dealId}
-    
     /// Updates an OTC working order.
+    /// - seealso: PUT /workingorders/otc/{dealId}
     /// - attention: The returned reference is distinct from any previous working order reference (there is no way to set up an amended reference).
     /// - parameter id: A permanent deal reference for a confirmed working order.
     /// - parameter type: The working order type.
@@ -66,9 +62,8 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: DELETE /workingorders/otc/{dealId}
-    
     /// Deletes an OTC working order.
+    /// - seealso: DELETE /workingorders/otc/{dealId}
     /// - parameter id: A permanent deal reference for a confirmed working order.
     /// - returns: Publisher forwarding the deal reference.
     public func deleteWorkingOrder(id: IG.Deal.Identifier) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
@@ -85,6 +80,7 @@ extension API.Request.Deals {
 // MARK: - Request Entities
 
 extension API.Request.Deals {
+    /// Namespace for working order request types.
     public enum WorkingOrder {
         /// The level/price at which the user doesn't want to incur more lose.
         public enum Stop: Equatable {
@@ -100,10 +96,6 @@ extension API.Request.Deals {
             case distance(Decimal64, risk: IG.Deal.Stop.Risk = .exposed)
         }
     }
-}
-
-private extension IG.Error {
-    /// Error raised when
 }
 
 extension API.Request.Deals {

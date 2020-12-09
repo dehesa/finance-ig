@@ -3,12 +3,10 @@ import Foundation
 import Decimals
 
 extension API.Request.Accounts {
-    
-    // MARK: GET /history/transactions
-    
     /// Returns the transaction history.
     ///
     /// The *constinuous* version of this endpoint is preferred. Depending on the amount of transactions performed, this endpoint may take a long time or it may fail.
+    /// - seealso: GET /history/transactions
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").
     /// - parameter type: Filter for the transaction types being returned.
@@ -36,11 +34,10 @@ extension API.Request.Accounts {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /history/transactions
-    
     /// Returns the transaction history.
     ///
     /// **This is a paginated-request**, which means that the returned `Publisher` will forward downstream several values. Each value is actually an array of transactions with `array.size` number of elements.
+    /// - seealso: GET /history/transactions
     /// - precondition: `value.size` and `value.number` must be greater than zero.
     /// - parameter from: The start date.
     /// - parameter to: The end date (`nil` means "today").

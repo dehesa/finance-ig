@@ -3,49 +3,82 @@ import Decimals
 
 extension API {
     /// A trading activity on the given account.
-    public struct Activity: Identifiable {
+    public struct Activity {
         /// The date of the activity item.
         public let date: Date
-        /// Deal identifier.
-        public let id: IG.Deal.Identifier
-        /// Activity description.
-        public let summary: String
-        /// Activity type.
-        public let type: Self.Kind
-        /// Action status.
-        public let status: Self.Status
-        /// The channel which triggered the activity.
-        public let channel: Self.Channel
-        /// Instrument epic identifier.
-        public let epic: IG.Market.Epic
-        /// The period of the activity item.
-        public let expiry: IG.Market.Expiry
+        /// Activity configuration values.
+        public let deal: Self.Deal
         /// Activity details.
-        public let details: Self.Details?
+        public let details: Self.Details
     }
 }
 
 extension API.Activity {
+    /// Overarching deal configuration values.
+    public struct Deal: Identifiable {
+        /// Deal identifier.
+        public let id: IG.Deal.Identifier
+        /// Transient deal reference for an unconfirmed trade.
+        public let reference: IG.Deal.Reference?
+        /// Deal affected by an activity.
+        public let actions: [API.Activity.Action]
+        /// Action status.
+        public let status: Self.Status
+        /// Activity description.
+        public let summary: String
+        
+        /// Activity status.
+        public enum Status: Hashable {
+            /// The activity has been accepted.
+            case accepted
+            /// The activity has been rejected.
+            case rejected
+            /// The activity status is unknown.
+            case unknown
+        }
+    }
+}
+
+extension API.Activity {
+    /// The details of the given activity object.
+    public struct Details {
+        /// Instrument epic identifier.
+        public let epic: IG.Market.Epic
+        /// The period of the activity item.
+        public let expiry: IG.Market.Expiry
+        /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
+        public let marketName: String
+        /// The currency denomination.
+        public let currency: Currency.Code
+        /// Activity type.
+        public let type: Self.Kind
+        /// Deal direction.
+        public let direction: IG.Deal.Direction
+        /// Deal size.
+        public let size: Decimal64
+        /// Instrument price at which the activity has been "commited"
+        public let level: Decimal64
+        /// Level at which the user is happy to take profit.
+        public let limit: (level: Decimal64, distance: Decimal64)?
+        /// Stop for the targeted deal
+        public let stop: (level: Decimal64, distance: Decimal64, risk: IG.Deal.Stop.Risk, trailing: IG.Deal.Stop.TrailingData)?
+        /// The channel which triggered the activity.
+        public let channel: Self.Channel
+    }
+}
+
+extension API.Activity.Details {
     /// Activity Type.
-    public enum Kind: Hashable {
-        /// System generated activity.
-        case system
+    public enum Kind {
         /// Position activity.
         case position
         /// Working order activity.
-        case workingOrder
-        /// Amend stop or limit activity.
-        case amended
-    }
-    
-    /// Activity status.
-    public enum Status: Hashable {
-        /// The activity has been accepted.
-        case accepted
-        /// The activity has been rejected.
-        case rejected
-        /// The activity status is unknown.
-        case unknown
+        /// - parameter expiration: The time at which the working order expires. When the hosting activity represents a working order deletion, `expiration` is `nil`.
+        case workingOrder(expiration: IG.Deal.WorkingOrder.Expiration?)
+        /// Amend stop or limit activity to a deal (can be used on positions and/or working orders).
+        case boundary
+        /// System generated activity.
+        case system
     }
     
     /// Trigger channel.
@@ -62,32 +95,6 @@ extension API.Activity {
         case dealer
         /// Activity performed through the financial FIX system.
         case fix
-    }
-    
-    /// Further details of the targeted activity.
-    public struct Details {
-        /// Transient deal reference for an unconfirmed trade.
-        public let reference : IG.Deal.Reference?
-        /// Deal affected by an activity.
-        public let actions: [API.Activity.Action]
-        /// A financial market, which may refer to an underlying financial market, or the market being offered in terms of an IG instrument. IG instruments are organised in the form a navigable market hierarchy.
-        public let marketName: String
-        /// The currency denomination.
-        public let currency: Currency.Code
-        /// Deal direction.
-        public let direction: IG.Deal.Direction
-        /// Deal size.
-        public let size: Decimal64
-        /// Instrument price at which the activity has been "commited"
-        public let level: Decimal64
-        /// Level at which the user is happy to take profit.
-        public let limit: (level: Decimal64, distance: Decimal64)?
-        /// Stop for the targeted deal
-        public let stop: (level: Decimal64, distance: Decimal64, risk: IG.Deal.Stop.Risk, trailing: IG.Deal.Stop.TrailingData)?
-        /// Working order expiration.
-        ///
-        /// If the activity doesn't reference a working order, this property will be `nil`.
-        public let workingOrderExpiration: IG.Deal.WorkingOrder.Expiration?
     }
 }
 
@@ -107,8 +114,8 @@ extension API.Activity {
             case position(status: API.Activity.Action.PositionStatus)
             /// The action affects a working order and its status has been modified to the one given here.
             case workingOrder(status: API.Activity.Action.WorkingOrderStatus, type: IG.Deal.WorkingOrder?)
-            /// A deal's stop and/or limit has been amended.
-            case dealStopLimitAmended
+            /// A deal (whether position or working order) stop and/or limit has been amended.
+            case boundary
             /// The action is of unknown character.
             case unknown
         }
@@ -144,127 +151,51 @@ extension API.Activity: Decodable {
         let container = try decoder.container(keyedBy: _Keys.self)
         let formatter = try decoder.userInfo[API.JSON.DecoderKey.computedValues] as? DateFormatter ?> DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "No DateFormatter was found on the decoder's userInfo.")
         self.date = try container.decode(Date.self, forKey: .date, with: formatter)
-        self.summary = try container.decode(String.self, forKey: .summary)
-        self.type = try container.decode(Self.Kind.self, forKey: .type)
-        self.status = try container.decode(Self.Status.self, forKey: .status)
-        self.channel = try container.decode(Self.Channel.self, forKey: .channel)
-        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .id)
-        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-        self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expiry) ?? .none
-        self.details = try container.decodeIfPresent(Self.Details.self, forKey: .details)
+        self.deal = try .init(from: decoder)
+        self.details = try .init(from: decoder)
     }
     
     private enum _Keys: String, CodingKey {
-        case date, id = "dealId"
-        case summary = "description"
-        case type, status, channel
-        case epic, expiry = "period"
-        case details
+        case date
     }
 }
 
-extension API.Activity.Kind: Decodable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(String.self)
-        switch value {
-        case "SYSTEM": self = .system
-        case "POSITION": self = .position
-        case "WORKING_ORDER": self = .workingOrder
-        case "EDIT_STOP_AND_LIMIT": self = .amended
-        default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid activity type '\(value)'.")
-        }
-    }
-}
-
-extension API.Activity.Status: Decodable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(String.self)
-        switch value {
-        case "ACCEPTED": self = .accepted
-        case "REJECTED": self = .rejected
-        case "UNKNOWN":  self = .unknown
-        default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid activity status '\(value)'.")
-        }
-    }
-}
-
-extension API.Activity.Channel: Decodable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(String.self)
-        switch value {
-        case "SYSTEM": self = .system
-        case "WEB": self = .web
-        case "MOBILE": self = .mobile
-        case "PUBLIC_WEB_API": self = .api
-        case "DEALER": self = .dealer
-        case "PUBLIC_FIX_API": self = .fix
-        default: throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid activity channel '\(value)'.")
-        }
-    }
-}
-
-extension API.Activity.Details: Decodable {
+extension API.Activity.Deal: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
-        self.reference = try container.decodeIfPresent(IG.Deal.Reference.self, forKey: .reference)
-        self.actions = try container.decode([API.Activity.Action].self, forKey: .actions)
-        self.marketName = try container.decode(String.self, forKey: .marketName)
-        self.currency = try container.decode(Currency.Code.self, forKey: .currency)
-        self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
-        self.size = try container.decode(Decimal64.self, forKey: .size)
-        self.level = try container.decode(Decimal64.self, forKey: .level)
+        self.id = try container.decode(IG.Deal.Identifier.self, forKey: .dealId)
+        self.summary = try container.decode(String.self, forKey: .summary)
         
-        switch (try container.decodeIfPresent(Decimal64.self, forKey: .limitLevel), try container.decodeIfPresent(Decimal64.self, forKey: .limitDistance)) {
-        case (.none, .none): self.limit = nil
-        case (let l?, let d?): self.limit = (l, d)
-        default: throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: container, debugDescription: "Invalid limit.")
+        switch try container.decode(String.self, forKey: .dealStatus) {
+        case "ACCEPTED": self.status = .accepted
+        case "REJECTED": self.status = .rejected
+        case "UNKNOWN":  self.status = .unknown
+        case let value: throw DecodingError.dataCorruptedError(forKey: .dealStatus, in: container, debugDescription: "Invalid deal status '\(value)'.")
         }
         
-        if let stopLevel = try container.decodeIfPresent(Decimal64.self, forKey: .stopLevel), let stopDistance = try container.decodeIfPresent(Decimal64.self, forKey: .stopDistance) {
-            let risk: IG.Deal.Stop.Risk = (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed
-            switch (try container.decodeIfPresent(Decimal64.self, forKey: .stopTrailingDistance), try container.decodeIfPresent(Decimal64.self, forKey: .stopTrailingIncrement)) {
-            case (.none, .none): self.stop = (stopLevel, stopDistance, risk, .static)
-            case (let d?, let i?): self.stop = (stopLevel, stopDistance, risk, .dynamic(distance: d, increment: i))
-            default: throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: container, debugDescription: "Invalid trailing stop.")
-            }
-        } else { self.stop = nil }
-        
-        if let expiration = try container.decodeIfPresent(String.self, forKey: .expiration) {
-            switch expiration {
-            case "GTC": self.workingOrderExpiration = .tillCancelled
-            case let value:
-                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.computedValues] as? DateFormatter else {
-                    throw DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: "No DateFormatter was found on the decoder's userInfo.")
-                }
-                let date = try formatter.date(from: value) ?> DecodingError.dataCorruptedError(forKey: .expiration, in: container, debugDescription: formatter.parseErrorLine(date: value))
-                self.workingOrderExpiration = .tillDate(date)
-            }
-        } else { self.workingOrderExpiration = nil }
+        let detailsContainer = try container.nestedContainer(keyedBy: _Keys._DetailKeys.self, forKey: .details)
+        self.reference = try detailsContainer.decodeIfPresent(IG.Deal.Reference.self, forKey: .dealReference)
+        self.actions = try detailsContainer.decode([API.Activity.Action].self, forKey: .actions)
     }
     
     private enum _Keys: String, CodingKey {
-        case reference = "dealReference", actions
-        case currency
-        case direction, marketName, size
-        case level, limitLevel, limitDistance
-        case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
-        case stopTrailingDistance = "trailingStopDistance", stopTrailingIncrement = "trailingStep"
-        case expiration = "goodTillDate"
+        case dealId, dealStatus = "status"
+        case summary = "description"
+        case details
+        
+        enum _DetailKeys: String, CodingKey {
+            case dealReference, actions
+        }
     }
 }
 
 extension API.Activity.Action: Decodable {
-    /// Do not call! The only way to initialize is through `Decodable`.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
         self.dealId = try container.decode(IG.Deal.Identifier.self, forKey: .dealId)
-        
-        let type = try container.decode(String.self, forKey: .type)
-        switch type {
-        case "STOP_LIMIT_AMENDED":  self.type = .dealStopLimitAmended
+
+        switch try container.decode(String.self, forKey: .type) {
+        case "STOP_LIMIT_AMENDED":  self.type = .boundary
         case "POSITION_OPENED":     self.type = .position(status: .opened)
         case "POSITION_ROLLED":     self.type = .position(status: .rolled)
         case "POSITION_PARTIALLY_CLOSED": self.type = .position(status: .closed(.partially))
@@ -282,12 +213,87 @@ extension API.Activity.Action: Decodable {
         case "STOP_ORDER_DELETED":  self.type = .workingOrder(status: .deleted, type: .stop)
         case "WORKING_ORDER_DELETED": self.type = .workingOrder(status: .deleted, type: nil)
         case "UNKNOWN":             self.type = .unknown
-        default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Invalid action type '\(type)'.")
+        case let type: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Invalid action type '\(type)'.")
+        }
+    }
+
+    private enum _Keys: String, CodingKey {
+        case type = "actionType"
+        case dealId = "affectedDealId"
+    }
+}
+
+extension API.Activity.Details: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: _Keys.self)
+        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+        self.expiry = try container.decodeIfPresent(IG.Market.Expiry.self, forKey: .expiry) ?? .none
+        
+        switch try container.decode(String.self, forKey: .channel) {
+        case "SYSTEM":         self.channel = .system
+        case "WEB":            self.channel = .web
+        case "MOBILE":         self.channel = .mobile
+        case "PUBLIC_WEB_API": self.channel = .api
+        case "DEALER":         self.channel = .dealer
+        case "PUBLIC_FIX_API": self.channel = .fix
+        case let value: throw DecodingError.dataCorruptedError(forKey: .channel, in: container, debugDescription: "Invalid activity channel '\(value)'.")
+        }
+        
+        let detailsContainer = try container.nestedContainer(keyedBy: _Keys._DetailKeys.self, forKey: .details)
+        self.marketName = try detailsContainer.decode(String.self, forKey: .marketName)
+        self.currency = try detailsContainer.decode(Currency.Code.self, forKey: .currency)
+        self.direction = try detailsContainer.decode(IG.Deal.Direction.self, forKey: .direction)
+        self.size = try detailsContainer.decode(Decimal64.self, forKey: .size)
+        self.level = try detailsContainer.decode(Decimal64.self, forKey: .level)
+        
+        switch (try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .limitLevel), try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .limitDistance)) {
+        case (.none, .none): self.limit = nil
+        case (let l?, let d?): self.limit = (l, d)
+        default: throw DecodingError.dataCorruptedError(forKey: .limitLevel, in: detailsContainer, debugDescription: "Invalid limit.")
+        }
+        
+        if let stopLevel = try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .stopLevel),
+           let stopDistance = try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .stopDistance) {
+            let risk: IG.Deal.Stop.Risk = (try detailsContainer.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed
+            switch (try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .stopTrailingDistance), try detailsContainer.decodeIfPresent(Decimal64.self, forKey: .stopTrailingIncrement)) {
+            case (.none, .none): self.stop = (stopLevel, stopDistance, risk, .static)
+            case (let d?, let i?): self.stop = (stopLevel, stopDistance, risk, .dynamic(distance: d, increment: i))
+            default: throw DecodingError.dataCorruptedError(forKey: .stopTrailingDistance, in: detailsContainer, debugDescription: "Invalid trailing stop.")
+            }
+        } else { self.stop = nil }
+
+        
+        switch try container.decode(String.self, forKey: .type) {
+        case "POSITION":            self.type = .position
+        case "EDIT_STOP_AND_LIMIT": self.type = .boundary
+        case "SYSTEM":              self.type = .system
+        case "WORKING_ORDER":
+            switch try detailsContainer.decodeIfPresent(String.self, forKey: .expiration) {
+            case .none: self.type = .workingOrder(expiration: nil)
+            case "GTC": self.type = .workingOrder(expiration: .tillCancelled)
+            case .some(let value):
+                guard let formatter = decoder.userInfo[API.JSON.DecoderKey.computedValues] as? DateFormatter else {
+                    throw DecodingError.dataCorruptedError(forKey: .expiration, in: detailsContainer, debugDescription: "No DateFormatter was found on the decoder's userInfo.")
+                }
+                let date = try formatter.date(from: value) ?> DecodingError.dataCorruptedError(forKey: .expiration, in: detailsContainer, debugDescription: formatter.parseErrorLine(date: value))
+                self.type = .workingOrder(expiration: .tillDate(date))
+            }
+        case let value: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Invalid activity type '\(value)'.")
         }
     }
     
     private enum _Keys: String, CodingKey {
-        case type = "actionType"
-        case dealId = "affectedDealId"
+        case epic, expiry = "period"
+        case type, channel
+        case details
+        
+        enum _DetailKeys: String, CodingKey {
+            case currency
+            case direction, marketName, size
+            case level, limitLevel, limitDistance
+            case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
+            case stopTrailingDistance = "trailingStopDistance", stopTrailingIncrement = "trailingStep"
+            case expiration = "goodTillDate"
+        }
     }
 }

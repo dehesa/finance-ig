@@ -4,7 +4,7 @@ import Foundation
 /// Namespace for commonly used value/class types related to deals.
 public enum Deal {
     /// Deal direction.
-    @frozen public enum Direction: Hashable {
+    @frozen public enum Direction: Hashable, CustomStringConvertible {
         /// Going "long"
         case buy
         /// Going "short"
@@ -16,6 +16,13 @@ public enum Deal {
             switch self {
             case .buy:  return .sell
             case .sell: return .buy
+            }
+        }
+        
+        public var description: String {
+            switch self {
+            case .buy: return "buy"
+            case .sell: return "sell"
             }
         }
     }

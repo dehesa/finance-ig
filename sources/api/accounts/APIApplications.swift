@@ -2,10 +2,8 @@ import Combine
 import Foundation
 
 extension API.Request.Accounts {
-    
-    // MARK: GET /operations/application
-
     /// Returns a list of client-owned applications.
+    /// - seealso: GET /operations/application
     /// - returns: Publisher forwarding all user's applications.
     public func getApplications() -> AnyPublisher<[API.Application],IG.Error> {
         self.api.publisher
@@ -16,9 +14,8 @@ extension API.Request.Accounts {
             .eraseToAnyPublisher()
     }
 
-    // MARK: PUT /operations/application
-
     /// Alters the details of a given user application.
+    /// - seealso: PUT /operations/application
     /// - parameter key: The API key of the application that will be modified. If `nil`, the application being modified is the one that the API instance has credentials for.
     /// - parameter status: The status to apply to the receiving application.
     /// - parameter allowance: `overall`: Per account request per minute allowance. `trading`: Per account trading request per minute allowance.

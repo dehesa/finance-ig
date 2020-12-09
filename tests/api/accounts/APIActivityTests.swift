@@ -14,14 +14,14 @@ final class APIActivityTests: XCTestCase {
         api.session.login(type: .oauth, key: "<#API key#>", user: ["<#Username#>", "<#Password#>"]).expectsCompletion(timeout: 1.2, on: self)
         
         let date = Date().lastTuesday
-        let activities = api.accounts.getActivityContinuously(from: date, detailed: true)
+        let activities = api.accounts.getActivityContinuously(from: date)
             .expectsAll(timeout: 2, on: self)
             .flatMap { $0 }
         XCTAssertFalse(activities.isEmpty)
         
         for activity in activities {
             XCTAssertGreaterThan(activity.date, date)
-            XCTAssertFalse(activity.summary.isEmpty)
+            XCTAssertFalse(activity.deal.summary.isEmpty)
         }
     }
 }

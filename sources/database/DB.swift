@@ -54,7 +54,7 @@ public final class Database {
 
 extension Database {
     /// The database location.
-    public enum Location {
+    public enum Location: CustomDebugStringConvertible {
         /// The database will be created for this session in memory. At the end of the session it will be flushed.
         case memory
         /// The database will be located in the file system (at the given path).
@@ -66,6 +66,13 @@ extension Database {
         ///
         /// Please notice, that there isn't a situation where the database is rewritten. If you want to replace a database, you need to delete it manually first.
         case file(url: URL, expectsExistance: Bool?)
+        
+        public var debugDescription: String {
+            switch self {
+            case .memory: return "memory"
+            case .file(let url, _): return url.path
+            }
+        }
     }
     
     /// The root address for the underlying database file.

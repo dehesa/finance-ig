@@ -14,10 +14,8 @@ extension API.Request {
 }
 
 extension API.Request.Markets {
-    
-    // MARK: GET /markets/{epic}
-    
     /// Returns the details of a given market.
+    /// - seealso: GET /markets/{epic}
     /// - parameter epic: The market epic to target onto. It cannot be empty.
     /// - returns: Information about the targeted market.
     public func get(epic: IG.Market.Epic) -> AnyPublisher<API.Market,IG.Error> {
@@ -32,9 +30,8 @@ extension API.Request.Markets {
         
     }
     
-    // MARK: GET /markets
-    
     /// Returns the details of the given markets.
+    /// - seealso: GET /markets
     /// - attention: The array argument `epics` can't be bigger than 50.
     /// - parameter epics: The market epics to target onto.
     /// - returns: Extended information of all the requested markets.
@@ -45,6 +42,7 @@ extension API.Request.Markets {
     /// Returns the details of the given markets.
     ///
     /// This endpoint circumvents `get(epics:)` limitation of quering for 50 markets and publish the results as several values.
+    /// - seealso: GET /markets
     /// - parameter epics: The market epics to target onto. It cannot be empty.
     /// - returns: Extended information of all the requested markets.
     public func getContinuously(epics: Set<IG.Market.Epic>) -> AnyPublisher<[API.Market],IG.Error> {

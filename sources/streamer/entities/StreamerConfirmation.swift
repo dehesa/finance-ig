@@ -25,6 +25,14 @@ extension Streamer.Confirmation {
         /// Deal status (whether the operation has been accepted or rejected).
         public let status: Self.Status
     }
+    
+    /// Deals affected by the overarching transaction.
+    public struct AffectedDeal: Identifiable {
+        /// Identifier for the affected deal.
+        public let id: IG.Deal.Identifier
+        /// Status for affected deal.
+        public let status: IG.Deal.Status
+    }
 }
 
 extension Streamer.Confirmation.Deal {
@@ -32,7 +40,9 @@ extension Streamer.Confirmation.Deal {
     ///
     /// The optional `details`' properties will be set or they will be `nil`, depending on whether this value is accepted or rejected.
     public enum Status: Equatable {
+        /// The deal this confirmation is pointing to has been accepted.
         case accepted
+        /// The deal this confirmation is pointing to has been rejected.
         case rejected(reason: RejectionReason?)
         
         public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -45,24 +55,14 @@ extension Streamer.Confirmation.Deal {
 }
 
 extension Streamer.Confirmation {
-    /// Deals affected by the overarching transaction.
-    public struct AffectedDeal: Identifiable {
-        /// Identifier for the affected deal.
-        public let id: IG.Deal.Identifier
-        /// Status for affected deal.
-        public let status: IG.Deal.Status
-    }
-}
-
-extension Streamer.Confirmation {
     /// The confirmation details. Many of its property will be `nil` if the overarching deal hasn't been accepted.
     public struct Details {
-        /// The position/workingOrder status.
-        public let status: IG.Deal.Status?
         /// Instrument epic identifier.
         public let epic: IG.Market.Epic
         /// Instrument expiration period.
         public let expiry: IG.Market.Expiry?
+        /// The position/workingOrder status.
+        public let status: IG.Deal.Status?
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// The deal size.

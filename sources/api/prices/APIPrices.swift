@@ -14,10 +14,8 @@ extension API.Request {
 }
 
 extension API.Request.Prices {
-    
-    // MARK: GET /prices/{epic}
-    
     /// Returns historical prices for a particular instrument.
+    /// - seealso: GET /prices/{epic}
     /// - warning: The *continuous* version of this endpoint is preferred. Depending on the amount of price points requested, this endpoint may take a long time or it may FAIL.
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
@@ -41,11 +39,10 @@ extension API.Request.Prices {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /prices/{epic}
-    
     /// Returns historical prices for a particular instrument.
     ///
     /// **This is a paginated-request**, which means that the returned `Publisher` will forward downstream several value each one with an array (of size `array.size`).
+    /// - seealso: GET /prices/{epic}
     /// - parameter epic: Instrument's epic (e.g. `CS.D.EURUSD.MINI.IP`).
     /// - parameter from: The date from which to start the query.
     /// - parameter to: The date from which to end the query.

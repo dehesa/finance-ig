@@ -10,6 +10,8 @@ extension API {
         public let reference: IG.Deal.Reference
         /// Date the position was created.
         public let date: Date
+        /// Instrument epic identifier.
+        public var epic: IG.Market.Epic { self.market.instrument.epic }
         /// Position currency ISO code.
         public let currency: Currency.Code?
         /// Deal direction.

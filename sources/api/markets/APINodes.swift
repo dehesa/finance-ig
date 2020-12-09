@@ -27,12 +27,11 @@ extension API.Request.Nodes {
         
         return Self._iterate(api: self._api, node: API.Node(id: identifier, name: name), depth: layers)
     }
-
-    // MARK: GET /markets/{searchTerm}
     
     /// Returns all markets matching the search term.
     ///
     /// The search term cannot be an empty string.
+    /// - seealso: GET /markets/{searchTerm}
     /// - parameter searchTerm: The term to be used in the search. This parameter is mandatory and cannot be empty.
     /// - returns: Publisher forwarding all markets matching the search term.
     public func getMarkets(matching searchTerm: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
@@ -48,12 +47,10 @@ extension API.Request.Nodes {
 }
 
 extension API.Request.Nodes {
-    
-    // MARK: GET /marketnavigation/{nodeId}
-    
     /// Returns all data of the given navigation node.
     ///
-    /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint..
+    /// The subnodes are not recursively retrieved; thus only a flat hierarchy will be built with this endpoint.
+    /// - seealso: GET /marketnavigation/{nodeId}
     /// - parameter node: The entity targeting a specific node. Only the identifier is used.
     /// - returns: Publisher forwarding a *full* node.
     private static func _get(api: API, node: API.Node) -> AnyPublisher<API.Node,IG.Error> {

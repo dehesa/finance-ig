@@ -13,10 +13,8 @@ extension API.Request {
 }
 
 extension API.Request.Watchlists {
-    
-    // MARK: POST /watchlists
-    
     /// Creates a watchlist.
+    /// - seealso: POST /watchlists
     /// - parameter name: Watchlist given name.
     /// - parameter epics: List of market epics to be associated to this new watchlist.
     /// - returns: Publisher forwarding the identifier of the created watchlist and a Boolean indicating whether the all epics where added to the watchlist).
@@ -31,11 +29,9 @@ extension API.Request.Watchlists {
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
-
-    
-    // MARK: GET /watchlists
     
     /// Returns all watchlists belonging to the active account.
+    /// - seealso: GET /watchlists
     /// - returns: Publisher forwarding an array of watchlists.
     public func getAll() -> AnyPublisher<[API.Watchlist],IG.Error> {
         self._api.publisher
@@ -46,9 +42,8 @@ extension API.Request.Watchlists {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /watchlists/{watchlistId}
-    
     /// Returns the targeted watchlist.
+    /// - seealso: GET /watchlists/{watchlistId}
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: Publisher forwarding all markets under the targeted watchlist.
     public func getMarkets(from identifier: String) -> AnyPublisher<[API.Node.Market],IG.Error> {
@@ -61,9 +56,8 @@ extension API.Request.Watchlists {
             .eraseToAnyPublisher()
     }
     
-    // MARK: PUT /watchlists/{watchlistId}
-    
     /// Adds a market to a watchlist.
+    /// - seealso: PUT /watchlists/{watchlistId}
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be added to the watchlist.
     /// - returns: Publisher indicating the success of the operation.
@@ -76,11 +70,9 @@ extension API.Request.Watchlists {
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
-
-    
-    // MARK: DELETE /watchlists/{watchlistId}/{epic}
     
     /// Removes a market from a watchlist.
+    /// - seealso: DELETE /watchlists/{watchlistId}/{epic}
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - parameter epic: The market epic to be removed from the watchlist.
     /// - returns: Publisher indicating the success of the operation.
@@ -94,9 +86,8 @@ extension API.Request.Watchlists {
             .eraseToAnyPublisher()
     }
     
-    // MARK: DELETE /watchlists/{watchlistId}
-    
     /// Deletes the targeted watchlist.
+    /// - seealso: DELETE /watchlists/{watchlistId}
     /// - parameter identifier: The identifier for the watchlist being targeted.
     /// - returns: Publisher indicating the success of the operation.
     public func delete(identifier: String) -> AnyPublisher<Never,IG.Error> {

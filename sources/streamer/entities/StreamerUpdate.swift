@@ -15,7 +15,7 @@ extension Streamer {
 }
 
 extension Streamer.Update {
-    /// Overarching deal representing an open position.
+    /// Overarching deal representing an open position or a working order.
     public struct Deal: Identifiable {
         /// Permanent deal reference for a confirmed trade.
         public let id: IG.Deal.Identifier
@@ -25,21 +25,21 @@ extension Streamer.Update {
         public let originId: IG.Deal.Identifier?
         /// The deal status.
         public let status: Self.Status
-    }
-}
-
-extension Streamer.Update.Deal {
-    /// The open position status.
-    ///
-    /// The optional `details`' properties will be set or they will be `nil`, depending on whether this value is accepted or rejected.
-    public enum Status: Equatable {
-        case accepted
-        case rejected(reason: String? = nil)
         
-        public static func == (lhs: Self, rhs: Self) -> Bool {
-            switch (lhs, rhs) {
-            case (.accepted, .accepted), (.rejected, .rejected): return true
-            default: return false
+        /// The deal status.
+        ///
+        /// The optional `details`' properties will be set or they will be `nil`, depending on whether this value is accepted or rejected.
+        public enum Status: Equatable {
+            /// The deal has been accepted and the optional variables in `details` will be set.
+            case accepted
+            /// The deal status has been rejected. Check the `reason` for further information.
+            case rejected(reason: String? = nil)
+            
+            public static func == (lhs: Self, rhs: Self) -> Bool {
+                switch (lhs, rhs) {
+                case (.accepted, .accepted), (.rejected, .rejected): return true
+                default: return false
+                }
             }
         }
     }
@@ -54,58 +54,41 @@ extension Streamer.Update {
         public let expiry: IG.Market.Expiry
         /// The position status.
         public let status: Self.Status
+        /// The type of trade being updated.
+        public let type: Self.Kind
         /// Deal direction.
         public let direction: IG.Deal.Direction
         /// Deal size.
         public let size: Decimal64
         /// Level (instrument price) at which the position was openend.
         public let level: Decimal64
-        /// The type of trade being updated.
-        public let trade: Self.Trade
+        /// The limit used on this deal (if any).
+        public let limit: IG.Deal.Boundary?
+        /// The stop used on this deal (if any).
+        public let stop: (type: IG.Deal.Boundary, risk: IG.Deal.Stop.Risk)?
         /// User channel.
         public let channel: String
-    }
-}
-
-extension Streamer.Update.Details {
-    /// The position status.
-    public enum Status: Hashable {
-        case opened
-        case updated
-        case deleted
-    }
-    
-    /// The trade type.
-    public enum Trade {
-        case position(Streamer.Update.Details.Position)
-        case workingOrder(Streamer.Update.Details.WorkingOrder)
-    }
-}
-
-extension Streamer.Update.Details {
-    /// Open position.
-    public struct Position {
-        /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limitLevel: Decimal64?
-        /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
-        public let stop: (level: Decimal64, risk: IG.Deal.Stop.Risk)?
-    }
-}
-
-
-extension Streamer.Update.Details {
-    /// Working order waiting for the triggers to be hit.
-    public struct WorkingOrder {
-        /// The working order type.
-        public let type: IG.Deal.WorkingOrder
-        /// Indicates when the working order expires if its triggers hasn't been met.
-        public let expiration: IG.Deal.WorkingOrder.Expiration
-        /// Position currency ISO code.
-        public let currency: Currency.Code?
-        /// The level (i.e. instrument's price) at which the user is happy to "take profit".
-        public let limitDistance: Decimal64?
-        /// The level (i.e. instrument's price) at which the user doesn't want to incur more losses.
-        public let stop: (distance: Decimal64, risk: IG.Deal.Stop.Risk)?
+        
+        /// The position status.
+        public enum Status: Hashable {
+            /// The targeted deal has been created/opened.
+            case opened
+            /// The targeted deal has been updated/amended.
+            case updated
+            /// The targeted deal has been deleted.
+            case deleted
+        }
+        
+        /// The trade type.
+        public enum Kind {
+            /// The deal references a market open position.
+            case position
+            /// The deal references a working order, not yet open as a position in the market.
+            /// - parameter type: The working order type.
+            /// - parameter expiration: Indicates when the working order expires if its triggers hasn't been met.
+            /// - parameter currency: Working order currency ISO code.
+            case workingOrder(_ type: IG.Deal.WorkingOrder, expiration: IG.Deal.WorkingOrder.Expiration, currency: Currency.Code?)
+        }
     }
 }
 
@@ -145,6 +128,8 @@ extension Streamer.Update.Deal: Decodable {
 extension Streamer.Update.Details: Decodable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: _Keys.self)
+        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
+        self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
         
         switch try container.decode(String.self, forKey: .status) {
         case "OPEN": self.status = .opened
@@ -153,25 +138,7 @@ extension Streamer.Update.Details: Decodable {
         case let value: throw DecodingError.dataCorruptedError(forKey: .status, in: container, debugDescription: "Invalid OPU status '\(value)'.")
         }
         
-        self.trade = try .init(from: decoder)
-        self.epic = try container.decode(IG.Market.Epic.self, forKey: .epic)
-        self.expiry = try container.decode(IG.Market.Expiry.self, forKey: .expiry)
-        self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
-        self.size = try container.decode(Decimal64.self, forKey: .size)
-        self.level = try container.decode(Decimal64.self, forKey: .level)
-        self.channel = try container.decode(String.self, forKey: .channel)
-    }
-    
-    private enum _Keys: String, CodingKey {
-        case status, epic, expiry
-        case direction, size, level, channel
-    }
-}
-
-extension Streamer.Update.Details.Trade: Decodable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: _Keys.self)
-        if let orderType = try container.decodeIfPresent(IG.Deal.WorkingOrder.self, forKey: .type) {
+        if let orderType = try container.decodeIfPresent(IG.Deal.WorkingOrder.self, forKey: .orderType) {
             let expiration: IG.Deal.WorkingOrder.Expiration
             switch try container.decode(String.self, forKey: .expiration) {
             case "GOOD_TILL_CANCELLED": expiration = .tillCancelled
@@ -180,32 +147,36 @@ extension Streamer.Update.Details.Trade: Decodable {
             }
             
             let currency = try container.decodeIfPresent(IG.Currency.Code.self, forKey: .currency)
-            let limitDistance = try container.decodeIfPresent(Decimal64.self, forKey: .limitDistance)
+            self.type = .workingOrder(orderType, expiration: expiration, currency: currency)
+            self.limit = (try container.decodeIfPresent(Decimal64.self, forKey: .limitDistance)).map { .distance($0) }
             
-            let stop: (Decimal64, IG.Deal.Stop.Risk)?
-            if let stopLevel = try container.decodeIfPresent(Decimal64.self, forKey: .stopDistance) {
-                let risk: IG.Deal.Stop.Risk = (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed
-                stop = (stopLevel, risk)
-            } else { stop = nil }
-            
-            let workingOrder = Streamer.Update.Details.WorkingOrder(type: orderType, expiration: expiration, currency: currency, limitDistance: limitDistance, stop: stop)
-            self = .workingOrder(workingOrder)
+            if let distance = try container.decodeIfPresent(Decimal64.self, forKey: .stopDistance) {
+                self.stop = (.distance(distance), (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed)
+            } else {
+                self.stop = nil
+            }
         } else {
-            let limitLevel = try container.decodeIfPresent(Decimal64.self, forKey: .limitLevel)
+            self.type = .position
+            self.limit = (try container.decodeIfPresent(Decimal64.self, forKey: .limitLevel)).map { .level($0) }
             
-            let stop: (Decimal64, IG.Deal.Stop.Risk)?
-            if let stopLevel = try container.decodeIfPresent(Decimal64.self, forKey: .stopLevel) {
-                let risk: IG.Deal.Stop.Risk = (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed
-                stop = (stopLevel, risk)
-            } else { stop = nil }
-            
-            self = .position(.init(limitLevel: limitLevel, stop: stop))
+            if let level = try container.decodeIfPresent(Decimal64.self, forKey: .stopLevel) {
+                self.stop = (.level(level), (try container.decode(Bool.self, forKey: .isStopGuaranteed)) ? .limited : .exposed)
+            } else {
+                self.stop = nil
+            }
         }
+        
+        self.direction = try container.decode(IG.Deal.Direction.self, forKey: .direction)
+        self.size = try container.decode(Decimal64.self, forKey: .size)
+        self.level = try container.decode(Decimal64.self, forKey: .level)
+        self.channel = try container.decode(String.self, forKey: .channel)
     }
     
     private enum _Keys: String, CodingKey {
-        case type = "orderType", expiration = "timeInForce", expirationDate = "goodTillDateISO", currency
+        case epic, expiry, status
+        case orderType, expiration = "timeInForce", expirationDate = "goodTillDateISO", currency
         case limitLevel, limitDistance
         case stopLevel, stopDistance, isStopGuaranteed = "guaranteedStop"
+        case direction, size, level, channel
     }
 }

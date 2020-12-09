@@ -14,7 +14,7 @@ extension API {
         public let reference: String
         /// Instrument name.
         ///
-        /// For example: `EUR/USD Mini converted at 0.902239755`
+        /// For example: `EUR/USD Mini converted at 0.90225`
         public let title: String
         /// Instrument expiry period.
         public let period: IG.Market.Expiry

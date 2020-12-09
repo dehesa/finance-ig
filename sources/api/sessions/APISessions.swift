@@ -38,11 +38,10 @@ extension API.Request.Session {
         return !credentials.token.isExpired
     }
 
-    // MARK: POST /session
-
     /// Logs a user in the platform and stores the credentials within the API instance.
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+    /// - seealso: POST /session
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter type: The type of log in to be performend (e.g. through `OAuth`).
     /// - parameter key: API key given by the platform identifying the usage of the IG endpoints.
@@ -94,9 +93,8 @@ extension API.Request.Session {
             .eraseToAnyPublisher()
     }
 
-    // MARK: GET /session
-
     /// Returns the user's session details.
+    /// - seealso: GET /session
     /// - returns: Publisher forwarding the user's session details.
     public func get() -> AnyPublisher<API.Session,IG.Error> {
         self.api.publisher
@@ -130,11 +128,10 @@ extension API.Request.Session {
             .eraseToAnyPublisher()
     }
 
-    // MARK: PUT /session
-
     /// Switches active accounts, optionally setting the default account.
     ///
     /// This method will change the credentials stored within the API instance (in case of successfull endpoint call).
+    /// - seealso: PUT /session
     /// - attention: The identifier of the account to switch to must be different than the current account or the server will return an error.
     /// - parameter accountId: The identifier for the account that the user want to switch to.
     /// - parameter makingDefault: Boolean indicating whether the new account should be made the default one.
@@ -157,11 +154,10 @@ extension API.Request.Session {
             .eraseToAnyPublisher()
     }
 
-    // MARK: DELETE /session
-
     /// Log out from the current session.
     ///
     /// This method will delete the credentials stored in the API instance (in case of successful endpoint call).
+    /// - seealso: DELETE /session
     /// - note: If the API instance didn't have any credentials (i.e. a user was not logged in), the response is successful.
     /// - returns: Publisher indicating a succesful logout operation with a sucessful complete.
     public func logout() -> AnyPublisher<Never,IG.Error> {

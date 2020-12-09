@@ -13,24 +13,20 @@ extension API.Request {
 }
 
 extension API.Request.Accounts {
-    
-    // MARK:  GET /accounts
-    
     /// Returns a list of accounts belonging to the logged-in client.
+    /// - seealso: GET /accounts
     /// - returns: Publisher forwarding a list of user's accounts.
     public func getAll() -> AnyPublisher<[API.Account],IG.Error> {
         self.api.publisher
             .makeRequest(.get, "accounts", version: 1, credentials: true)
             .send(expecting: .json, statusCode: 200)
-            .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in
-                w.accounts
-            }.mapError(errorCast)
+            .decodeJSON(decoder: .default()) { (w: _WrapperList, _) in w.accounts }
+            .mapError(errorCast)
             .eraseToAnyPublisher()
     }
     
-    // MARK:  GET /accounts/preferences
-    
     /// Returns the targeted account preferences.
+    /// - seealso: GET /accounts/preferences
     /// - returns: Publisher forwarding the current account's pereferences.
     public func getPreferences() -> AnyPublisher<API.Account.Preferences,IG.Error> {
         self.api.publisher
@@ -40,16 +36,14 @@ extension API.Request.Accounts {
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
-
-    // MARK:  PUT /accounts/preferences
     
     /// Updates the account preferences.
+    /// - seealso: PUT /accounts/preferences
     /// - parameter trailingStops: Enable/Disable trailing stops in the current account.
     /// - returns: Publisher indicating the success of the operation.
     public func updatePreferences(trailingStops: Bool) -> AnyPublisher<Never,IG.Error> {
-        self.api.publisher { _ -> _PayloadPreferences in
-                .init(trailingStopsEnabled: trailingStops)
-            }.makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in
+        self.api.publisher { _ in _PayloadPreferences(trailingStopsEnabled: trailingStops) }
+            .makeRequest(.put, "accounts/preferences", version: 1, credentials: true, body: { (payload) in
                 (.json, try JSONEncoder().encode(payload))
             }).send(expecting: .json, statusCode: 200)
             .ignoreOutput()

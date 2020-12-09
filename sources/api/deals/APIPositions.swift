@@ -3,12 +3,10 @@ import Decimals
 import Foundation
 
 extension API.Request.Deals {
-    
-    // MARK: GET /positions
-    
     /// Returns all open positions for the active account.
     ///
     /// A position is a running bet, which may be long (buy) or short (sell).
+    /// - seealso: GET /positions
     /// - returns: Publisher forwarding a list of open positions.
     public func getPositions() -> AnyPublisher<[API.Position],IG.Error> {
         self.api.publisher
@@ -19,9 +17,8 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /positions/{dealId}
-    
     /// Returns an open position for the active account by deal identifier.
+    /// - seealso: GET /positions/{dealId}
     /// - parameter identifier: Targeted permanent deal reference for an already confirmed trade.
     /// - returns: Publisher forwarding the targeted position.
     public func getPosition(id: IG.Deal.Identifier) -> AnyPublisher<API.Position,IG.Error> {
@@ -33,27 +30,25 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: POST /positions/otc
-    
     /// Creates a new position.
     ///
     /// This endpoint creates a "transient" position (identified by the returned deal reference).
+    /// - seealso: POST /positions/otc
+    /// - note: The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
+    /// - attention: Setting a limit or a stop requires `force` open to be `true`. If not, an error will be thrown.
     /// - parameter reference: (default `nil`) A user-defined reference (e.g. `RV3JY2CVMHG1BH`) identifying the submission of the order. If `nil` a reference will be created by the server and return as the result of this enpoint.
     /// - parameter epic: Instrument epic identifer.
     /// - parameter expiry: The date (and sometimes "time") at which a spreadbet or CFD will automatically close against some predefined market value should the bet remain open beyond its last dealing time. Some CFDs do not expire.
     /// - parameter currency: The currency code (3 letters).
     /// - parameter direction: Deal direction (whether buy or sell).
-    /// - parameter order: Describes how the user's order must be executed (and at which level).
+    /// - parameter order: Describes how the user's order must be executed. 
     /// - parameter strategy: The order fill strategy.
     /// - parameter size: Deal size. Precision shall not be more than 12 decimal places.
     /// - parameter limit: Optional limit level/distance at which the user will like to take profit. It can be marked as a distance from the buy/sell level, or as an absolute value,
     /// - parameter stop: Optional stop at which the user doesn't want to incur more losses. Positions may additional set risk limited stops and trailing stops.
     /// - parameter forceOpen: (default `true`). Enabling force open when creating a new position will enable a second position to be opened on a market. This variable must be `true` if the limit and/or the stop are set.
     /// - returns: The transient deal reference (for an unconfirmed trade). If `reference` was set as an argument, that same value will be returned.
-    /// - note: The position is not really open till the server confirms the "transient" position and gives the user a deal identifier.
-    /// - attention: Setting a limit or a stop requires `force` open to be `true`. If not, an error will be thrown.
-    public func createPosition(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code?, direction: IG.Deal.Direction,
-                               order: Self.Position.Order, strategy: Self.Position.FillStrategy, size: Decimal64, limit: IG.Deal.Boundary?, stop: Self.Position.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
+    public func createPosition(reference: IG.Deal.Reference? = nil, epic: IG.Market.Epic, expiry: IG.Market.Expiry = .none, currency: Currency.Code?, direction: IG.Deal.Direction, order: Self.Position.Order, strategy: Self.Position.FillStrategy, size: Decimal64, limit: IG.Deal.Boundary?, stop: Self.Position.Stop?, forceOpen: Bool = true) -> AnyPublisher<IG.Deal.Reference,IG.Error> {
         self.api.publisher { _ in try _PayloadCreation(reference: reference, epic: epic, expiry: expiry, currency: currency, direction: direction, order: order, strategy: strategy, size: size, limit: limit, stop: stop, forceOpen: forceOpen) }
             .makeRequest(.post, "positions/otc", version: 2, credentials: true, body: { (.json, try JSONEncoder().encode($0)) })
             .send(expecting: .json, statusCode: 200)
@@ -62,12 +57,11 @@ extension API.Request.Deals {
             .eraseToAnyPublisher()
     }
     
-    // MARK: PUT /positions/otc/{dealId}
-    
     /// Edits an opened position (identified by the given deal identifier).
     ///
     /// This endpoint modifies an openned position. The returned refence is not considered as taken into effect until the server confirms the "transient" position reference and give the user a deal identifier.
-    /// - attention: Using this function on a position with a guaranteed stop will transform the stop into a exposed risk stop.
+    /// - seealso: PUT /positions/otc/{dealId}
+    /// - attention: Using this endpoint on a position with a guaranteed stop will transform the stop into a exposed risk stop.
     /// - parameter id: A permanent deal reference for a confirmed trade.
     /// - parameter limitLevel: Passing a value, will set a limit level (replacing the previous one, if any). Setting this argument to `nil` will delete the limit on the position.
     /// - parameter stop: Passing values will set a stop level (replacing the previous one, if any). Setting this argument to `nil` will delete the stop position.
@@ -80,11 +74,9 @@ extension API.Request.Deals {
             .mapError(errorCast)
             .eraseToAnyPublisher()
     }
-
-    
-    // MARK: DELETE /positions/otc
     
     /// Closes one or more positions.
+    /// - seealso: DELETE /positions/otc
     /// - parameter identification: Matches one or many positions to be closed.
     /// - parameter direction: Opposite direction of the currenly open position/s.
     /// - parameter order: The deletion execution order.
@@ -104,6 +96,7 @@ extension API.Request.Deals {
 // MARK: - Request Entities
 
 extension API.Request.Deals {
+    /// Namespace for position request types.
     public enum Position {}
     
     /// Identification mechanism at deletion time.

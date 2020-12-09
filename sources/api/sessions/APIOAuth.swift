@@ -3,10 +3,8 @@ import Conbini
 import Foundation
 
 extension API.Request.Session {
-
-    // MARK: POST /session
-
     /// Performs the OAuth login request with the login credential passed as parameter.
+    /// - seealso: POST /session
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: API key given by the platform identifying the endpoint usage.
     /// - parameter user: User name and password to log in into an account.
@@ -23,9 +21,8 @@ extension API.Request.Session {
             }.eraseToAnyPublisher()
     }
 
-    // MARK: POST /session/refresh-token
-
     /// Refreshes a trading session token, obtaining new session for subsequent API.
+    /// - seealso: POST /session/refresh-token
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter token: The OAuth refresh token (don't confuse it with the OAuth access token).
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.

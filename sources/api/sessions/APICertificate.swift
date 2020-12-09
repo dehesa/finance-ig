@@ -3,12 +3,10 @@ import Conbini
 import Foundation
 
 extension API.Request.Session {
-
-    // MARK: POST /session
-
     /// Creates a trading session, obtaining session tokens for subsequent API access.
     ///
     /// Region-specific login restrictions may apply.
+    /// - seealso: POST /session
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - todo: Password encryption doesn't work! Currently it is ignoring the parameter.
     /// - parameter key: API key given by the IG platform identifying the usage of the IG endpoints.
@@ -28,9 +26,8 @@ extension API.Request.Session {
             }.eraseToAnyPublisher()
     }
 
-    // MARK: GET /session?fetchSessionTokens=true
-
     /// It regenerates certificate credentials from the current session (whether OAuth or Certificate logged in).
+    /// - seealso: GET /session?fetchSessionTokens=true
     /// - returns: Publisher forwarding a `API.Credentials.Token.certificate` if the process was successful.
     internal func refreshCertificate() -> AnyPublisher<API.Token,Swift.Error> {
         self.api.publisher
@@ -66,18 +63,17 @@ extension API.Request.Session {
             .eraseToAnyPublisher()
     }
 
-    // MARK: GET /session/encryptionKey
-
     /// Returns an encryption key to use in order to send the user password in an encrypted form.
     ///
     /// To encrypt a password:
     /// 1. call this endpoint which gives a key and timestamp
     /// 2. create a RSA token using the key.
     /// 3. encrypt password + `|` + timestamp
+    /// - seealso: GET /session/encryptionKey
+    /// - todo: Use this to encrypt the password.
     /// - note: No credentials are needed for this endpoint (i.e. the `API` instance doesn't need to be previously logged in).
     /// - parameter key: The API key which the encryption key will be associated to.
     /// - returns: Publisher forwarding the session's encryption key with the key's timestamp.
-    /// - todo: Use this to encrypt the password.
     fileprivate func _generateEncryptionKey(key: API.Key) -> AnyPublisher<API.Session._EncryptionKey,IG.Error> {
         self.api.publisher
             .makeRequest(.get, "session/encryptionKey", version: 1, credentials: false, headers: { [.apiKey: key.description] })

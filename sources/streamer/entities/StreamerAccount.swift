@@ -59,11 +59,11 @@ extension Streamer.Account {
 extension Streamer.Account {
     /// Profit and Loss values for the account.
     public struct ProfitLoss {
-        /// Account PNL value.
+        /// Account P&L value.
         public let value: Decimal64?
-        /// Limited risk PNL value.
+        /// Limited risk P&L value.
         public let limitedRisk: Decimal64?
-        /// Non-limited risk PNL value.
+        /// Non-limited risk P&L value.
         public let nonLimitedRisk: Decimal64?
     }
 }

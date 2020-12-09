@@ -2,10 +2,8 @@ import Combine
 import Decimals
 
 extension API.Request.Markets {
-    
-    // MARK: GET /clientsentiment
-    
     /// Returns the client sentiment for the gven markets.
+    /// - seealso: GET /clientsentiment
     /// - parameter marketIdentifiers: The platform's markets being targeted (don't confuse it with `epic` identifiers).
     /// - returns: Publisher forwarding  a list of all targeted markets along with their short/long sentiments.
     public func getSentiment(from marketIdentifiers: [String]) -> AnyPublisher<[API.Market.Sentiment],IG.Error> {
@@ -21,9 +19,8 @@ extension API.Request.Markets {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /clientsentiment/{marketId}
-    
     /// Returns the client sentiment for the gven market.
+    /// - seealso: GET /clientsentiment/{marketId}
     /// - parameter marketIdentifier: The platform's market being targeted (don't confuse it with `epic` identifiers).
     /// - returns: Publisher forwarding  a market's short/long sentiments.
     public func getSentiment(from marketIdentifier: String) -> AnyPublisher<API.Market.Sentiment,IG.Error> {
@@ -35,9 +32,8 @@ extension API.Request.Markets {
             .eraseToAnyPublisher()
     }
     
-    // MARK: GET /clientsentiment/related/{marketId}
-    
     /// Returns a list of markets (and its sentiments) that are being traded the most and are related to the gven market.
+    /// - seealso: GET /clientsentiment/related/{marketId}
     /// - parameter marketIdentifier: The platform's market being targeted (don't confuse it with `epic` identifiers).
     /// - returns: Publisher forwarding a list of markets related to the given market along with their short/long sentiments.
     public func getSentiment(relatedTo marketIdentifier: String) -> AnyPublisher<[API.Market.Sentiment],IG.Error> {

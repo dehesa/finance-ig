@@ -151,25 +151,25 @@ extension Database.Market.Forex {
     ///
     /// IG may offer reduced margins on "tier 1" positions with a non-guaranteed stop (it doesn't apply to higher tiers/bands).
     /// - parameter size: The size of the targeted given deal.
-    /// - parameter price: The price at which the deal will be opened.
+    /// - parameter level: The price at which the deal will be opened.
     /// - parameter stop: The stop that will be used for the deal being operated.
-    public func margin(size: Decimal64, price: Decimal64, stop: Self.Stop?) -> Decimal64 {
+    public func margin(size: Decimal64, level: Decimal64, stop: Self.Stop?) -> Decimal64 {
         let marginFactor = self.information.margin.depositBands.depositFactor(size: size) >> 2
         let quantity = size * Decimal64(exactly: self.information.contractSize)!
 
         switch stop {
         case .none:
-            return quantity * price * marginFactor
+            return quantity * level * marginFactor
         case .level(let level, risk: .exposed):
-            let distance = (level - price).magnitude
-            let marginNoStop = quantity * price * marginFactor
+            let distance = (level - level).magnitude
+            let marginNoStop = quantity * level * marginFactor
             let marginWithStop = (marginNoStop * self.information.slippageFactor) + (quantity * distance)
             return min(marginNoStop, marginWithStop)
         case .level(let level, risk: .limited):
-            let distance = (level - price).magnitude
+            let distance = (level - level).magnitude
             return (quantity * distance) + self.information.guaranteedStop.premium
         case .distance(let distance, risk: .exposed):
-            let marginNoStop = quantity * price * marginFactor
+            let marginNoStop = quantity * level * marginFactor
             let marginWithStop = (marginNoStop * self.information.slippageFactor) + (quantity * distance)
             return min(marginNoStop, marginWithStop)
         case .distance(let distance, risk: .limited):
