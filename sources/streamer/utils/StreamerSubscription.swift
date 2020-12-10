@@ -94,7 +94,7 @@ fileprivate extension Streamer.Subscription {
             
         }
 
-        @objc func didFail(_ subscription: LSSubscription, errorCode code: Int, message: String?) {
+        @objc func subscription(_ subscription: LSSubscription, didFailWithErrorCode code: Int, message: String?) {
             guard case .active(let config) = self._state.terminate() else { return }
             let error = IG.Error._failed(subscription: config.subscription, code: code, message: message)
             
@@ -105,7 +105,7 @@ fileprivate extension Streamer.Subscription {
             config.downstream.receive(completion: .failure(error))
         }
 
-        @objc func didUpdate(_ subscription: LSSubscription, item itemUpdate: LSItemUpdate) {
+        @objc func subscription(_ subscription: LSSubscription, didUpdateItem itemUpdate: LSItemUpdate) {
             self._state.lock()
             // Observational experience has shown that the itemUpdate.isSnapshot always returns 'true".
             // It is unclear whether the problem is the Lightstreamer framework or the IG servers.
@@ -123,11 +123,11 @@ fileprivate extension Streamer.Subscription {
             self._state.unlock()
         }
         
-//        @objc func didAddDelegate(to subscription: LSSubscription) {}
-//        @objc func didRemoveDelegate(from subscription: LSSubscription) {}
-//        @objc func didSubscribe(to subscription: LSSubscription) {}
-//        @objc func didUnsubscribe(from subscription: LSSubscription) {}
-//        @objc func didLoseUpdates(_ subscription: LSSubscription, count lostUpdates: UInt, itemName: String?, itemPosition itemPos: UInt) {}
+//        @objc func subscriptionDidAdd(_ subscription: LSSubscription) {}
+//        @objc func subscriptionDidRemove(_ subscription: LSSubscription) {}
+//        @objc func subscriptionDidSubscribe(_ subscription: LSSubscription) {}
+//        @objc func subscriptionDidUnsubscribe(_ subscription: LSSubscription) {}
+//        @objc func subscription(_ subscription: LSSubscription, didLoseUpdates lostUpdates: UInt, forItemName itemName: String?, itemPos: UInt) {}
 //        @objc func subscription(_ subscription: LSSubscription, didEndSnapshotForItemName itemName: String?, itemPos: UInt) {}
 //        @objc func subscription(_ subscription: LSSubscription, didClearSnapshotForItemName itemName: String?, itemPos: UInt) {}
     }

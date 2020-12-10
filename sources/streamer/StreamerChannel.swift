@@ -154,8 +154,8 @@ extension Streamer.Channel: LSClientDelegate {
     //@objc func client(_ client: LSLightstreamerClient, didChangeProperty property: String) { }
     //@objc func client(_ client: LSLightstreamerClient, willSendRequestFor challenge: URLAuthenticationChallenge) { }
     //@objc func client(_ client: LSLightstreamerClient, didReceiveServerError errorCode: Int, withMessage errorMessage: String?) { }
-    //@objc func didAddDelegate(to: LSLightstreamerClient) { }
-    //@objc func didRemoveDelegate(to: LSLightstreamerClient) { }
+    //@objc func clientDidAdd(_ client: LSLightstreamerClient) { }
+    //@objc func clientDidRemove(_ client: LSLightstreamerClient) { }
 }
 
 private extension IG.Error {

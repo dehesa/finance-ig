@@ -52,3 +52,25 @@ extension Deal.Stop {
         case `dynamic`(distance: Decimal64, increment: Decimal64)
     }
 }
+
+// MARK: -
+
+extension Deal.Stop.Risk {
+    /// Initializes the _stop risk_ from a more concrete one to a broad one.
+    public init(data: Deal.Stop.RiskData) {
+        switch data {
+        case .exposed: self = .exposed
+        case .limited: self = .limited
+        }
+    }
+}
+
+extension Deal.Stop.Trailing {
+    /// Initializes the _stop trailing_ from a more concrete one to a broad one.
+    public init(data: Deal.Stop.TrailingData) {
+        switch data {
+        case .static:  self = .static
+        case .dynamic: self = .dynamic
+        }
+    }
+}
