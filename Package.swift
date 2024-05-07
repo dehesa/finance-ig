@@ -10,8 +10,8 @@ var package = Package(
         .library(name: "IG", targets: ["IG"])
     ],
     dependencies: [
-        .package(url: "https://github.com/dehesa/Decimals.git", from: "0.1.1"),
-        .package(url: "https://github.com/dehesa/Conbini.git", from: "0.6.2"),
+        .package(url: "https://github.com/dehesa/sample-decimals-swift.git", from: "0.1.1"),
+        .package(url: "https://github.com/dehesa/package-conbini.git", from: "0.6.2"),
     ],
     targets: [
         .binaryTarget(name: "Lightstreamer", url:"https://github.com/dehesa/IG/releases/download/0.11.2/Lightstreamer-2.1.3.zip", checksum: "5ca52be497d0a35cd05b3c5db0e9fc02be5d3c365ed048fa5b89432b3354256b"),
