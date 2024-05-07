@@ -54,10 +54,14 @@ extension Streamer.Request.Markets {
         return self._streamer.channel
             .subscribe(on: queue ?? self._streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
             .tryMap { [fields] in
+                #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
                 }
                 return try Streamer.Market(epic: epic, update: $0, timeFormatter: timeFormatter, fields: fields)
+                #else
+                fatalError()
+                #endif
             }.mapError(errorCast)
             .eraseToAnyPublisher()
     }

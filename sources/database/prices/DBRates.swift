@@ -7,7 +7,7 @@ extension Database.Request {
     /// Contains all functionality related to interest rates, inflation, etc.
     @frozen public struct Rates {
         /// Pointer to the actual database instance in charge of the low-level objects.
-        private unowned let _database: Database
+        private let _database: Database
         /// Hidden initializer passing the instance needed to perform the database fetches/updates.
         @usableFromInline internal init(database: Database) { self._database = database }
     }

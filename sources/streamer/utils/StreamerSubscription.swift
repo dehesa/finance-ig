@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -9,6 +11,8 @@ import Lightstreamer_tvOS_Client
 #endif
 import Combine
 import Conbini
+
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
 
 internal extension Streamer {
     /// Streamer subscription publisher.
@@ -208,3 +212,35 @@ private extension IG.Error {
         return Self(.streamer(.subscriptionFailed), reason, help: help, info: userInfo)
     }
 }
+
+#else
+
+internal extension Streamer {
+    /// Streamer subscription publisher.
+    struct Subscription: Publisher {
+        typealias Output = AnyObject
+        typealias Failure = IG.Error
+        
+        /// The Lightstreamer low-level client; weakly held so to not produce retain cycles.
+        weak var client: AnyObject?
+        /// The Lightstreamer mode used for this subscription.
+        let mode: Streamer.Mode
+        /// The Lightstreamer items to subscribe to.
+        let items: [String]
+        /// The targeted fields within the Lightstreamer item.
+        let fields: [String]
+        /// Boolean indicating whether the subscription will receive a first snapshot or not.
+        let snapshot: Bool
+        
+        /// Designated initializer.
+        init(client: AnyObject, mode: Streamer.Mode, items: [String], fields: [String], snapshot: Bool) {
+            fatalError()
+        }
+        
+        func receive<S>(subscriber: S) where S:Subscriber, S.Input==Output, S.Failure==Failure {
+            fatalError()
+        }
+    }
+}
+
+#endif

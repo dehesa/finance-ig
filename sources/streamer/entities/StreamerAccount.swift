@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -70,6 +72,8 @@ extension Streamer.Account {
 
 // MARK: -
 
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
+
 fileprivate typealias F = Streamer.Account.Field
 
 internal extension Streamer.Account {
@@ -111,3 +115,14 @@ fileprivate extension Streamer.Account.ProfitLoss {
         self.nonLimitedRisk = fields.contains(F.profitLossNonLimitedRisk) ? try update.decodeIfPresent(Decimal64.self, forKey: F.profitLossNonLimitedRisk) : nil
     }
 }
+
+#else
+
+internal extension Streamer.Account {
+    /// - throws: `IG.Error` exclusively.
+    init(id: IG.Account.Identifier, update: Any, fields: Set<Field>) throws {
+        fatalError()
+    }
+}
+
+#endif

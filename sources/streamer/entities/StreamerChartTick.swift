@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -51,6 +53,8 @@ extension Streamer.Chart.Tick {
 
 // MARK: -
 
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
+
 fileprivate typealias F = Streamer.Chart.Tick.Field
 
 internal extension Streamer.Chart.Tick {
@@ -75,3 +79,14 @@ fileprivate extension Streamer.Chart.Tick.Day {
         self.changePercentage = fields.contains(F.dayChangePercentage) ? try update.decodeIfPresent(Decimal64.self, forKey: F.dayChangePercentage) : nil
     }
 }
+
+#else
+
+internal extension Streamer.Chart.Tick {
+    /// - throws: `IG.Error` exclusively.
+    init(epic: IG.Market.Epic, item: String, update: Any, fields: Set<Field>) throws {
+        fatalError()
+    }
+}
+
+#endif

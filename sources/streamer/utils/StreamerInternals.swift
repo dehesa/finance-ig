@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -38,6 +40,8 @@ extension Streamer {
 }
 
 // MARK: - Convenience Formatter
+
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
 
 internal extension LSItemUpdate {
     /// Decodes a value of the given type for the given key.
@@ -112,3 +116,5 @@ private extension IG.Error {
         Self(.streamer(.invalidResponse), "Invalid response field.", help: "Contact the repo maintainer and copy this error message.", info: ["Field": key, "Value": value])
     }
 }
+
+#endif

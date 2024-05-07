@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -20,6 +22,8 @@ extension Streamer {
         public let update: Streamer.Update?
     }
 }
+
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
 
 fileprivate typealias F = Streamer.Deal.Field
 
@@ -57,3 +61,13 @@ private extension IG.Error {
         Self(.streamer(.invalidResponse), "An error was encountered when trying to decode a Streamer deal.", help: "Review the internal error.", underlying: error, info: ["Account": account])
     }
 }
+
+#else
+
+internal extension Streamer.Deal {
+    init(account: IG.Account.Identifier, item: String, update: Any, decoder: JSONDecoder, fields: Set<Field>) throws {
+        fatalError()
+    }
+}
+
+#endif

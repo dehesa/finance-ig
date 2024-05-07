@@ -3,7 +3,7 @@ internal extension Database {
     enum Version: Int, Comparable, CaseIterable {
         /// The version for database creation.
         case v0 = 0
-        /// The initial version
+        /// The initial version.
         case v1 = 1
         /// DB changed price dates to integer numbers.
         case v2 = 2

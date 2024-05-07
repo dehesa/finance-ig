@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -14,9 +16,11 @@ import Foundation
 extension Streamer {
     /// Instances of this class control the underlying LIghtStreamer objects.
     internal final class Channel: NSObject {
+        #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
         /// The low-level lightstreamer client actually performing the network calls.
         /// - seealso: https://www.lightstreamer.com/repo/cocoapods/ls-ios-client/api-ref/2.1.2/classes.html
         @nonobjc private let _client: LSLightstreamerClient
+        #endif
         
         /// The lock used to restrict access to the credentials.
         @nonobjc private let _lock: UnfairLock
@@ -36,6 +40,7 @@ extension Streamer {
         /// - parameter rootURL: The URL where the streaming server is located.
         /// - parameter credentails: Priviledge credentials permitting the creation of streaming channels.
         @nonobjc init(rootURL: URL, credentials: Streamer.Credentials) {
+            #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
             // 1. Remove the usage of ObjC exceptions by the Lightstreamer framework.
             if !LSLightstreamerClient.limitExceptionsUse { LSLightstreamerClient.limitExceptionsUse = true }
             // 2. Set up the lightstreamer client with the root URL, user, and password.
@@ -51,19 +56,28 @@ extension Streamer {
             super.init()
             // 4. The Lighstreamer client stores the delegate weakly, thus there is no reference cycle.
             self._client.addDelegate(self)
+            #else
+            fatalError()
+            #endif
         }
         
         deinit {
             self.unsubscribeAll()
             self.disconnect()
             self._statusSubject.send(completion: .finished)
+            #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
             self._client.removeDelegate(self)
+            #endif
             self._lock.invalidate()
         }
         
         /// The Lightstreamer library version.
         @nonobjc static var lightstreamerVersion: String {
-            LSLightstreamerClient.lib_VERSION
+            #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
+            return LSLightstreamerClient.lib_VERSION
+            #else
+            fatalError()
+            #endif
         }
     }
 }
@@ -92,6 +106,7 @@ internal extension Streamer.Channel {
     /// - throws: `IG.Error` exclusively when the status is `.stalled`.
     /// - returns: The client status at the time of the call (right before the low-level client calls the underlying *connect*).
     @nonobjc @discardableResult func connect() throws -> Streamer.Session.Status {
+        #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
         let currentStatus = self.status
         switch currentStatus {
         case .disconnected(isRetrying: false): self._client.connect()
@@ -99,6 +114,9 @@ internal extension Streamer.Channel {
         case .connected, .connecting, .disconnected(isRetrying: true): break
         }
         return currentStatus
+        #else
+        fatalError()
+        #endif
     }
     
     /// Tries to disconnect the low-level client from the server and returns the current client status.
@@ -106,11 +124,15 @@ internal extension Streamer.Channel {
     /// If the client is already disconnected, no further work is performed.
     /// - returns: The client status at the time of the call (right before the low-level *disconnection* is called).
     @nonobjc @discardableResult func disconnect() -> Streamer.Session.Status {
+        #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
         let status = self.status
         if status != .disconnected(isRetrying: false) {
             self._client.disconnect()
         }
         return status
+        #else
+        fatalError()
+        #endif
     }
     
     /// Subscribe to the following items and fields (in the given mode) requesting (or not) a snapshot.
@@ -121,9 +143,13 @@ internal extension Streamer.Channel {
     /// - parameter snapshot: Whether the current state of the given `fields` must be received as the first update.
     /// - returns: A publisher forwarding updates as values. This publisher will only stop by not holding a reference to the signal, by interrupting it with a cancellable, or by calling `unsubscribeAll()`
     @nonobjc func subscribe(on queue: DispatchQueue, mode: Streamer.Mode, items: [String], fields: [String], snapshot: Bool) -> Publishers.ReceiveOn<Publishers.PrefixUntilOutput<Streamer.Subscription, PassthroughSubject<(),Never>>,DispatchQueue> {
-        Streamer.Subscription(client: self._client, mode: mode, items: items, fields: fields, snapshot: snapshot)
+        #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
+        return Streamer.Subscription(client: self._client, mode: mode, items: items, fields: fields, snapshot: snapshot)
             .prefix(untilOutputFrom: self._unsubscriptionSubject)
             .receive(on: queue)
+        #else
+        fatalError()
+        #endif
     }
     
     /// Unsubscribe to all ongoing subscriptions.
@@ -134,6 +160,8 @@ internal extension Streamer.Channel {
 }
 
 // MARK: - Lightstreamer Delegate
+
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
 
 extension Streamer.Channel: LSClientDelegate {
     @objc func client(_ client: LSLightstreamerClient, didChangeStatus status: String) {
@@ -157,6 +185,8 @@ extension Streamer.Channel: LSClientDelegate {
     //@objc func clientDidAdd(_ client: LSLightstreamerClient) { }
     //@objc func clientDidRemove(_ client: LSLightstreamerClient) { }
 }
+
+#endif
 
 private extension IG.Error {
     /// Error raised when the server connection is stalled.

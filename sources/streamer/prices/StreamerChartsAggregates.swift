@@ -56,10 +56,14 @@ extension Streamer.Request.Prices {
         return self.streamer.channel
             .subscribe(on: queue ?? self.streamer.queue, mode: .merge, items: items, fields: properties, snapshot: snapshot)
             .tryMap { [fields] in
+                #if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
                 guard let item = $0.itemName, let epic = IG.Market.Epic(item.split(separator: ":").dropFirst().dropLast().joined(separator: ":")) else {
                     throw IG.Error._invalid(itemName: $0.itemName)
                 }
                 return try Streamer.Chart.Aggregated(epic: epic, interval: interval, update: $0, fields: fields)
+                #else
+                fatalError()
+                #endif
             }.mapError(errorCast)
             .eraseToAnyPublisher()
     }

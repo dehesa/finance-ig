@@ -40,7 +40,7 @@ internal extension DateFormatter {
     /// - Format: `yyyy-MM-dd`
     /// - Example: `2019-11-25`
     static let date = DateFormatter().set {
-        $0.dateFormat = "yyyy-MM-dd"
+        $0.dateFormat = "y-MM-dd"
         $0.calendar = UTC.calendar
         $0.timeZone = UTC.timezone
     }

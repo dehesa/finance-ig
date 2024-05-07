@@ -1,5 +1,7 @@
-#if os(macOS)
+#if os(macOS) && arch(x86_64)
 import Lightstreamer_macOS_Client
+#elseif os(macOS)
+
 #elseif os(iOS)
 import Lightstreamer_iOS_Client
 #elseif os(tvOS)
@@ -9,6 +11,8 @@ import Lightstreamer_tvOS_Client
 #endif
 import Conbini
 import XCTest
+
+#if (os(macOS) && arch(x86_64)) || os(iOS) || os(tvOS)
 
 final class StreamerLowlevelTests: XCTestCase {
     override func setUp() {
@@ -134,3 +138,4 @@ extension StreamerLowlevelTests: LSSubscriptionDelegate {
     }
 }
 
+#endif
